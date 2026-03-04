@@ -3,7 +3,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function simulateStats(gameId: number) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   // Get players in this game
   const { data: players } = await supabase
@@ -25,3 +25,4 @@ export async function simulateStats(gameId: number) {
       .eq("id", p.id);
   }
 }
+
