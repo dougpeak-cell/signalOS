@@ -12,10 +12,16 @@ export async function GET(_req: Request, ctx: Ctx) {
 
   const supabase = await createSupabaseServerClient();
 
-  // Assumes you store logos in Supabase Storage bucket: "team-logos"
-  // And files are named by slug, e.g. "duke.png" or "duke.svg"
+  // Bucket: "team-logos"
+  // slug can be a full path like "ncaab/duke.png" if you pass it that way.
   const { data } = supabase.storage.from("team-logos").getPublicUrl(slug);
 
-  // If you’re storing full paths like "ncaab/duke.png", slug can include that too.
-  return NextResponse.redirect(data.publicUrl, { status: 302 });
+  // If publicUrl isn't present for any reason, avoid crashing the build
+  const url = data?.publicUrl;
+  if (!url) {
+    return NextResponse.json({ error: "Logo not found" }, { status: 404 });
+  }
+
+  // Redirect to the public logo URL
+  return NextResponse.redirect(url, { status: 302 });
 }
