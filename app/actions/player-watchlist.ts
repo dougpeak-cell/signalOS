@@ -1,34 +1,41 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function toggleWatchlistPlayer(playerId: string) {
-  const supabase = await createClient();
+  const supabase = await createSupabaseServerClient();
 
   const {
     data: { user },
     error: userErr,
   } = await supabase.auth.getUser();
 
-  if (!user || userErr) {
-    return { ok: false, error: "Not authenticated" };
-  }
+  if (userErr || !user) throw new Error("Not signed in");
 
-  const { data: existing } = await supabase
-    .from("watchlist")
+  // Toggle pattern: if exists -> delete, else -> insert
+  const { data: existing, error: selErr } = await supabase
+    .from("watchlist_players")
     .select("id")
-    .eq("player_id", playerId)
     .eq("user_id", user.id)
+    .eq("player_id", playerId)
     .maybeSingle();
 
-  if (existing) {
-    await supabase.from("watchlist").delete().eq("id", existing.id);
-    return { ok: true, nowWatchlisted: false };
+  if (selErr) throw selErr;
+
+  if (existing?.id) {
+    const { error } = await supabase
+      .from("watchlist_players")
+      .delete()
+      .eq("id", existing.id);
+    if (error) throw error;
+    return { watching: false };
+  } else {
+    const { error } = await supabase.from("watchlist_players").insert({
+      user_id: user.id,
+      player_id: playerId,
+    });
+    if (error) throw error;
+    return { watching: true };
   }
-
-  await supabase
-    .from("watchlist")
-    .insert({ player_id: playerId, user_id: user.id });
-
-  return { ok: true, nowWatchlisted: true };
 }
+
