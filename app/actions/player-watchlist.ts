@@ -3,7 +3,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function toggleWatchlistPlayer(playerId: string) {
-  const supabase = await createSupabaseServerClient();
+const supabase = await createSupabaseServerClient();
 
   const {
     data: { user },
