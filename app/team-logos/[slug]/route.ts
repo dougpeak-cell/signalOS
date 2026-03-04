@@ -1,50 +1,21 @@
-import fs from "node:fs";
-import path from "node:path";
 import { NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const EXT_ORDER = [".png", ".svg", ".webp", ".jpg", ".jpeg"];
+export const dynamic = "force-dynamic";
 
-function contentTypeFor(ext: string) {
-  switch (ext) {
-    case ".svg":
-      return "image/svg+xml";
-    case ".webp":
-      return "image/webp";
-    case ".jpg":
-    case ".jpeg":
-      return "image/jpeg";
-    default:
-      return "image/png";
-  }
-}
+type Ctx = {
+  params: { slug: string };
+};
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { slug: string } }
-) {
-  const slug = params.slug;
-  const baseDir = path.join(process.cwd(), "public", "team-logos");
+export async function GET(_req: Request, ctx: Ctx) {
+  const slug = ctx.params.slug;
 
-  for (const ext of EXT_ORDER) {
-    const filePath = path.join(baseDir, `${slug}${ext}`);
-    if (fs.existsSync(filePath)) {
-      const buf = fs.readFileSync(filePath);
-      return new NextResponse(buf, {
-        headers: {
-          "Content-Type": contentTypeFor(ext),
-          "Cache-Control": "public, max-age=31536000, immutable",
-        },
-      });
-    }
-  }
+  const supabase = await createSupabaseServerClient();
 
-  // fallback
-  const fallback = path.join(baseDir, "default.png");
-  const buf = fs.readFileSync(fallback);
-  return new NextResponse(buf, {
-    headers: {
-      "Content-Type": "image/png",
-      "Cache-Control": "no-cache",
-    },
-  });
+  // Assumes you store logos in Supabase Storage bucket: "team-logos"
+  // And files are named by slug, e.g. "duke.png" or "duke.svg"
+  const { data } = supabase.storage.from("team-logos").getPublicUrl(slug);
+
+  // If you’re storing full paths like "ncaab/duke.png", slug can include that too.
+  return NextResponse.redirect(data.publicUrl, { status: 302 });
 }
