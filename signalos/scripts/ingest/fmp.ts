@@ -7,14 +7,18 @@ const API_KEY = process.env.FMP_API_KEY;
 if (!API_KEY) throw new Error("Missing FMP_API_KEY");
 
 async function fetchJson(pathWithQuery: string) {
+  if (!API_KEY) {
+    throw new Error("Missing FMP API key");
+  }
+
   const sep = pathWithQuery.includes("?") ? "&" : "?";
   const url = `${BASE}${pathWithQuery}${sep}apikey=${encodeURIComponent(API_KEY)}`;
 
   const res = await fetch(url);
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`FMP ${res.status}: ${text || res.statusText}`);
+    throw new Error(`FMP request failed: ${res.status} ${res.statusText}`);
   }
+
   return res.json();
 }
 

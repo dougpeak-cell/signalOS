@@ -1,5 +1,7 @@
-import { formatMarketTime } from "@/lib/marketTime";
 "use client";
+
+import { formatMarketTime } from "@/lib/marketTime";
+
 
 import ConfidenceBar from "@/components/ui/ConfidenceBar";
 

@@ -1,1 +1,9 @@
-// Deleted backup of layout.tsx from (shell)/news
+import type { ReactNode } from "react";
+
+export default function NewsDeletedLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return <>{children}</>;
+}

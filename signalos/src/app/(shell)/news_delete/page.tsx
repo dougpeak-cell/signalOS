@@ -1,1 +1,3 @@
-// Backup of page.tsx before deletion
+export default function NewsDeletePage() {
+  return null;
+}
