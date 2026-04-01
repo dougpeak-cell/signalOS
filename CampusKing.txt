@@ -1,0 +1,6 @@
+npx create-next-app@latest ai-predictions-app --ts --app --eslint --no-tailwind
+cd ai-predictions-app
+npm i @supabase/supabase-js
+
+
+
