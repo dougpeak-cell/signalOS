@@ -36,7 +36,7 @@ export default function ShellLayout({
           </div>
         ) : isTodayPage ? (
           <div className="mx-auto w-full max-w-470 px-4 md:px-6 xl:px-8 2xl:px-10">
-            <div className="rounded-3xl border border-cyan-400/10 bg-linear-to-b from-[#031525] to-[#020814] p-4 md:p-5 xl:p-6">
+            <div className="rounded-3xl border border-cyan-400/18 bg-linear-to-b from-[#072038] via-[#04111f] to-[#020814] p-4 shadow-[0_0_0_1px_rgba(34,211,238,0.04),0_0_28px_rgba(8,145,178,0.12)] md:p-5 xl:p-6">
               {children}
             </div>
           </div>
