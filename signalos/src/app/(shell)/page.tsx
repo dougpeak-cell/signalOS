@@ -39,7 +39,7 @@ function MarketHeatPulse({
       </div>
 
       <div className="relative overflow-hidden">
-        <div className="market-heat-marquee flex min-w-max items-center gap-3 px-4 py-3">
+        <div className="market-heat-marquee flex w-max items-center gap-3 px-4 py-3">
           {loopItems.map((item, index) => (
             <div
               key={`${item.symbol}-${index}`}
@@ -252,7 +252,7 @@ function GlobalPulseTicker({
               <span className="text-[10px] text-white/40">LIVE</span>
             </div>
       <div className="relative overflow-hidden">
-        <div className="global-pulse-marquee flex min-w-max items-center gap-4 px-4 py-3">
+        <div className="global-pulse-marquee flex w-max items-center gap-4 px-4 py-3">
           {loopItems.map((item, index) => (
             <Link
               href={`/news/${item.id}`}
@@ -450,7 +450,7 @@ export default async function HomePage() {
     <main className="min-h-screen bg-black text-white">
       <div className="w-full pb-10 pt-4">
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
-          <div className="space-y-5 md:space-y-6 xl:space-y-7">
+          <div className="min-w-0 space-y-5 md:space-y-6 xl:space-y-7">
         <div className="space-y-2">
           <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
             SignalOS

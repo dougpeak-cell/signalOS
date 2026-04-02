@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const navItems = [
   { href: "/", label: "Today" },
@@ -12,9 +13,18 @@ const navItems = [
 ];
 
 export default function TopNav() {
+  const pathname = usePathname();
+  const isTodayPage = pathname === "/" || pathname.startsWith("/today");
+
   return (
     <header className="sticky top-0 z-40 h-13 border-b border-cyan-400/10 bg-black/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-full w-full max-w-430 items-center justify-between px-4 sm:px-5 md:px-6 xl:px-6 2xl:px-7">
+      <div
+        className={`mx-auto flex h-full w-full items-center justify-between ${
+          isTodayPage
+            ? "max-w-410 px-4 md:px-6 xl:px-8 2xl:px-10"
+            : "max-w-430 px-4 sm:px-5 md:px-6 xl:px-6 2xl:px-7"
+        }`}
+      >
         <div className="flex items-center gap-6">
           <Link
             href="/"

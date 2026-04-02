@@ -1,3 +1,5 @@
+import { usePathname } from "next/navigation";
+
 type MacroItem = {
   label: string;
   value: string;
@@ -25,9 +27,18 @@ const macroTape: MacroItem[] = [
 ];
 
 export default function StickyMacroStrip() {
+  const pathname = usePathname();
+  const isTodayPage = pathname === "/" || pathname.startsWith("/today");
+
   return (
     <div className="sticky top-13 z-30 border-b border-cyan-400/10 bg-black/75 backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-430 items-center gap-3 overflow-x-auto px-5 py-2.5">
+      <div
+        className={`mx-auto flex w-full items-center gap-3 overflow-x-auto py-2.5 ${
+          isTodayPage
+            ? "max-w-410 px-4 md:px-6 xl:px-8 2xl:px-10"
+            : "max-w-430 px-5"
+        }`}
+      >
         <div className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-300/70">
           Macro
         </div>
