@@ -334,7 +334,7 @@ export default function TodayIndexBar() {
             const previousPoints = pointsRef.current[item.symbol] ?? [];
 
             const response = await fetch(
-              `/api/massive/quote?ticker=${encodeURIComponent(item.symbol)}`,
+              `/api/massive/quote?ticker=${encodeURIComponent(item.symbol)}&ts=${Date.now()}`,
               {
                 method: "GET",
                 cache: "no-store",
@@ -484,6 +484,7 @@ export default function TodayIndexBar() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {quoteList.map((item) => {
           const quote = item.quote;
+          const price = quote?.price ?? null;
           const tone = getTone(quote?.direction);
 
           return (
@@ -508,7 +509,7 @@ export default function TodayIndexBar() {
                   </div>
 
                   <div className={`mt-4 text-[38px] font-semibold leading-none tracking-tight ${tone.text}`}>
-                    {formatPrice(quote?.price ?? null)}
+                    {formatPrice(price)}
                   </div>
 
                   <div
@@ -533,7 +534,13 @@ export default function TodayIndexBar() {
                     </div>
 
                     <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">
-                      Proxy Feed
+                      {quote?.source === "true-index"
+                        ? "True Index"
+                        : quote?.source === "index-proxy"
+                          ? "Index Proxy"
+                          : quote?.source === "stock"
+                            ? "Live Feed"
+                            : "Fallback"}
                     </div>
 
                     <div className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${tone.pill}`}>
@@ -543,6 +550,17 @@ export default function TodayIndexBar() {
 
                   <div className={`mt-4 text-xs ${tone.subtext}`}>
                     Symbol {item.symbol}
+                  </div>
+
+                  <div className={`mt-1 text-[11px] ${tone.subtext}`}>
+                    Updated{" "}
+                    {quote?.updatedMs
+                      ? new Date(quote.updatedMs).toLocaleTimeString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })
+                      : "--"}
                   </div>
                 </div>
 

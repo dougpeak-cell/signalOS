@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getQuoteByTicker } from "@/lib/market/quotes";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const POLYGON_API_KEY = process.env.POLYGON_API_KEY;
 const INDEX_MAP: Record<string, string> = {
+  "^GSPC": "I:SPX",
+  "^IXIC": "I:COMP",
+  "^DJI": "I:DJI",
+  "^RUT": "I:RUT",
+};
+
+const INDEX_PROXY_FALLBACK: Record<string, string> = {
   "^GSPC": "SPY",
   "^IXIC": "QQQ",
   "^DJI": "DIA",
@@ -17,10 +28,204 @@ function toNumber(value: unknown): number | null {
   return null;
 }
 
+function normalizeUpdatedMs(raw: number | null): number | null {
+  if (raw == null) return null;
+  if (raw > 1_000_000_000_000_000) return Math.floor(raw / 1_000_000);
+  if (raw > 1_000_000_000_000) return Math.floor(raw / 1_000);
+  return raw;
+}
+
+type IndexSnapshotResult = {
+  ticker?: string;
+  value?: number;
+  market_status?: string;
+  last_updated?: number;
+  session?: {
+    change?: number;
+    change_percent?: number;
+    close?: number;
+    previous_close?: number;
+  };
+  error?: string;
+  message?: string;
+};
+
+async function fetchMassiveIndexQuote(indexTicker: string): Promise<{
+  price: number | null;
+  prevClose: number | null;
+  change: number | null;
+  changePct: number | null;
+  updatedMs: number | null;
+  isMarketOpen: boolean | null;
+} | null> {
+  if (!POLYGON_API_KEY) {
+    console.log("POLYGON API KEY MISSING");
+    return null;
+  }
+
+  try {
+    const url =
+      `https://api.massive.com/v3/snapshot?` +
+      `ticker.any_of=${encodeURIComponent(indexTicker)}` +
+      `&limit=1` +
+      `&apiKey=${POLYGON_API_KEY}`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    console.log("INDEX RESPONSE", {
+      indexTicker,
+      status: res.status,
+      ok: res.ok,
+    });
+
+    const json = await res.json();
+
+    console.log("INDEX JSON FULL", json);
+
+    if (!res.ok) {
+      console.error(`Massive index snapshot failed for ${indexTicker}: ${res.status}`);
+      return null;
+    }
+
+    const snapshot = Array.isArray((json as any)?.results)
+      ? ((json as any).results[0] as IndexSnapshotResult | undefined)
+      : undefined;
+
+    if (!snapshot) {
+      console.log("INDEX SNAPSHOT MISSING", { indexTicker, json });
+      return null;
+    }
+
+    if (snapshot.error || snapshot.message) {
+      console.log("INDEX SNAPSHOT ERROR", {
+        indexTicker,
+        error: snapshot.error,
+        message: snapshot.message,
+      });
+      return null;
+    }
+
+    const price =
+      toNumber(snapshot.value) ??
+      toNumber(snapshot.session?.close);
+
+    const prevClose = toNumber(snapshot.session?.previous_close);
+
+    const change =
+      toNumber(snapshot.session?.change) ??
+      (price != null && prevClose != null ? price - prevClose : null);
+
+    const changePct =
+      toNumber(snapshot.session?.change_percent) ??
+      (change != null && prevClose != null && prevClose !== 0
+        ? (change / prevClose) * 100
+        : null);
+
+    const updatedMs = normalizeUpdatedMs(
+      toNumber((snapshot as any).updated) ?? toNumber(snapshot.last_updated)
+    );
+
+    const marketStatus = String(snapshot.market_status ?? "").toLowerCase();
+    const isMarketOpen =
+      marketStatus === "regular_trading" ||
+      marketStatus === "early_trading" ||
+      marketStatus === "late_trading";
+
+    if (price == null) {
+      console.log("INDEX PRICE MISSING", {
+        indexTicker,
+        snapshot,
+      });
+      return null;
+    }
+
+    return {
+      price,
+      prevClose,
+      change,
+      changePct,
+      updatedMs,
+      isMarketOpen,
+    };
+  } catch (error) {
+    console.error(`Massive index quote fetch error for ${indexTicker}:`, error);
+    return null;
+  }
+}
+
+type StockSnapshot = {
+  ticker?: string;
+  day?: { c?: number };
+  prevDay?: { c?: number };
+  lastQuote?: { P?: number; p?: number };
+  lastTrade?: { p?: number };
+  updated?: number;
+};
+
+async function fetchStockQuote(ticker: string): Promise<{
+  price: number | null;
+  prevClose: number | null;
+  updatedMs: number | null;
+} | null> {
+  if (!POLYGON_API_KEY) return null;
+
+  try {
+    const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${encodeURIComponent(
+      ticker
+    )}?apiKey=${POLYGON_API_KEY}`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    console.log("STOCK RESPONSE", {
+      ticker,
+      status: res.status,
+      ok: res.ok,
+    });
+
+    const json = await res.json();
+
+    if (!res.ok) {
+      console.error(`Polygon stock snapshot failed for ${ticker}: ${res.status}`);
+      return null;
+    }
+
+    const snapshot =
+      (json as any)?.results ??
+      (json as any)?.ticker ??
+      (json as StockSnapshot);
+
+    const price =
+      toNumber(snapshot?.lastTrade?.p) ??
+      toNumber(snapshot?.day?.c) ??
+      toNumber(snapshot?.lastQuote?.P) ??
+      toNumber(snapshot?.lastQuote?.p);
+
+    const prevClose = toNumber(snapshot?.prevDay?.c);
+    const updatedMs = normalizeUpdatedMs(toNumber(snapshot?.updated));
+
+    if (price == null) return null;
+
+    return {
+      price,
+      prevClose,
+      updatedMs,
+    };
+  } catch (error) {
+    console.error(`Polygon stock quote fetch error for ${ticker}:`, error);
+    return null;
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    let ticker = searchParams.get("ticker");
+    let ticker = searchParams.get("ticker") ?? searchParams.get("symbol");
 
     if (!ticker) {
       return NextResponse.json({ error: "Missing ticker" }, { status: 400 });
@@ -28,46 +233,112 @@ export async function GET(req: NextRequest) {
 
     ticker = ticker.toUpperCase().trim();
 
-    const lookupTicker = INDEX_MAP[ticker] ?? ticker;
-    const rawQuote = await getQuoteByTicker(lookupTicker);
+    const trueIndexTicker = INDEX_MAP[ticker] ?? null;
+    const proxyTicker = INDEX_PROXY_FALLBACK[ticker] ?? null;
+    const isHeadlineIndexRequest = Boolean(trueIndexTicker);
 
-    if (rawQuote == null) {
-      return NextResponse.json(
-        { ticker, error: "No price available" },
-        { status: 404 }
-      );
+    console.log("QUOTE ROUTE DEBUG", {
+      ticker,
+      trueIndexTicker,
+      proxyTicker,
+      hasPolygonKey: Boolean(POLYGON_API_KEY),
+    });
+
+    let price: number | null = null;
+    let prevClose: number | null = null;
+    let change: number | null = null;
+    let changePct: number | null = null;
+    let updatedMs: number | null = null;
+    let isMarketOpen: boolean | null = null;
+    let source: "stock" | "true-index" | "index-proxy" | "fallback" =
+      isHeadlineIndexRequest ? "true-index" : "stock";
+    let lookupTicker = trueIndexTicker ?? ticker;
+
+    if (trueIndexTicker) {
+      const indexQuote = await fetchMassiveIndexQuote(trueIndexTicker);
+
+      if (indexQuote) {
+        price = indexQuote.price;
+        prevClose = indexQuote.prevClose;
+        change = indexQuote.change;
+        changePct = indexQuote.changePct;
+        updatedMs = indexQuote.updatedMs;
+        isMarketOpen = indexQuote.isMarketOpen;
+        source = "true-index";
+      }
     }
 
-    const price =
-      typeof rawQuote === "number"
-        ? rawQuote
-        : toNumber((rawQuote as any).price) ??
-          toNumber((rawQuote as any).lastPrice) ??
-          toNumber((rawQuote as any).last) ??
-          toNumber((rawQuote as any).close);
+    if (price == null && !isHeadlineIndexRequest) {
+      const stockQuote = await fetchStockQuote(ticker);
 
-    const prevClose =
-      typeof rawQuote === "object" && rawQuote !== null
-        ? toNumber((rawQuote as any).prevClose) ??
-          toNumber((rawQuote as any).previousClose) ??
-          toNumber((rawQuote as any).priorClose) ??
-          toNumber((rawQuote as any).closePrev)
-        : null;
+      if (stockQuote) {
+        price = stockQuote.price;
+        prevClose = stockQuote.prevClose;
+        updatedMs = stockQuote.updatedMs;
+        source = "stock";
+      }
+    }
+
+    if (price == null && isHeadlineIndexRequest && proxyTicker) {
+      const proxyQuote = await fetchStockQuote(proxyTicker);
+
+      if (proxyQuote) {
+        price = proxyQuote.price;
+        prevClose = proxyQuote.prevClose;
+        updatedMs = proxyQuote.updatedMs;
+        source = "index-proxy";
+        lookupTicker = proxyTicker;
+      }
+    }
+
+    if (price == null) {
+      const rawQuote = await getQuoteByTicker(lookupTicker);
+
+      console.log("FALLBACK QUOTE", {
+        ticker,
+        lookupTicker,
+        rawQuote,
+      });
+
+      if (rawQuote != null) {
+        price =
+          typeof rawQuote === "number"
+            ? rawQuote
+            : toNumber((rawQuote as any).price) ??
+              toNumber((rawQuote as any).lastPrice) ??
+              toNumber((rawQuote as any).last) ??
+              toNumber((rawQuote as any).close);
+
+        prevClose =
+          typeof rawQuote === "object" && rawQuote !== null
+            ? toNumber((rawQuote as any).prevClose) ??
+              toNumber((rawQuote as any).previousClose) ??
+              toNumber((rawQuote as any).priorClose) ??
+              toNumber((rawQuote as any).closePrev)
+            : null;
+
+        source = "fallback";
+      }
+    }
 
     if (price == null) {
       return NextResponse.json(
-        { ticker, error: "No price available" },
+        { ticker, lookupTicker, error: "No price available" },
         { status: 404 }
       );
     }
 
-    const change =
-      prevClose != null && prevClose !== 0 ? price - prevClose : null;
+    if (change == null) {
+      change =
+        prevClose != null && prevClose !== 0 ? price - prevClose : null;
+    }
 
-    const changePct =
-      change != null && prevClose != null && prevClose !== 0
-        ? (change / prevClose) * 100
-        : null;
+    if (changePct == null) {
+      changePct =
+        change != null && prevClose != null && prevClose !== 0
+          ? (change / prevClose) * 100
+          : null;
+    }
 
     const direction =
       change == null ? "flat" : change > 0 ? "up" : change < 0 ? "down" : "flat";
@@ -75,12 +346,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       ticker,
       lookupTicker,
-      source: lookupTicker !== ticker ? "index-proxy" : "stock",
+      source,
       price,
       prevClose,
       change,
       changePct,
       direction,
+      updatedMs,
+      isMarketOpen,
     });
   } catch (error) {
     console.error("Quote route failed:", error);
