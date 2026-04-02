@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import LiveMiniPrice from "@/components/stocks/LiveMiniPrice";
+import LiveMiniChange from "@/components/stocks/LiveMiniChange";
 import { getQuotePrice } from "@/lib/market/quotes";
+import { convictionToPct, signalToneFromTargets } from "@/lib/signalUtils";
+
+export const revalidate = 0;
 
 type ScreenerPageProps = {
   searchParams?: Promise<{
@@ -31,6 +36,14 @@ type SignalRow = {
 };
 
 type SortKey = "conviction" | "upside" | "price" | "ticker";
+
+function signalLabelFromBias(
+  bias: "bullish" | "neutral" | "bearish" | null | undefined
+): "Bullish" | "Neutral" | "Bearish" {
+  if (bias === "bullish") return "Bullish";
+  if (bias === "bearish") return "Bearish";
+  return "Neutral";
+}
 
 function ConvictionBar({ value }: { value: number }) {
   const clamped = Math.max(0, Math.min(100, value ?? 0));
@@ -118,7 +131,7 @@ function cleanSort(value: string | undefined): SortKey {
 }
 
 function canonicalPrice(row: SignalRow) {
-  return getQuotePrice(row.ticker);
+  return getQuotePrice(row.ticker) ?? row.price ?? 0;
 }
 
 async function getAllSignals(): Promise<SignalRow[]> {
@@ -236,6 +249,36 @@ export default async function ScreenerPage({
   });
 
   const rows = sortRows(filtered, sort);
+  const allStocks = rows.map((row, index) => {
+    const conviction = convictionToPct(row.conviction) ?? 0;
+
+    const livePrice = getQuotePrice(row.ticker);
+    const fallbackPrice = row.price ?? null;
+
+    const price =
+      livePrice ??
+      fallbackPrice ??
+      0;
+
+    const bias = signalToneFromTargets(fallbackPrice, row.target_price);
+    const signal = signalLabelFromBias(bias);
+
+    return {
+      id: `${row.ticker}-${index}`,
+      ticker: row.ticker,
+      company: row.company_name ?? row.ticker,
+      sector: row.sector ?? "Market",
+      conviction,
+      price: fallbackPrice,
+      target: row.target_price,
+      signal,
+      thesis: row.thesis?.trim() || "No thesis available yet.",
+      tier: row.tier,
+      entryLow: row.entry_low,
+      entryHigh: row.entry_high,
+      stopLoss: row.stop_loss,
+    };
+  });
 
   const eliteCount = filtered.filter(
     (r) => (r.tier ?? "").toLowerCase() === "elite"
@@ -309,7 +352,7 @@ export default async function ScreenerPage({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
             <MetricCard
               label="Results"
-              value={String(rows.length)}
+              value={String(allStocks.length)}
               sublabel="Matching signals"
             />
             <MetricCard
@@ -460,7 +503,7 @@ export default async function ScreenerPage({
           </p>
         </div>
 
-        {rows.length ? (
+        {allStocks.length ? (
           <div className="overflow-hidden rounded-[28px] border border-cyan-500/15 bg-[linear-gradient(180deg,rgba(10,16,33,0.95),rgba(7,11,22,0.98))] shadow-[0_0_0_1px_rgba(0,255,200,0.03),0_0_20px_rgba(0,255,200,0.05)]">
             <div className="hidden grid-cols-[1.05fr_1.45fr_0.9fr_0.8fr_1fr_0.8fr_0.55fr] gap-4 border-b border-white/10 bg-white/3 px-6 py-4 lg:grid">
               <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
@@ -487,46 +530,45 @@ export default async function ScreenerPage({
             </div>
 
             <div className="divide-y divide-white/10">
-              {rows.map((row) => {
-                const currentPrice = canonicalPrice(row);
-                const upside = upsidePct(currentPrice, row.target_price);
+              {allStocks.map((stock) => {
+                const upside = upsidePct(stock.price, stock.target);
 
                 return (
                   <Link
-                    key={`${row.ticker}-${row.as_of_date ?? "na"}`}
-                    href={`/stocks/${row.ticker.toLowerCase()}`}
+                    key={stock.id}
+                    href={`/stocks/${stock.ticker.toLowerCase()}`}
                     className="block px-6 py-5 transition hover:bg-cyan-500/4"
                   >
                     <div className="grid gap-4 lg:grid-cols-[1.05fr_1.45fr_0.9fr_0.8fr_1fr_0.8fr_0.55fr] lg:items-center">
                       <div>
                         <div className="flex items-center gap-3">
                           <div className="text-2xl font-semibold tracking-tight text-white">
-                            {row.ticker}
+                            {stock.ticker}
                           </div>
                           <div
                             className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${tierPillStyles(
-                              row.tier
+                              stock.tier
                             )}`}
                           >
-                            {row.tier ?? "Signal"}
+                            {stock.tier ?? "Signal"}
                           </div>
                         </div>
                         <div className="mt-2 text-sm text-white/60 lg:hidden">
-                          {row.company_name ?? "Company"}
+                          {stock.company}
                         </div>
                       </div>
 
                       <div>
                         <div className="font-medium text-white">
-                          {row.company_name ?? "Company"}
+                          {stock.company}
                         </div>
                         <p className="mt-1 line-clamp-2 text-sm leading-6 text-white/60">
-                          {row.thesis?.trim() || "No thesis available yet."}
+                          {stock.thesis}
                         </p>
                       </div>
 
                       <div className="text-sm text-white/60">
-                        {row.sector ?? "—"}
+                        {stock.sector ?? "—"}
                       </div>
 
                       <div>
@@ -534,7 +576,10 @@ export default async function ScreenerPage({
                           Price
                         </div>
                         <div className="font-semibold text-white">
-                          {money(currentPrice)}
+                          $<LiveMiniPrice ticker={stock.ticker} fallbackPrice={stock.price ?? null} />
+                        </div>
+                        <div className="mt-1">
+                          <LiveMiniChange ticker={stock.ticker} fallbackChangePct={null} />
                         </div>
                       </div>
 
@@ -543,7 +588,7 @@ export default async function ScreenerPage({
                           Conviction
                         </div>
                         <ConvictionBar
-                          value={Math.round(Number(row.conviction ?? 0) * 100)}
+                          value={Math.round(stock.conviction)}
                         />
                       </div>
 
@@ -567,7 +612,7 @@ export default async function ScreenerPage({
                           Entry
                         </div>
                         <div className="mt-1 font-semibold text-white">
-                          {money(row.entry_low)} – {money(row.entry_high)}
+                          {money(stock.entryLow)} – {money(stock.entryHigh)}
                         </div>
                       </div>
                       <div className="rounded-2xl border border-white/10 bg-white/3 p-3">
@@ -575,7 +620,7 @@ export default async function ScreenerPage({
                           Target
                         </div>
                         <div className="mt-1 font-semibold text-white">
-                          {money(row.target_price)}
+                          {money(stock.target)}
                         </div>
                       </div>
                       <div className="rounded-2xl border border-white/10 bg-white/3 p-3">
@@ -583,7 +628,7 @@ export default async function ScreenerPage({
                           Stop
                         </div>
                         <div className="mt-1 font-semibold text-white">
-                          {money(row.stop_loss)}
+                          {money(stock.stopLoss)}
                         </div>
                       </div>
                     </div>
