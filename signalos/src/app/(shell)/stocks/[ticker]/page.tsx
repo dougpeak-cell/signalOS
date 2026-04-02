@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import LiveMiniPrice from "@/components/stocks/LiveMiniPrice";
 import LiveMiniChange from "@/components/stocks/LiveMiniChange";
 import { getQuotePrice } from "@/lib/market/quotes";
@@ -298,9 +299,9 @@ export default async function StockDetailPage({ params }: PageProps) {
       <div className="mx-auto w-full max-w-none space-y-6">
         <section className="glow-panel rounded-4xl shadow-[0_0_40px_rgba(16,185,129,0.18)] overflow-hidden p-0">
           <div className="border-b border-white/10 px-6 py-6 md:px-8">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-3xl">
-                <div className="mb-3 flex flex-wrap items-center gap-2">
+            <PageHeaderBlock
+              eyebrow={
+                <div className="flex flex-wrap items-center gap-2">
                   <Link
                     href="/search"
                     className="inline-flex items-center rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs font-medium text-white/70 transition hover:bg-white/8 hover:text-white"
@@ -321,17 +322,14 @@ export default async function StockDetailPage({ params }: PageProps) {
                     {row.tier ?? "Signal"}
                   </div>
                 </div>
-
-                <div className="text-sm text-white/45">{row.company_name ?? "Company"}</div>
-                <h1 className="mt-1 text-5xl font-semibold tracking-tight text-white md:text-6xl">
-                  {row.ticker}
-                </h1>
-                <p className="mt-3 text-sm leading-6 text-white/55 md:text-base">
-                  {row.sector ?? "Sector"} • As of {row.as_of_date ?? "latest signal"}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 md:min-w-[320px]">
+              }
+              title={row.ticker}
+              description={`${row.company_name ?? "Company"} • ${row.sector ?? "Sector"} • As of ${row.as_of_date ?? "latest signal"}`}
+              titleClassName="text-5xl md:text-6xl"
+              descriptionClassName="max-w-none text-sm leading-6 text-white/55 md:text-base"
+              className="bg-white/4"
+            >
+              <div className="grid gap-3 md:max-w-[320px] md:grid-cols-2">
                 <div className="glow-card-soft rounded-2xl p-4 text-right">
                   <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">Price</div>
                   <div className="mt-2 text-2xl font-semibold text-white">
@@ -346,7 +344,7 @@ export default async function StockDetailPage({ params }: PageProps) {
                   <div className="mt-2 text-2xl font-semibold text-white">{money(target)}</div>
                 </div>
               </div>
-            </div>
+            </PageHeaderBlock>
           </div>
 
           <div className="grid gap-4 px-6 py-6 md:grid-cols-2 md:px-8 xl:grid-cols-5">

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 type BreakingNewsItem = {
@@ -44,8 +43,6 @@ function getRefreshMs() {
 }
 
 export default function BreakingNewsTicker(): React.ReactElement | null {
-  const pathname = usePathname();
-  const isTodayPage = pathname === "/" || pathname.startsWith("/today");
   const [items, setItems] = useState<BreakingNewsItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -106,13 +103,7 @@ export default function BreakingNewsTicker(): React.ReactElement | null {
 
   return (
     <div className="border-b border-cyan-400/10 bg-black/80 py-1 shadow-[0_0_20px_rgba(34,211,238,0.05)] backdrop-blur-md">
-      <div
-        className={`mx-auto w-full ${
-          isTodayPage
-            ? "max-w-410 px-4 md:px-6 xl:px-8 2xl:px-10"
-            : "max-w-470 px-4 md:px-6 xl:px-8"
-        }`}
-      >
+      <div className="mx-auto w-full max-w-470 px-4 md:px-6 xl:px-8">
         <div className="group flex items-center gap-4 overflow-hidden py-1.5">
           <div className="shrink-0">
             <span className="mr-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/70">
@@ -162,7 +153,7 @@ export default function BreakingNewsTicker(): React.ReactElement | null {
 
       <style jsx>{`
         .ticker-track {
-          animation: ticker-scroll 38s linear infinite;
+          animation: ticker-scroll 26s linear infinite;
         }
 
         @keyframes ticker-scroll {

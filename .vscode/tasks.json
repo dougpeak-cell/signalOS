@@ -1,0 +1,35 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run SignalOS dev server",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"dev"
+			],
+			"isBackground": true
+		},
+		{
+			"label": "Run SignalOS dev server foreground",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd /d c:\\Users\\dougp\\CampusKings\\signalos && npm run dev"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Run SignalOS via cmd",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"cd /d c:\\Users\\dougp\\CampusKings\\signalos && npm run dev"
+			],
+			"isBackground": true
+		}
+	]
+}

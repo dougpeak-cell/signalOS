@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import StockLiveClient from "@/components/stocks/StockLiveClient";
 import MarketContextStrip from "@/components/stocks/MarketContextStrip";
 
@@ -124,19 +125,39 @@ export default async function StockLivePage({
     <main className="min-h-screen bg-black pb-24 text-white md:pb-0">
       <div className="mx-auto w-full max-w-none px-4 pb-10 pt-6 sm:px-6 lg:px-8">
         <div className="space-y-4">
-          {fromWatchlist && (
-            <div className="text-xs text-emerald-300">
-              Opened from Watchlist
-            </div>
-          )}
-
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-sm text-cyan-300">
-              Back
-            </Link>
-
-            <div className="text-sm font-semibold">{stock.ticker}</div>
-          </div>
+          <PageHeaderBlock
+            eyebrow={
+              <div className="flex flex-wrap items-center gap-2">
+                <span>SignalOS Live</span>
+                {fromWatchlist ? (
+                  <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[10px] tracking-[0.18em] text-emerald-300">
+                    Opened from Watchlist
+                  </span>
+                ) : null}
+              </div>
+            }
+            title={stock.ticker}
+            description={`${stock.name} • ${stock.sector ?? "Sector"} • Real-time signal context and execution view.`}
+            className="bg-white/4"
+            titleClassName="text-4xl md:text-5xl"
+            descriptionClassName="max-w-none text-sm leading-6 text-white/55 md:text-base"
+            actions={
+              <>
+                <Link
+                  href="/"
+                  className="inline-flex items-center rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+                >
+                  Today
+                </Link>
+                <Link
+                  href={`/stocks/${stock.ticker}`}
+                  className="inline-flex items-center rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+                >
+                  Details
+                </Link>
+              </>
+            }
+          />
 
           <MarketContextStrip items={[...marketContextItems]} />
 

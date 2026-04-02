@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import { getQuotePrice } from "@/lib/market/quotes";
 
 type SearchPageProps = {
@@ -130,40 +131,36 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       <div className="mx-auto max-w-7xl px-6 py-8 md:px-8 lg:px-10">
         <section className="overflow-hidden rounded-4xl border border-neutral-200 bg-white shadow-sm">
           <div className="border-b border-neutral-100 px-6 py-7 md:px-8">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-2xl">
-                <div className="mb-3 inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-600">
-                  Search
-                </div>
-                <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
-                  Search tickers and ideas
-                </h1>
-                <p className="mt-3 text-sm leading-6 text-neutral-600 md:text-base">
-                  Find names by ticker, company, or sector across your SignalOS coverage universe.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/"
-                  className="inline-flex items-center rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-neutral-100"
-                >
-                  Today
-                </Link>
-                <Link
-                  href="/screener"
-                  className="inline-flex items-center rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-neutral-100"
-                >
-                  Screener
-                </Link>
-                <Link
-                  href="/portfolio"
-                  className="inline-flex items-center rounded-full bg-neutral-950 px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-                >
-                  Portfolio
-                </Link>
-              </div>
-            </div>
+            <PageHeaderBlock
+              eyebrow={<span className="text-neutral-600">Search</span>}
+              title="Search tickers and ideas"
+              description="Find names by ticker, company, or sector across your SignalOS coverage universe."
+              className="rounded-[28px] border-neutral-200 bg-neutral-50 shadow-none"
+              titleClassName="text-neutral-950 md:text-4xl"
+              descriptionClassName="max-w-3xl text-sm leading-6 text-neutral-600 md:text-base"
+              actions={
+                <>
+                  <Link
+                    href="/"
+                    className="inline-flex items-center rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-neutral-100"
+                  >
+                    Today
+                  </Link>
+                  <Link
+                    href="/screener"
+                    className="inline-flex items-center rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-neutral-100"
+                  >
+                    Screener
+                  </Link>
+                  <Link
+                    href="/portfolio"
+                    className="inline-flex items-center rounded-full bg-neutral-950 px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                  >
+                    Portfolio
+                  </Link>
+                </>
+              }
+            />
           </div>
 
           <div className="px-6 py-6 md:px-8">

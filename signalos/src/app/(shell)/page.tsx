@@ -1,6 +1,7 @@
 import LiveMiniPrice from "@/components/stocks/LiveMiniPrice";
 import LiveMiniChange from "@/components/stocks/LiveMiniChange";
 import MiniSparkline from "@/components/stocks/MiniSparkline";
+import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import RightRailToday from "@/components/shell/RightRailToday";
 
 const marketHeatItems = [
@@ -451,24 +452,14 @@ export default async function HomePage() {
       <div className="w-full pb-10 pt-4">
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
           <div className="min-w-0 space-y-5 md:space-y-6 xl:space-y-7">
-        <div className="space-y-2">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
-            SignalOS
-          </div>
+            <PageHeaderBlock
+              title="Today"
+              description="Best intraday setups across momentum, confluence, and reversal conditions. Open any ticker to move directly into the live chart."
+            />
 
-          <div className="flex flex-col gap-4">
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-white md:text-[34px]">
-                Today
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-white/65">
-                Best intraday setups across momentum, confluence, and reversal
-                conditions. Open any ticker to move directly into the live chart.
-              </p>
+            <section className="rounded-3xl border border-white/10 bg-linear-to-b from-white/6 to-white/3 p-5 md:p-6">
               <TodayIndexBar />
-            </div>
-          </div>
-        </div>
+            </section>
 
         {/* Global Market Pulse starts below this */}
 

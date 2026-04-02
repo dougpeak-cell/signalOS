@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import LiveMiniPrice from "@/components/stocks/LiveMiniPrice";
 import LiveMiniChange from "@/components/stocks/LiveMiniChange";
 import MiniSparkline from "@/components/stocks/MiniSparkline";
+import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import { getQuotePrice } from "@/lib/market/quotes";
 import { convictionToPct, signalToneFromTargets } from "@/lib/signalUtils";
 
@@ -312,41 +313,36 @@ export default async function ScreenerPage({
     <div className="space-y-8">
       <section className="overflow-hidden rounded-[28px] border border-cyan-500/20 bg-[radial-gradient(circle_at_top_left,rgba(0,255,200,0.12),transparent_28%),linear-gradient(180deg,rgba(6,10,22,0.96),rgba(3,6,18,0.98))] shadow-[0_0_0_1px_rgba(0,255,200,0.04),0_0_32px_rgba(0,255,200,0.08)]">
         <div className="space-y-8 px-6 py-7 sm:px-8 sm:py-8">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-            <div className="max-w-3xl">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-cyan-300/80">
-                SignalOS Screener
-              </div>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                Equity screener
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm text-white/60 sm:text-base">
-                Filter the live signal universe by tier, sector, conviction
-                profile, and upside potential.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/today"
-                className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-5 py-2.5 text-sm font-semibold text-cyan-300 transition hover:border-cyan-400/50 hover:bg-cyan-500/15"
-              >
-                Today
-              </Link>
-              <Link
-                href="/search"
-                className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/80 transition hover:border-white/20 hover:bg-white/8"
-              >
-                Search
-              </Link>
-              <Link
-                href="/portfolio"
-                className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/80 transition hover:border-white/20 hover:bg-white/8"
-              >
-                Portfolio
-              </Link>
-            </div>
-          </div>
+          <PageHeaderBlock
+            eyebrow="SignalOS Screener"
+            title="Equity screener"
+            description="Filter the live signal universe by tier, sector, conviction profile, and upside potential."
+            className="rounded-[28px] border-cyan-500/20 bg-cyan-500/5 shadow-none"
+            titleClassName="text-4xl text-white sm:text-5xl"
+            descriptionClassName="max-w-2xl text-sm text-white/60 sm:text-base"
+            actions={
+              <>
+                <Link
+                  href="/today"
+                  className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-5 py-2.5 text-sm font-semibold text-cyan-300 transition hover:border-cyan-400/50 hover:bg-cyan-500/15"
+                >
+                  Today
+                </Link>
+                <Link
+                  href="/search"
+                  className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/80 transition hover:border-white/20 hover:bg-white/8"
+                >
+                  Search
+                </Link>
+                <Link
+                  href="/portfolio"
+                  className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/80 transition hover:border-white/20 hover:bg-white/8"
+                >
+                  Portfolio
+                </Link>
+              </>
+            }
+          />
 
           <div className="h-px w-full bg-linear-to-r from-cyan-400/0 via-cyan-300/60 to-cyan-400/0" />
 

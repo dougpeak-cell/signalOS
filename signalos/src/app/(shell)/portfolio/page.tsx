@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import { getQuotePrice, } from "@/lib/market/quotes";
 import { useMassiveQuoteProvider } from "@/lib/market/useMassiveQuoteProvider";
 
@@ -304,23 +305,11 @@ export default function PortfolioPage() {
     <>
       <ClientProvider tickers={holdings.map(h => h.ticker)} />
       <div className="mx-auto max-w-7xl space-y-6">
-        <div className="space-y-2">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
-            SignalOS
-          </div>
-
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                Portfolio
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm text-white/55">
-                Track holdings, monitor conviction, and manage idea buckets inside
-                the same intelligence system.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
+        <PageHeaderBlock
+          title="Portfolio"
+          description="Track holdings, monitor conviction, and manage idea buckets inside the same intelligence system."
+          actions={
+            <>
               <Link
                 href="/"
                 className="sig-button rounded-full border border-white/10 bg-white/4 px-3 py-1.5 text-xs font-semibold text-white/75 transition hover:bg-white/8 hover:text-white"
@@ -333,9 +322,9 @@ export default function PortfolioPage() {
               >
                 Watchlist
               </Link>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <div className="sig-card-soft rounded-2xl px-4 py-3">

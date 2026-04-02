@@ -294,11 +294,11 @@ function MarketSparkline({
 
   return (
     <div
-      className={`relative h-14 w-24 overflow-hidden rounded-2xl border ${tone.sparkBorder} ${tone.sparkBg}`}
+      className={`relative h-14 w-20 overflow-hidden rounded-2xl border ${tone.sparkBorder} ${tone.sparkBg}`}
     >
       <svg
         viewBox="0 0 170 60"
-        className="absolute inset-0 h-full w-full"
+        className="block h-full w-full"
         preserveAspectRatio="none"
       >
         <path d={areaPath} fill={tone.area} />
@@ -306,13 +306,12 @@ function MarketSparkline({
           d={linePath}
           fill="none"
           stroke={tone.line}
-          strokeWidth={2.6}
+          strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
         />
       </svg>
-
-      <div className="absolute inset-x-0 bottom-0 h-px bg-white/10" />
     </div>
   );
 }
@@ -450,7 +449,7 @@ export default function TodayIndexBar() {
             };
 
   return (
-    <div className="mt-6 w-full space-y-4">
+    <div className="w-full space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/40">
           Market Overview
@@ -490,10 +489,10 @@ export default function TodayIndexBar() {
           return (
             <div
               key={item.symbol}
-              className={`rounded-2xl border ${tone.border} bg-white/2 p-4`}
+              className={`overflow-hidden rounded-2xl border ${tone.border} bg-white/2 p-4`}
             >
-              <div className="flex items-center justify-between gap-4 w-full">
-                <div>
+              <div className="flex w-full items-center gap-4">
+                <div className="min-w-0 flex-1">
                   <div className="text-[11px] uppercase tracking-[0.22em] text-white/45">
                     {item.label}
                   </div>
@@ -510,12 +509,12 @@ export default function TodayIndexBar() {
                     %)
                   </div>
 
-                  <div className="text-[10px] text-white/35 mt-1">
+                  <div className="mt-1 text-[10px] text-white/35">
                     {item.shortLabel}
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end">
+                <div className="shrink-0 overflow-hidden">
                   <MarketSparkline
                     points={
                       quote?.points?.length

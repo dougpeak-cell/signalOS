@@ -1,6 +1,7 @@
 import Link from "next/link";
 import NewsAutoRefresh from "@/components/news/NewsAutoRefresh";
 import NewsImage from "@/components/news/NewsImage";
+import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import React from "react";
 import { fetchTopMarketNews, fetchNewsForWatchlist } from "@/lib/news";
 
@@ -194,53 +195,36 @@ export default async function NewsPage() {
   return (
     <main className="min-h-screen bg-black text-white w-full">
       <div className="w-full space-y-6 md:space-y-6 xl:space-y-7">
-        <div className="space-y-2">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
-                SignalOS
+        <PageHeaderBlock
+          title="News"
+          description="Live market intelligence, watchlist headlines, and trader-relevant macro flow."
+          actions={
+            <>
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-300">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
+                Live
               </div>
 
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white md:text-[34px]">
-                News
-              </h1>
-
-              <p className="mt-2 max-w-3xl text-sm text-white/55">
-                Live market intelligence, watchlist headlines, and
-                trader-relevant macro flow.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 lg:items-end">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-300">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
-                  Live
-                </div>
-
-                <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/60">
-                  Last updated{" "}
-                  {updatedAt
-                    ? new Date(updatedAt).toLocaleTimeString([], {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })
-                    : "now"}
-                </div>
-
-                <NewsAutoRefresh />
+              <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/60">
+                Last updated{" "}
+                {updatedAt
+                  ? new Date(updatedAt).toLocaleTimeString([], {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })
+                  : "now"}
               </div>
 
-              <MarketStatusBar
-                intelligence={intelligence}
-                newsItems={newsItems}
-                watchlistNews={watchlistItems}
-              />
-            </div>
-          </div>
-
-          <div className="border-b border-white/10 pt-1" />
-        </div>
+              <NewsAutoRefresh />
+            </>
+          }
+        >
+          <MarketStatusBar
+            intelligence={intelligence}
+            newsItems={newsItems}
+            watchlistNews={watchlistItems}
+          />
+        </PageHeaderBlock>
 
         <div className="rounded-[28px] border border-emerald-400/15 bg-linear-to-b from-emerald-500/8 via-black to-black p-4 shadow-[0_0_28px_rgba(16,185,129,0.08)]">
           <div className="flex items-start justify-between gap-3">

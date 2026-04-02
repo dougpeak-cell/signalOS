@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
+
 export default function EducationPage() {
   const router = useRouter();
 
@@ -81,18 +83,12 @@ export default function EducationPage() {
 
         {/* Header */}
         <div className="mb-8 mt-4">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
-            SignalOS
-          </div>
-
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
-            Education
-          </h1>
-
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-white/65 md:text-base">
-            Learn the core terms, signals, and chart concepts used throughout
-            SignalOS so you can read the platform with confidence.
-          </p>
+          <PageHeaderBlock
+            title="Education"
+            description="Learn the core terms, signals, and chart concepts used throughout SignalOS so you can read the platform with confidence."
+            titleClassName="md:text-4xl"
+            descriptionClassName="md:text-base"
+          />
         </div>
 
         {/* How To Use */}

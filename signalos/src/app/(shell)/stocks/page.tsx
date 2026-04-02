@@ -6,6 +6,7 @@ import BullishWatchlistStat from "@/components/watchlist/BullishWatchlistStat";
 import InstitutionalRadarBoard, {
   type RadarBoardSignal,
 } from "@/components/stocks/InstitutionalRadarBoard";
+import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import StocksBrowseClient from "@/components/stocks/StocksBrowseClient";
 import StocksQuoteProvider from "@/components/stocks/StocksQuoteProvider";
 import StocksPageActions from "@/components/watchlist/StocksPageActions";
@@ -91,22 +92,12 @@ export default async function StocksPage() {
 
       <main className="min-h-screen bg-black text-white">
         <div className="mx-auto w-full max-w-375 space-y-6 px-3 pb-10 pt-4 sm:px-4 xl:px-5 2xl:max-w-400">
-          <section className="rounded-[28px] border border-white/10 bg-linear-to-b from-white/6 to-white/3 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] md:p-5">
-            <div className="mb-4 flex flex-col gap-3 2xl:flex-row 2xl:items-end 2xl:justify-between">
-              <div className="space-y-2 min-w-0">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
-                  SignalOS
-                </div>
-                <h1 className="text-3xl font-semibold tracking-tight text-white md:text-[36px]">
-                  Stocks
-                </h1>
-                <p className="max-w-3xl text-sm text-white/65 md:text-[15px]">
-                  Browse the market, discover high-conviction setups, and build your
-                  watchlist from one place.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
+          <PageHeaderBlock
+            title="Stocks"
+            description="Browse the market, discover high-conviction setups, and build your watchlist from one place."
+            className="rounded-[28px] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]"
+            actions={
+              <>
                 <Link
                   href="/watchlist"
                   className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
@@ -121,9 +112,9 @@ export default async function StocksPage() {
                     sector: stock.sector,
                   }))}
                 />
-              </div>
-            </div>
-
+              </>
+            }
+          >
             <div className="min-w-0 overflow-x-hidden">
               <InstitutionalRadarBoard
                 signals={signals}
@@ -134,7 +125,7 @@ export default async function StocksPage() {
                 vixLabel="VIX -3.08%"
               />
             </div>
-          </section>
+          </PageHeaderBlock>
 
           <section className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_280px]">
             <div className="min-w-0">
