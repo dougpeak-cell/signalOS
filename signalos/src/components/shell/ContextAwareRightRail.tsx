@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 
-import RightRailToday from "@/components/shell/RightRailToday";
 import RightRailWatchlist from "@/components/shell/RightRailWatchlist";
 import RightRailPortfolio from "@/components/shell/RightRailPortfolio";
 import RightRailScreener from "@/components/shell/RightRailScreener";
@@ -31,11 +30,7 @@ export default function ContextAwareRightRail() {
   }
 
   if (pathname === "/" || pathname.startsWith("/today")) {
-    return (
-      <div className="space-y-5">
-        <RightRailToday />
-      </div>
-    );
+    return null;
   }
 
   if (pathname.startsWith("/stocks")) {

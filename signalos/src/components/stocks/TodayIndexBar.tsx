@@ -60,7 +60,7 @@ type IndexQuote = {
 };
 
 const POLL_MS = 5000;
-const MAX_POINTS = 24;
+const MAX_POINTS = 120;
 
 const INDEXES = [
   { symbol: "^GSPC", label: "S&P 500", shortLabel: "SPX" },
@@ -289,15 +289,15 @@ function MarketSparkline({
   const safePoints =
     points.length >= 2 ? points : [100, 101, 100.5, 101.5, 102, 101.8];
 
-  const linePath = buildSparklinePath(safePoints, 150, 54);
-  const areaPath = buildAreaPath(safePoints, 150, 54);
+  const linePath = buildSparklinePath(safePoints, 170, 60);
+  const areaPath = buildAreaPath(safePoints, 170, 60);
 
   return (
     <div
-      className={`relative h-20 w-36 overflow-hidden rounded-2xl border ${tone.sparkBorder} ${tone.sparkBg}`}
+      className={`relative h-24 w-40 overflow-hidden rounded-2xl border ${tone.sparkBorder} ${tone.sparkBg}`}
     >
       <svg
-        viewBox="0 0 150 54"
+        viewBox="0 0 170 60"
         className="absolute inset-0 h-full w-full"
         preserveAspectRatio="none"
       >

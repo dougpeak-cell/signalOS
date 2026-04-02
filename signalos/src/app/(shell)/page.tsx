@@ -1,5 +1,7 @@
 import LiveMiniPrice from "@/components/stocks/LiveMiniPrice";
 import LiveMiniChange from "@/components/stocks/LiveMiniChange";
+import MiniSparkline from "@/components/stocks/MiniSparkline";
+import RightRailToday from "@/components/shell/RightRailToday";
 
 const marketHeatItems = [
   { symbol: "SPY", changePct: 0.82 },
@@ -367,7 +369,16 @@ function FeaturedMacroCard({
 }
 
 function buildSignalCard(row: SignalDetailRow): SignalCard {
-  const confidence = convictionToPct(row.conviction) ?? 0;
+  const rawConfidence = convictionToPct(row.conviction) ?? 0;
+
+  const confidence =
+    rawConfidence >= 95
+      ? 92 + (rawConfidence - 95) * 0.4
+      : rawConfidence >= 85
+        ? 84 + (rawConfidence - 85) * 0.8
+        : rawConfidence >= 70
+          ? 68 + (rawConfidence - 70) * 1.0
+          : rawConfidence;
   const currentPrice = getQuotePrice(row.ticker);
 
   return {
@@ -405,6 +416,20 @@ export default async function HomePage() {
   const reversals = reversalMatches.length ? reversalMatches : topSetups;
 
   const strongest = topSetups[0] ?? todayStocks[0];
+  const rightRailSignals = topSetups.slice(0, 3).map((setup) => ({
+    ticker: setup.ticker,
+    label: setup.setup,
+    score: Math.round(setup.confidence ?? 0),
+    href: `/stocks/${setup.ticker}/live`,
+  }));
+
+  const rightRailTop =
+    rightRailSignals[0] ?? {
+      ticker: strongest.ticker,
+      label: strongest.setup,
+      score: Math.round(strongest.confidence ?? 0),
+      href: `/stocks/${strongest.ticker}/live`,
+    };
   const bullishCount = todayStocks.filter((stock) => stock.tone === "bullish").length;
   const bearishCount = todayStocks.filter((stock) => stock.tone === "bearish").length;
 
@@ -423,7 +448,9 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen bg-black text-white">
-     <div className="mx-auto max-w-7xl space-y-5 px-4 pb-10 pt-4 md:space-y-6 xl:space-y-7">
+     <div className="mx-auto max-w-7xl px-4 pb-10 pt-4">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="space-y-5 md:space-y-6 xl:space-y-7">
         <div className="space-y-2">
           <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
             SignalOS
@@ -491,8 +518,12 @@ export default async function HomePage() {
                 <div className="mt-1 text-sm text-white/45">{setup.name}</div>
                 <div className="mt-5 flex items-end justify-between">
                   <div>
-                    <div className="text-[28px] font-semibold tracking-tight text-white">
-                      $<LiveMiniPrice ticker={setup.ticker} fallbackPrice={setup.price ?? null} />
+                    <div>
+                      <div className="text-[28px] font-semibold tracking-tight text-white">
+                        $<LiveMiniPrice ticker={setup.ticker} fallbackPrice={setup.price ?? null} />
+                      </div>
+
+                      <MiniSparkline ticker={setup.ticker} />
                     </div>
                     <LiveMiniChange
                       ticker={setup.ticker}
@@ -544,6 +575,13 @@ export default async function HomePage() {
               ))}
             </div>
           </SectionCard>
+        </div>
+
+          </div>
+
+          <aside className="hidden xl:block">
+            <RightRailToday topSetup={rightRailTop} liveSignals={rightRailSignals} />
+          </aside>
         </div>
       </div>
     </main>

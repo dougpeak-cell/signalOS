@@ -1,4 +1,5 @@
 import "./globals.css";
+import AppQuoteBootstrap from "@/components/providers/AppQuoteBootstrap";
 import { SignalProvider } from "@/context/SignalContext";
 
 export default function RootLayout({
@@ -10,6 +11,7 @@ export default function RootLayout({
     <html lang="en" className="bg-black">
       <body className="bg-black text-white antialiased">
         <SignalProvider>
+          <AppQuoteBootstrap />
           {children}
         </SignalProvider>
       </body>

@@ -222,6 +222,105 @@ async function fetchStockQuote(ticker: string): Promise<{
   }
 }
 
+type IntradayPoint = {
+  value: number;
+};
+
+type AggBar = {
+  c?: number;
+};
+
+function getDateStringET(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function getPreviousDateStringET(date = new Date()) {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() - 1);
+  return getDateStringET(copy);
+}
+
+async function fetchMassiveIndexIntradaySeries(indexTicker: string): Promise<number[]> {
+  if (!POLYGON_API_KEY) return [];
+
+  try {
+    const from = getPreviousDateStringET();
+    const to = getDateStringET();
+
+    const url =
+      `https://api.massive.com/v2/aggs/ticker/${encodeURIComponent(indexTicker)}` +
+      `/range/1/minute/${from}/${to}` +
+      `?sort=asc&limit=120&apiKey=${POLYGON_API_KEY}`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      console.error(`Massive index series failed for ${indexTicker}: ${res.status}`);
+      return [];
+    }
+
+    const json = await res.json();
+
+    const results = Array.isArray((json as any)?.results)
+      ? ((json as any).results as AggBar[])
+      : [];
+
+    return results
+      .map((bar) => toNumber(bar?.c))
+      .filter((value): value is number => value != null)
+      .slice(-48);
+  } catch (error) {
+    console.error(`Massive index intraday series fetch error for ${indexTicker}:`, error);
+    return [];
+  }
+}
+
+async function fetchStockIntradaySeries(ticker: string): Promise<number[]> {
+  if (!POLYGON_API_KEY) return [];
+
+  try {
+    const from = getPreviousDateStringET();
+    const to = getDateStringET();
+
+    const url =
+      `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker)}` +
+      `/range/1/minute/${from}/${to}` +
+      `?sort=asc&limit=120&apiKey=${POLYGON_API_KEY}`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      console.error(`Polygon stock series failed for ${ticker}: ${res.status}`);
+      return [];
+    }
+
+    const json = await res.json();
+
+    const results = Array.isArray((json as any)?.results)
+      ? ((json as any).results as AggBar[])
+      : [];
+
+    return results
+      .map((bar) => toNumber(bar?.c))
+      .filter((value): value is number => value != null)
+      .slice(-48);
+  } catch (error) {
+    console.error(`Polygon stock intraday series fetch error for ${ticker}:`, error);
+    return [];
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -250,6 +349,7 @@ export async function GET(req: NextRequest) {
     let changePct: number | null = null;
     let updatedMs: number | null = null;
     let isMarketOpen: boolean | null = null;
+    let points: number[] = [];
     let source: "stock" | "true-index" | "index-proxy" | "fallback" =
       isHeadlineIndexRequest ? "true-index" : "stock";
     let lookupTicker = trueIndexTicker ?? ticker;
@@ -265,6 +365,7 @@ export async function GET(req: NextRequest) {
         updatedMs = indexQuote.updatedMs;
         isMarketOpen = indexQuote.isMarketOpen;
         source = "true-index";
+        points = await fetchMassiveIndexIntradaySeries(trueIndexTicker);
       }
     }
 
@@ -276,6 +377,7 @@ export async function GET(req: NextRequest) {
         prevClose = stockQuote.prevClose;
         updatedMs = stockQuote.updatedMs;
         source = "stock";
+        points = await fetchStockIntradaySeries(ticker);
       }
     }
 
@@ -288,6 +390,7 @@ export async function GET(req: NextRequest) {
         updatedMs = proxyQuote.updatedMs;
         source = "index-proxy";
         lookupTicker = proxyTicker;
+        points = await fetchStockIntradaySeries(proxyTicker);
       }
     }
 
@@ -354,6 +457,7 @@ export async function GET(req: NextRequest) {
       direction,
       updatedMs,
       isMarketOpen,
+      points,
     });
   } catch (error) {
     console.error("Quote route failed:", error);

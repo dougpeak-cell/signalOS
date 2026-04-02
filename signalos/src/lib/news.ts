@@ -66,10 +66,8 @@ type MassiveNewsResponse = {
 const MASSIVE_API_KEY = process.env.MASSIVE_API_KEY;
 const MASSIVE_BASE_URL = "https://api.massive.com";
 
-function requireApiKey() {
-  if (!MASSIVE_API_KEY) {
-    throw new Error("Missing MASSIVE_API_KEY in environment variables.");
-  }
+function hasApiKey() {
+  return Boolean(MASSIVE_API_KEY);
 }
 
 function inferTone(item: MassiveNewsResult): NewsTone {
@@ -188,7 +186,11 @@ function normalizeMassiveNewsItem(item: MassiveNewsResult): NewsItem {
   const importance = computeImportance(item);
 
   return {
-    id: item.id ?? crypto.randomUUID(),
+    id:
+      item.id ??
+      `${item.title ?? "news"}-${item.published_utc ?? Date.now()}`
+        .replace(/\s+/g, "-")
+        .toLowerCase(),
     headline: item.title?.trim() || "Untitled article",
     source: item.publisher?.name?.trim() || "Unknown source",
     publishedAt: item.published_utc || new Date().toISOString(),
@@ -237,7 +239,10 @@ export async function fetchMassiveNews(params?: {
   order?: "asc" | "desc";
   sort?: "published_utc";
 }): Promise<NewsItem[]> {
-  requireApiKey();
+  if (!hasApiKey()) {
+    console.warn("fetchMassiveNews skipped: missing MASSIVE_API_KEY.");
+    return [];
+  }
 
   const search = new URLSearchParams();
   const limit = Math.min(params?.limit ?? 12, 100);
@@ -259,34 +264,40 @@ export async function fetchMassiveNews(params?: {
 
   const url = `${MASSIVE_BASE_URL}/v2/reference/news?${search.toString()}`;
 
-  const response = await fetch(url, {
-    method: "GET",
-    next: { revalidate: 60 },
-    headers: {
-      Accept: "application/json",
-    },
-  });
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      next: { revalidate: 60 },
+      headers: {
+        Accept: "application/json",
+      },
+    });
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(`Massive news fetch failed: ${response.status} ${body}`);
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      console.error(`Massive news fetch failed: ${response.status} ${body}`);
+      return [];
+    }
+
+    const data = (await response.json()) as MassiveNewsResponse;
+    const rawItems = data.results ?? [];
+
+    let normalized = rawItems.map(normalizeMassiveNewsItem);
+
+    if (params?.tickers?.length) {
+      const wanted = new Set(params.tickers.map((t) => t.toUpperCase()));
+      normalized = normalized.filter((item) =>
+        item.tickers.some((ticker) => wanted.has(ticker.toUpperCase()))
+      );
+    }
+
+    normalized.sort((a, b) => b.importance - a.importance);
+
+    return normalized;
+  } catch (error) {
+    console.error("fetchMassiveNews failed:", error);
+    return [];
   }
-
-  const data = (await response.json()) as MassiveNewsResponse;
-  const rawItems = data.results ?? [];
-
-  let normalized = rawItems.map(normalizeMassiveNewsItem);
-
-  if (params?.tickers?.length) {
-    const wanted = new Set(params.tickers.map((t) => t.toUpperCase()));
-    normalized = normalized.filter((item) =>
-      item.tickers.some((ticker) => wanted.has(ticker.toUpperCase()))
-    );
-  }
-
-  normalized.sort((a, b) => b.importance - a.importance);
-
-  return normalized;
 }
 
 export async function fetchNewsForWatchlist(

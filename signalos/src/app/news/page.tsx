@@ -2,6 +2,9 @@ import Link from "next/link";
 import NewsAutoRefresh from "@/components/news/NewsAutoRefresh";
 import NewsImage from "@/components/news/NewsImage";
 import React from "react";
+import { fetchTopMarketNews, fetchNewsForWatchlist } from "@/lib/news";
+
+const WATCHLIST = ["NVDA", "MSFT", "AAPL", "AMZN", "META", "TSLA"];
 
 function MarketStatusBar({
   intelligence,
@@ -164,25 +167,27 @@ function buildNewsIntelligence(items: any[]) {
 }
 
 export default async function NewsPage() {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "http://localhost:3000";
+  let marketNews: any[] = [];
+  let watchlistNews: any[] = [];
 
-  const res = await fetch(`${baseUrl}/api/news`, {
-    cache: "no-store",
-  });
+  try {
+    [marketNews, watchlistNews] = await Promise.all([
+      fetchTopMarketNews({ limit: 18, lookbackHours: 24 }),
+      fetchNewsForWatchlist(WATCHLIST, { limit: 12, lookbackHours: 24 }),
+    ]);
+  } catch (error) {
+    console.error("News page data load failed:", error);
+  }
 
-  const data = await res.json();
-
-  const newsItems = Array.isArray(data?.items) ? data.items : [];
-  const watchlistNews = Array.isArray(data?.watchlist) ? data.watchlist : [];
-  const liveStream = Array.isArray(data?.liveStream) ? data.liveStream : [];
+  const newsItems = Array.isArray(marketNews) ? marketNews : [];
+  const watchlistItems = Array.isArray(watchlistNews) ? watchlistNews : [];
+  const liveStream = newsItems.slice(0, 8);
   const leadStory =
     newsItems.find((item: any) => item.imageUrl && item.importance >= 70) ??
     newsItems.find((item: any) => item.imageUrl) ??
     newsItems[0] ??
     null;
-  const updatedAt = data?.updatedAt ?? null;
+  const updatedAt = new Date().toISOString();
 
   const intelligence = buildNewsIntelligence(newsItems);
 
@@ -229,7 +234,7 @@ export default async function NewsPage() {
               <MarketStatusBar
                 intelligence={intelligence}
                 newsItems={newsItems}
-                watchlistNews={watchlistNews}
+                watchlistNews={watchlistItems}
               />
             </div>
           </div>
@@ -547,14 +552,14 @@ export default async function NewsPage() {
           </div>
         )}
 
-        {watchlistNews.length > 0 ? (
+        {watchlistItems.length > 0 ? (
           <section className="space-y-4">
             <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">
               Watchlist headlines
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {watchlistNews.map((item: any) => (
+              {watchlistItems.map((item: any) => (
                 <Link
                   key={item.id}
                   href={item.url}

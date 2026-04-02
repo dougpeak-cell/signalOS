@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import LiveMiniPrice from "@/components/stocks/LiveMiniPrice";
 import LiveMiniChange from "@/components/stocks/LiveMiniChange";
+import MiniSparkline from "@/components/stocks/MiniSparkline";
 import { getQuotePrice } from "@/lib/market/quotes";
 import { convictionToPct, signalToneFromTargets } from "@/lib/signalUtils";
 
@@ -580,6 +581,11 @@ export default async function ScreenerPage({
                         </div>
                         <div className="mt-1">
                           <LiveMiniChange ticker={stock.ticker} fallbackChangePct={null} />
+                        </div>
+                        <div className="mt-2">
+                          <MiniSparkline
+                            ticker={stock.ticker}
+                          />
                         </div>
                       </div>
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import LiveMiniPrice from "@/components/stocks/LiveMiniPrice";
 import LiveMiniChange from "@/components/stocks/LiveMiniChange";
+import MiniSparkline from "@/components/stocks/MiniSparkline";
 import WatchlistToggleButton from "@/components/watchlist/WatchlistToggleButton";
 import { readWatchlist } from "@/lib/watchlist/localWatchlist";
 
@@ -238,6 +239,12 @@ export default function WatchlistPageClient({
                           <div className="mt-1">
                             <LiveMiniChange ticker={stock.ticker} fallbackChangePct={null} />
                           </div>
+                        </div>
+
+                        <div className="shrink-0">
+                          <MiniSparkline
+                            ticker={stock.ticker}
+                          />
                         </div>
 
                         <div className="text-right">

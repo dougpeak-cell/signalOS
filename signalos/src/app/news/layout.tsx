@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { SelectedSignalProvider } from "@/components/chart/SelectedSignalContext";
 import TopNav from "@/components/shell/TopNav";
-import AppQuoteBootstrap from "@/components/providers/AppQuoteBootstrap";
 import StickyMacroStrip from "@/components/shell/StickyMacroStrip";
 import BreakingNewsTicker from "@/components/news/BreakingNewsTicker";
 
@@ -12,8 +11,6 @@ export default function NewsLayout({
 }) {
   return (
     <SelectedSignalProvider>
-      <AppQuoteBootstrap />
-
       <div className="min-h-screen bg-black text-white">
         <TopNav />
         <StickyMacroStrip />

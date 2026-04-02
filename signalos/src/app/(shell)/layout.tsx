@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { SelectedSignalProvider } from "@/components/chart/SelectedSignalContext";
 import ContextAwareRightRail from "@/components/shell/ContextAwareRightRail";
 import TopNav from "@/components/shell/TopNav";
-import AppQuoteBootstrap from "@/components/providers/AppQuoteBootstrap";
 import StickyMacroStrip from "@/components/shell/StickyMacroStrip";
 import BreakingNewsTicker from "@/components/news/BreakingNewsTicker";
 
@@ -24,7 +23,6 @@ export default function ShellLayout({
 
   return (
     <SelectedSignalProvider>
-      <AppQuoteBootstrap />
       <div className="min-h-screen bg-black text-white">
         <TopNav />
         <StickyMacroStrip />
