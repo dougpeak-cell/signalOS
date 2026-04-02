@@ -1,3 +1,6 @@
+import LiveMiniPrice from "@/components/stocks/LiveMiniPrice";
+import LiveMiniChange from "@/components/stocks/LiveMiniChange";
+
 const marketHeatItems = [
   { symbol: "SPY", changePct: 0.82 },
   { symbol: "QQQ", changePct: 1.21 },
@@ -488,8 +491,13 @@ export default async function HomePage() {
                 <div className="mt-1 text-sm text-white/45">{setup.name}</div>
                 <div className="mt-5 flex items-end justify-between">
                   <div>
-                    <div className="text-2xl font-semibold text-white">{money(setup.price)}</div>
-                    <div className={`text-sm font-semibold ${pctClass(setup.changePct)}`}>{setup.changePct != null ? `${setup.changePct > 0 ? "+" : ""}${setup.changePct.toFixed(2)}%` : "—"}</div>
+                    <div className="text-[28px] font-semibold tracking-tight text-white">
+                      $<LiveMiniPrice ticker={setup.ticker} fallbackPrice={setup.price ?? null} />
+                    </div>
+                    <LiveMiniChange
+                      ticker={setup.ticker}
+                      fallbackChangePct={setup.changePct ?? null}
+                    />
                   </div>
                   <OpenChartButton href={`/stocks/${setup.ticker}/live`} label="Open Live Chart" />
                 </div>
