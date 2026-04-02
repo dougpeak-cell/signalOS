@@ -50,6 +50,36 @@ type IndexSnapshotResult = {
   message?: string;
 };
 
+async function fetchMassivePreviousClose(indexTicker: string): Promise<number | null> {
+  if (!POLYGON_API_KEY) return null;
+
+  try {
+    const url =
+      `https://api.massive.com/v2/aggs/ticker/${encodeURIComponent(indexTicker)}` +
+      `/prev?adjusted=true&apiKey=${POLYGON_API_KEY}`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      console.error(`Massive prev close failed for ${indexTicker}: ${res.status}`);
+      return null;
+    }
+
+    const json = await res.json();
+    const result = Array.isArray((json as any)?.results)
+      ? (json as any).results[0]
+      : (json as any)?.results ?? (json as any)?.result ?? null;
+
+    return toNumber(result?.c ?? result?.close);
+  } catch (error) {
+    console.error(`Massive prev close fetch error for ${indexTicker}:`, error);
+    return null;
+  }
+}
+
 async function fetchMassiveIndexQuote(indexTicker: string): Promise<{
   price: number | null;
   prevClose: number | null;
@@ -112,17 +142,44 @@ async function fetchMassiveIndexQuote(indexTicker: string): Promise<{
       toNumber(snapshot.value) ??
       toNumber(snapshot.session?.close);
 
-    const prevClose = toNumber(snapshot.session?.previous_close);
+    const snapshotPrevClose = toNumber(snapshot.session?.previous_close);
+    let prevClose = snapshotPrevClose;
 
-    const change =
-      toNumber(snapshot.session?.change) ??
+    const snapshotChange = toNumber(snapshot.session?.change);
+    const snapshotChangePct = toNumber(snapshot.session?.change_percent);
+
+    const needsPrevCloseFallback =
+      price != null &&
+      (prevClose == null ||
+        ((snapshotChange == null || snapshotChange === 0) && prevClose === price));
+
+    if (needsPrevCloseFallback) {
+      prevClose = (await fetchMassivePreviousClose(indexTicker)) ?? prevClose;
+    }
+
+    let change =
+      snapshotChange ??
       (price != null && prevClose != null ? price - prevClose : null);
 
-    const changePct =
-      toNumber(snapshot.session?.change_percent) ??
+    if (change === 0 && price != null && prevClose != null && price !== prevClose) {
+      change = price - prevClose;
+    }
+
+    let changePct =
+      snapshotChangePct ??
       (change != null && prevClose != null && prevClose !== 0
         ? (change / prevClose) * 100
         : null);
+
+    if (
+      changePct === 0 &&
+      change != null &&
+      prevClose != null &&
+      prevClose !== 0 &&
+      change !== 0
+    ) {
+      changePct = (change / prevClose) * 100;
+    }
 
     const updatedMs = normalizeUpdatedMs(
       toNumber((snapshot as any).updated) ?? toNumber(snapshot.last_updated)
@@ -429,6 +486,22 @@ export async function GET(req: NextRequest) {
         { ticker, lookupTicker, error: "No price available" },
         { status: 404 }
       );
+    }
+
+    const needsSeriesDerivedChange =
+      isHeadlineIndexRequest &&
+      price != null &&
+      points.length > 1 &&
+      (change == null || change === 0 || prevClose == null || prevClose === price);
+
+    if (needsSeriesDerivedChange) {
+      const seriesReference = points[0] ?? null;
+
+      if (seriesReference != null && seriesReference !== 0 && seriesReference !== price) {
+        prevClose = seriesReference;
+        change = price - seriesReference;
+        changePct = (change / seriesReference) * 100;
+      }
     }
 
     if (change == null) {

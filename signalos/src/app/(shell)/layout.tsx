@@ -15,6 +15,7 @@ export default function ShellLayout({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const isTodayPage = pathname === "/" || pathname.startsWith("/today");
 
   const isLiveStockPage =
     pathname.startsWith("/stocks/") && pathname.includes("/live");
@@ -31,6 +32,10 @@ export default function ShellLayout({
 
         {isLiveStockPage ? (
           <div className="mx-auto w-full max-w-none px-2 pb-6 pt-2 md:px-3 xl:px-4 2xl:px-5">
+            {children}
+          </div>
+        ) : isTodayPage ? (
+          <div className="mx-auto w-full max-w-410 px-4 md:px-6 xl:px-8 2xl:px-10">
             {children}
           </div>
         ) : (

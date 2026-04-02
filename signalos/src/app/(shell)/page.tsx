@@ -448,15 +448,15 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen bg-black text-white">
-     <div className="mx-auto max-w-7xl px-4 pb-10 pt-4">
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="w-full pb-10 pt-4">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
           <div className="space-y-5 md:space-y-6 xl:space-y-7">
         <div className="space-y-2">
           <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
             SignalOS
           </div>
 
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-4">
             <div>
               <h1 className="text-3xl font-semibold tracking-tight text-white md:text-[34px]">
                 Today

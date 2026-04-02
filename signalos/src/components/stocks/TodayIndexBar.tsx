@@ -294,7 +294,7 @@ function MarketSparkline({
 
   return (
     <div
-      className={`relative h-24 w-40 overflow-hidden rounded-2xl border ${tone.sparkBorder} ${tone.sparkBg}`}
+      className={`relative h-14 w-24 overflow-hidden rounded-2xl border ${tone.sparkBorder} ${tone.sparkBg}`}
     >
       <svg
         viewBox="0 0 170 60"
@@ -450,7 +450,7 @@ export default function TodayIndexBar() {
             };
 
   return (
-    <div className="mt-5 space-y-4">
+    <div className="mt-6 w-full space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/40">
           Market Overview
@@ -481,7 +481,7 @@ export default function TodayIndexBar() {
         <span>Laggards {regime.laggards.join(" > ")}</span>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {quoteList.map((item) => {
           const quote = item.quote;
           const price = quote?.price ?? null;
@@ -490,88 +490,41 @@ export default function TodayIndexBar() {
           return (
             <div
               key={item.symbol}
-              className={`rounded-[28px] border ${tone.border} bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_18px_40px_rgba(0,0,0,0.35)]`}
+              className={`rounded-2xl border ${tone.border} bg-white/2 p-4`}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">
-                      {item.label}
-                    </div>
-
-                    <div className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/40">
-                      {item.shortLabel}
-                    </div>
-
-                    <div className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/35">
-                      {quote?.lookupTicker ? `via ${quote.lookupTicker}` : "live"}
-                    </div>
+              <div className="flex items-center justify-between gap-4 w-full">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.22em] text-white/45">
+                    {item.label}
                   </div>
 
-                  <div className={`mt-4 text-[38px] font-semibold leading-none tracking-tight ${tone.text}`}>
+                  <div className={`text-3xl font-semibold ${tone.text}`}>
                     {formatPrice(price)}
                   </div>
 
-                  <div
-                    className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${tone.pill}`}
-                  >
-                    <span>
-                      {quote?.direction === "up"
-                        ? "▲"
-                        : quote?.direction === "down"
-                          ? "▼"
-                          : "•"}
-                    </span>
-                    <span>
-                      {formatSigned(quote?.change ?? null)} (
-                      {quote?.changePct != null ? formatSigned(quote.changePct, 2) : "--"}%)
-                    </span>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">
-                      1D Trend
-                    </div>
-
-                    <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">
-                      {quote?.source === "true-index"
-                        ? "True Index"
-                        : quote?.source === "index-proxy"
-                          ? "Index Proxy"
-                          : quote?.source === "stock"
-                            ? "Live Feed"
-                            : "Fallback"}
-                    </div>
-
-                    <div className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${tone.pill}`}>
-                      {quote?.direction ?? "flat"}
-                    </div>
-                  </div>
-
-                  <div className={`mt-4 text-xs ${tone.subtext}`}>
-                    Symbol {item.symbol}
-                  </div>
-
-                  <div className={`mt-1 text-[11px] ${tone.subtext}`}>
-                    Updated{" "}
-                    {quote?.updatedMs
-                      ? new Date(quote.updatedMs).toLocaleTimeString([], {
-                          hour: "numeric",
-                          minute: "2-digit",
-                          second: "2-digit",
-                        })
+                  <div className={`text-sm font-semibold ${tone.text}`}>
+                    {formatSigned(quote?.change ?? null)} (
+                    {quote?.changePct != null
+                      ? formatSigned(quote.changePct, 2)
                       : "--"}
+                    %)
+                  </div>
+
+                  <div className="text-[10px] text-white/35 mt-1">
+                    {item.shortLabel}
                   </div>
                 </div>
 
-                <MarketSparkline
-                  points={
-                    quote?.points?.length
-                      ? quote.points
-                      : [100, 101, 100.5, 101.5, 102, 101.8]
-                  }
-                  tone={tone}
-                />
+                <div className="flex items-center justify-end">
+                  <MarketSparkline
+                    points={
+                      quote?.points?.length
+                        ? quote.points
+                        : [100, 101, 100.5, 101.5, 102]
+                    }
+                    tone={tone}
+                  />
+                </div>
               </div>
             </div>
           );
