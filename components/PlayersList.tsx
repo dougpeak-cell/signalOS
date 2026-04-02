@@ -120,7 +120,7 @@ export default function PlayersList({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => onToggle(pid)}
+                  onClick={() => void onToggle(pid)}
                   disabled={isPending}
                   aria-label={isWatched ? "Remove from watchlist" : "Add to watchlist"}
                   title={isWatched ? "Remove from watchlist" : "Add to watchlist"}

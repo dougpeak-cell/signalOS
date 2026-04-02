@@ -585,7 +585,7 @@ export default function PredictedPage() {
                       <td className="px-4 py-4 text-center">
                         <button
                           className="inline-flex h-9 w-9 items-center justify-center rounded-full border hover:bg-gray-50"
-                          onClick={() => toggleStar(Number(r.player_id))}
+                          onClick={() => void toggleStar(Number(r.player_id))}
                           title={watchIds.has(Number(r.player_id)) ? "Unsave" : "Save"}
                         >
                           <span className={watchIds.has(Number(r.player_id)) ? "text-yellow-500" : "text-gray-700"}>

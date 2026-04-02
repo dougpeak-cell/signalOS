@@ -120,7 +120,7 @@ export default function TopProjectedPlayersClient({ rows }: { rows: Row[] }) {
               </div>
 
               <button
-                onClick={() => toggleWatch(r.id)}
+                onClick={() => void toggleWatch(r.id)}
                 disabled={busy[r.id]}
                 className="rounded-xl border px-3 py-2 hover:bg-slate-50 disabled:opacity-50"
                 title={saved ? "Saved" : "Save"}

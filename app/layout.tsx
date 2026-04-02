@@ -15,7 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="topbar">
           <div className="container topbar-inner">
             <Link href="/" className="brand">
-              Player Predictions
+              SignalOS
             </Link>
 
             <nav className="nav">
