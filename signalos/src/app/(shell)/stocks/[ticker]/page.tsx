@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import LiveMiniPrice from "@/components/stocks/LiveMiniPrice";
+import LiveMiniChange from "@/components/stocks/LiveMiniChange";
 import { getQuotePrice } from "@/lib/market/quotes";
 import { buildTargetEngine } from "@/lib/engines/targetEngine";
 
@@ -243,7 +245,8 @@ export default async function StockDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const currentPrice = getQuotePrice(row.ticker) ?? row.price ?? null;
+  const currentPrice =
+    getQuotePrice(row.ticker) ?? null;
 
   const normalizedConviction =
     row.conviction != null && row.conviction <= 1
@@ -331,7 +334,12 @@ export default async function StockDetailPage({ params }: PageProps) {
               <div className="grid grid-cols-2 gap-3 md:min-w-[320px]">
                 <div className="glow-card-soft rounded-2xl p-4 text-right">
                   <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">Price</div>
-                  <div className="mt-2 text-2xl font-semibold text-white">{money(currentPrice)}</div>
+                  <div className="mt-2 text-2xl font-semibold text-white">
+                    $<LiveMiniPrice ticker={row.ticker} fallbackPrice={null} />
+                  </div>
+                  <div className="mt-1">
+                    <LiveMiniChange ticker={row.ticker} fallbackChangePct={null} />
+                  </div>
                 </div>
                 <div className="glow-card-soft rounded-2xl p-4 text-right">
                   <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">Target</div>
