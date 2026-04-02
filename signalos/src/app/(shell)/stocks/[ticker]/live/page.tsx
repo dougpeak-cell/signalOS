@@ -38,14 +38,14 @@ export default async function StockLivePage({
   const currentPrice =
     quoteState.source === "live"
       ? quoteState.price
-      : row.price ?? quoteState.price ?? null;
+      : null;
 
   const stock = {
     ticker: row.ticker,
     name: row.company_name ?? row.ticker,
     sector: row.sector ?? null,
     tier: row.tier ?? null,
-    price: currentPrice,
+    price: currentPrice ?? null,
   };
 
   const summary = buildSignalSummary(row);
