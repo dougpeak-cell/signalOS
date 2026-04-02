@@ -18,9 +18,19 @@ export default async function WatchlistPage() {
   const rows = await fetchLatestSignalRows(100);
 
   const allStocks = rows.map((row, index) => {
-    const conviction = convictionToPct(row.conviction) ?? 0;
-    const price = getQuotePrice(row.ticker) ?? 0;
-    const bias = signalToneFromTargets(price || null, row.target_price);
+    const rawConviction = convictionToPct(row.conviction) ?? 0;
+
+    const conviction =
+      rawConviction >= 95
+        ? 92 + (rawConviction - 95) * 0.4
+        : rawConviction >= 85
+          ? 84 + (rawConviction - 85) * 0.8
+          : rawConviction >= 70
+            ? 68 + (rawConviction - 70) * 1.0
+            : rawConviction;
+
+    const fallbackPrice = getQuotePrice(row.ticker) ?? null;
+    const bias = signalToneFromTargets(fallbackPrice, row.target_price);
     const signal = signalLabelFromBias(bias);
 
     return {
@@ -28,7 +38,7 @@ export default async function WatchlistPage() {
       ticker: row.ticker,
       company: row.company_name ?? row.ticker,
       sector: row.sector ?? "Market",
-      price,
+      price: fallbackPrice,
       conviction,
       signal,
       thesis:

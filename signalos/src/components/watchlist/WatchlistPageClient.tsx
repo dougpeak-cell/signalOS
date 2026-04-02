@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import LiveMiniPrice from "@/components/stocks/LiveMiniPrice";
+import LiveMiniChange from "@/components/stocks/LiveMiniChange";
 import WatchlistToggleButton from "@/components/watchlist/WatchlistToggleButton";
 import { readWatchlist } from "@/lib/watchlist/localWatchlist";
 
@@ -9,7 +11,7 @@ type WatchlistStock = {
   ticker: string;
   company: string;
   sector: string;
-  price: number;
+  price: number | null;
   conviction: number;
   signal: "Bullish" | "Neutral" | "Bearish";
   thesis: string;
@@ -231,7 +233,10 @@ export default function WatchlistPageClient({
                             Price
                           </div>
                           <div className="mt-1 text-2xl font-semibold text-white">
-                            {stock.price > 0 ? `$${stock.price.toFixed(2)}` : "—"}
+                            $<LiveMiniPrice ticker={stock.ticker} fallbackPrice={stock.price ?? null} />
+                          </div>
+                          <div className="mt-1">
+                            <LiveMiniChange ticker={stock.ticker} fallbackChangePct={null} />
                           </div>
                         </div>
 
