@@ -441,7 +441,9 @@ export default async function StockDetailPage({ params }: PageProps) {
               <div className="mt-4 space-y-3">
                 <div className="glow-card-soft rounded-2xl p-4">
                   <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">Current price</div>
-                  <div className="mt-2 text-xl font-semibold text-white">{money(currentPrice)}</div>
+                  <div className="mt-2 text-xl font-semibold text-white">
+                    $<LiveMiniPrice ticker={row.ticker} fallbackPrice={null} />
+                  </div>
                 </div>
 
                 <div className="glow-card-soft rounded-2xl p-4">
