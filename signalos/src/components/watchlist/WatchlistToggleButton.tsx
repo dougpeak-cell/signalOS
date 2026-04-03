@@ -10,9 +10,11 @@ import {
 export default function WatchlistToggleButton({
   ticker,
   defaultInWatchlist = false,
+  compact = false,
 }: {
   ticker: string;
   defaultInWatchlist?: boolean;
+  compact?: boolean;
 }) {
   const [inWatchlist, setInWatchlist] = useState(defaultInWatchlist);
   const [mounted, setMounted] = useState(false);
@@ -59,10 +61,11 @@ export default function WatchlistToggleButton({
   }, [justAdded]);
 
   const label = useMemo(() => {
-    if (!mounted) return "+ Watchlist";
-    if (justAdded && inWatchlist) return "✓ Added";
-    return inWatchlist ? "✓ In Watchlist" : "+ Watchlist";
-  }, [mounted, justAdded, inWatchlist]);
+    if (!mounted) return compact ? "+ Save" : "+ Watchlist";
+    if (justAdded && inWatchlist) return compact ? "Added" : "✓ Added";
+    if (inWatchlist) return compact ? "Saved" : "✓ In Watchlist";
+    return compact ? "+ Save" : "+ Watchlist";
+  }, [compact, mounted, justAdded, inWatchlist]);
 
   const handleToggle = () => {
     const result = toggleWatchlistTicker(ticker);
@@ -98,7 +101,9 @@ export default function WatchlistToggleButton({
       disabled={!mounted}
       aria-pressed={inWatchlist}
       className={[
-        "inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-200",
+        compact
+          ? "inline-flex shrink-0 items-center justify-center rounded-xl px-2.5 py-1.5 text-[11px] font-semibold leading-none transition-all duration-200"
+          : "inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-200",
         "disabled:cursor-not-allowed disabled:opacity-70",
         isAnimating ? "scale-[1.03]" : "scale-100",
         inWatchlist

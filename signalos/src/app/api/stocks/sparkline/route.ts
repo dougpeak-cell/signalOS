@@ -92,11 +92,32 @@ function buildFallbackPoints(payload: SparklinePayload): number[] {
   return [];
 }
 
+function padShortSeries(start: number, end: number): number[] {
+  const delta = end - start;
+  const mid = (start + end) / 2;
+  const wiggle = Math.max(Math.abs(delta) * 0.35, Math.abs(start) * 0.001, 0.25);
+
+  return [
+    start,
+    mid - wiggle * 0.6,
+    mid + wiggle * 0.35,
+    mid - wiggle * 0.25,
+    mid + wiggle * 0.75,
+    end,
+  ];
+}
+
 function normalizePoints(points: number[]): number[] {
   const clean = points.filter((value) => Number.isFinite(value));
 
-  if (clean.length >= 2) return clean;
-  if (clean.length === 1) return [clean[0], clean[0]];
+  if (clean.length >= 6) return clean;
+  if (clean.length === 2) return padShortSeries(clean[0], clean[1]);
+  if (clean.length === 1) return padShortSeries(clean[0], clean[0]);
+  if (clean.length >= 3) {
+    const first = clean[0];
+    const last = clean[clean.length - 1];
+    return [...clean, ...padShortSeries(first, last).slice(clean.length, 6)];
+  }
   return [];
 }
 

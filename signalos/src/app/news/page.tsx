@@ -167,6 +167,80 @@ function buildNewsIntelligence(items: any[]) {
   };
 }
 
+function getHeadlineBiasLabel(bullish: number, neutral: number, bearish: number) {
+  const total = bullish + neutral + bearish;
+  if (total === 0) {
+    return {
+      label: "No Clear Bias",
+      tone: "text-white/70",
+      border: "border-white/10",
+      bg: "bg-white/5",
+      summary: "Headline flow is too light to establish a reliable market bias.",
+    };
+  }
+
+  const spread = bullish - bearish;
+  const dominance = Math.abs(spread) / total;
+
+  if (bullish > bearish) {
+    if (dominance >= 0.3) {
+      return {
+        label: "Risk On",
+        tone: "text-emerald-300",
+        border: "border-emerald-500/20",
+        bg: "bg-emerald-500/[0.08]",
+        summary:
+          "Bullish headline flow is leading the tape. Momentum and growth setups have the cleaner backdrop.",
+      };
+    }
+
+    return {
+      label: "Slightly Bullish",
+      tone: "text-emerald-300",
+      border: "border-emerald-500/20",
+      bg: "bg-emerald-500/[0.08]",
+      summary:
+        "Headline flow leans bullish, but not enough to call broad confirmation. Favor selective strength.",
+    };
+  }
+
+  if (bearish > bullish) {
+    if (dominance >= 0.3) {
+      return {
+        label: "Risk Off",
+        tone: "text-rose-300",
+        border: "border-rose-500/20",
+        bg: "bg-rose-500/[0.08]",
+        summary:
+          "Bearish headline pressure is dominating the tape. Expect tighter risk conditions and more defensive behavior.",
+      };
+    }
+
+    return {
+      label: "Slightly Bearish",
+      tone: "text-rose-300",
+      border: "border-rose-500/20",
+      bg: "bg-rose-500/[0.08]",
+      summary:
+        "Headline flow leans bearish, but not decisively. Expect mixed conditions with selective long opportunities only.",
+    };
+  }
+
+  return {
+    label: "Mixed Tape",
+    tone: "text-amber-300",
+    border: "border-amber-500/20",
+    bg: "bg-amber-500/[0.08]",
+    summary:
+      "Bullish and bearish pressure are balanced. Expect uneven leadership and more stock-specific opportunity.",
+  };
+}
+
+function getPercent(value: number, total: number) {
+  if (!total) return 0;
+  return Math.max(0, (value / total) * 100);
+}
+
 export default async function NewsPage() {
   let marketNews: any[] = [];
   let watchlistNews: any[] = [];
@@ -191,6 +265,16 @@ export default async function NewsPage() {
   const updatedAt = new Date().toISOString();
 
   const intelligence = buildNewsIntelligence(newsItems);
+  const bullishCount = intelligence.bullish;
+  const neutralCount = intelligence.neutral;
+  const bearishCount = intelligence.bearish;
+
+  const headlineTotal = bullishCount + neutralCount + bearishCount;
+  const headlineBias = getHeadlineBiasLabel(
+    bullishCount,
+    neutralCount,
+    bearishCount
+  );
 
   return (
     <main className="min-h-screen bg-black text-white w-full">
@@ -226,89 +310,92 @@ export default async function NewsPage() {
           />
         </PageHeaderBlock>
 
-        <div className="rounded-[28px] border border-emerald-400/15 bg-linear-to-b from-emerald-500/8 via-black to-black p-4 shadow-[0_0_28px_rgba(16,185,129,0.08)]">
-          <div className="flex items-start justify-between gap-3">
+        <section className="rounded-3xl border border-emerald-500/15 bg-linear-to-b from-emerald-500/5 to-transparent p-5 md:p-6">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300/80">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
                 SignalOS Intelligence
               </div>
-              <div className="mt-1 text-xs text-white/40">
-                Live narrative engine
-              </div>
+              <div className="mt-1 text-xs text-white/40">Live narrative engine</div>
             </div>
 
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+            <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
               Live
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-3">
-            <div className="rounded-2xl border border-emerald-400/15 bg-emerald-400/10 p-3">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300/70">
-                Bullish
+          <div className={`mt-5 rounded-2xl border p-4 ${headlineBias.border} ${headlineBias.bg}`}>
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                  Headline Bias
+                </div>
+                <div className={`mt-1 text-2xl font-semibold ${headlineBias.tone}`}>
+                  {headlineBias.label}
+                </div>
               </div>
-              <div className="mt-1 text-lg font-semibold text-emerald-300">
-                {intelligence.bullish}
+
+              <div className="text-sm text-white/55">
+                {bullishCount} Bullish • {neutralCount} Neutral • {bearishCount} Bearish
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/4 p-3">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
-                Neutral
-              </div>
-              <div className="mt-1 text-lg font-semibold text-white">
-                {intelligence.neutral}
+            <div className="mt-4 overflow-hidden rounded-full border border-white/8 bg-white/5">
+              <div className="flex h-3 w-full">
+                <div
+                  className="bg-emerald-400/90"
+                  style={{ width: `${getPercent(bullishCount, headlineTotal)}%` }}
+                />
+                <div
+                  className="bg-white/25"
+                  style={{ width: `${getPercent(neutralCount, headlineTotal)}%` }}
+                />
+                <div
+                  className="bg-rose-400/90"
+                  style={{ width: `${getPercent(bearishCount, headlineTotal)}%` }}
+                />
               </div>
             </div>
 
-            <div className="rounded-2xl border border-rose-400/15 bg-rose-400/10 p-3">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-rose-300/70">
-                Bearish
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/6 px-4 py-3">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                  Bullish
+                </div>
+                <div className="mt-1 text-xl font-semibold text-emerald-300">
+                  {bullishCount}
+                </div>
               </div>
-              <div className="mt-1 text-lg font-semibold text-rose-300">
-                {intelligence.bearish}
+
+              <div className="rounded-2xl border border-white/10 bg-white/4 px-4 py-3">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                  Neutral
+                </div>
+                <div className="mt-1 text-xl font-semibold text-white/80">
+                  {neutralCount}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-rose-500/20 bg-rose-500/6 px-4 py-3">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                  Bearish
+                </div>
+                <div className="mt-1 text-xl font-semibold text-rose-300">
+                  {bearishCount}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                Market Narrative
+              </div>
+              <div className="mt-2 text-sm text-white/75">
+                {headlineBias.summary}
               </div>
             </div>
           </div>
-
-          <div className="mt-4 rounded-[20px] border border-white/10 bg-white/3 p-4">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">
-              Market narrative
-            </div>
-            <p className="mt-2 text-sm leading-6 text-white/68">
-              {intelligence.narrative}
-            </p>
-          </div>
-
-          <div className="mt-4 rounded-[20px] border border-white/10 bg-white/3 p-4">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">
-              Trending tickers
-            </div>
-
-            {intelligence.trendingTickers.length > 0 ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {intelligence.trendingTickers.map(([ticker, count]: [string, number]) => (
-                  <div
-                    key={ticker}
-                    className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5"
-                  >
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300">
-                      {ticker}
-                    </span>
-                    <span className="rounded-full bg-black/40 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/70">
-                      {count}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-3 text-sm text-white/45">
-                No ticker concentration detected yet.
-              </div>
-            )}
-          </div>
-        </div>
+        </section>
 
         {leadStory ? (
           <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.35fr_0.85fr]">

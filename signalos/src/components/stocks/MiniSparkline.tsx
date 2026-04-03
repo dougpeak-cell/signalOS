@@ -113,6 +113,34 @@ export default function MiniSparkline({
   const lastValueRef = useRef<number | null>(null);
   const flashTimeoutRef = useRef<number | null>(null);
 
+  function buildBufferedSeries(nextSeries: number[]) {
+    const nextLast = nextSeries[nextSeries.length - 1] ?? null;
+
+    if (nextLast == null) {
+      return nextSeries;
+    }
+
+    setValues((prev) => {
+      if (nextSeries.length >= 2) {
+        return nextSeries.slice(-20);
+      }
+
+      const buffered = [...prev, nextLast];
+      const deduped =
+        buffered.length >= 2 && buffered[buffered.length - 1] === buffered[buffered.length - 2]
+          ? buffered.slice(0, -1)
+          : buffered;
+
+      if (deduped.length >= 2) {
+        return deduped.slice(-20);
+      }
+
+      return [nextLast, nextLast];
+    });
+
+    return nextLast;
+  }
+
   useEffect(() => {
     let isMounted = true;
     let intervalId: number | null = null;
@@ -149,7 +177,7 @@ export default function MiniSparkline({
         }
 
         lastValueRef.current = nextLast;
-        setValues(nextValues);
+        buildBufferedSeries(nextValues);
         setIsLoading(false);
       } catch {
         // Silent fail to avoid UI noise in dense list rows.

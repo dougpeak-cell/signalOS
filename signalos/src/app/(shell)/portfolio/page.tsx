@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
-import { getQuotePrice, } from "@/lib/market/quotes";
+import { getQuoteByTicker } from "@/lib/market/quotes";
 import { useMassiveQuoteProvider } from "@/lib/market/useMassiveQuoteProvider";
 
 type Holding = {
   ticker: string;
+  created_at?: string;
   name: string;
   shares: number;
   averageCost: number;
@@ -104,10 +105,13 @@ const initialHoldings: Holding[] = [
 
 type HoldingWithMarketData = Holding & {
   price: number;
+  prevClose: number;
   marketValue: number;
   costBasis: number;
   pnl: number;
   pnlPercent: number;
+  dayPL: number;
+  dayPLPct: number;
   upside: number;
 };
 
@@ -193,22 +197,31 @@ export default function PortfolioPage() {
 
   const holdingsWithMarketData = useMemo<HoldingWithMarketData[]>(() => {
     return holdings.map((holding) => {
-      const price = getQuotePrice(holding.ticker) ?? 0;
-      const marketValue = holding.shares * price;
-      const costBasis = holding.shares * holding.averageCost;
-      const pnl = marketValue - costBasis;
-      const pnlPercent = holding.averageCost
-        ? ((price - holding.averageCost) / holding.averageCost) * 100
-        : 0;
-      const upside = price ? ((holding.target - price) / price) * 100 : 0;
+      const quote = getQuoteByTicker(holding.ticker);
+      const shares = holding.shares ?? 0;
+      const cost = holding.averageCost ?? 0;
+
+      const current = quote?.price ?? cost;
+      const prevClose = quote?.prevClose ?? current;
+
+      const marketValue = current * shares;
+      const pnl = (current - cost) * shares;
+      const pnlPercent = cost > 0 ? ((current - cost) / cost) * 100 : 0;
+      const costBasis = cost * shares;
+      const dayPL = (current - prevClose) * shares;
+      const dayPLPct = prevClose > 0 ? ((current - prevClose) / prevClose) * 100 : 0;
+      const upside = current ? ((holding.target - current) / current) * 100 : 0;
 
       return {
         ...holding,
-        price,
+        price: current,
+        prevClose,
         marketValue,
         costBasis,
         pnl,
         pnlPercent,
+        dayPL,
+        dayPLPct,
         upside,
       };
     });
@@ -388,7 +401,7 @@ export default function PortfolioPage() {
           </div>
         </section>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px] items-start">
+        <div className="grid gap-6 items-start">
           <div className="min-w-0 space-y-6">
             <div className="grid gap-6">
               <SectionCard
@@ -398,6 +411,8 @@ export default function PortfolioPage() {
                 <div className="space-y-4">
                   {holdingsWithMarketData.map((holding, index) => {
                     const grade = gradeFromConviction(holding.conviction);
+                    const unrealized = holding.pnl;
+                    const unrealizedPct = holding.pnlPercent;
 
                     return (
                       <div
@@ -475,7 +490,7 @@ export default function PortfolioPage() {
 
                           <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-3">
                             <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                              Price
+                              Current
                             </div>
                             <div className="mt-1 text-sm font-semibold text-white">
                               {money(holding.price)}
@@ -501,7 +516,7 @@ export default function PortfolioPage() {
                           </div>
                         </div>
 
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                           <div className="rounded-2xl border border-white/10 bg-white/3 px-3 py-3">
                             <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
                               Market Value
@@ -511,29 +526,49 @@ export default function PortfolioPage() {
                             </div>
                           </div>
 
-                          <div className="rounded-2xl border border-white/10 bg-white/3 px-3 py-3">
+                          <div className="sig-card-soft rounded-2xl px-4 py-3">
                             <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
                               P&amp;L
                             </div>
+
                             <div
-                              className={`mt-1 text-sm font-semibold ${pnlTone(
-                                holding.pnl
-                              )}`}
+                              className={`mt-1 text-sm font-semibold ${
+                                unrealized >= 0 ? "text-emerald-300" : "text-rose-300"
+                              }`}
                             >
-                              {money(holding.pnl)}
+                              {unrealized >= 0 ? "+" : "-"}$
+                              {Math.abs(unrealized).toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </div>
+
+                            <div className="text-[11px] text-white/45">
+                              {unrealizedPct >= 0 ? "+" : ""}
+                              {unrealizedPct.toFixed(2)}%
                             </div>
                           </div>
 
-                          <div className="rounded-2xl border border-white/10 bg-white/3 px-3 py-3">
+                          <div className="sig-card-soft rounded-2xl px-4 py-3">
                             <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                              P&amp;L %
+                              Day P&amp;L
                             </div>
+
                             <div
-                              className={`mt-1 text-sm font-semibold ${pnlTone(
-                                holding.pnlPercent
-                              )}`}
+                              className={`mt-1 text-sm font-semibold ${
+                                holding.dayPL >= 0 ? "text-emerald-300" : "text-rose-300"
+                              }`}
                             >
-                              {pct(holding.pnlPercent)}
+                              {holding.dayPL >= 0 ? "+" : "-"}$
+                              {Math.abs(holding.dayPL).toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </div>
+
+                            <div className="text-[11px] text-white/45">
+                              ({holding.dayPLPct >= 0 ? "+" : ""}
+                              {holding.dayPLPct.toFixed(2)}%)
                             </div>
                           </div>
 
@@ -685,9 +720,9 @@ export default function PortfolioPage() {
                 subtitle="Highest-conviction longer-duration setups"
               >
                 <div className="space-y-3">
-                  {grouped["Core AI"].map((holding) => (
+                  {grouped["Core AI"].map((holding, index) => (
                     <Link
-                      key={`Core AI-${holding.ticker}`}
+                      key={`Core AI-${holding.ticker}-${holding.created_at ?? index}`}
                       href={`/stocks/${holding.ticker.toLowerCase()}/live`}
                       className="sig-hover sig-card-soft block rounded-2xl p-3"
                     >
@@ -787,42 +822,6 @@ export default function PortfolioPage() {
             </div>
           </div>
 
-          <div className="hidden xl:block space-y-6 min-w-0">
-            <div className="sig-panel rounded-3xl p-5">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/85">
-                Portfolio Intelligence
-              </div>
-
-              <div className="mt-4 space-y-3">
-                <div className="sig-card-soft rounded-2xl px-4 py-4">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                    Strongest Position
-                  </div>
-                  <div className="mt-1 text-lg font-semibold text-white">
-                    {bestWinner?.ticker ?? "—"}
-                  </div>
-                </div>
-
-                <div className="sig-card-soft rounded-2xl px-4 py-4">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                    Bullish Setups
-                  </div>
-                  <div className="mt-1 text-lg font-semibold text-emerald-300">
-                    {bullishCount}
-                  </div>
-                </div>
-
-                <div className="sig-card-soft rounded-2xl px-4 py-4">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                    Reversal Watch
-                  </div>
-                  <div className="mt-1 text-lg font-semibold text-rose-300">
-                    {reversalCount} names
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </>

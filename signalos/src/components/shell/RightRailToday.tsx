@@ -52,16 +52,16 @@ export default function RightRailToday({ topSetup, liveSignals }: Props) {
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-3">
+          <div className="mt-4">
             <div className="flex items-start justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
                   Price
                 </div>
-                <div className="mt-1 text-2xl font-bold text-white">
+                <div className="mt-1 text-2xl font-bold text-white whitespace-nowrap">
                   $<LiveMiniPrice ticker={topSetup.ticker} fallbackPrice={null} />
                 </div>
-                <div className="mt-1">
+                <div className="mt-1 whitespace-nowrap">
                   <LiveMiniChange
                     ticker={topSetup.ticker}
                     fallbackChangePct={null}
@@ -69,25 +69,25 @@ export default function RightRailToday({ topSetup, liveSignals }: Props) {
                 </div>
               </div>
 
-              <div className="w-28 shrink-0">
-                <MiniSparkline
-                  ticker={topSetup.ticker}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-end justify-between">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                Confidence
-              </div>
-              <div className="mt-1 text-3xl font-bold text-emerald-300">
-                {topSetup.score}%
+              <div className="shrink-0 text-right">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                  Confidence
+                </div>
+                <div className="mt-1 text-3xl font-bold text-emerald-300">
+                  {topSetup.score}%
+                </div>
               </div>
             </div>
 
+            <div className="mt-4 overflow-hidden rounded-2xl border border-white/8 bg-black/20 px-3 py-2">
+              <MiniSparkline
+                ticker={topSetup.ticker}
+                className="block h-10 w-full"
+                width={220}
+                height={40}
+                showPulse={false}
+              />
+            </div>
           </div>
 
           <div className="mt-4">

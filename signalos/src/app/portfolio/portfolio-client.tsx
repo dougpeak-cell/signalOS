@@ -304,12 +304,26 @@ export default function PortfolioClient({
             </div>
 
             <div className="divide-y divide-neutral-100">
-              {sorted.map((row) => (
-                <Link
-                  key={row.id}
-                  href={`/stocks/${row.ticker}/live`}
-                  className="block px-6 py-5"
-                >
+              {sorted.map((row) => {
+                const current = row.current_price ?? row.avg_cost ?? 0;
+                const cost = row.avg_cost ?? 0;
+                const shares = row.shares ?? 0;
+                const prevClose = row.prev_close ?? row.previous_close ?? current;
+
+                const unrealized = (current - cost) * shares;
+                const dayPL = (current - prevClose) * (row.shares ?? 0);
+                const dayPLPct =
+                  prevClose > 0 ? ((current - prevClose) / prevClose) * 100 : 0;
+
+                const unrealizedPct =
+                  cost > 0 ? ((current - cost) / cost) * 100 : 0;
+
+                return (
+                  <Link
+                    key={row.id}
+                    href={`/stocks/${row.ticker}/live`}
+                    className="block px-6 py-5"
+                  >
                   <div className="rounded-2xl border border-neutral-800 bg-black p-4 hover:border-neutral-600 transition grid gap-4 lg:grid-cols-[1.05fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.9fr] lg:items-center">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-3">
@@ -334,21 +348,28 @@ export default function PortfolioClient({
 
                     <div>
                       <div className="text-xs uppercase tracking-wide text-neutral-500 lg:hidden">Price</div>
-                      <div className="font-semibold">{money(row.current_price)}</div>
+                      <div className="font-semibold">{money(current)}</div>
                     </div>
 
                     <div>
                       <div className="text-xs uppercase tracking-wide text-neutral-500 lg:hidden">Avg cost</div>
-                      <div className="font-semibold">{money(row.avg_cost)}</div>
+                      <div className="font-semibold">{money(cost)}</div>
                     </div>
 
                     <div>
                       <div className="text-xs uppercase tracking-wide text-neutral-500 lg:hidden">P&amp;L</div>
-                      <div className={`font-semibold ${toneText(row.unrealized_pl)}`}>
-                        {signedMoney(row.unrealized_pl)}
+                      <div
+                        className={`font-semibold ${
+                          unrealized >= 0 ? "text-emerald-400" : "text-red-400"
+                        }`}
+                      >
+                        {unrealized >= 0 ? "+" : ""}
+                        {unrealized.toFixed(2)}
                       </div>
-                      <div className={`text-sm ${toneText(row.unrealized_pl_pct)}`}>
-                        {signedPct(row.unrealized_pl_pct)}
+
+                      <div className="text-xs text-white/50">
+                        ({unrealizedPct >= 0 ? "+" : ""}
+                        {unrealizedPct.toFixed(2)}%)
                       </div>
                     </div>
 
@@ -389,7 +410,7 @@ export default function PortfolioClient({
                   <div className="mt-4 grid gap-3 md:grid-cols-3 lg:hidden">
                     <div className="rounded-2xl bg-neutral-900 p-3">
                       <div className="text-xs uppercase tracking-wide text-neutral-500">Market value</div>
-                      <div className="mt-1 font-semibold">{money(row.market_value)}</div>
+                      <div className="mt-1 font-semibold">{money(current * shares)}</div>
                     </div>
                     <div className="rounded-2xl bg-neutral-900 p-3">
                       <div className="text-xs uppercase tracking-wide text-neutral-500">Stop loss</div>
@@ -409,8 +430,8 @@ export default function PortfolioClient({
                       {row.notes}
                     </div>
                   ) : null}
-                </Link>
-              ))}
+                  </Link>
+              )})}
             </div>
           </div>
         ) : null}

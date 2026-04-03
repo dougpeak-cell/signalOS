@@ -59,8 +59,8 @@ export function useMassiveQuoteProvider(tickers: string[]) {
             if (typeof data?.price === "number" && Number.isFinite(data.price)) {
               window.__massiveQuoteCache![ticker] = data.price;
             }
-          } catch (error) {
-            console.error(`Quote fetch failed for ${ticker}:`, error);
+          } catch {
+            // Silent fail during dev reloads or transient API restarts.
           }
         })
       );

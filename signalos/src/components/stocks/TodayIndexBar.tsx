@@ -69,6 +69,8 @@ const INDEXES = [
   { symbol: "^RUT", label: "Russell 2000", shortLabel: "RUT" },
 ];
 
+const REGIME_ONLY_SYMBOLS = ["^VIX"] as const;
+
 function toNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
@@ -286,18 +288,20 @@ function MarketSparkline({
   points: number[];
   tone: ReturnType<typeof getTone>;
 }) {
+  const sparkWidth = 190;
+  const sparkHeight = 68;
   const safePoints =
     points.length >= 2 ? points : [100, 101, 100.5, 101.5, 102, 101.8];
 
-  const linePath = buildSparklinePath(safePoints, 170, 60);
-  const areaPath = buildAreaPath(safePoints, 170, 60);
+  const linePath = buildSparklinePath(safePoints, sparkWidth, sparkHeight);
+  const areaPath = buildAreaPath(safePoints, sparkWidth, sparkHeight);
 
   return (
     <div
-      className={`relative h-14 w-20 overflow-hidden rounded-2xl border ${tone.sparkBorder} ${tone.sparkBg}`}
+      className={`relative h-16 w-24 overflow-hidden rounded-2xl border ${tone.sparkBorder} ${tone.sparkBg}`}
     >
       <svg
-        viewBox="0 0 170 60"
+        viewBox={`0 0 ${sparkWidth} ${sparkHeight}`}
         className="block h-full w-full"
         preserveAspectRatio="none"
       >
@@ -329,27 +333,29 @@ export default function TodayIndexBar() {
     async function loadQuotes() {
       try {
         const results = await Promise.all(
-          INDEXES.map(async (item) => {
-            const previousPoints = pointsRef.current[item.symbol] ?? [];
+          [...INDEXES.map((item) => item.symbol), ...REGIME_ONLY_SYMBOLS].map(
+            async (symbol) => {
+              const previousPoints = pointsRef.current[symbol] ?? [];
 
-            const response = await fetch(
-              `/api/massive/quote?ticker=${encodeURIComponent(item.symbol)}&ts=${Date.now()}`,
-              {
-                method: "GET",
-                cache: "no-store",
+              const response = await fetch(
+                `/api/massive/quote?ticker=${encodeURIComponent(symbol)}&ts=${Date.now()}`,
+                {
+                  method: "GET",
+                  cache: "no-store",
+                }
+              );
+
+              if (!response.ok) {
+                return [symbol, null] as const;
               }
-            );
 
-            if (!response.ok) {
-              return [item.symbol, null] as const;
+              const payload = (await response.json()) as QuoteApiResponse;
+              return [
+                symbol,
+                normalizeQuote(payload, symbol, previousPoints),
+              ] as const;
             }
-
-            const payload = (await response.json()) as QuoteApiResponse;
-            return [
-              item.symbol,
-              normalizeQuote(payload, item.symbol, previousPoints),
-            ] as const;
-          })
+          )
         );
 
         if (cancelled) return;
@@ -407,13 +413,14 @@ export default function TodayIndexBar() {
     const qqq = quotes["^IXIC"]?.changePct ?? null;
     const dia = quotes["^DJI"]?.changePct ?? null;
     const iwm = quotes["^RUT"]?.changePct ?? null;
+    const vix = quotes["^VIX"]?.changePct ?? -4.2;
 
     return detectMarketRegime({
       spyChangePct: spy,
       qqqChangePct: qqq,
       diaChangePct: dia,
       iwmChangePct: iwm,
-      vixChangePct: -4.2,
+      vixChangePct: vix,
     });
   }, [quotes]);
 
@@ -491,38 +498,41 @@ export default function TodayIndexBar() {
               key={item.symbol}
               className={`overflow-hidden rounded-2xl border ${tone.border} bg-white/2 p-4`}
             >
-              <div className="flex w-full items-center gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="text-[11px] uppercase tracking-[0.22em] text-white/45">
-                    {item.label}
-                  </div>
-
-                  <div className={`text-3xl font-semibold ${tone.text}`}>
-                    {formatPrice(price)}
-                  </div>
-
-                  <div className={`text-sm font-semibold ${tone.text}`}>
-                    {formatSigned(quote?.change ?? null)} (
-                    {quote?.changePct != null
-                      ? formatSigned(quote.changePct, 2)
-                      : "--"}
-                    %)
-                  </div>
-
-                  <div className="mt-1 text-[10px] text-white/35">
-                    {item.shortLabel}
-                  </div>
+              <div className="min-w-0">
+                <div className="text-[11px] uppercase tracking-[0.22em] text-white/45">
+                  {item.label}
                 </div>
 
-                <div className="shrink-0 overflow-hidden">
-                  <MarketSparkline
-                    points={
-                      quote?.points?.length
-                        ? quote.points
-                        : [100, 101, 100.5, 101.5, 102]
-                    }
-                    tone={tone}
-                  />
+                <div className={`mt-2 text-[18px] font-semibold leading-none tracking-tight md:text-[22px] ${tone.text}`}>
+                  {formatPrice(price)}
+                </div>
+
+                <div className={`mt-2 text-sm font-semibold leading-tight ${tone.text}`}>
+                  {formatSigned(quote?.change ?? null)}
+                </div>
+
+                <div className={`text-sm font-semibold leading-tight ${tone.text}`}>
+                  ({quote?.changePct != null
+                    ? formatSigned(quote.changePct, 2)
+                    : "--"}
+                  %)
+                </div>
+
+                <div className="mt-3 flex items-end justify-between gap-3">
+                  <div className="text-[10px] text-white/35">
+                    {item.shortLabel}
+                  </div>
+
+                  <div className="shrink-0 overflow-hidden">
+                    <MarketSparkline
+                      points={
+                        quote?.points?.length
+                          ? quote.points
+                          : [100, 101, 100.5, 101.5, 102]
+                      }
+                      tone={tone}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

@@ -10,6 +10,7 @@ const INDEX_MAP: Record<string, string> = {
   "^IXIC": "I:COMP",
   "^DJI": "I:DJI",
   "^RUT": "I:RUT",
+  "^VIX": "I:VIX",
 };
 
 const INDEX_PROXY_FALLBACK: Record<string, string> = {

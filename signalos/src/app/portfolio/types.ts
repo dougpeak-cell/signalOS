@@ -13,6 +13,8 @@ export type PortfolioPosition = {
   tier?: string | null;
 
   current_price?: number | null;
+  prev_close?: number | null;
+  previous_close?: number | null;
   unrealized_pl?: number | null;
   unrealized_pl_pct?: number | null;
 

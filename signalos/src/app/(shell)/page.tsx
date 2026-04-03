@@ -1,62 +1,18 @@
 import LiveMiniPrice from "@/components/stocks/LiveMiniPrice";
 import LiveMiniChange from "@/components/stocks/LiveMiniChange";
 import MiniSparkline from "@/components/stocks/MiniSparkline";
+import MarketHeatPulse from "@/components/stocks/MarketHeatPulse";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import RightRailToday from "@/components/shell/RightRailToday";
 
 const marketHeatItems = [
-  { symbol: "SPY", changePct: 0.82 },
-  { symbol: "QQQ", changePct: 1.21 },
-  { symbol: "NVDA", changePct: 2.44 },
-  { symbol: "TSLA", changePct: -0.63 },
-  { symbol: "AAPL", changePct: 0.38 },
-  { symbol: "VIX", changePct: -4.2 },
+  { symbol: "SPY", fallbackChangePct: 0.82 },
+  { symbol: "QQQ", fallbackChangePct: 1.21 },
+  { symbol: "NVDA", fallbackChangePct: 2.44 },
+  { symbol: "TSLA", fallbackChangePct: -0.63 },
+  { symbol: "AAPL", fallbackChangePct: 0.38 },
+  { symbol: "VIX", quoteTicker: "^VIX", fallbackChangePct: -4.2 },
 ];
-
-function HeatTone(changePct: number) {
-  if (changePct > 0) return "text-emerald-300 border-emerald-500/20 bg-emerald-500/10";
-  if (changePct < 0) return "text-rose-300 border-rose-500/20 bg-rose-500/10";
-  return "text-white/70 border-white/10 bg-white/[0.04]";
-}
-
-function formatHeatPct(value: number) {
-  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
-}
-
-function MarketHeatPulse({
-  items,
-}: {
-  items: { symbol: string; changePct: number }[];
-}) {
-  const loopItems = [...items, ...items];
-
-  return (
-    <section className="overflow-hidden rounded-[18px] border border-cyan-500/15 bg-[linear-gradient(180deg,rgba(7,12,24,0.96),rgba(5,8,18,0.98))] shadow-[0_0_0_1px_rgba(0,255,200,0.03),0_0_16px_rgba(0,255,200,0.04)]">
-      <div className="flex items-center gap-3 border-b border-white/8 px-4 py-2.5">
-        <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-        <div className="text-[11px] font-semibold uppercase tracking-[0.26em] text-cyan-300/85">
-          Market Heat Pulse
-        </div>
-      </div>
-
-      <div className="relative overflow-hidden">
-        <div className="market-heat-marquee flex w-max items-center gap-3 px-4 py-3">
-          {loopItems.map((item, index) => (
-            <div
-              key={`${item.symbol}-${index}`}
-              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${HeatTone(
-                item.changePct
-              )}`}
-            >
-              <span className="tracking-[0.14em]">{item.symbol}</span>
-              <span>{formatHeatPct(item.changePct)}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 import Link from "next/link";
 import { fetchLatestSignalRows, type SignalDetailRow } from "@/lib/queries/signals";
@@ -72,6 +28,7 @@ import {
 import { Key, ReactElement, JSXElementConstructor, ReactNode, ReactPortal } from "react";
 import OpenChartButton from "@/components/stocks/OpenChartButton";
 import TodayIndexBar from "@/components/stocks/TodayIndexBar";
+import { fetchTopMarketNews, type NewsItem } from "@/lib/news";
 
 function pctClass(v?: number | null) {
   if (v == null) return "text-neutral-400";
@@ -147,65 +104,85 @@ const MOMENTUM_KEYWORDS =
 const REVERSAL_KEYWORDS =
   /reversal|mean|exhaust|absorption|trap|sweep|pullback|fade/i;
 
-const globalPulseItems = [
+type GlobalPulseTickerItem = {
+  id: string;
+  category: string;
+  headline: string;
+  tone: "bullish" | "neutral" | "bearish";
+  tickers: string[];
+  tags: string[];
+  href: string;
+  breaking?: boolean;
+};
+
+type FeaturedMacroCardData = {
+  eyebrow: string;
+  headline: string;
+  summary: string;
+  whyItMatters: string;
+  tone: "bullish" | "neutral" | "bearish";
+  affected: string[];
+};
+
+const FALLBACK_GLOBAL_PULSE_ITEMS: GlobalPulseTickerItem[] = [
   {
     id: "fed-break",
     category: "Central Banks",
     headline: "Fed emergency meeting speculation lifts volatility expectations",
     tone: "bearish" as const,
     breaking: true,
-    impact: "Volatility expectations rise on Fed speculation.",
     tickers: ["SPY", "QQQ"],
-    sectors: ["Rates", "Volatility", "Macro"],
+    tags: ["Rates", "Volatility", "Macro"],
+    href: "/news",
   },
   {
     id: "fed-1",
     category: "Central Banks",
     headline: "Fed speakers reinforce higher-for-longer rate posture as inflation debate stays active",
     tone: "neutral" as const,
-    impact: "Higher yields can pressure premium multiple growth and long-duration software.",
     tickers: ["QQQ", "MSFT", "SNOW"],
-    sectors: ["Software", "Growth", "Rates"],
+    tags: ["Software", "Growth", "Rates"],
+    href: "/news",
   },
   {
     id: "oil-1",
     category: "Commodities",
     headline: "Oil firms as supply-risk premium rises on renewed geopolitical tension",
     tone: "bearish" as const,
-    impact: "Energy strength can help producers while raising inflation sensitivity across tech.",
     tickers: ["XOM", "CVX", "TSLA"],
-    sectors: ["Energy", "Tech", "Inflation"],
+    tags: ["Energy", "Tech", "Inflation"],
+    href: "/news",
   },
   {
     id: "ai-1",
     category: "Tech Policy",
     headline: "AI infrastructure and export-policy headlines keep semiconductor leadership in focus",
     tone: "bullish" as const,
-    impact: "Supports AI infrastructure demand",
     tickers: ["NVDA", "AMD", "AVGO"],
-    sectors: ["Semiconductors", "Cloud"],
+    tags: ["Semiconductors", "Cloud"],
+    href: "/news",
   },
   {
     id: "china-1",
     category: "Global Growth",
     headline: "China stimulus optimism improves risk appetite across cyclical and semiconductor themes",
     tone: "bullish" as const,
-    impact: "Can support industrial, cyclical, and select chip names tied to global demand.",
     tickers: ["AMD", "NVDA", "AAPL"],
-    sectors: ["Industrials", "Cyclicals", "Semiconductors"],
+    tags: ["Industrials", "Cyclicals", "Semiconductors"],
+    href: "/news",
   },
   {
     id: "dollar-1",
     category: "Macro",
     headline: "Dollar firmness keeps financial conditions tight as markets reassess risk appetite",
     tone: "neutral" as const,
-    impact: "A stronger dollar can weigh on multinational earnings translation and broad risk assets.",
     tickers: ["AAPL", "META", "MSFT"],
-    sectors: ["Multinationals", "Risk Assets", "FX"],
+    tags: ["Multinationals", "Risk Assets", "FX"],
+    href: "/news",
   },
 ];
 
-const featuredMacroCard = {
+const FALLBACK_FEATURED_MACRO_CARD: FeaturedMacroCardData = {
   eyebrow: "Global Market Pulse",
   headline: "World news is shaping today’s tape across rates, energy, AI policy, and growth expectations.",
   summary:
@@ -215,6 +192,47 @@ const featuredMacroCard = {
   tone: "neutral" as const,
   affected: ["NVDA", "MSFT", "AMD", "AAPL", "META"],
 };
+
+function titleCaseCategory(category: NewsItem["category"]) {
+  if (category === "ai") return "AI";
+  if (category === "fed") return "Fed";
+  if (category === "semis") return "Semiconductors";
+  return category.charAt(0).toUpperCase() + category.slice(1);
+}
+
+function buildPulseItemsFromNews(items: NewsItem[]): GlobalPulseTickerItem[] {
+  if (!items.length) return FALLBACK_GLOBAL_PULSE_ITEMS;
+
+  return items.slice(0, 6).map((item) => ({
+    id: item.id,
+    category: titleCaseCategory(item.category),
+    headline: item.headline,
+    tone: item.tone,
+    tickers: item.tickers.slice(0, 4),
+    tags: [item.source, item.publishedAt, item.impact].filter(Boolean).slice(0, 3),
+    href: item.url || "/news",
+    breaking: item.importance >= 85,
+  }));
+}
+
+function buildFeaturedMacroCardFromNews(items: NewsItem[]): FeaturedMacroCardData {
+  const lead = items.find((item) => item.importance >= 70) ?? items[0];
+
+  if (!lead) return FALLBACK_FEATURED_MACRO_CARD;
+
+  const affected = Array.from(
+    new Set(items.flatMap((item) => item.tickers.map((ticker) => ticker.toUpperCase())))
+  ).slice(0, 5);
+
+  return {
+    eyebrow: "Global Market Pulse",
+    headline: lead.headline,
+    summary: lead.summary,
+    whyItMatters: lead.whyItMatters || FALLBACK_FEATURED_MACRO_CARD.whyItMatters,
+    tone: lead.tone,
+    affected: affected.length ? affected : FALLBACK_FEATURED_MACRO_CARD.affected,
+  };
+}
 
 function pulseToneClasses(tone: "bullish" | "neutral" | "bearish") {
   if (tone === "bullish") {
@@ -231,15 +249,7 @@ function pulseToneClasses(tone: "bullish" | "neutral" | "bearish") {
 function GlobalPulseTicker({
   items,
 }: {
-  items: {
-    sectors: string[];
-    id: string;
-    category: string;
-    headline: string;
-    tone: "bullish" | "neutral" | "bearish";
-    tickers: string[];
-    breaking?: boolean;
-  }[];
+  items: GlobalPulseTickerItem[];
 }) {
   const loopItems = [...items, ...items];
 
@@ -256,9 +266,11 @@ function GlobalPulseTicker({
         <div className="global-pulse-marquee flex w-max items-center gap-4 px-4 py-3">
           {loopItems.map((item, index) => (
             <Link
-              href={`/news/${item.id}`}
+              href={item.href}
               key={`${item.id}-${index}`}
               className="flex items-center gap-3 rounded-full border border-white/8 bg-white/3 px-4 py-2 hover:border-cyan-400/30"
+              target={item.href.startsWith("http") ? "_blank" : undefined}
+              rel={item.href.startsWith("http") ? "noreferrer" : undefined}
             >
               <span
                 className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
@@ -274,9 +286,9 @@ function GlobalPulseTicker({
               <span className="text-sm text-white/82">{item.headline}</span>
 
               <div className="flex gap-1">
-                {item.sectors?.map((sector: string) => (
-                  <span key={sector} className="text-[10px] text-white/40">
-                    {sector}
+                {item.tags?.map((tag: string) => (
+                  <span key={tag} className="text-[10px] text-white/40">
+                    {tag}
                   </span>
                 ))}
               </div>
@@ -304,14 +316,7 @@ function GlobalPulseTicker({
 function FeaturedMacroCard({
   card,
 }: {
-  card: {
-    eyebrow: string;
-    headline: string;
-    summary: string;
-    whyItMatters: string;
-    tone: "bullish" | "neutral" | "bearish";
-    affected: string[];
-  };
+  card: FeaturedMacroCardData;
 }) {
   return (
     <section className="rounded-[26px] border border-cyan-500/15 bg-[radial-gradient(circle_at_top_left,rgba(0,255,200,0.08),transparent_26%),linear-gradient(180deg,rgba(10,16,33,0.95),rgba(7,11,22,0.98))] p-5 shadow-[0_0_0_1px_rgba(0,255,200,0.03),0_0_20px_rgba(0,255,200,0.05)]">
@@ -396,6 +401,9 @@ function buildSignalCard(row: SignalDetailRow): SignalCard {
 }
 
 export default async function HomePage() {
+  const marketNews = await fetchTopMarketNews({ limit: 8, lookbackHours: 24 });
+  const globalPulseItems = buildPulseItemsFromNews(marketNews);
+  const featuredMacroCard = buildFeaturedMacroCardFromNews(marketNews);
 
   const rows = await fetchLatestSignalRows(40);
   const tickers = Array.from(new Set(rows.map(r => r.ticker)));
@@ -488,15 +496,11 @@ export default async function HomePage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {topSetups.map((setup) => (
-              <div key={setup.ticker} className="group sig-hover sig-card rounded-[26px] p-4">
+              <div key={setup.ticker} className="group sig-hover sig-card overflow-hidden rounded-[26px] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-2xl font-semibold tracking-tight text-white">{setup.ticker}</div>
                     <div className="text-xs text-white/38">{setup.name}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold text-white">{setup.confidence ?? 0}%</div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-white/30">confidence</div>
                   </div>
                 </div>
                 <div className="mt-4 flex items-center gap-2">
@@ -504,24 +508,48 @@ export default async function HomePage() {
                   <div className="rounded-full border border-white/10 bg-white/4 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/58">{setup.timeframe ?? "1m"}</div>
                   <div className={`rounded-full px-2 py-1 text-[10px] font-semibold ${gradePill(setup.grade)}`}>{setup.grade ?? "B"}</div>
                 </div>
-                <div className="mt-4 text-base font-semibold text-white">{setup.setup}</div>
-                <div className="mt-2 text-sm text-white/58">{setup.setup}</div>
-                <div className="mt-1 text-sm text-white/45">{setup.name}</div>
-                <div className="mt-5 flex items-end justify-between">
-                  <div>
-                    <div>
-                      <div className="text-[28px] font-semibold tracking-tight text-white">
+                <div className="mt-4 text-sm leading-6 text-white/60">{setup.setup}</div>
+                <div className="mt-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-[28px] font-semibold tracking-tight text-white whitespace-nowrap">
                         $<LiveMiniPrice ticker={setup.ticker} fallbackPrice={setup.price ?? null} />
                       </div>
 
-                      <MiniSparkline ticker={setup.ticker} />
+                      <div className="mt-1 whitespace-nowrap">
+                        <LiveMiniChange
+                          ticker={setup.ticker}
+                          fallbackChangePct={setup.changePct ?? null}
+                        />
+                      </div>
                     </div>
-                    <LiveMiniChange
+
+                    <div className="shrink-0 text-right">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                        Confidence
+                      </div>
+                      <div className="mt-1 text-lg font-semibold text-white">
+                        {setup.confidence ?? 0}%
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 overflow-hidden rounded-2xl border border-white/8 bg-black/20 px-3 py-2">
+                    <MiniSparkline
                       ticker={setup.ticker}
-                      fallbackChangePct={setup.changePct ?? null}
+                      className="block h-10 w-full"
+                      width={220}
+                      height={40}
+                      showPulse={false}
                     />
                   </div>
-                  <OpenChartButton href={`/stocks/${setup.ticker}/live`} label="Open Live Chart" />
+
+                  <div className="mt-4">
+                    <OpenChartButton
+                      href={`/stocks/${setup.ticker}/live`}
+                      label="Open Live Chart"
+                    />
+                  </div>
                 </div>
               </div>
             ))}
