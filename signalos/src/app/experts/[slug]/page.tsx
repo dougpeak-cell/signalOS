@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
-type RouteParams = {
+type RouteParams = Promise<{
   slug: string;
-};
+}>;
 
 type ExpertActionTone = "fresh" | "today" | "recent" | "stale";
 type ExpertPosition = "Buy" | "Hold" | "Sell";
@@ -142,6 +143,8 @@ function TopMoveStrip({
   row: CoverageRow | null;
   onOpen?: (ticker: string) => void;
 }) {
+  const router = useRouter();
+
   if (!row) return null;
 
   const downside = (row.upsidePct ?? 0) < 0;
@@ -149,65 +152,37 @@ function TopMoveStrip({
   return (
     <button
       type="button"
-      onClick={() => onOpen?.(row.ticker)}
-      className="w-full rounded-[18px] border border-cyan-400/20 bg-[linear-gradient(180deg,rgba(34,211,238,0.10),rgba(255,255,255,0.02))] p-3 text-left transition hover:border-cyan-400/30 hover:bg-cyan-400/8"
+      onClick={() => {
+        onOpen?.(row.ticker);
+        router.push(`/stocks/${row.ticker}`);
+      }}
+      className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-cyan-400/30 hover:bg-white/10"
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-cyan-300 animate-pulse" />
-              New Top Move
-            </span>
-
-            <span
-              className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${positionClasses(
-                row.position
-              )}`}
-            >
-              {row.position}
-            </span>
-
-            <span
-              className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${actionBadgeClasses(
-                row.actionTone
-              )}`}
-            >
-              {row.actionLabel}
-            </span>
-          </div>
-
-          <div className="mt-2 text-sm text-white/60">
-            <span className="text-white/40">Why this moved up:</span>{" "}
-            <span className="text-white/80">
-              {row.rationale ?? row.note ?? "Fresh analyst action detected."}
-            </span>
-          </div>
-
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-lg font-semibold text-white">{row.ticker}</span>
-            <span className="truncate text-sm text-white/55">{row.company}</span>
-          </div>
+        <div>
+          <div className="text-sm font-semibold text-white">{row.ticker}</div>
+          <div className="mt-1 text-xs text-white/60">{row.company}</div>
         </div>
 
-        <div className="shrink-0 text-right">
-          <div className="text-[10px] uppercase tracking-[0.16em] text-white/40">
-            Upside
-          </div>
-          <div
-            className={`mt-1 text-base font-semibold ${
-              downside ? "text-rose-300" : "text-emerald-300"
-            }`}
-          >
-            {formatPercent(row.upsidePct)}
-          </div>
+        <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+          Top Move
         </div>
+      </div>
+
+      <div className="mt-3 text-sm text-white/80">
+        {row.rationale ?? row.note ?? "Fresh analyst action detected."}
+      </div>
+
+      <div className="mt-4 flex items-center justify-between text-xs text-white/55">
+        <span>{row.sourceName ?? row.sourceFirm ?? row.actionLabel}</span>
+        <span className={downside ? "text-rose-300" : "text-cyan-300"}>Open chart →</span>
       </div>
     </button>
   );
 }
 
 function CoverageAccordion({ rows }: { rows: CoverageRow[] }) {
+  const router = useRouter();
   const [openTicker, setOpenTicker] = useState<string | null>(rows[0]?.ticker ?? null);
 
   useEffect(() => {
@@ -233,10 +208,8 @@ function CoverageAccordion({ rows }: { rows: CoverageRow[] }) {
         const downside = (row.upsidePct ?? 0) < 0;
 
         return (
-          <button
+          <div
             key={row.ticker}
-            type="button"
-            onClick={() => setOpenTicker(isOpen ? null : row.ticker)}
             className={`w-full rounded-[20px] border text-left transition ${
               isOpen
                 ? "border-cyan-400/25 bg-cyan-400/5 shadow-[0_0_24px_rgba(34,211,238,0.08)]"
@@ -244,70 +217,39 @@ function CoverageAccordion({ rows }: { rows: CoverageRow[] }) {
             }`}
           >
             <div className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="text-lg font-semibold text-white">{row.ticker}</div>
-
-                    <span
-                      className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${positionClasses(
-                        row.position
-                      )}`}
-                    >
-                      {row.position}
-                    </span>
-
-                    <span
-                      className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${actionBadgeClasses(
-                        row.actionTone
-                      )}`}
-                    >
-                      {row.actionLabel}
-                    </span>
+              <div className="flex items-start gap-3">
+                <button
+                  type="button"
+                  onClick={() => router.push(`/stocks/${row.ticker}`)}
+                  className="flex w-full min-w-0 flex-1 items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-cyan-400/30 hover:bg-white/10"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-white">{row.ticker}</div>
+                    <div className="truncate text-xs text-white/55">{row.company}</div>
                   </div>
 
-                  <div className="mt-1 flex items-center justify-between gap-3">
-                    <div className="min-w-0 truncate text-sm text-white/55">{row.company}</div>
-                    <div className="shrink-0">
-                      <MiniSentimentSpark
-                        values={row.spark}
-                        position={row.position}
-                        active={isOpen}
-                      />
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <div className="text-xs text-white/50">Target</div>
+                      <div className="text-sm font-semibold text-white">
+                        {formatPrice(row.priceTarget)}
+                      </div>
                     </div>
+                    <div className="text-xs text-cyan-300">Open →</div>
                   </div>
-                </div>
+                </button>
 
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="text-[10px] uppercase tracking-[0.16em] text-white/40">
-                      Upside
-                    </div>
-                    <div
-                      className={`mt-1 text-sm font-semibold ${
-                        downside ? "text-rose-300" : "text-emerald-300"
-                      }`}
-                    >
-                      {formatPercent(row.upsidePct)}
-                    </div>
-                  </div>
-
-                  <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-full border transition ${
-                      isOpen
-                        ? "border-cyan-400/25 bg-cyan-400/10 text-cyan-200"
-                        : "border-white/10 bg-white/3 text-white/55"
-                    }`}
-                  >
-                    <span
-                      className={`text-sm transition-transform duration-200 ${
-                        isOpen ? "rotate-180" : ""
-                      }`}
-                    >
-                      ⌄
-                    </span>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenTicker((prev) => (prev === row.ticker ? null : row.ticker));
+                  }}
+                  className="rounded-xl border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/70 transition hover:bg-white/10"
+                  aria-label={isOpen ? "Collapse details" : "Expand details"}
+                >
+                  {isOpen ? "▴" : "▾"}
+                </button>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -405,7 +347,7 @@ function CoverageAccordion({ rows }: { rows: CoverageRow[] }) {
                 </div>
               </div>
             </div>
-          </button>
+          </div>
         );
       })}
     </div>
@@ -444,7 +386,8 @@ export default function AnalystProfilePage({
 }: {
   params: RouteParams;
 }) {
-  const slug = params.slug;
+  const router = useRouter();
+  const { slug } = use(params);
 
   const [data, setData] = useState<ExpertProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -519,9 +462,6 @@ export default function AnalystProfilePage({
             <div className="mt-1 text-[11px] text-white/45">{updatedText}</div>
           </div>
 
-          <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/3 text-white/80 transition hover:bg-white/6 hover:text-white">
-            ↗
-          </button>
         </div>
 
         <div className="space-y-4">

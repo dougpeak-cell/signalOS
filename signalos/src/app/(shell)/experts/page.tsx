@@ -38,6 +38,15 @@ type ExpertMove = {
   published: string;
 };
 
+const expertProfileHrefByTicker: Record<string, string> = {
+  NVDA: "/experts/nvda",
+  MSFT: "/experts/msft",
+  META: "/experts/meta",
+  AAPL: "/experts/aapl",
+  "STREET-COMPOSITE": "/experts/street-composite",
+  "INSIDER-MONITOR": "/experts/insider-monitor",
+};
+
 const convictionLeaders: ExpertConviction[] = [
   {
     ticker: "NVDA",
@@ -273,7 +282,7 @@ export default function ExpertsPage() {
           <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
             {sortedCoverage.map((item) => (
               <Link
-                href={`/stocks/${item.ticker}`}
+                href={expertProfileHrefByTicker[item.ticker] ?? `/experts/${item.ticker.toLowerCase()}`}
                 key={item.ticker}
                 className="group min-w-0 rounded-3xl border border-white/10 bg-white/3 p-5 transition hover:border-white/15 hover:bg-white/5"
               >

@@ -1,96 +1,81 @@
 import { NextRequest, NextResponse } from "next/server";
-import { normalizeExpertProfileResponse } from "@/lib/experts/ranking";
-import type { UpstreamExpertProfileResponse } from "@/lib/experts/types";
+import { getSeededExpertProfile } from "@/lib/experts/data";
 
-const DEFAULT_TIMEOUT_MS = 8000;
+const EXPERTS_UPSTREAM_URL = process.env.EXPERTS_UPSTREAM_URL;
 
-function getTimeoutMs(): number {
-  const raw = Number(process.env.EXPERTS_UPSTREAM_TIMEOUT_MS ?? DEFAULT_TIMEOUT_MS);
-  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_TIMEOUT_MS;
-}
-
-function buildUpstreamUrl(slug: string): string | null {
-  const base = process.env.EXPERTS_UPSTREAM_URL?.trim();
-  if (!base) return null;
-
-  const url = new URL(base);
-  url.searchParams.set("slug", slug);
-  return url.toString();
-}
-
-async function fetchUpstreamJson(url: string): Promise<UpstreamExpertProfileResponse> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), getTimeoutMs());
-
+export async function GET(req: NextRequest) {
   try {
-    const headers: Record<string, string> = {
-      Accept: "application/json",
-    };
+    const { searchParams } = new URL(req.url);
+    const slug = String(searchParams.get("slug") ?? "")
+      .trim()
+      .toLowerCase();
 
-    if (process.env.EXPERTS_UPSTREAM_API_KEY) {
-      headers.Authorization = `Bearer ${process.env.EXPERTS_UPSTREAM_API_KEY}`;
+    if (!slug) {
+      return NextResponse.json(
+        { error: "Missing required slug parameter." },
+        { status: 400 }
+      );
     }
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers,
-      signal: controller.signal,
-      next: { revalidate: 300 },
-    });
+    if (EXPERTS_UPSTREAM_URL) {
+      try {
+        const upstreamUrl = new URL(EXPERTS_UPSTREAM_URL);
+        upstreamUrl.searchParams.set("slug", slug);
 
-    if (!response.ok) {
-      const body = await response.text().catch(() => "");
-      throw new Error(`Upstream experts request failed: ${response.status} ${body}`);
+        const response = await fetch(upstreamUrl.toString(), {
+          cache: "no-store",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+
+        const text = await response.text();
+        const json = text ? JSON.parse(text) : null;
+
+        if (!response.ok) {
+          throw new Error(
+            json?.detail ||
+              json?.error ||
+              `Upstream returned ${response.status}`
+          );
+        }
+
+        return NextResponse.json(json, { status: 200 });
+      } catch (upstreamError) {
+        const fallback = getSeededExpertProfile(slug);
+
+        if (fallback) {
+          return NextResponse.json(fallback, {
+            status: 200,
+            headers: {
+              "x-experts-source": "seeded-fallback",
+            },
+          });
+        }
+
+        throw upstreamError;
+      }
     }
 
-    return (await response.json()) as UpstreamExpertProfileResponse;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
+    const seeded = getSeededExpertProfile(slug);
 
-export async function GET(request: NextRequest) {
-  const slug = request.nextUrl.searchParams.get("slug")?.trim();
+    if (!seeded) {
+      return NextResponse.json(
+        { error: `No expert profile found for slug "${slug}".` },
+        { status: 404 }
+      );
+    }
 
-  if (!slug) {
-    return NextResponse.json(
-      { error: "Missing required query param: slug" },
-      { status: 400 }
-    );
-  }
-
-  const upstreamUrl = buildUpstreamUrl(slug);
-
-  if (!upstreamUrl) {
-    return NextResponse.json(
-      {
-        error:
-          "EXPERTS_UPSTREAM_URL is not configured. Add a real upstream endpoint before going live.",
-      },
-      { status: 503 }
-    );
-  }
-
-  try {
-    const upstream = await fetchUpstreamJson(upstreamUrl);
-    const normalized = normalizeExpertProfileResponse(upstream, slug, new Date());
-
-    return NextResponse.json(normalized, {
+    return NextResponse.json(seeded, {
       status: 200,
       headers: {
-        "Cache-Control": "s-maxage=300, stale-while-revalidate=600",
+        "x-experts-source": "seeded",
       },
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Unknown experts route failure";
+      error instanceof Error ? error.message : "Failed to load expert profile.";
 
-    return NextResponse.json(
-      {
-        error: "Failed to load expert profile",
-        detail: message,
-      },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-};
+}

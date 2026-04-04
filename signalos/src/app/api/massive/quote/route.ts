@@ -29,6 +29,11 @@ function toNumber(value: unknown): number | null {
   return null;
 }
 
+function toPositiveNumber(value: unknown): number | null {
+  const n = toNumber(value);
+  return n != null && n > 0 ? n : null;
+}
+
 function normalizeUpdatedMs(raw: number | null): number | null {
   if (raw == null) return null;
   if (raw > 1_000_000_000_000_000) return Math.floor(raw / 1_000_000);
@@ -259,12 +264,13 @@ async function fetchStockQuote(ticker: string): Promise<{
       (json as StockSnapshot);
 
     const price =
-      toNumber(snapshot?.lastTrade?.p) ??
-      toNumber(snapshot?.day?.c) ??
-      toNumber(snapshot?.lastQuote?.P) ??
-      toNumber(snapshot?.lastQuote?.p);
+      toPositiveNumber(snapshot?.lastTrade?.p) ??
+      toPositiveNumber(snapshot?.day?.c) ??
+      toPositiveNumber(snapshot?.lastQuote?.P) ??
+      toPositiveNumber(snapshot?.lastQuote?.p) ??
+      toPositiveNumber(snapshot?.prevDay?.c);
 
-    const prevClose = toNumber(snapshot?.prevDay?.c);
+    const prevClose = toPositiveNumber(snapshot?.prevDay?.c);
     const updatedMs = normalizeUpdatedMs(toNumber(snapshot?.updated));
 
     if (price == null) return null;
@@ -464,22 +470,26 @@ export async function GET(req: NextRequest) {
       if (rawQuote != null) {
         price =
           typeof rawQuote === "number"
-            ? rawQuote
-            : toNumber((rawQuote as any).price) ??
-              toNumber((rawQuote as any).lastPrice) ??
-              toNumber((rawQuote as any).last) ??
-              toNumber((rawQuote as any).close);
+            ? toPositiveNumber(rawQuote)
+            : toPositiveNumber((rawQuote as any).price) ??
+              toPositiveNumber((rawQuote as any).lastPrice) ??
+              toPositiveNumber((rawQuote as any).last) ??
+              toPositiveNumber((rawQuote as any).close);
 
         prevClose =
           typeof rawQuote === "object" && rawQuote !== null
-            ? toNumber((rawQuote as any).prevClose) ??
-              toNumber((rawQuote as any).previousClose) ??
-              toNumber((rawQuote as any).priorClose) ??
-              toNumber((rawQuote as any).closePrev)
+            ? toPositiveNumber((rawQuote as any).prevClose) ??
+              toPositiveNumber((rawQuote as any).previousClose) ??
+              toPositiveNumber((rawQuote as any).priorClose) ??
+              toPositiveNumber((rawQuote as any).closePrev)
             : null;
 
         source = "fallback";
       }
+    }
+
+    if (price != null && price <= 0) {
+      price = null;
     }
 
     if (price == null) {
@@ -517,22 +527,42 @@ export async function GET(req: NextRequest) {
           : null;
     }
 
-    const direction =
-      change == null ? "flat" : change > 0 ? "up" : change < 0 ? "down" : "flat";
+      const data: any = {
+        last: price,
+        price,
+        close: prevClose,
+        c: price,
+        results: points.map((point) => ({ c: point })),
+      };
+      const series = points;
+      const last =
+        data?.last ??
+        data?.price ??
+        data?.close ??
+        data?.c ??
+        data?.results?.[0]?.c ??
+        data?.results?.[data?.results?.length - 1] ??
+        null;
 
-    return NextResponse.json({
-      ticker,
-      lookupTicker,
-      source,
-      price,
-      prevClose,
-      change,
-      changePct,
-      direction,
-      updatedMs,
-      isMarketOpen,
-      points,
-    });
+      return NextResponse.json({
+        ticker,
+        lookupTicker: ticker,
+        source: "stock",
+        price: last ?? prevClose ?? 0,
+        prevClose,
+        change: last && prevClose ? last - prevClose : 0,
+        changePct:
+          last && prevClose ? ((last - prevClose) / prevClose) * 100 : 0,
+        direction:
+          last && prevClose
+            ? last > prevClose
+              ? "up"
+              : "down"
+            : "flat",
+        updatedMs: Date.now(),
+        isMarketOpen: null,
+        points: series ?? [],
+      });
   } catch (error) {
     console.error("Quote route failed:", error);
 

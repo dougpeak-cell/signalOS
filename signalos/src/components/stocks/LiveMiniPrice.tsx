@@ -36,7 +36,7 @@ export default function LiveMiniPrice({ ticker, fallbackPrice = null }: Props) {
 
         const json = (await res.json()) as QuoteResponse;
 
-        if (!cancelled && typeof json.price === "number") {
+        if (!cancelled && typeof json.price === "number" && json.price > 0) {
           setPrice(json.price);
         }
       } catch {
