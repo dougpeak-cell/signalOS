@@ -188,14 +188,18 @@ function ShellLayoutContent({
                 Crypto Mode · 24/7 market intelligence
               </div>
             ) : null}
-            <div
-              className={[
-                "flex w-full",
-                !isDevMobilePreview && !hideShellRightRail ? "md:pr-4 xl:pr-6 2xl:pr-8" : "",
-              ].join(" ")}
-            >
-              <div className="min-w-0 flex-1">{children}</div>
-              {!hideShellRightRail && !isDevMobilePreview ? <div className="hidden md:block"><ContextAwareRightRail /></div> : null}
+            <div className="w-full px-4 py-3 md:px-6 md:py-4 xl:px-8 2xl:px-10">
+              <div className="rounded-3xl border border-cyan-400/10 bg-linear-to-b from-[#031525] to-[#020814] p-4 md:p-5 xl:p-6">
+                <div
+                  className={[
+                    "flex w-full",
+                    !isDevMobilePreview && !hideShellRightRail ? "md:pr-4 xl:pr-6 2xl:pr-8" : "",
+                  ].join(" ")}
+                >
+                  <div className="min-w-0 flex-1">{children}</div>
+                  {!hideShellRightRail && !isDevMobilePreview ? <div className="hidden md:block"><ContextAwareRightRail /></div> : null}
+                </div>
+              </div>
             </div>
           </div>
 

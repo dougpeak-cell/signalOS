@@ -76,7 +76,7 @@ export default function TodayBottomIntelRail({
         Intelligence Feed
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-1">
+      <div className="signalos-hide-scrollbar flex gap-3 overflow-x-auto pb-1">
         {feedCards.map((item) => (
           <Link
             key={item.key}
