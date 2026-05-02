@@ -160,6 +160,13 @@ function normalizeTicker(value: string) {
   return value.trim().toUpperCase().replace(/[^A-Z.\-]/g, "");
 }
 
+function getSearchParamNumber(value: string | null): number | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function mapLocalHoldingToHolding(holding: LocalPortfolioHolding): Holding {
   return {
     ticker: holding.ticker,
@@ -697,12 +704,18 @@ function PortfolioPageContent() {
     const tickerToAdd = normalizeTicker(searchParams.get("add") ?? "");
     if (!tickerToAdd) return;
 
+    const seedDefaults = {
+      livePrice: getSearchParamNumber(searchParams.get("price")),
+      targetPrice: getSearchParamNumber(searchParams.get("target")),
+      conviction: getSearchParamNumber(searchParams.get("conviction")),
+    };
+
     const existingHolding = holdings.find((holding) => holding.ticker === tickerToAdd);
 
     if (existingHolding) {
       openAdd(existingHolding.ticker);
     } else {
-      openCreatePosition(tickerToAdd);
+      openCreatePosition(tickerToAdd, seedDefaults);
     }
 
     router.replace(buildPortfolioHref("/portfolio"));
@@ -865,9 +878,36 @@ function PortfolioPageContent() {
     setActionState({ mode: "add", shares: "", price: "" });
   }
 
-  function openCreatePosition(ticker = "") {
+  function openCreatePosition(
+    ticker = "",
+    seedDefaults?: {
+      livePrice?: number | null;
+      targetPrice?: number | null;
+      conviction?: number | null;
+    }
+  ) {
     const normalizedTicker = normalizeTicker(ticker);
-    const defaults = buildPortfolioDefaultsForTicker(normalizedTicker);
+    const computedDefaults = buildPortfolioDefaultsForTicker(normalizedTicker);
+    const defaults = {
+      ...computedDefaults,
+      livePrice:
+        typeof seedDefaults?.livePrice === "number" &&
+        Number.isFinite(seedDefaults.livePrice) &&
+        seedDefaults.livePrice > 0
+          ? seedDefaults.livePrice
+          : computedDefaults.livePrice,
+      targetPrice:
+        typeof seedDefaults?.targetPrice === "number" &&
+        Number.isFinite(seedDefaults.targetPrice) &&
+        seedDefaults.targetPrice > 0
+          ? seedDefaults.targetPrice
+          : computedDefaults.targetPrice,
+      conviction:
+        typeof seedDefaults?.conviction === "number" &&
+        Number.isFinite(seedDefaults.conviction)
+          ? seedDefaults.conviction
+          : computedDefaults.conviction,
+    };
 
     setEditingTicker(null);
     setActionTicker(normalizedTicker || "__new__");
