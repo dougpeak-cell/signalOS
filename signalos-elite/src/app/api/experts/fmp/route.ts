@@ -431,13 +431,24 @@ export async function GET() {
       diversified.push(row);
     }
 
-    const rows = diversified
+    const strictRows = diversified
       .sort((a, b) => b.score - a.score)
       .slice(0, 12);
 
+    const fallbackRows = [...enriched]
+      .filter((row) => Boolean(row.publishedDate))
+      .sort((a, b) => {
+        const publishedDelta = getPublishedDateValue(b.publishedDate) - getPublishedDateValue(a.publishedDate);
+        if (publishedDelta !== 0) return publishedDelta;
+        return b.score - a.score;
+      })
+      .slice(0, 10);
+
+    const rows = strictRows.length > 0 ? strictRows : fallbackRows;
+
     return NextResponse.json({
       ok: true,
-      source: "fmp_diversified_analyst_picks",
+      source: strictRows.length > 0 ? "fmp_diversified_analyst_picks" : "fmp_latest_analyst_picks_fallback",
       rows,
     });
   } catch (error) {
