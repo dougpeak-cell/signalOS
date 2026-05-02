@@ -22,7 +22,6 @@
         "name": "next"
       }
     ],
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
@@ -34,9 +33,13 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
-, "next.config.ts.diabled"  ],
+    ".next/dev/types/**/*.ts",
+    "next.config.ts.disabled"
+  ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next",
+    "signalos",
+    "signalos-elite"
   ]
 }
