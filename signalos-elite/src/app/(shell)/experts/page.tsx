@@ -351,18 +351,33 @@ function getModelAlignmentClasses(alignment: ExpertModelRow["alignment"]) {
 export default function ExpertsPage() {
   const [fmpRows, setFmpRows] = useState<FmpExpertRow[]>([]);
   const [isLoadingFmpRows, setIsLoadingFmpRows] = useState(true);
+  const [fmpLoadError, setFmpLoadError] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
 
     async function loadFmpExperts() {
-      if (alive) setIsLoadingFmpRows(true);
+      if (alive) {
+        setIsLoadingFmpRows(true);
+        setFmpLoadError(null);
+      }
 
       try {
         const res = await fetch("/api/experts/fmp", { cache: "no-store" });
         const json = await res.json();
         if (!alive) return;
+
+        if (!res.ok || json?.ok === false) {
+          setFmpRows([]);
+          setFmpLoadError(
+            typeof json?.error === "string" && json.error.trim().length > 0
+              ? json.error
+              : "Experts analyst feed is unavailable right now."
+          );
+          return;
+        }
+
         const rows = Array.isArray(json.rows) ? json.rows : [];
         rows.sort(
           (left: FmpExpertRow, right: FmpExpertRow) =>
@@ -373,6 +388,7 @@ export default function ExpertsPage() {
         console.error("FMP experts load failed:", error);
         if (!alive) return;
         setFmpRows([]);
+        setFmpLoadError("Experts analyst feed is unavailable right now.");
       } finally {
         if (alive) setIsLoadingFmpRows(false);
       }
@@ -823,7 +839,12 @@ export default function ExpertsPage() {
                   Loading analyst target data...
                 </div>
               ) : null}
-              {!isLoadingFmpRows && fmpRows.length === 0 ? (
+              {!isLoadingFmpRows && fmpLoadError ? (
+                <div className="rounded-2xl border border-amber-400/20 bg-amber-400/6 p-6 text-sm text-amber-100/90">
+                  {fmpLoadError}
+                </div>
+              ) : null}
+              {!isLoadingFmpRows && !fmpLoadError && fmpRows.length === 0 ? (
                 <div className="rounded-2xl border border-white/10 bg-black/30 p-6 text-sm text-white/45">
                   No analyst picks were found for today, the last 7 days, or the last 14 days.
                 </div>
