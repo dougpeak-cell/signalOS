@@ -91,6 +91,13 @@ function getRecencyBucket(date: string | null) {
   return null;
 }
 
+function getPublishedDateValue(value: unknown): number {
+  if (typeof value !== "string" || !value.trim()) return 0;
+
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : 0;
+}
+
 function recencyBucketScore(bucket: "today" | "week" | "twoWeeks" | null) {
   if (bucket === "today") return 60;
   if (bucket === "week") return 18;
