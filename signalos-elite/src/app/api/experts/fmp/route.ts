@@ -29,9 +29,22 @@ type PickRow = {
   lastGrade: string | null;
   firm: string | null;
   publishedDate: string | null;
+  recencyBucket: "today" | "week" | "twoWeeks" | null;
   upsidePercent: number | null;
   score: number;
 };
+
+type GradeRow = {
+  newGrade?: string | null;
+  grade?: string | null;
+  gradingCompany?: string | null;
+  firm?: string | null;
+  publishedDate?: string | null;
+  date?: string | null;
+};
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const ANALYST_LOOKBACK_DAYS = 14;
 
 function gradeScore(grade: string | null) {
   const g = (grade ?? "").toLowerCase();
@@ -47,15 +60,80 @@ function gradeScore(grade: string | null) {
 }
 
 function recencyScore(date: string | null) {
-  if (!date) return 0;
+  return recencyBucketScore(getRecencyBucket(date));
+}
 
-  const days =
-    (Date.now() - new Date(date).getTime()) / (1000 * 60 * 60 * 24);
+function getAgeInDays(date: string | null) {
+  if (!date) return null;
 
-  if (days <= 7) return 20;
-  if (days <= 30) return 14;
-  if (days <= 90) return 8;
-  return 2;
+  const timestamp = new Date(date).getTime();
+  if (!Number.isFinite(timestamp)) return null;
+
+  return (Date.now() - timestamp) / ONE_DAY_MS;
+}
+
+function getRecencyBucket(date: string | null) {
+  const days = getAgeInDays(date);
+  if (days == null) return null;
+  if (days <= 1) return "today";
+  if (days <= 7) return "week";
+  if (days <= 14) return "twoWeeks";
+  return null;
+}
+
+function recencyBucketScore(bucket: "today" | "week" | "twoWeeks" | null) {
+  if (bucket === "today") return 60;
+  if (bucket === "week") return 18;
+  if (bucket === "twoWeeks") return 8;
+  return 0;
+}
+
+function pickBestRecentGrade(grades: GradeRow[]) {
+  const recent = grades
+    .map((grade) => {
+      const publishedDate = grade.publishedDate ?? grade.date ?? null;
+      const recencyBucket = getRecencyBucket(publishedDate);
+
+      return {
+        ...grade,
+        publishedDate,
+        recencyBucket,
+        recency: recencyBucketScore(recencyBucket),
+        sentiment: gradeScore(grade.newGrade ?? grade.grade ?? null),
+      };
+    })
+    .filter((grade) => grade.recencyBucket !== null);
+
+  if (recent.length > 0) {
+    recent.sort((left, right) => {
+      if (right.sentiment !== left.sentiment) return right.sentiment - left.sentiment;
+      if (right.recency !== left.recency) return right.recency - left.recency;
+      return String(right.publishedDate ?? "").localeCompare(String(left.publishedDate ?? ""));
+    });
+
+    return recent[0];
+  }
+
+  const fallback = grades
+    .map((grade) => {
+      const publishedDate = grade.publishedDate ?? grade.date ?? null;
+      return {
+        ...grade,
+        publishedDate,
+        recencyBucket: getRecencyBucket(publishedDate),
+        recency: recencyScore(publishedDate),
+        sentiment: gradeScore(grade.newGrade ?? grade.grade ?? null),
+      };
+    })
+    .filter((grade) => grade.publishedDate);
+
+  fallback.sort((left, right) => {
+    if (right.sentiment !== left.sentiment) return right.sentiment - left.sentiment;
+    if (right.recency !== left.recency) return right.recency - left.recency;
+    return String(right.publishedDate ?? "").localeCompare(String(left.publishedDate ?? ""));
+  });
+
+  return fallback[0] ?? null;
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -115,7 +193,14 @@ export async function GET() {
         ]);
 
         const target = Array.isArray(targetJson) ? targetJson[0] : targetJson;
-        const grade = Array.isArray(gradesJson) ? gradesJson[0] : gradesJson;
+        const grades = Array.isArray(gradesJson)
+          ? gradesJson
+          : gradesJson
+            ? [gradesJson]
+            : [];
+        const grade = pickBestRecentGrade(grades);
+        const publishedDate = grade?.publishedDate ?? grade?.date ?? null;
+        const recencyBucket = getRecencyBucket(publishedDate);
 
         const targetConsensus =
           typeof target?.targetConsensus === "number"
@@ -134,7 +219,7 @@ export async function GET() {
         const score =
           clamp(upsidePercent ?? 0, -25, 50) +
           gradeScore(grade?.newGrade ?? grade?.grade ?? null) +
-          recencyScore(grade?.publishedDate ?? grade?.date ?? null);
+          recencyBucketScore(recencyBucket);
 
         return {
           symbol: candidate.symbol,
@@ -146,7 +231,8 @@ export async function GET() {
           targetLow: target?.targetLow ?? null,
           lastGrade: grade?.newGrade ?? grade?.grade ?? null,
           firm: grade?.gradingCompany ?? grade?.firm ?? null,
-          publishedDate: grade?.publishedDate ?? grade?.date ?? null,
+          publishedDate,
+          recencyBucket,
           upsidePercent,
           score,
         } satisfies PickRow;
@@ -157,6 +243,9 @@ export async function GET() {
 
     for (const row of enriched) {
       if (!row.targetConsensus || !row.lastGrade) continue;
+
+      const ageInDays = getAgeInDays(row.publishedDate);
+      if (ageInDays != null && ageInDays > ANALYST_LOOKBACK_DAYS) continue;
 
       const list = bySector.get(row.sector) ?? [];
       list.push(row);

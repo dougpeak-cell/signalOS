@@ -39,6 +39,7 @@ type FmpExpertRow = {
   lastGrade: string | null;
   firm: string | null;
   publishedDate: string | null;
+  recencyBucket: "today" | "week" | "twoWeeks" | null;
   score: number;
 };
 
@@ -167,6 +168,31 @@ function getPublishedDateValue(value: string | null) {
   if (!value) return 0;
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getRecencyChip(row: FmpExpertRow) {
+  if (row.recencyBucket === "today") {
+    return {
+      label: "Today",
+      className: "border-emerald-400/25 bg-emerald-400/10 text-emerald-200",
+    };
+  }
+
+  if (row.recencyBucket === "week") {
+    return {
+      label: "7D",
+      className: "border-cyan-400/25 bg-cyan-400/10 text-cyan-200",
+    };
+  }
+
+  if (row.recencyBucket === "twoWeeks") {
+    return {
+      label: "14D",
+      className: "border-amber-400/25 bg-amber-400/10 text-amber-200",
+    };
+  }
+
+  return null;
 }
 
 function upsideTone(upside: number | null) {
@@ -324,12 +350,15 @@ function getModelAlignmentClasses(alignment: ExpertModelRow["alignment"]) {
 
 export default function ExpertsPage() {
   const [fmpRows, setFmpRows] = useState<FmpExpertRow[]>([]);
+  const [isLoadingFmpRows, setIsLoadingFmpRows] = useState(true);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
 
     async function loadFmpExperts() {
+      if (alive) setIsLoadingFmpRows(true);
+
       try {
         const res = await fetch("/api/experts/fmp", { cache: "no-store" });
         const json = await res.json();
@@ -342,6 +371,10 @@ export default function ExpertsPage() {
         setFmpRows(rows);
       } catch (error) {
         console.error("FMP experts load failed:", error);
+        if (!alive) return;
+        setFmpRows([]);
+      } finally {
+        if (alive) setIsLoadingFmpRows(false);
       }
     }
 
@@ -614,7 +647,7 @@ export default function ExpertsPage() {
                   Analyst Top Picks Across the Market
                 </div>
                 <p className="mt-1 text-[14px] leading-6 text-white/48">
-                  Diversified analyst signals ranked by upside, rating quality, recency, and sector balance.
+                  Diversified analyst signals from today, the last 7 days, and the last 14 days ranked by upside, rating quality, recency, and sector balance.
                 </p>
               </div>
               <div className="relative inline-flex items-center rounded-full border border-emerald-400/40 bg-emerald-400/10 px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200 shadow-[0_0_20px_rgba(16,185,129,0.25)]">
@@ -628,6 +661,7 @@ export default function ExpertsPage() {
                 const accent = getAccentClasses(row.upsidePercent);
                 const signalDirection = getSignalDirectionLabel(row.upsidePercent);
                 const signalDirectionClasses = getSignalDirectionClasses(row.upsidePercent);
+                const recencyChip = getRecencyChip(row);
 
                 return (
                 <div
@@ -671,6 +705,16 @@ export default function ExpertsPage() {
                       </div>
 
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-white/38">
+                        {recencyChip ? (
+                          <span
+                            className={[
+                              "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em]",
+                              recencyChip.className,
+                            ].join(" ")}
+                          >
+                            {recencyChip.label}
+                          </span>
+                        ) : null}
                         {row.lastGrade ? <span>{row.lastGrade}</span> : null}
                         {row.sector ? (
                           <>
@@ -774,9 +818,14 @@ export default function ExpertsPage() {
                 </div>
                 );
               })}
-              {fmpRows.length === 0 ? (
+              {isLoadingFmpRows ? (
                 <div className="rounded-2xl border border-white/10 bg-black/30 p-6 text-sm text-white/45">
                   Loading analyst target data...
+                </div>
+              ) : null}
+              {!isLoadingFmpRows && fmpRows.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-black/30 p-6 text-sm text-white/45">
+                  No analyst picks were found for today, the last 7 days, or the last 14 days.
                 </div>
               ) : null}
             </div>
