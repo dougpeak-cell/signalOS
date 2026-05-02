@@ -47,18 +47,51 @@ export default function TodayBottomIntelRailScroller({
   feedCards: FeedCard[];
 }) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<{
+    pointerId: number | null;
+    startClientX: number;
+    startScrollLeft: number;
+  }>({
+    pointerId: null,
+    startClientX: 0,
+    startScrollLeft: 0,
+  });
   const [thumbMetrics, setThumbMetrics] = useState({
     widthPercent: 100,
     offsetPercent: 0,
   });
 
+  const syncThumb = () => {
+    setThumbMetrics(buildThumbMetrics(scrollerRef.current));
+  };
+
+  const syncScrollFromClientX = (clientX: number, anchorToThumb = false) => {
+    const container = scrollerRef.current;
+    const track = trackRef.current;
+    if (!container || !track) return;
+
+    const { scrollWidth, clientWidth } = container;
+    if (scrollWidth <= clientWidth) return;
+
+    const rect = track.getBoundingClientRect();
+    const thumbWidthPx = (thumbMetrics.widthPercent / 100) * rect.width;
+    const maxThumbOffsetPx = Math.max(0, rect.width - thumbWidthPx);
+    const maxScrollLeft = scrollWidth - clientWidth;
+
+    const relativeX = clientX - rect.left;
+    const targetThumbOffsetPx = anchorToThumb
+      ? relativeX - thumbWidthPx / 2
+      : relativeX;
+    const clampedThumbOffsetPx = Math.max(0, Math.min(maxThumbOffsetPx, targetThumbOffsetPx));
+    const progress = maxThumbOffsetPx <= 0 ? 0 : clampedThumbOffsetPx / maxThumbOffsetPx;
+
+    container.scrollLeft = progress * maxScrollLeft;
+  };
+
   useEffect(() => {
     const container = scrollerRef.current;
     if (!container) return;
-
-    const syncThumb = () => {
-      setThumbMetrics(buildThumbMetrics(container));
-    };
 
     syncThumb();
     container.addEventListener("scroll", syncThumb, { passive: true });
@@ -74,6 +107,41 @@ export default function TodayBottomIntelRailScroller({
       window.removeEventListener("resize", syncThumb);
     };
   }, [feedCards.length]);
+
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      const container = scrollerRef.current;
+      const track = trackRef.current;
+      const dragState = dragStateRef.current;
+      if (!container || !track || dragState.pointerId == null) return;
+      if (event.pointerId !== dragState.pointerId) return;
+
+      const rect = track.getBoundingClientRect();
+      const thumbWidthPx = (thumbMetrics.widthPercent / 100) * rect.width;
+      const maxThumbOffsetPx = Math.max(0, rect.width - thumbWidthPx);
+      const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+      if (maxThumbOffsetPx <= 0 || maxScrollLeft <= 0) return;
+
+      const deltaX = event.clientX - dragState.startClientX;
+      const scrollRatio = maxScrollLeft / maxThumbOffsetPx;
+      container.scrollLeft = dragState.startScrollLeft + deltaX * scrollRatio;
+    };
+
+    const endDrag = (event: PointerEvent) => {
+      if (dragStateRef.current.pointerId !== event.pointerId) return;
+      dragStateRef.current.pointerId = null;
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", endDrag);
+      window.removeEventListener("pointercancel", endDrag);
+    };
+  }, [thumbMetrics.widthPercent]);
 
   return (
     <>
@@ -109,9 +177,27 @@ export default function TodayBottomIntelRailScroller({
         ))}
       </div>
 
-      <div className="mt-3 h-1.5 w-full rounded-full bg-cyan-400/10 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.08)]">
+      <div
+        ref={trackRef}
+        className="mt-3 h-1.5 w-full cursor-pointer rounded-full bg-cyan-400/10 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.08)]"
+        onPointerDown={(event) => {
+          if (event.target !== event.currentTarget) return;
+          syncScrollFromClientX(event.clientX, true);
+        }}
+      >
         <div
-          className="h-full rounded-full bg-linear-to-r from-cyan-300/80 via-cyan-400/75 to-emerald-300/70 shadow-[0_0_16px_rgba(34,211,238,0.2)] transition-[width,transform] duration-150 ease-out"
+          className="h-full cursor-grab rounded-full bg-linear-to-r from-cyan-300/80 via-cyan-400/75 to-emerald-300/70 shadow-[0_0_16px_rgba(34,211,238,0.2)] transition-[width,transform] duration-150 ease-out active:cursor-grabbing"
+          onPointerDown={(event) => {
+            const container = scrollerRef.current;
+            if (!container) return;
+            dragStateRef.current = {
+              pointerId: event.pointerId,
+              startClientX: event.clientX,
+              startScrollLeft: container.scrollLeft,
+            };
+            event.preventDefault();
+            event.stopPropagation();
+          }}
           style={{
             width: `${thumbMetrics.widthPercent}%`,
             transform: `translateX(${thumbMetrics.offsetPercent}%)`,
