@@ -178,7 +178,7 @@ export default function MobileBottomNav({
           type="button"
           onClick={openSigi}
           className={[
-            "col-span-2 flex flex-col items-center justify-center border border-cyan-400/20 bg-cyan-400/12 px-1 font-semibold uppercase text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/18 sm:col-span-1",
+            "col-span-1 flex flex-col items-center justify-center border border-cyan-400/20 bg-cyan-400/12 px-1 font-semibold uppercase text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/18",
             forceVisible
               ? "min-h-9 rounded-[18px] text-[8px] tracking-widest"
               : "min-h-11 rounded-2xl text-[9px] tracking-[0.12em]",
