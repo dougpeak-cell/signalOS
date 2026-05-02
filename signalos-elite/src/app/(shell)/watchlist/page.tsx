@@ -14,6 +14,10 @@ import {
   getMomentumScore,
   getTradeScore,
 } from "@/lib/stocks/signalosScores";
+import {
+  readPortfolioHoldings,
+  replacePortfolioHoldings,
+} from "@/lib/portfolio/localPortfolio";
 import { removeFromWatchlist } from "@/lib/storage/watchlist";
 import { calculateWatchlistScore } from "@/lib/watchlist/calculateWatchlistScore";
 import { readHiddenWatchlistTickers } from "@/lib/watchlist/localWatchlist";
@@ -72,48 +76,11 @@ function normalizeTicker(value: string) {
   return value.trim().toUpperCase().replace(/[^A-Z.\-]/g, "");
 }
 
-function buildPortfolioAddHref(
-  symbol: string,
-  row: {
-    currentPrice?: number | null;
-    price?: number | null;
-    target?: number | null;
-    conviction?: number | null;
-  },
-  buildPreviewHref: (href: string) => string
-) {
-  const params = new URLSearchParams({ add: symbol });
-  const livePrice =
-    typeof row.currentPrice === "number" && Number.isFinite(row.currentPrice)
-      ? row.currentPrice
-      : typeof row.price === "number" && Number.isFinite(row.price)
-        ? row.price
-        : null;
-
-  if (livePrice != null && livePrice > 0) {
-    params.set("price", String(livePrice));
-  }
-
-  if (typeof row.target === "number" && Number.isFinite(row.target) && row.target > 0) {
-    params.set("target", String(row.target));
-  }
-
-  if (
-    typeof row.conviction === "number" &&
-    Number.isFinite(row.conviction) &&
-    row.conviction >= 0
-  ) {
-    params.set("conviction", String(row.conviction));
-  }
-
-  return buildPreviewHref(`/portfolio?${params.toString()}`);
-}
-
-const PORTFOLIO_STORAGE_KEY = "signalos.portfolio.holdings.v1";
-
 function addToPortfolioFromWatchlist(stock: {
   ticker: string;
+  name?: string | null;
   currentPrice?: number | null;
+  price?: number | null;
   target?: number | null;
   stop?: number | null;
   conviction?: number | null;
@@ -121,55 +88,38 @@ function addToPortfolioFromWatchlist(stock: {
 }) {
   const ticker = normalizeTicker(stock.ticker);
 
-  let created = false;
+  const livePrice =
+    typeof stock.currentPrice === "number" && Number.isFinite(stock.currentPrice) && stock.currentPrice > 0
+      ? stock.currentPrice
+      : typeof stock.price === "number" && Number.isFinite(stock.price) && stock.price > 0
+        ? stock.price
+        : 0;
 
-  try {
-    const raw = window.localStorage.getItem(PORTFOLIO_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    const safe = Array.isArray(parsed) ? parsed : [];
+  const current = readPortfolioHoldings();
+  if (current.some((holding) => holding.ticker === ticker)) return;
 
-    const exists = safe.some(
-      (item: { ticker?: string }) => normalizeTicker(String(item.ticker ?? "")) === ticker
-    );
-
-    const next = exists
-      ? safe
-      : [
-          {
-            ticker,
-            shares: 0,
-            entryPrice: 0,
-            currentPrice:
-              typeof stock.currentPrice === "number" && Number.isFinite(stock.currentPrice)
-                ? stock.currentPrice
-                : 0,
-            target:
-              typeof stock.target === "number" && Number.isFinite(stock.target)
-                ? stock.target
-                : null,
-            stop:
-              typeof stock.stop === "number" && Number.isFinite(stock.stop)
-                ? stock.stop
-                : null,
-            conviction:
-              typeof stock.conviction === "number" && Number.isFinite(stock.conviction)
-                ? stock.conviction
-                : 60,
-            thesis: stock.thesis?.trim() || "Added from SignalOS.",
-            status: "pending",
-          },
-          ...safe,
-        ];
-
-    window.localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(next));
-    created = !exists;
-  } catch {}
-
-  window.dispatchEvent(new Event("signalos:portfolio-updated"));
-  window.dispatchEvent(
-    new CustomEvent("signalos:portfolio-open-edit", {
-      detail: { ticker, created },
-    })
+  replacePortfolioHoldings(
+    [
+      {
+        ticker,
+        name: stock.name?.trim() || ticker,
+        direction: "Long",
+        status: "open",
+        tag: "Watchlist",
+        thesis: stock.thesis?.trim() || "Added from SignalOS watchlist.",
+        shares: 1,
+        entryPrice: Number(livePrice.toFixed(2)),
+        currentPrice: Number(livePrice.toFixed(2)),
+        targetPrice: null,
+        stopPrice: null,
+        conviction:
+          typeof stock.conviction === "number" && Number.isFinite(stock.conviction)
+            ? Math.max(0, Math.min(100, Math.round(stock.conviction)))
+            : 60,
+      },
+      ...current,
+    ],
+    { dispatchEvent: true }
   );
 }
 
@@ -773,7 +723,17 @@ function WatchlistRowItem({
 
           <div className="flex flex-wrap items-center gap-1.5 md:justify-end">
             <a
-              href={portfolioAddHref}
+              href={portfolioHref}
+              onClick={() =>
+                addToPortfolioFromWatchlist({
+                  ticker: row.ticker,
+                  name: row.name,
+                  currentPrice: row.price,
+                  price: row.price,
+                  conviction: row.conviction,
+                  thesis: row.thesis,
+                })
+              }
               className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/85 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
             >
               + Portfolio
@@ -1212,7 +1172,7 @@ export default function WatchlistPage() {
                       <WatchlistRowItem
                         key={symbol}
                         isTop={index === 0}
-                        portfolioAddHref={buildPortfolioAddHref(symbol, item, buildPreviewHref)}
+                        portfolioAddHref={buildPreviewHref(`/portfolio?focus=${symbol}`)}
                         portfolioHref={buildPreviewHref(`/portfolio?focus=${symbol}`)}
                         openChartHref={buildPreviewHref(`/stocks/${symbol}`)}
                         stockHref={buildPreviewHref(`/stocks/${symbol}`)}
