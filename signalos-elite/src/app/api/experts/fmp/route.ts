@@ -18,6 +18,8 @@ const SECTOR_BUCKETS = [
   "Basic Materials",
 ];
 
+const BROAD_CANDIDATE_LIMIT = 20;
+
 type PickRow = {
   symbol: string;
   companyName: string | null;
@@ -41,6 +43,14 @@ type GradeRow = {
   firm?: string | null;
   publishedDate?: string | null;
   date?: string | null;
+};
+
+type CandidateRow = {
+  symbol: string;
+  companyName: string | null;
+  sector: string;
+  price: number | null;
+  consensusScore?: number;
 };
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -145,6 +155,179 @@ async function fetchJson(url: string) {
   return res.json();
 }
 
+async function fetchText(url: string) {
+  const res = await fetch(url, { cache: "no-store" });
+  return res.text();
+}
+
+function parseCsvLine(line: string) {
+  const values: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+
+    if (char === '"') {
+      const nextChar = line[index + 1];
+      if (inQuotes && nextChar === '"') {
+        current += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === "," && !inQuotes) {
+      values.push(current);
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current);
+  return values.map((value) => value.trim());
+}
+
+function parseCsvRecords(csvText: string) {
+  const lines = csvText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) return [] as Array<Record<string, string>>;
+
+  const headers = parseCsvLine(lines[0]);
+
+  return lines.slice(1).map((line) => {
+    const values = parseCsvLine(line);
+    return headers.reduce<Record<string, string>>((record, header, index) => {
+      record[header] = values[index] ?? "";
+      return record;
+    }, {});
+  });
+}
+
+function toFiniteNumber(value: unknown) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value !== "string" || value.trim() === "") return null;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeSector(value: string | null | undefined) {
+  const sector = value?.trim();
+  return sector && sector.length > 0 ? sector : "Other";
+}
+
+function isBroadMarketTicker(symbol: string) {
+  return /^[A-Z]{1,5}$/.test(symbol);
+}
+
+async function getBroadConsensusCandidates() {
+  const csvText = await fetchText(
+    `https://financialmodelingprep.com/stable/upgrades-downgrades-consensus-bulk?apikey=${FMP_API_KEY}`
+  );
+
+  const records = parseCsvRecords(csvText);
+
+  return records
+    .map((record) => {
+      const symbol = String(record.symbol ?? "").trim().toUpperCase();
+      const strongBuy = toFiniteNumber(record.strongBuy) ?? 0;
+      const buy = toFiniteNumber(record.buy) ?? 0;
+      const hold = toFiniteNumber(record.hold) ?? 0;
+      const sell = toFiniteNumber(record.sell) ?? 0;
+      const strongSell = toFiniteNumber(record.strongSell) ?? 0;
+      const consensus = String(record.consensus ?? "").trim();
+
+      return {
+        symbol,
+        consensus,
+        consensusScore:
+          strongBuy * 5 +
+          buy * 2 -
+          hold -
+          sell * 4 -
+          strongSell * 6,
+      };
+    })
+    .filter(
+      (record) =>
+        isBroadMarketTicker(record.symbol) &&
+        (record.consensus === "Buy" || record.consensus === "Strong Buy")
+    )
+    .sort((left, right) => right.consensusScore - left.consensusScore)
+    .slice(0, BROAD_CANDIDATE_LIMIT);
+}
+
+async function getFallbackSectorCandidates() {
+  const sectorCandidates = await Promise.all(
+    SECTOR_BUCKETS.map(async (sector) => {
+      const url =
+        `https://financialmodelingprep.com/stable/company-screener` +
+        `?sector=${encodeURIComponent(sector)}` +
+        `&marketCapMoreThan=2000000000` +
+        `&volumeMoreThan=500000` +
+        `&priceMoreThan=5` +
+        `&isActivelyTrading=true` +
+        `&limit=6` +
+        `&apikey=${FMP_API_KEY}`;
+
+      const json = await fetchJson(url);
+      const rows = Array.isArray(json) ? json : [];
+
+      return rows.slice(0, 4).map((item: any) => ({
+        symbol: String(item.symbol ?? "").trim().toUpperCase(),
+        companyName: item.companyName ?? item.company ?? null,
+        sector,
+        price: typeof item.price === "number" ? item.price : null,
+      })) satisfies CandidateRow[];
+    })
+  );
+
+  return sectorCandidates.flat();
+}
+
+async function buildCandidateRows() {
+  try {
+    const broadCandidates = await getBroadConsensusCandidates();
+
+    const enriched = await Promise.all(
+      broadCandidates.map(async (candidate) => {
+        const profileJson = await fetchJson(
+          `https://financialmodelingprep.com/stable/profile?symbol=${candidate.symbol}&apikey=${FMP_API_KEY}`
+        );
+
+        const profile = Array.isArray(profileJson) ? profileJson[0] : profileJson;
+
+        return {
+          symbol: candidate.symbol,
+          companyName:
+            typeof profile?.companyName === "string" ? profile.companyName : candidate.symbol,
+          sector: normalizeSector(typeof profile?.sector === "string" ? profile.sector : null),
+          price: toFiniteNumber(profile?.price),
+          consensusScore: candidate.consensusScore,
+        } satisfies CandidateRow;
+      })
+    );
+
+    const valid = enriched.filter((candidate) => candidate.price != null);
+    if (valid.length > 0) return valid;
+  } catch (error) {
+    console.error("FMP broad analyst universe error:", error);
+  }
+
+  return getFallbackSectorCandidates();
+}
+
 export async function GET() {
   if (!FMP_API_KEY) {
     return NextResponse.json(
@@ -154,32 +337,7 @@ export async function GET() {
   }
 
   try {
-    const sectorCandidates = await Promise.all(
-      SECTOR_BUCKETS.map(async (sector) => {
-        const url =
-          `https://financialmodelingprep.com/stable/company-screener` +
-          `?sector=${encodeURIComponent(sector)}` +
-          `&marketCapMoreThan=2000000000` +
-          `&volumeMoreThan=500000` +
-          `&priceMoreThan=5` +
-          `&isActivelyTrading=true` +
-          `&limit=6` +
-          `&apikey=${FMP_API_KEY}`;
-
-        const json = await fetchJson(url);
-
-        const rows = Array.isArray(json) ? json : [];
-
-        return rows.slice(0, 4).map((item: any) => ({
-          symbol: item.symbol,
-          companyName: item.companyName ?? item.company ?? null,
-          sector,
-          price: typeof item.price === "number" ? item.price : null,
-        }));
-      })
-    );
-
-    const candidates = sectorCandidates.flat();
+    const candidates = await buildCandidateRows();
 
     const enriched = await Promise.all(
       candidates.map(async (candidate) => {
@@ -234,7 +392,7 @@ export async function GET() {
           publishedDate,
           recencyBucket,
           upsidePercent,
-          score,
+          score: score + (candidate.consensusScore ?? 0),
         } satisfies PickRow;
       })
     );
@@ -253,6 +411,7 @@ export async function GET() {
     }
 
     const diversified: PickRow[] = [];
+    const selectedSymbols = new Set<string>();
 
     for (const sector of SECTOR_BUCKETS) {
       const picks = (bySector.get(sector) ?? [])
@@ -260,6 +419,16 @@ export async function GET() {
         .slice(0, 1);
 
       diversified.push(...picks);
+      picks.forEach((pick) => selectedSymbols.add(pick.symbol));
+    }
+
+    const remaining = enriched
+      .filter((row) => !selectedSymbols.has(row.symbol))
+      .sort((a, b) => b.score - a.score);
+
+    for (const row of remaining) {
+      if (diversified.length >= 12) break;
+      diversified.push(row);
     }
 
     const rows = diversified
