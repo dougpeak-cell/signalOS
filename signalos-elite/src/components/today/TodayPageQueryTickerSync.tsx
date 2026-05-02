@@ -11,6 +11,24 @@ export default function TodayPageQueryTickerSync() {
   const selectedTicker = useOptionalSelectedTicker();
 
   useEffect(() => {
+    if (ticker) {
+      return;
+    }
+
+    if (window.location.hash === "#sigi-command-panel") {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [ticker]);
+
+  useEffect(() => {
     if (!ticker || !selectedTicker) {
       return;
     }
