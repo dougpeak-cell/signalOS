@@ -1,0 +1,25 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Simplified original SignalOS Sigi mascot created in-repo by GitHub Copilot (GPT-5.4), April 2026. See public/sigi-mascot.LICENSE.txt for license and provenance. -->
+  <defs>
+    <filter id="shadow" x="40" y="88" width="432" height="296" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="12"/>
+      <feGaussianBlur stdDeviation="18"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.0235294 0 0 0 0 0.121569 0 0 0 0 0.262745 0 0 0 0.24 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)" transform="translate(256 242) scale(1.6) translate(-256 -242)">
+    <rect x="162" y="182" width="188" height="120" rx="60" fill="#EFF6FF" stroke="#173A8B" stroke-width="14"/>
+    <rect x="144" y="210" width="26" height="64" rx="13" fill="#8EDBFF" stroke="#173A8B" stroke-width="10"/>
+    <rect x="342" y="210" width="26" height="64" rx="13" fill="#8EDBFF" stroke="#173A8B" stroke-width="10"/>
+    <rect x="236" y="188" width="40" height="22" rx="11" fill="#173A8B"/>
+    <circle cx="256" cy="242" r="52" fill="#8EDBFF" stroke="#173A8B" stroke-width="12"/>
+    <circle cx="256" cy="242" r="22" fill="#173A8B"/>
+    <path d="M170 242H204" stroke="#173A8B" stroke-width="12" stroke-linecap="round"/>
+    <path d="M308 242H342" stroke="#173A8B" stroke-width="12" stroke-linecap="round"/>
+  </g>
+</svg>

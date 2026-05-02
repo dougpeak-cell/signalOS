@@ -1,0 +1,15 @@
+SignalOS Sigi Mascot
+
+File: public/sigi-mascot.svg
+
+Provenance:
+- Created specifically for SignalOS during the Sigi assistant redesign in April 2026.
+- Created in-repository by GitHub Copilot using GPT-5.4 at the direction of the repository owner.
+- Replaces the earlier untracked mascot draft with a new original SVG artwork.
+
+License:
+- Copyright (c) 2026 SignalOS.
+- Permission is granted to use, copy, modify, and distribute this asset as part of the SignalOS project and its derivatives.
+
+Notes:
+- This file is intended to provide clear provenance and licensing for the mascot asset used by the shell Sigi assistant.
