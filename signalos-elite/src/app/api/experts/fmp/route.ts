@@ -392,7 +392,7 @@ export async function GET() {
           publishedDate,
           recencyBucket,
           upsidePercent,
-          score: score + (candidate.consensusScore ?? 0),
+          score,
         } satisfies PickRow;
       })
     );
