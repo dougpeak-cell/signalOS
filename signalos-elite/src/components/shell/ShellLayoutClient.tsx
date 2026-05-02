@@ -188,8 +188,8 @@ function ShellLayoutContent({
                 Crypto Mode · 24/7 market intelligence
               </div>
             ) : null}
-            <div className="w-full px-4 py-3 md:px-6 md:py-4 xl:px-8 2xl:px-10">
-              <div className="rounded-3xl border border-cyan-400/10 bg-linear-to-b from-[#031525] to-[#020814] p-4 md:p-5 xl:p-6">
+            <div className="w-full px-0 py-0 md:px-6 md:py-4 xl:px-8 2xl:px-10">
+              <div className="rounded-none border-0 bg-transparent p-0 md:rounded-3xl md:border md:border-cyan-400/10 md:bg-linear-to-b md:from-[#031525] md:to-[#020814] md:p-5 xl:md:p-6">
                 <div
                   className={[
                     "flex w-full",

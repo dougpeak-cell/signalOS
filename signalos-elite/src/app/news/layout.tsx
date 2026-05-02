@@ -82,9 +82,9 @@ function NewsLayoutInner({
           <BreakingNewsTicker />
           <div className="h-2" />
 
-          <div className="mx-auto w-full px-4 md:px-6 xl:px-8 2xl:px-10">
+          <div className="mx-auto w-full px-0 md:px-6 xl:px-8 2xl:px-10">
             <main className="min-w-0 w-full">
-              <div className="rounded-3xl border border-cyan-400/10 bg-linear-to-b from-[#031525] to-[#020814] p-4 md:p-5 xl:p-6">
+              <div className="rounded-none border-0 bg-transparent p-0 md:rounded-3xl md:border md:border-cyan-400/10 md:bg-linear-to-b md:from-[#031525] md:to-[#020814] md:p-5 xl:md:p-6">
                 {children}
               </div>
             </main>
