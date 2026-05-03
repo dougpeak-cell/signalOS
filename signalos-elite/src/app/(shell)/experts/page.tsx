@@ -110,7 +110,7 @@ const convictionLeaders: ExpertConviction[] = [
 const modelRows: ExpertModelRow[] = [
   {
     name: "Technology Growth Desk",
-    source: "SigiOS Composite",
+    source: "SIGI Composite",
     style: "Sell-side composite",
     hit30: 67,
     avg90: 8.6,
@@ -128,7 +128,7 @@ const modelRows: ExpertModelRow[] = [
   },
   {
     name: "Insider Accumulation Tracker",
-    source: "SigiOS",
+    source: "SIGI",
     style: "Insider model",
     hit30: 59,
     avg90: 6.7,
@@ -428,7 +428,7 @@ export default function ExpertsPage() {
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">
-                SigiOS Expert Desk
+                SIGI Expert Desk
               </div>
 
               <h1 className="mt-2 flex items-center text-3xl font-semibold tracking-[-0.03em] text-white md:text-[38px]">
@@ -480,7 +480,7 @@ export default function ExpertsPage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300/90">
-                    SigiOS Model Command
+                    SIGI Model Command
                   </div>
                   <p className="mt-1 max-w-xl text-[14px] leading-6 text-white/48">
                     Proprietary model baskets cross-checked against live analyst flow, hit-rate consistency, and sector leadership.

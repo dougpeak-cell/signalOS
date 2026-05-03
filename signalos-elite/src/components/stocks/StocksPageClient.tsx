@@ -228,7 +228,7 @@ export default function StocksPageClient({
         <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.26em] text-cyan-300/80">
-              SignalOS Discovery
+              SigiOS Discovery
             </div>
             <h1 className="text-3xl font-semibold tracking-tight text-white">Stocks</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-white/58">
