@@ -89,9 +89,14 @@ export default function TopNav({
         <div className="flex items-center gap-4 md:gap-6">
           <Link
             href={buildNavHref("/today")}
-            className="text-[13px] font-semibold tracking-[0.24em] text-white md:text-[15px] md:tracking-[0.32em]"
+            className="flex flex-col leading-none"
           >
-            SignalOS
+            <span className="text-[13px] font-semibold tracking-[0.24em] text-white md:text-[15px] md:tracking-[0.32em]">
+              SigiOS
+            </span>
+            <span className="mt-1 text-[9px] font-medium tracking-[0.18em] text-cyan-200/65 md:text-[10px]">
+              Powered by Sigi
+            </span>
           </Link>
 
           <nav className={forceMobilePreview ? "hidden" : "hidden sm:flex items-center gap-5"}>
