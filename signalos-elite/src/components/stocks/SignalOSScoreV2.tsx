@@ -181,7 +181,7 @@ export default function SignalOSScoreV2({
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <div className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-300">
-            SignalOS Score v2
+            Sigi Score v2
           </div>
           <div className="mt-1 text-[11px] text-white/45">
             Quality, momentum, and today trade read.
