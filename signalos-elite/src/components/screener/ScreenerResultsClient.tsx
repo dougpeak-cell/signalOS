@@ -421,7 +421,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
         score: signalosScore,
         masterScore: signalosScore,
         signalosScore,
-        thesis: `${sectorKey} leader available for SignalOS review.`,
+        thesis: `${sectorKey} leader available for SigiOS review.`,
         price: quote?.price ?? null,
         target: null,
         signal: "Neutral" as const,
@@ -456,7 +456,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
         target: null,
         upside: null,
         signal: "Neutral",
-        thesis: `${ticker} is part of the broad SignalOS market opportunity feed.`,
+        thesis: `${ticker} is part of the broad SigiOS market opportunity feed.`,
         tier: null,
         entryLow: null,
         entryHigh: null,
@@ -784,7 +784,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                       {stock.company ?? stock.name ?? ticker}
                     </div>
                     <div className="mt-0.5 line-clamp-2 text-[11px] leading-4.5 text-white/45">
-                      {stock.thesis ?? "Live SignalOS match"}
+                      {stock.thesis ?? "Live SigiOS match"}
                     </div>
                   </div>
 

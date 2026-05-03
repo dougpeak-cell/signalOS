@@ -486,7 +486,7 @@ const FALLBACK_FEATURED_MACRO_CARD: FeaturedMacroCardData = {
   eyebrow: "Global Market Pulse",
   headline: "World news is shaping today’s tape across rates, energy, AI policy, and growth expectations.",
   summary:
-    "SignalOS now translates macro and geopolitical developments into stock-specific context so your intraday setups sit inside the broader market regime, not outside it.",
+    "SigiOS now translates macro and geopolitical developments into stock-specific context so your intraday setups sit inside the broader market regime, not outside it.",
   whyItMatters:
     "Rising yields, commodity shocks, and AI-policy headlines can change leadership, compress multiples, or accelerate momentum in semis, mega-cap tech, and risk assets.",
   tone: "neutral" as const,
@@ -963,7 +963,7 @@ export async function TodayPageShell() {
       <div className="w-full px-4 pb-10 pt-4">
         <div className="min-w-0 space-y-6">
             <PageHeaderBlock
-              eyebrow="SignalOS Front Page"
+              eyebrow="SigiOS Front Page"
               title="Today"
               description="Best intraday setups across momentum and reversals. Tap any ticker to open the live chart."
               className="rounded-[28px] border-cyan-400/10 bg-linear-to-br from-[#040b12] via-[#05121b] to-[#020910] shadow-[0_0_0_1px_rgba(0,255,255,0.05),0_0_30px_rgba(0,255,255,0.08)]"

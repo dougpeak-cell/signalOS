@@ -29,7 +29,7 @@ const baseEntries: Entry[] = [
     category: "Stock Basics",
     definition: "A short symbol used to identify a stock, ETF, crypto asset, or index.",
     example: "AAPL = Apple, TSLA = Tesla, SPY = S&P 500 ETF.",
-    signalosUse: "Type a ticker into SignalOS to open charts, watchlists, portfolios, and workspaces.",
+    signalosUse: "Type a ticker into SigiOS to open charts, watchlists, portfolios, and workspaces.",
   },
   {
     term: "Stock Symbol",
@@ -43,7 +43,7 @@ const baseEntries: Entry[] = [
     category: "Stock Basics",
     definition: "The current value where buyers and sellers are trading a stock.",
     example: "If MSFT is $420, that is the current market price.",
-    signalosUse: "SignalOS compares price against trend, levels, targets, and risk zones.",
+    signalosUse: "SigiOS compares price against trend, levels, targets, and risk zones.",
   },
   {
     term: "Volume",
@@ -64,28 +64,28 @@ const baseEntries: Entry[] = [
     category: "Stock Basics",
     definition: "The total market value of a company.",
     example: "Large-cap stocks are usually bigger, more established companies.",
-    signalosUse: "SignalOS uses market cap to help users understand company size and risk profile.",
+    signalosUse: "SigiOS uses market cap to help users understand company size and risk profile.",
   },
   {
     term: "Beta",
     category: "Fundamentals",
     definition: "Beta measures how much a stock moves compared to the overall market, usually the S&P 500.",
     example: "Beta 1.0 = moves with market, Beta 1.5 = moves 50% more, Beta 0.5 = moves half as much.",
-    signalosUse: "SignalOS uses beta to frame volatility. High beta names suit momentum and high-risk trades, while low beta names are more defensive.",
+    signalosUse: "SigiOS uses beta to frame volatility. High beta names suit momentum and high-risk trades, while low beta names are more defensive.",
   },
   {
     term: "52-Week High",
     category: "Stock Basics",
     definition: "The highest price a stock has traded at over the past 12 months.",
     example: "If a stock’s 52-week high is $100 and it trades at $98, it is near breakout territory.",
-    signalosUse: "SignalOS highlights stocks pushing toward or breaking above their 52-week high because they often attract momentum traders.",
+    signalosUse: "SigiOS highlights stocks pushing toward or breaking above their 52-week high because they often attract momentum traders.",
   },
   {
     term: "52-Week Low",
     category: "Stock Basics",
     definition: "The lowest price a stock has traded at over the past 12 months.",
     example: "If a stock’s 52-week low is $20 and it trades at $21, it is near its weakest range.",
-    signalosUse: "SignalOS treats stocks near 52-week lows carefully because weakness can persist unless there is a clear reversal signal.",
+    signalosUse: "SigiOS treats stocks near 52-week lows carefully because weakness can persist unless there is a clear reversal signal.",
   },
   {
     term: "P/E Ratio",
@@ -99,7 +99,7 @@ const baseEntries: Entry[] = [
     category: "Fundamentals",
     definition: "Earnings per share. It shows how much profit a company earns per share.",
     example: "Higher EPS can mean stronger profitability.",
-    signalosUse: "SignalOS may use EPS to help explain company quality.",
+    signalosUse: "SigiOS may use EPS to help explain company quality.",
   },
   {
     term: "Dividend",
@@ -120,7 +120,7 @@ const baseEntries: Entry[] = [
     category: "Fundamentals",
     definition: "Return on Equity (ROE) measures how efficiently a company uses shareholder equity to generate profit.",
     example: "If a company earns $10M with $50M equity, ROE = 20%.",
-    signalosUse: "SignalOS uses ROE to evaluate quality. Strong stocks often have consistently high ROE.",
+    signalosUse: "SigiOS uses ROE to evaluate quality. Strong stocks often have consistently high ROE.",
   },
   {
     term: "Support",
@@ -141,7 +141,7 @@ const baseEntries: Entry[] = [
     category: "Chart Terms",
     definition: "Volume Weighted Average Price. A common intraday reference level.",
     example: "Price above VWAP can suggest stronger intraday demand.",
-    signalosUse: "SignalOS uses VWAP as a key level for intraday context.",
+    signalosUse: "SigiOS uses VWAP as a key level for intraday context.",
   },
   {
     term: "Demand Zone",
@@ -225,14 +225,14 @@ const baseEntries: Entry[] = [
     category: "Signal Terms",
     definition: "A positive market view suggesting price may move higher.",
     example: "A bullish setup may show strength, demand, and momentum.",
-    signalosUse: "SignalOS labels bullish conditions when multiple signals support upside.",
+    signalosUse: "SigiOS labels bullish conditions when multiple signals support upside.",
   },
   {
     term: "Bearish",
     category: "Signal Terms",
     definition: "A negative market view suggesting price may move lower.",
     example: "A bearish setup may show weakness, supply, and downside pressure.",
-    signalosUse: "SignalOS labels bearish conditions when risk or downside pressure is elevated.",
+    signalosUse: "SigiOS labels bearish conditions when risk or downside pressure is elevated.",
   },
   {
     term: "Neutral",
@@ -251,7 +251,7 @@ const baseEntries: Entry[] = [
   {
     term: "Strength Score",
     category: "Signal Terms",
-    definition: "A SignalOS score estimating how powerful a setup appears.",
+    definition: "A SigiOS score estimating how powerful a setup appears.",
     example: "A high score means the stock deserves attention.",
     signalosUse: "Strength Score helps users sort and prioritize ideas.",
   },
@@ -260,7 +260,7 @@ const baseEntries: Entry[] = [
     category: "Signal Terms",
     definition: "When multiple signals agree at the same time.",
     example: "Trend, volume, catalyst, and support all align.",
-    signalosUse: "SignalOS highlights confluence because aligned signals can create cleaner setups.",
+    signalosUse: "SigiOS highlights confluence because aligned signals can create cleaner setups.",
   },
   {
     term: "Catalyst",
@@ -288,67 +288,67 @@ const baseEntries: Entry[] = [
     category: "Signal Terms",
     definition: "The price area where a trader considers starting a position.",
     example: "Entry near support may offer better risk control.",
-    signalosUse: "SignalOS helps users think about entry only after context is reviewed.",
+    signalosUse: "SigiOS helps users think about entry only after context is reviewed.",
   },
   {
     term: "Open Chart",
-    category: "SignalOS Commands",
+    category: "SigiOS Commands",
     definition: "A command that opens the live chart for a ticker.",
     example: "Open Chart on NVDA shows NVIDIA’s live chart page.",
     signalosUse: "Use this first when you want to inspect price action.",
   },
   {
     term: "Open Workspace",
-    category: "SignalOS Commands",
+    category: "SigiOS Commands",
     definition: "A command that opens a focused decision page for one stock.",
     example: "Open Workspace for TSLA to view setup, levels, and context.",
     signalosUse: "Use Workspace when you want deeper analysis before acting.",
   },
   {
     term: "Add to Watchlist",
-    category: "SignalOS Commands",
+    category: "SigiOS Commands",
     definition: "Adds a stock to your monitoring list.",
     example: "Add AAPL to Watchlist to keep tracking it.",
     signalosUse: "Use Watchlist for stocks you are interested in but may not own.",
   },
   {
     term: "Add to Portfolio",
-    category: "SignalOS Commands",
+    category: "SigiOS Commands",
     definition: "Adds a stock to your ownership or trade tracking list.",
     example: "Add MSFT to Portfolio if you own it or want to track it like a position.",
     signalosUse: "Use Portfolio for entries, targets, stops, gains, losses, and risk.",
   },
   {
     term: "Sigi Assistant",
-    category: "SignalOS Tools",
-    definition: "The AI assistant inside SignalOS.",
+    category: "SigiOS Tools",
+    definition: "The AI assistant inside SigiOS.",
     example: "Ask: What matters most for NVDA?",
     signalosUse: "Use Sigi to summarize risk, catalysts, and setup quality.",
   },
   {
     term: "Screener",
-    category: "SignalOS Tools",
+    category: "SigiOS Tools",
     definition: "A tool for finding stocks based on filters, rankings, and signals.",
     example: "Use Screener to find strong movers or top-ranked setups.",
     signalosUse: "Use Screener when you do not know what stock to look at yet.",
   },
   {
     term: "Experts",
-    category: "SignalOS Tools",
+    category: "SigiOS Tools",
     definition: "A page focused on analyst picks, ratings, targets, and market ideas.",
     example: "Use Experts to see analyst-backed opportunities.",
     signalosUse: "Use Experts for outside confirmation and target context.",
   },
   {
     term: "News",
-    category: "SignalOS Tools",
+    category: "SigiOS Tools",
     definition: "A page showing market headlines and stock-related stories.",
     example: "News may explain why a stock is moving.",
     signalosUse: "Check News to find catalysts before trusting a move.",
   },
   {
     term: "Crypto",
-    category: "SignalOS Tools",
+    category: "SigiOS Tools",
     definition: "A page for digital asset symbols and crypto market movement.",
     example: "BTCUSD tracks Bitcoin priced in dollars.",
     signalosUse: "Use Crypto separately because crypto symbols often use different formats.",
@@ -440,7 +440,7 @@ function EducationPageContent() {
           ].join(" ")}
         >
           <div className="text-xs font-black uppercase tracking-[0.24em] text-cyan-300">
-            SignalOS Education
+            SigiOS Education
           </div>
 
           <h1
@@ -449,7 +449,7 @@ function EducationPageContent() {
               isMobilePreview ? "text-3xl" : "text-4xl",
             ].join(" ")}
           >
-            SignalOS Encyclopedia
+            SigiOS Encyclopedia
           </h1>
 
           <p
@@ -459,7 +459,7 @@ function EducationPageContent() {
             ].join(" ")}
           >
             A beginner-friendly dictionary for first-time stock traders. Learn
-            the words, buttons, abbreviations, and signals used across SignalOS.
+            the words, buttons, abbreviations, and signals used across SigiOS.
           </p>
         </section>
 
@@ -531,7 +531,7 @@ function EducationPageContent() {
 
               <div className="mt-3 rounded-xl border border-cyan-400/15 bg-cyan-400/4.5 p-3">
                 <div className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-300">
-                  How SignalOS uses it
+                  How SigiOS uses it
                 </div>
                 <p className="mt-2 text-xs leading-5 text-white/68">
                   {entry.signalosUse}
@@ -565,7 +565,7 @@ function EducationPageContent() {
               isMobilePreview ? "max-w-none leading-6" : "max-w-4xl leading-7",
             ].join(" ")}
           >
-            SignalOS helps organize market information, but no signal,
+            SigiOS helps organize market information, but no signal,
             definition, chart, or AI summary can remove risk. Use this
             encyclopedia to understand what you are seeing before making
             decisions.
@@ -582,10 +582,10 @@ function EducationPageFallback() {
       <div className="mx-auto max-w-7xl">
         <section className="rounded-3xl border border-cyan-400/15 bg-cyan-400/2.5 p-6 shadow-[0_0_44px_rgba(34,211,238,0.045)]">
           <div className="text-xs font-black uppercase tracking-[0.24em] text-cyan-300">
-            SignalOS Education
+            SigiOS Education
           </div>
           <h1 className="mt-3 text-4xl font-black tracking-tight text-white">
-            SignalOS Encyclopedia
+            SigiOS Encyclopedia
           </h1>
         </section>
       </div>

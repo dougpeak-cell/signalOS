@@ -961,7 +961,7 @@ export default async function ScreenerPage({
 
             <div className="relative z-10">
               <div className="mb-2 text-xs uppercase tracking-[0.2em] text-cyan-400/70">
-                SignalOS Screener
+                SigiOS Screener
               </div>
 
               <h1 className="text-3xl font-semibold text-white">
@@ -1017,7 +1017,7 @@ export default async function ScreenerPage({
               Best Stocks Right Now
             </h2>
             <p className="mt-1 text-sm text-white/58">
-              Ranked by SignalOS score, upside, momentum, and live market context.
+              Ranked by SigiOS score, upside, momentum, and live market context.
             </p>
           </div>
 

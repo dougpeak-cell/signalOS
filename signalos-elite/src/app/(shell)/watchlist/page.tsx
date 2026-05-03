@@ -106,7 +106,7 @@ function addToPortfolioFromWatchlist(stock: {
         direction: "Long",
         status: "open",
         tag: "Watchlist",
-        thesis: stock.thesis?.trim() || "Added from SignalOS watchlist.",
+        thesis: stock.thesis?.trim() || "Added from SigiOS watchlist.",
         shares: 1,
         entryPrice: Number(livePrice.toFixed(2)),
         currentPrice: Number(livePrice.toFixed(2)),
@@ -176,7 +176,7 @@ function createWatchlistRow(ticker: string): WatchlistRow {
     changePct: 0,
     conviction: 60,
     signal: "Neutral",
-    thesis: "Added from SignalOS Command.",
+    thesis: "Added from SigiOS Command.",
     sparkline: [100, 100],
   });
 }
@@ -286,7 +286,7 @@ function normalizeWatchlistRow(candidate: unknown): WatchlistRow | null {
     thesis:
       typeof (candidate as { thesis?: unknown }).thesis === "string"
         ? (candidate as { thesis: string }).thesis
-        : "Added from SignalOS Command.",
+        : "Added from SigiOS Command.",
     sparkline: sparkline.length ? sparkline : createWatchlistRow(ticker).sparkline,
   });
 }
@@ -1079,7 +1079,7 @@ export default function WatchlistPage() {
                 <div className="relative z-10 flex flex-wrap items-start justify-between gap-6">
                   <div className="max-w-3xl">
                     <div className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-300">
-                      SignalOS Watchlist
+                      SigiOS Watchlist
                     </div>
 
                     <h1 className="mt-3 text-3xl font-black tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] md:text-4xl">
@@ -1087,7 +1087,7 @@ export default function WatchlistPage() {
                     </h1>
 
                     <p className="mt-3 max-w-2xl text-sm leading-6 text-white/62 md:leading-7">
-                      Monitor your selected stocks with live pricing, SignalOS
+                      Monitor your selected stocks with live pricing, SigiOS
                       scoring, momentum context, and quick access to charts,
                       portfolio tracking, and workspaces.
                     </p>
@@ -1155,7 +1155,7 @@ export default function WatchlistPage() {
                       Price
                     </div>
                     <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/32">
-                      SignalOS Score v2
+                      SigiOS Score v2
                     </div>
                     <div className="text-center text-[10px] font-semibold uppercase tracking-[0.22em] text-white/32">
                       Chart

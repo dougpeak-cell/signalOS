@@ -167,7 +167,7 @@ export function addPendingPortfolioHolding(
     direction: "Long",
     status: "pending",
     tag: "Workspace",
-    thesis: input.thesis?.trim() || "Added from SignalOS Workspace.",
+    thesis: input.thesis?.trim() || "Added from SigiOS Workspace.",
     shares: 0,
     entryPrice: 0,
     currentPrice: roundPrice(input.livePrice),

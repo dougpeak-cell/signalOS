@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "SignalOS Elite",
-    short_name: "SignalOS",
-    description: "SignalOS market intelligence and trading workspace.",
+    name: "SigiOS Elite",
+    short_name: "SigiOS",
+    description: "SigiOS market intelligence and trading workspace.",
     start_url: "/",
     display: "standalone",
     background_color: "#07111b",

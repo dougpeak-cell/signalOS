@@ -171,7 +171,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
           <div className="flex items-center gap-2">
             <div className="hidden text-right xl:block">
               <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/65">
-                SignalOS
+                SigiOS
               </div>
               <div className="mt-1 text-xs text-white/45">
                 Day Chart Command Center
@@ -307,7 +307,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/65">
-                  SignalOS Fullscreen
+                  SigiOS Fullscreen
                 </div>
                 <div className="mt-1 truncate text-xl font-semibold text-white">
                   {stock.ticker} Command View

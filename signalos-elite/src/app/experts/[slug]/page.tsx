@@ -507,7 +507,7 @@ export default function AnalystProfilePage({
 
           <div className="text-center">
             <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/75">
-              SignalOS
+              SigiOS
             </div>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white">
               Analyst Profile

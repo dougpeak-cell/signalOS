@@ -600,7 +600,7 @@ export default async function NewsPage() {
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(0,255,200,0.15),transparent_60%)]" />
 
           <div className="relative z-10">
-            <div className="mb-2 text-[11px] tracking-[0.2em] text-cyan-400">SIGNALOS</div>
+            <div className="mb-2 text-[11px] tracking-[0.2em] text-cyan-400">SIGIOS</div>
 
             <h1 className="text-2xl font-semibold text-white md:text-4xl">News</h1>
 
@@ -635,7 +635,7 @@ export default async function NewsPage() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
-                SignalOS Intelligence
+                SigiOS Intelligence
               </div>
               <div className="mt-1 text-xs text-white/40">Live narrative engine</div>
             </div>

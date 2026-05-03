@@ -830,7 +830,7 @@ export function buildRightRailShellModel(route: RouteContext): RightRailContextM
   }
 
   return {
-    eyebrow: "SignalOS",
+    eyebrow: "SigiOS",
     title: "Command Rail",
     sections: [
       {
@@ -850,7 +850,7 @@ export function buildRightRailContextModel(route: RouteContext): RightRailContex
   if (route.page === "experts") return buildExpertsModel();
 
   return {
-    eyebrow: "SignalOS",
+    eyebrow: "SigiOS",
     title: "Command Rail",
     sections: [
       {

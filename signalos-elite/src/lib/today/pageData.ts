@@ -189,7 +189,7 @@ const FALLBACK_FEATURED_MACRO: TodayFeaturedMacroItem = {
   eyebrow: "Global Market Pulse",
   headline: "World news is shaping today’s tape across rates, energy, AI policy, and growth expectations.",
   summary:
-    "SignalOS translates macro and geopolitical developments into stock-specific context so your setups sit inside the broader market regime.",
+    "SigiOS translates macro and geopolitical developments into stock-specific context so your setups sit inside the broader market regime.",
   whyItMatters:
     "Rates, commodities, and policy headlines can change leadership quickly across semis, mega-cap tech, and cyclical risk assets.",
   tone: "neutral",

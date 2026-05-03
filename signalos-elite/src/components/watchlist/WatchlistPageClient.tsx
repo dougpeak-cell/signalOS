@@ -142,7 +142,7 @@ function createFallbackWatchlistStock(
     score: metadata?.score ?? null,
     compositeScore: metadata?.score ?? null,
     signal: metadata?.signal ?? "Neutral",
-    thesis: metadata?.thesis?.trim() || "Added from SignalOS watchlist.",
+    thesis: metadata?.thesis?.trim() || "Added from SigiOS watchlist.",
     href: withPreviewParam(`/stocks/${normalizedTicker}`),
     liveHref: withPreviewParam(`/stocks/${normalizedTicker}/live`),
   };

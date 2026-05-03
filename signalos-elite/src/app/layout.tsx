@@ -9,8 +9,8 @@ import { SelectedTickerProvider } from "@/components/sigi/SelectedTickerContext"
 import { SignalProvider } from "@/context/SignalContext";
 
 export const metadata: Metadata = {
-  title: "SignalOS Elite",
-  description: "SignalOS market intelligence and trading workspace.",
+  title: "SigiOS Elite",
+  description: "SigiOS market intelligence and trading workspace.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [

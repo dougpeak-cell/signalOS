@@ -35,7 +35,7 @@ function mapRowToHolding(row: PortfolioRow): LocalPortfolioHolding | null {
     direction: "Long",
     status: row.shares > 0 && row.avgPrice > 0 ? "open" : "pending",
     tag: "Workspace",
-    thesis: "Added from SignalOS.",
+    thesis: "Added from SigiOS.",
     shares: Number.isFinite(row.shares) ? row.shares : 0,
     entryPrice: Number.isFinite(row.avgPrice) ? row.avgPrice : 0,
     currentPrice: 0,
@@ -72,6 +72,6 @@ export function addToPortfolio(ticker: string, name: string) {
   addPendingPortfolioHolding({
     ticker,
     name,
-    thesis: "Added from SignalOS.",
+    thesis: "Added from SigiOS.",
   });
 }

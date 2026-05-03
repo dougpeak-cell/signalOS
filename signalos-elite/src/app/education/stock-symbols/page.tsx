@@ -24,7 +24,7 @@ const sections = [
   {
     title: "Why Symbols Matter",
     body:
-      "SignalOS uses symbols to pull quotes, charts, analyst targets, news, fundamentals, watchlist data, and portfolio intelligence. The cleaner the symbol, the cleaner the signal.",
+      "SigiOS uses symbols to pull quotes, charts, analyst targets, news, fundamentals, watchlist data, and portfolio intelligence. The cleaner the symbol, the cleaner the signal.",
   },
   {
     title: "Common Stock Symbol Examples",
@@ -57,14 +57,14 @@ const sections = [
       "Crypto uses symbols too, such as BTC, ETH, SOL, and XRP. Some data providers format them as BTCUSD, X:BTCUSD, or BTC-USD depending on the API.",
   },
   {
-    title: "How SignalOS Uses Symbols",
+    title: "How SigiOS Uses Symbols",
     body:
-      "SignalOS uses symbols to open charts, build watchlists, track portfolio holdings, rank setups, compare analyst targets, connect news, and generate trade workspace context.",
+      "SigiOS uses symbols to open charts, build watchlists, track portfolio holdings, rank setups, compare analyst targets, connect news, and generate trade workspace context.",
   },
   {
     title: "Best Practice",
     body:
-      "Use the official ticker whenever possible. Type AAPL instead of Apple if you know the symbol. This helps SignalOS move faster and reduces wrong matches.",
+      "Use the official ticker whenever possible. Type AAPL instead of Apple if you know the symbol. This helps SigiOS move faster and reduces wrong matches.",
   },
 ];
 
@@ -99,14 +99,14 @@ export default async function StockSymbolsEducationPage({
 
         <section className="mt-5 rounded-2xl border border-white/10 bg-linear-to-br from-white/8 to-white/2 p-6 shadow-[0_0_40px_rgba(0,255,255,0.06)]">
           <div className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">
-            SignalOS Education
+            SigiOS Education
           </div>
           <h1 className="mt-3 text-3xl font-black tracking-tight">
             Stock Symbols: How to Read and Use Tickers
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/65">
             Learn how stock symbols work, why they matter, and how to use them
-            inside SignalOS to move faster from idea to chart, watchlist,
+            inside SigiOS to move faster from idea to chart, watchlist,
             portfolio, and trade workspace.
           </p>
         </section>
@@ -153,7 +153,7 @@ export default async function StockSymbolsEducationPage({
 
         <section className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/4.5 p-5">
           <h2 className="text-sm font-black uppercase tracking-[0.18em] text-emerald-200">
-            Symbol Rules Inside SignalOS
+            Symbol Rules Inside SigiOS
           </h2>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {symbolRules.map((rule, index) => (
@@ -207,7 +207,7 @@ export default async function StockSymbolsEducationPage({
 
         <section className="mt-5 rounded-2xl border border-white/10 bg-white/3.5 p-5">
           <h2 className="text-sm font-black uppercase tracking-[0.18em] text-cyan-200">
-            SignalOS Workflow
+            SigiOS Workflow
           </h2>
           <div className="mt-4 grid gap-3 md:grid-cols-5">
             {[

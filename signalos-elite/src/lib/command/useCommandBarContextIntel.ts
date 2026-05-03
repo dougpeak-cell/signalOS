@@ -571,7 +571,7 @@ function readContextIntel(pathname: string): CommandBarContextIntel {
 
   return {
     pageKey,
-    title: "SignalOS Intelligence",
+    title: "SigiOS Intelligence",
     cards: buildTodayCards(watchlist, portfolio),
   };
 }

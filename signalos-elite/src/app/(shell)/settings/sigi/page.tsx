@@ -17,7 +17,7 @@ export default async function SigiSettingsPage() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-16 pt-2 md:px-6 xl:px-8">
       <PageHeaderBlock
-        eyebrow="SignalOS Settings"
+        eyebrow="SigiOS Settings"
         title="Meet the full power of Sigi"
         description="Sigi AI works instantly with zero setup. Your plan controls how personal and how powerful it becomes. Advanced AI Settings are optional for power users who want their own provider."
         actions={

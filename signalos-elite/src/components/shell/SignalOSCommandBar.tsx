@@ -834,7 +834,7 @@ export default function SignalOSCommandBar() {
     );
 
     addTickerToWatchlist(ticker, {
-      thesis: "Added from SignalOS Command.",
+      thesis: "Added from SigiOS Command.",
       conviction: 60,
       signal: "Neutral",
     });
@@ -913,7 +913,7 @@ export default function SignalOSCommandBar() {
     if (pathname.includes("/screener")) return "Screener Intelligence";
     if (pathname.includes("/experts")) return "Experts Intelligence";
     if (pathname.includes("/stocks/")) return "Ticker Intelligence";
-    return "SignalOS Intelligence";
+    return "SigiOS Intelligence";
   }, [pathname]);
 
   function chipTestId(label: string, section: "summary" | "page") {
@@ -923,7 +923,7 @@ export default function SignalOSCommandBar() {
   return (
     <aside className="space-y-2.5" data-testid="shell-command-rail">
       <SectionShell
-        title="SignalOS Command"
+        title="SigiOS Command"
         right={
           <LivePulse
             label={topLevelIntel.lastUpdatedLabel}
@@ -1076,7 +1076,7 @@ export default function SignalOSCommandBar() {
         </div>
       </SectionShell>
 
-      <SectionShell title="SignalOS Command">
+      <SectionShell title="SigiOS Command">
         <div className="space-y-2.5">
           <div className="rounded-2xl border border-white/10 bg-white/3 px-3 py-2.5">
             <input

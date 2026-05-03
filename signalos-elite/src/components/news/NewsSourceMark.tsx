@@ -4,7 +4,7 @@ type NewsSourceMarkProps = {
 };
 
 function getSourceTheme(source?: string | null) {
-  const normalized = String(source ?? "SignalOS News").trim();
+  const normalized = String(source ?? "SigiOS News").trim();
   const lower = normalized.toLowerCase();
 
   if (lower.includes("google")) {
@@ -34,7 +34,7 @@ function getSourceTheme(source?: string | null) {
   }
 
   return {
-    label: normalized || "SignalOS News",
+    label: normalized || "SigiOS News",
     monogram: String(normalized || "SN")
       .split(/\s+/)
       .slice(0, 2)

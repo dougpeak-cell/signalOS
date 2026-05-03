@@ -871,7 +871,7 @@ export default function StockTradingWorkspace({ data }: Props) {
           >
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/75">
-                SignalOS Workspace
+                SigiOS Workspace
               </div>
               <h1
                 className={`mt-2 font-semibold tracking-tight text-white ${

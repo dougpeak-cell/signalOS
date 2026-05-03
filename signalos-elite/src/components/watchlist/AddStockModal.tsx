@@ -199,7 +199,7 @@ export default function AddStockModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300/75">
-              SignalOS
+              SigiOS
             </div>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">
               Add Stock

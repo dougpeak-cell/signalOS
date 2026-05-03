@@ -215,7 +215,7 @@ function buildFallbackHolding(ticker: string): Holding {
     direction: "Long",
     status: "pending",
     tag: "Command Bar",
-    thesis: "Added from SignalOS.",
+    thesis: "Added from SigiOS.",
     shares: 0,
     entryPrice: 0,
     currentPrice: livePrice != null ? Number(livePrice.toFixed(2)) : 0,
@@ -282,7 +282,7 @@ function buildCreateState(
     direction: "Long" as const,
     status: "New Position",
     tag: "Command Bar",
-    thesis: "Added from SignalOS Command.",
+    thesis: "Added from SigiOS Command.",
     shares: "1",
     entryPrice: String(entry),
     currentPrice: String(current),
@@ -994,7 +994,7 @@ function PortfolioPageContent() {
           direction: actionState.direction,
           status: actionState.status.trim() || "New Position",
           tag: actionState.tag.trim() || "Command Bar",
-          thesis: actionState.thesis.trim() || "Added from SignalOS Command.",
+          thesis: actionState.thesis.trim() || "Added from SigiOS Command.",
           shares,
           entryPrice,
           currentPrice,
@@ -1163,7 +1163,7 @@ function PortfolioPageContent() {
 
                 <div className="relative z-10 max-w-3xl">
                   <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300">
-                    SignalOS
+                    SigiOS
                   </div>
 
                   <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
