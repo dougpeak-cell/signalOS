@@ -33,7 +33,7 @@ function NewsImageFallback({
       <div className="absolute inset-0 opacity-25 bg-[linear-gradient(115deg,transparent_0%,rgba(34,211,238,0.12)_45%,transparent_70%)]" />
       <div className="absolute inset-x-6 bottom-4 h-px bg-cyan-300/30 shadow-[0_0_18px_rgba(34,211,238,0.45)]" />
       <div className="relative text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-100/80">
-        SigiOS Market News
+        SIGI Market News
       </div>
     </div>
   );
