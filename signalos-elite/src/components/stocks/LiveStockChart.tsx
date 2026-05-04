@@ -459,6 +459,8 @@ const ALLOWED_INTERVALS_BY_RANGE: Record<ChartRange, readonly ChartInterval[]> =
   "5Y": ["1w"],
 };
 
+const LIVE_CHART_AUTO_FOLLOW_STORAGE_KEY = "signalos.live-chart.auto-follow.v1";
+
 function intervalToMinutes(interval: ChartInterval): number {
   switch (interval) {
     case "1m":
@@ -1088,8 +1090,8 @@ function getLastPriceFromBars(bars: BaseBar[]): number | null {
 }
 
 function getRightOffsetForViewport() {
-  if (typeof window === "undefined") return 6;
-  return window.innerWidth < 640 ? 8 : 6;
+  if (typeof window === "undefined") return 7;
+  return window.innerWidth < 640 ? 10 : 7;
 }
 
 function isSameBar(a: BaseBar | undefined, b: BaseBar | undefined) {
@@ -1163,6 +1165,8 @@ export default function LiveStockChart({
   const userDetachedFromLiveRef = useRef(false);
   const isProgrammaticRangeChangeRef = useRef(false);
   const initialFocusAppliedRef = useRef(false);
+  const initialLiveRangeAppliedRef = useRef(false);
+  const autoFollowPreferenceLoadedRef = useRef(false);
   const liveRangeSpanRef = useRef<number | null>(null);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -1170,6 +1174,7 @@ export default function LiveStockChart({
   const [chartRange, setChartRange] = useState<ChartRange>("1D");
   const [chartInterval, setChartInterval] = useState<ChartInterval>("1m");
   const [liveCandleEnabled, setLiveCandleEnabled] = useState(false);
+  const [autoFollowEnabled, setAutoFollowEnabled] = useState(false);
   const [vwapAnchorMode, setVwapAnchorMode] = useState<VwapAnchorMode>("day-open");
   const [customAnchorTime, setCustomAnchorTime] = useState<number | null>(null);
   const [focusMode, setFocusMode] = useState<boolean>(focusModeProp ?? expanded);
@@ -1240,9 +1245,48 @@ export default function LiveStockChart({
     [chartRange]
   );
 
+  const handleAutoFollowToggle = useCallback(() => {
+    setAutoFollowEnabled((value) => !value);
+  }, []);
+
   useEffect(() => {
     activeSymbolRef.current = symbol;
   }, [symbol]);
+
+  useEffect(() => {
+    if (autoFollowPreferenceLoadedRef.current) return;
+
+    autoFollowPreferenceLoadedRef.current = true;
+
+    try {
+      setAutoFollowEnabled(
+        window.localStorage.getItem(LIVE_CHART_AUTO_FOLLOW_STORAGE_KEY) === "1"
+      );
+    } catch {
+      setAutoFollowEnabled(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!autoFollowPreferenceLoadedRef.current) return;
+
+    try {
+      window.localStorage.setItem(
+        LIVE_CHART_AUTO_FOLLOW_STORAGE_KEY,
+        autoFollowEnabled ? "1" : "0"
+      );
+    } catch {
+      // ignore storage failures
+    }
+  }, [autoFollowEnabled]);
+
+  useEffect(() => {
+    initialLiveRangeAppliedRef.current = false;
+    previousTimeframeRef.current = null;
+    userDetachedFromLiveRef.current = false;
+    liveRangeSpanRef.current = null;
+    setShowReturnToLive(false);
+  }, [symbol, chartRange, chartInterval]);
 
   useEffect(() => {
     setFocusMode(focusModeProp ?? expanded);
@@ -2045,9 +2089,15 @@ export default function LiveStockChart({
       isProgrammaticRangeChangeRef.current = false;
     });
 
+    initialLiveRangeAppliedRef.current = true;
     userDetachedFromLiveRef.current = false;
     setShowReturnToLive(false);
   }, [displayBars, timeframe]);
+
+  useEffect(() => {
+    if (!autoFollowEnabled) return;
+    returnToLive();
+  }, [autoFollowEnabled, returnToLive]);
 
 
   async function handleExitFullscreen() {
@@ -2606,7 +2656,7 @@ useEffect(() => {
       },
       timeScale: {
         barSpacing: isMobile ? 10 : 6,
-        rightOffset: isMobile ? 6 : 4,
+        rightOffset: getRightOffsetForViewport(),
         borderVisible: false,
         timeVisible: true,
         secondsVisible: false,
@@ -2758,6 +2808,12 @@ useEffect(() => {
     const handleRangeChange = () => {
       if (isProgrammaticRangeChangeRef.current) return;
 
+      if (autoFollowEnabled) {
+        userDetachedFromLiveRef.current = false;
+        setShowReturnToLive(false);
+        return;
+      }
+
       const range = chart.timeScale().getVisibleLogicalRange();
       const totalBars = displayBars.length;
 
@@ -2782,7 +2838,7 @@ useEffect(() => {
     return () => {
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleRangeChange);
     };
-  }, [displayBars.length]);
+  }, [autoFollowEnabled, displayBars.length]);
 
   useEffect(() => {
     const chart = chartApiRef.current;
@@ -3157,8 +3213,10 @@ useEffect(() => {
     const to = Math.max(0, totalBars - 1);
     const defaultBarsToShow = getSmartBarsToShow(displayBars, timeframe);
     const timeframeChanged = previousTimeframeRef.current !== timeframe;
+    const shouldApplyLiveRange =
+      autoFollowEnabled || timeframeChanged || !initialLiveRangeAppliedRef.current;
 
-    if (timeframeChanged || !userDetachedFromLiveRef.current) {
+    if (shouldApplyLiveRange) {
       const nextSpan = timeframeChanged
         ? defaultBarsToShow
         : Math.max(20, liveRangeSpanRef.current ?? defaultBarsToShow);
@@ -3167,7 +3225,7 @@ useEffect(() => {
       isProgrammaticRangeChangeRef.current = true;
       chart.timeScale().setVisibleLogicalRange({ from, to });
 
-      if (!userDetachedFromLiveRef.current) {
+      if (autoFollowEnabled || !userDetachedFromLiveRef.current) {
         chart.timeScale().scrollToRealTime();
       }
 
@@ -3175,15 +3233,16 @@ useEffect(() => {
         isProgrammaticRangeChangeRef.current = false;
       });
 
+      initialLiveRangeAppliedRef.current = true;
       previousTimeframeRef.current = timeframe;
       liveRangeSpanRef.current = Math.max(20, to - from);
 
-      if (timeframeChanged) {
+      if (timeframeChanged || autoFollowEnabled) {
         userDetachedFromLiveRef.current = false;
         setShowReturnToLive(false);
       }
     }
-  }, [displayBars.length, timeframe]);
+  }, [autoFollowEnabled, displayBars.length, timeframe]);
 
   const positiveTone =
   snapshot?.change != null
@@ -3489,18 +3548,37 @@ const gapFillLabel =
             </div>
 
             <div className="mt-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/20 bg-teal-500/10 px-3 py-1 text-xs font-semibold text-teal-300">
-                <span className="h-2 w-2 rounded-full bg-teal-400" />
-                VWAP Anchor:{" "}
-                {vwapAnchorMode === "day-open"
-                  ? "Day Open"
-                  : vwapAnchorMode === "session-high"
-                    ? "Session High"
-                    : vwapAnchorMode === "session-low"
-                      ? "Session Low"
-                      : customAnchorTime
-                        ? formatTimeLabel(customAnchorTime)
-                        : "Click Candle"}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAutoFollowToggle}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                    autoFollowEnabled
+                      ? "border-cyan-400/35 bg-cyan-400/12 text-cyan-200 shadow-[0_0_18px_rgba(34,211,238,0.14)]"
+                      : "border-white/10 bg-white/5 text-white/72 hover:border-cyan-400/25 hover:text-cyan-200"
+                  }`}
+                >
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      autoFollowEnabled ? "bg-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.9)]" : "bg-white/35"
+                    }`}
+                  />
+                  Auto-follow {autoFollowEnabled ? "On" : "Off"}
+                </button>
+
+                <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/20 bg-teal-500/10 px-3 py-1 text-xs font-semibold text-teal-300">
+                  <span className="h-2 w-2 rounded-full bg-teal-400" />
+                  VWAP Anchor:{" "}
+                  {vwapAnchorMode === "day-open"
+                    ? "Day Open"
+                    : vwapAnchorMode === "session-high"
+                      ? "Session High"
+                      : vwapAnchorMode === "session-low"
+                        ? "Session Low"
+                        : customAnchorTime
+                          ? formatTimeLabel(customAnchorTime)
+                          : "Click Candle"}
+                </div>
               </div>
 
               {anchorDetailLabel ? (
@@ -3511,6 +3589,18 @@ const gapFillLabel =
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2 md:hidden">
+              <button
+                type="button"
+                onClick={handleAutoFollowToggle}
+                className={`inline-flex min-h-11 items-center rounded-2xl border px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                  autoFollowEnabled
+                    ? "border-cyan-400/30 bg-cyan-400/12 text-cyan-100"
+                    : "border-white/10 bg-white/5 text-white/72"
+                }`}
+              >
+                Auto-follow {autoFollowEnabled ? "On" : "Off"}
+              </button>
+
               <button
                 type="button"
                 onClick={() => setIsMobileControlSheetOpen(true)}
@@ -3710,6 +3800,18 @@ const gapFillLabel =
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleAutoFollowToggle}
+                  className={`inline-flex min-h-11 items-center rounded-xl border px-4 text-xs font-semibold uppercase tracking-[0.14em] transition ${
+                    autoFollowEnabled
+                      ? "border-cyan-400/35 bg-cyan-400/12 text-cyan-200"
+                      : "border-white/10 bg-white/5 text-white/72 hover:border-cyan-400/25 hover:text-cyan-200"
+                  }`}
+                >
+                  Auto-follow {autoFollowEnabled ? "On" : "Off"}
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
