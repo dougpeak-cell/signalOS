@@ -640,6 +640,104 @@ function MetricCell({
   );
 }
 
+function PortfolioPageSkeleton() {
+  return (
+    <main className="min-h-screen bg-black text-white">
+      <div className="w-full pb-10 pt-4">
+        <div className="min-w-0 space-y-6">
+          <section className="overflow-hidden rounded-[28px] border border-cyan-400/14 bg-linear-to-b from-cyan-500/5 via-black to-black p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-3">
+                <div className="h-3 w-20 animate-pulse rounded-full bg-white/10" />
+                <div className="h-10 w-40 animate-pulse rounded-2xl bg-white/10" />
+                <div className="h-4 w-80 max-w-full animate-pulse rounded-full bg-white/8" />
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <div className="h-10 w-24 animate-pulse rounded-2xl bg-white/8" />
+                <div className="h-10 w-28 animate-pulse rounded-2xl bg-white/8" />
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={`portfolio-skeleton-metric-${index}`}
+                  className="rounded-[22px] border border-white/8 bg-white/3 p-4"
+                >
+                  <div className="h-3 w-24 animate-pulse rounded-full bg-white/10" />
+                  <div className="mt-3 h-8 w-24 animate-pulse rounded-2xl bg-white/10" />
+                  <div className="mt-2 h-3 w-16 animate-pulse rounded-full bg-white/8" />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="space-y-4">
+              <div className="rounded-[28px] border border-white/10 bg-white/3 p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="h-3 w-20 animate-pulse rounded-full bg-white/10" />
+                    <div className="mt-3 h-6 w-44 animate-pulse rounded-2xl bg-white/10" />
+                  </div>
+                  <div className="h-3 w-28 animate-pulse rounded-full bg-white/8" />
+                </div>
+
+                <div className="mt-5 space-y-4">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <div
+                      key={`portfolio-skeleton-position-${index}`}
+                      className="rounded-3xl border border-white/8 bg-black/25 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-3">
+                          <div className="h-6 w-20 animate-pulse rounded-2xl bg-white/10" />
+                          <div className="h-3 w-32 animate-pulse rounded-full bg-white/8" />
+                        </div>
+                        <div className="h-8 w-24 animate-pulse rounded-2xl bg-white/8" />
+                      </div>
+
+                      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        {Array.from({ length: 4 }).map((__, metricIndex) => (
+                          <div
+                            key={`portfolio-skeleton-position-${index}-metric-${metricIndex}`}
+                            className="rounded-xl border border-white/6 bg-white/2 px-3 py-3"
+                          >
+                            <div className="h-3 w-16 animate-pulse rounded-full bg-white/10" />
+                            <div className="mt-3 h-5 w-20 animate-pulse rounded-2xl bg-white/10" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <aside className="rounded-[28px] border border-white/10 bg-white/3 p-5">
+              <div className="h-3 w-28 animate-pulse rounded-full bg-white/10" />
+              <div className="mt-3 h-6 w-36 animate-pulse rounded-2xl bg-white/10" />
+
+              <div className="mt-5 space-y-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div
+                    key={`portfolio-skeleton-rail-${index}`}
+                    className="rounded-2xl border border-white/8 bg-black/25 p-4"
+                  >
+                    <div className="h-3 w-24 animate-pulse rounded-full bg-white/10" />
+                    <div className="mt-3 h-4 w-36 animate-pulse rounded-full bg-white/10" />
+                    <div className="mt-2 h-3 w-28 animate-pulse rounded-full bg-white/8" />
+                  </div>
+                ))}
+              </div>
+            </aside>
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 function PortfolioPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -867,17 +965,7 @@ function PortfolioPageContent() {
   }, [openHoldings]);
 
   if (!hasLoadedPortfolio) {
-    return (
-      <main className="min-h-screen bg-black text-white">
-        <div className="w-full pb-10 pt-4">
-          <div className="min-w-0">
-            <div className="rounded-[28px] border border-cyan-400/14 bg-linear-to-b from-cyan-500/5 via-black to-black p-6 text-sm text-white/60">
-              Loading portfolio...
-            </div>
-          </div>
-        </div>
-      </main>
-    );
+    return <PortfolioPageSkeleton />;
   }
 
   function openAdd(ticker: string) {
