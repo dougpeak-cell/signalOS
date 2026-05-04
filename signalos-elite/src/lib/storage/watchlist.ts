@@ -14,12 +14,13 @@ export type WatchlistStorageRow = {
   ticker: string;
   name: string;
   sector: string;
-  price: number;
-  changePct: number;
+  price: number | null;
+  changePct: number | null;
   conviction: number;
   signal: "Bullish" | "Neutral" | "Bearish";
   thesis: string;
   sparkline: number[];
+  source?: string | null;
 };
 
 export function readWatchlistRows(): WatchlistStorageRow[] {

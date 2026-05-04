@@ -1442,7 +1442,15 @@ export default function SigiTodayAssistantRail() {
     const normalized = normalizeTicker(ticker);
     if (!normalized) return;
 
-    addToWatchlist(normalized);
+    const quote = quotes[normalized];
+    const currentPrice = quote?.currentPrice ?? quote?.price ?? null;
+
+    addToWatchlist(normalized, {
+      price: currentPrice,
+      currentPrice,
+      changePercent: quote?.changePercent ?? null,
+      source: "today",
+    });
     setActionFeedback(`${normalized} added to your watchlist.`);
   }
 

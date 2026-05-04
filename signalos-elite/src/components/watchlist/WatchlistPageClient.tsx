@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import LiveMiniPrice from "@/components/stocks/LiveMiniPrice";
-import LiveMiniChange from "@/components/stocks/LiveMiniChange";
+import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
 import MiniSparkline from "@/components/stocks/MiniSparkline";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import ReturnToContextButton from "@/components/shared/ReturnToContextButton";
@@ -26,6 +25,7 @@ type WatchlistStock = {
   sector: string;
   price: number | null;
   currentPrice?: number | null;
+  changePercent?: number | null;
   target?: number | null;
   targetPrice?: number | null;
   conviction: number;
@@ -126,6 +126,7 @@ function createFallbackWatchlistStock(
     target?: number | null;
     currentPrice?: number | null;
     price?: number | null;
+    changePercent?: number | null;
   }
 ): WatchlistStock {
   const normalizedTicker = normalizeTicker(ticker);
@@ -136,6 +137,7 @@ function createFallbackWatchlistStock(
     sector: metadata?.sector?.trim() || "Unassigned",
     price: metadata?.currentPrice ?? metadata?.price ?? null,
     currentPrice: metadata?.currentPrice ?? metadata?.price ?? null,
+    changePercent: metadata?.changePercent ?? null,
     target: metadata?.target ?? null,
     targetPrice: metadata?.target ?? null,
     conviction: metadata?.conviction ?? 60,
@@ -161,11 +163,42 @@ function WatchlistStockCard({
 }) {
   const rowRef = useRef<HTMLDivElement | null>(null);
   const { setActiveTicker } = useSelectedTicker();
+  const liveMarket = useOptionalLiveMarket();
+  const normalizedTicker = normalizeTicker(stock.ticker);
+  const liveQuote =
+    liveMarket?.quoteMap[normalizedTicker] ?? liveMarket?.quoteMap[stock.ticker] ?? null;
 
   useVisibleTickerRegistration(rowRef, [stock.ticker], {
     rootMargin: "500px 0px",
     threshold: 0.01,
   });
+
+  useEffect(() => {
+    if (!liveMarket) return;
+
+    liveMarket.ensureQuotes([normalizedTicker]);
+    void liveMarket.refreshQuotesNow([normalizedTicker]);
+  }, [liveMarket, normalizedTicker]);
+
+  const storedPrice =
+    typeof stock.currentPrice === "number" && Number.isFinite(stock.currentPrice) && stock.currentPrice > 0
+      ? stock.currentPrice
+      : typeof stock.price === "number" && Number.isFinite(stock.price) && stock.price > 0
+        ? stock.price
+        : null;
+  const displayPrice =
+    typeof liveQuote?.price === "number" && Number.isFinite(liveQuote.price) && liveQuote.price > 0
+      ? liveQuote.price
+      : storedPrice;
+  const displayChange = liveQuote?.changePct ?? stock.changePercent ?? null;
+  const displayChangeClass =
+    displayChange == null
+      ? "text-white/35"
+      : displayChange > 0
+        ? "text-emerald-300"
+        : displayChange < 0
+          ? "text-rose-300"
+          : "text-white/55";
 
   const targetDistance = getDistanceToTarget(stock);
   const isNearTarget =
@@ -238,13 +271,17 @@ function WatchlistStockCard({
                 Price
               </div>
               <div className="mt-2 whitespace-nowrap text-[20px] font-semibold tracking-tight text-white">
-                $<LiveMiniPrice ticker={stock.ticker} fallbackPrice={stock.price ?? null} />
+                {displayPrice != null
+                  ? `$${displayPrice.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`
+                  : "Awaiting quote"}
               </div>
-              <div className="mt-1 whitespace-nowrap">
-                <LiveMiniChange
-                  ticker={stock.ticker}
-                  fallbackChangePct={null}
-                />
+              <div className={`mt-1 whitespace-nowrap text-sm font-semibold ${displayChangeClass}`}>
+                {displayChange != null
+                  ? `${displayChange > 0 ? "+" : ""}${displayChange.toFixed(2)}%`
+                  : "—"}
               </div>
             </div>
 

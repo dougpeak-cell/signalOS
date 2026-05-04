@@ -833,10 +833,18 @@ export default function SignalOSCommandBar() {
       new Set([...quickAdds.map((value) => normalizeTicker(value)).filter(Boolean), ticker])
     );
 
+    const quote = quotes[ticker];
+    const currentPrice = quote?.currentPrice ?? quote?.price ?? null;
+    const isTodayContext = pathname === "/" || pathname.includes("/today");
+
     addTickerToWatchlist(ticker, {
       thesis: "Added from SigiOS Command.",
       conviction: 60,
       signal: "Neutral",
+      price: currentPrice,
+      currentPrice,
+      changePercent: quote?.changePercent ?? null,
+      source: isTodayContext ? "today" : null,
     });
 
     window.localStorage.setItem(WATCHLIST_QUICK_ADD_KEY, JSON.stringify(nextQuickAdds));

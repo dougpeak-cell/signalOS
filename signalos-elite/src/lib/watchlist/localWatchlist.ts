@@ -26,6 +26,7 @@ export type WatchlistStoredEntry = {
   currentPrice?: number | null;
   price?: number | null;
   changePercent?: number | null;
+  source?: string | null;
   thesis?: string | null;
 };
 
@@ -89,6 +90,10 @@ function normalizeWatchlistEntry(value: unknown): WatchlistStoredEntry | null {
     changePercent:
       getNumber((value as { changePercent?: unknown }).changePercent) ??
       getNumber((value as { changePct?: unknown }).changePct),
+    source:
+      typeof (value as { source?: unknown }).source === "string"
+        ? (value as { source: string }).source
+        : null,
     thesis:
       typeof (value as { thesis?: unknown }).thesis === "string"
         ? (value as { thesis: string }).thesis
