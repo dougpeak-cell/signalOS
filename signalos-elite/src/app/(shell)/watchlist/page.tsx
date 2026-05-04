@@ -781,6 +781,49 @@ function WatchlistRowItem({
   );
 }
 
+function EmptyWatchlistRowItem() {
+  return (
+    <div className="rounded-xl border border-dashed border-white/10 bg-white/2 px-4 py-4">
+      <div className="grid gap-3 xl:grid-cols-[220px_120px_140px_1fr_140px] xl:items-center xl:gap-4">
+        <div className="min-w-0 pr-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="text-lg font-semibold tracking-tight text-white/70">—</div>
+            <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/55">
+              Neutral
+            </span>
+          </div>
+
+          <div className="mt-1 text-[10px] uppercase tracking-[0.22em] text-cyan-300/55">
+            Empty Watchlist
+          </div>
+
+          <div className="mt-1 text-sm text-white/50">No saved stock</div>
+        </div>
+
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Price</div>
+          <div className="mt-1 text-lg font-semibold text-white/70">Awaiting quote</div>
+          <div className="mt-1 text-sm font-medium text-white/40">—</div>
+        </div>
+
+        <div className="min-w-0">
+          <div className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3 text-sm text-white/55">
+            No active signals
+          </div>
+        </div>
+
+        <div className="min-w-0 text-sm leading-6 text-white/58 xl:pr-4">
+          Reset complete. Add a stock when you want to start tracking names again.
+        </div>
+
+        <div className="hidden xl:flex items-center justify-end">
+          <div className="h-9 w-30 rounded-xl bg-white/3" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function WatchlistPage() {
   const searchParams = useSearchParams();
   const { watchlistTickers: accountWatchlistTickers } = useShellMarketContext();
@@ -794,7 +837,7 @@ export default function WatchlistPage() {
     refreshHistoryNow,
   } = useLiveMarket();
   const { tickers: syncedWatchlistTickers } = useSyncedWatchlist();
-  const [watchlistRows, setWatchlistRows] = useState<WatchlistRow[]>(WATCHLIST);
+  const [watchlistRows, setWatchlistRows] = useState<WatchlistRow[]>([]);
   const [hasLoadedWatchlist, setHasLoadedWatchlist] = useState(false);
 
   function buildPreviewHref(href: string) {
@@ -838,7 +881,7 @@ export default function WatchlistPage() {
       const parsedRows = rawRows ? JSON.parse(rawRows) : null;
       const storedRows = Array.isArray(parsedRows)
         ? (parsedRows.map(normalizeWatchlistRow).filter(Boolean) as WatchlistRow[])
-        : WATCHLIST;
+        : [];
 
       const rawQuickAdds = window.localStorage.getItem(WATCHLIST_QUICK_ADD_KEY);
       const parsedQuickAdds = rawQuickAdds ? JSON.parse(rawQuickAdds) : [];
@@ -880,28 +923,19 @@ export default function WatchlistPage() {
             )
           : fallbackLegacyTickers.filter((ticker) => !hiddenTickers.has(ticker));
 
-      const baseRows = (storedRows.length ? storedRows : WATCHLIST).filter((row) =>
+      const baseRows = storedRows.filter((row) =>
         sourceTickers.includes(normalizeTicker(row.ticker))
       );
 
-      const mergedRows = mergeWatchlistRows(
-        baseRows,
-        sourceTickers
-      );
+      const mergedRows = mergeWatchlistRows(baseRows, sourceTickers);
 
-      setWatchlistRows(
-        mergedRows.length
-          ? mergedRows
-          : normalizedAccountTickers.length || normalizedSyncedTickers.length
-            ? []
-            : WATCHLIST
-      );
+      setWatchlistRows(mergedRows);
 
       if (quickAdds.length) {
         window.localStorage.removeItem(WATCHLIST_QUICK_ADD_KEY);
       }
     } catch {
-      setWatchlistRows(WATCHLIST);
+      setWatchlistRows([]);
     } finally {
       setHasLoadedWatchlist(true);
     }
@@ -1162,32 +1196,36 @@ export default function WatchlistPage() {
                     </div>
                   </div>
 
-                  {scoredRows.map((item, index) => {
-                    const symbol = normalizeTicker(item.ticker);
-                    const history = historyMap[symbol] ?? [];
-                    const historyLoading = historyLoadingMap[symbol] ?? false;
-                    const trend = getSeriesTrend(history);
+                  {hasLoadedWatchlist && scoredRows.length === 0 ? (
+                    <EmptyWatchlistRowItem />
+                  ) : (
+                    scoredRows.map((item, index) => {
+                      const symbol = normalizeTicker(item.ticker);
+                      const history = historyMap[symbol] ?? [];
+                      const historyLoading = historyLoadingMap[symbol] ?? false;
+                      const trend = getSeriesTrend(history);
 
-                    return (
-                      <WatchlistRowItem
-                        key={symbol}
-                        isTop={index === 0}
-                        portfolioAddHref={buildPreviewHref(`/portfolio?focus=${symbol}`)}
-                        portfolioHref={buildPreviewHref(`/portfolio?focus=${symbol}`)}
-                        openChartHref={buildPreviewHref(`/stocks/${symbol}`)}
-                        stockHref={buildPreviewHref(`/stocks/${symbol}`)}
-                        sparklineData={history}
-                        sparklineLoading={historyLoading}
-                        sparklineStale={false}
-                        sparklineTrend={trend}
-                        onRemove={handleRemoveFromWatchlist}
-                        row={{
-                          ...item,
-                          ticker: symbol,
-                        }}
-                      />
-                    );
-                  })}
+                      return (
+                        <WatchlistRowItem
+                          key={symbol}
+                          isTop={index === 0}
+                          portfolioAddHref={buildPreviewHref(`/portfolio?focus=${symbol}`)}
+                          portfolioHref={buildPreviewHref(`/portfolio?focus=${symbol}`)}
+                          openChartHref={buildPreviewHref(`/stocks/${symbol}`)}
+                          stockHref={buildPreviewHref(`/stocks/${symbol}`)}
+                          sparklineData={history}
+                          sparklineLoading={historyLoading}
+                          sparklineStale={false}
+                          sparklineTrend={trend}
+                          onRemove={handleRemoveFromWatchlist}
+                          row={{
+                            ...item,
+                            ticker: symbol,
+                          }}
+                        />
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>
