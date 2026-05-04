@@ -15,6 +15,7 @@ import { getSigiProfile } from "@/lib/sigi/sigiProfile";
 import { resolveSigiTicker } from "@/lib/sigi/resolveTicker";
 import { buildStockLiveUrl } from "@/lib/sigi/sigiNavigation";
 import { looksLikeTicker, normalizeTickerInput } from "@/lib/sigi/tickerInput";
+import { getVisibleSigiTextFromPayload } from "@/lib/sigi/responseVisibility";
 import {
   buildSigiPromptLabel,
   detectSigiIntent,
@@ -175,7 +176,7 @@ export default function TodayAskSigiCard({
         throw new Error(data?.error || "Sigi request failed.");
       }
 
-      setResponse(data?.text || "No response returned.");
+      setResponse(getVisibleSigiTextFromPayload(data));
       setQuestion("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sigi request failed.");

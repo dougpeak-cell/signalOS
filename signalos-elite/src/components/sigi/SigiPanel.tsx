@@ -271,6 +271,9 @@ export default function SigiPanel({
         : null;
 
     const reply = await sendMessage(message, enrichedStock);
+    if (!reply) {
+      return;
+    }
 
     setMessages((prev) => [
       ...prev,

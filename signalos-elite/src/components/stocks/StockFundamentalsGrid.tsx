@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { renderTickerParagraphs } from "@/components/sigi/renderTickerText";
 import { buildMetricContextAnswer } from "@/lib/sigi/sigiMetricContext";
 import { getSigiProfile } from "@/lib/sigi/sigiProfile";
+import { getVisibleSigiTextFromPayload } from "@/lib/sigi/responseVisibility";
 
 type MetricCard = {
   label: string;
@@ -98,7 +99,7 @@ export default function StockFundamentalsGrid({
         throw new Error(data?.error || "Sigi request failed.");
       }
 
-      setSigiRead(data?.text || "No response returned.");
+      setSigiRead(getVisibleSigiTextFromPayload(data));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sigi request failed.");
     } finally {

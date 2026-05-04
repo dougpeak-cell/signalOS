@@ -3,12 +3,24 @@ import { COMPANY_PROFILES } from "@/lib/companyProfiles";
 import { fundamentalsPack } from "@/lib/education/fundamentalsPack";
 import { resolveSigiTicker } from "@/lib/sigi/resolveTicker";
 import { buildSigiTodayResponse } from "@/lib/sigi/todayAssistant";
+import {
+  getResolvedSigiModelConfigForCurrentUser,
+  type SigiResolvedModelConfig,
+} from "@/lib/sigi/settings";
 
-function getOpenAIClient() {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
+async function getResolvedSigiClient() {
+  const config = await getResolvedSigiModelConfigForCurrentUser();
+  if (!config) {
+    return null;
+  }
 
-  return new OpenAI({ apiKey });
+  return {
+    client: new OpenAI({
+      apiKey: config.apiKey,
+      baseURL: config.baseUrl,
+    }),
+    config,
+  };
 }
 
 type SigiStockContext = {
@@ -583,8 +595,12 @@ function buildUnavailableResponse(text: string, citedTickers: string[] = []) {
   });
 }
 
+function getResolvedModel(config: SigiResolvedModelConfig) {
+  return config.model || "gpt-4.1-mini";
+}
+
 async function handleGeneralSigi(message: string, options: SigiRouteOptions) {
-  const client = getOpenAIClient();
+  const resolved = await getResolvedSigiClient();
   const todayContext = buildTodayContextBlock(options.context);
   const citedTickers = uniqueTickers([
     options.context?.intel?.topSignal,
@@ -595,15 +611,17 @@ async function handleGeneralSigi(message: string, options: SigiRouteOptions) {
     options.context?.portfolioTickers?.[0],
   ]);
 
-  if (!client) {
+  if (!resolved) {
     return buildUnavailableResponse(
-      "Sigi AI is not configured right now. Add OPENAI_API_KEY to enable live answers.",
+      "Sigi AI is not configured right now. Connect a hosted or personal provider in Sigi settings to enable live answers.",
       citedTickers
     );
   }
 
+  const { client, config } = resolved;
+
   const response = await client.responses.create({
-    model: "gpt-4.1-mini",
+    model: getResolvedModel(config),
     max_output_tokens: 220,
     input: [
       {
@@ -654,7 +672,7 @@ async function handleStockRequest(
   message: string,
   options: SigiRouteOptions
 ) {
-  const client = getOpenAIClient();
+  const resolved = await getResolvedSigiClient();
   const stock = enrichStockContext({
     ...(options.stock ?? {}),
     ticker,
@@ -671,15 +689,17 @@ async function handleStockRequest(
     options.context?.portfolioTickers?.[0],
   ]);
 
-  if (!client) {
+  if (!resolved) {
     return buildUnavailableResponse(
-      `Sigi AI is not configured right now. Add OPENAI_API_KEY to analyze ${ticker.toUpperCase()}.`,
+      `Sigi AI is not configured right now. Connect a hosted or personal provider in Sigi settings to analyze ${ticker.toUpperCase()}.`,
       citedTickers
     );
   }
 
+  const { client, config } = resolved;
+
   const response = await client.responses.create({
-    model: "gpt-4.1-mini",
+    model: getResolvedModel(config),
     max_output_tokens: 260,
     input: [
       {

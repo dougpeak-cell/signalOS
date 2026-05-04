@@ -6,6 +6,7 @@ import { renderTickerParagraphs, renderTickerText } from "@/components/sigi/rend
 import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import type { SigiStockContext } from "@/hooks/useSigi";
 import { resolveSigiTicker } from "@/lib/sigi/resolveTicker";
+import { getVisibleSigiTextFromPayload } from "@/lib/sigi/responseVisibility";
 import { looksLikeTicker, normalizeTickerInput } from "@/lib/sigi/tickerInput";
 
 type StockAskSigiCardProps = {
@@ -193,7 +194,8 @@ export default function StockAskSigiCard({
         throw new Error(data?.error || "Sigi request failed.");
       }
 
-      setResponse(data?.text || "No response returned.");
+      const nextResponse = getVisibleSigiTextFromPayload(data);
+      setResponse(nextResponse);
       setQuestion("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sigi request failed.");

@@ -19,6 +19,7 @@ import { addToWatchlist } from "@/lib/watchlist/localWatchlist";
 import {
   getRailUpgradeCopy,
 } from "@/lib/sigi/plans";
+import { shouldHideSigiUnavailablePayload } from "@/lib/sigi/responseVisibility";
 import type {
   SigiAssistantResponse,
   SigiTodayContext,
@@ -1322,6 +1323,11 @@ export default function SigiTodayAssistantRail() {
       const data = await res.json();
       if (!res.ok) {
         throw new Error(String(data?.error ?? "Sigi request failed."));
+      }
+
+      if (shouldHideSigiUnavailablePayload(data)) {
+        setResponse(null);
+        return;
       }
 
       setResponse(data as SigiAssistantResponse);

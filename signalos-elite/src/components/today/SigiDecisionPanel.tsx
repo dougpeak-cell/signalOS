@@ -49,6 +49,7 @@ import { buildSigiSectorLeadersReply } from "@/lib/sigi/sigiGuidance";
 import { looksLikeTicker, normalizeTickerInput } from "@/lib/sigi/tickerInput";
 import { normalizeTicker } from "@/lib/tickerAliases";
 import { searchTickers } from "@/lib/tickerSearch";
+import { getVisibleSigiTextFromPayload, shouldHideSigiUnavailablePayload } from "@/lib/sigi/responseVisibility";
 
 const COMPANY_TO_TICKER: Record<string, string> = {
   apple: "AAPL",
@@ -578,6 +579,12 @@ export default function SigiDecisionPanel({
           ? parsed.originalQuestion
           : withTicker(trimmed, resolvedTicker);
       const text = await sendMessage(withTicker(question, resolvedTicker), context);
+      if (!text) {
+        setResponse(null);
+        setSigiInput("");
+        return;
+      }
+
       showResponse(trimmed, text, {
         title: `${resolvedTicker} Sigi Read`,
         actionLabel: "Open Live Chart",

@@ -4,6 +4,7 @@ import {
   buildSigiProfilePrompt,
   getSigiProfile,
 } from "@/lib/sigi/sigiProfile";
+import { getVisibleSigiTextFromPayload } from "@/lib/sigi/responseVisibility";
 
 export type SigiStockContext = {
   ticker?: string;
@@ -90,11 +91,16 @@ export function useSigi() {
         throw new Error(data?.error || "Request failed");
       }
 
+      const visibleText = getVisibleSigiTextFromPayload(data);
+      if (!visibleText) {
+        return null;
+      }
+
       const ticker = stock?.ticker?.trim().toUpperCase();
       const intro = ticker
         ? `${userName}, here's what matters for ${ticker}:`
         : `${userName}, here's what matters:`;
-      const responseText = typeof data?.text === "string" ? data.text.trim() : "";
+      const responseText = visibleText;
 
       return responseText ? `${intro}\n\n${responseText}` : intro;
     } catch (error) {

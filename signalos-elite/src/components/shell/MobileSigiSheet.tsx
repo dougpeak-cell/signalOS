@@ -21,6 +21,7 @@ import {
 } from "@/lib/sigi/sigiEducationLookup";
 import { buildStockLiveUrl } from "@/lib/sigi/sigiNavigation";
 import { shouldNavigateFromSigi } from "@/lib/sigi/sigiNavigationIntent";
+import { shouldHideSigiUnavailablePayload } from "@/lib/sigi/responseVisibility";
 import { buildSigiPromptLabel } from "@/lib/sigi/sigiInput";
 import { buildSigiSectorLeadersReply, getSigiFollowUps } from "@/lib/sigi/sigiGuidance";
 import { getSigiMarketCondition } from "@/lib/sigi/sigiMarketCondition";
@@ -495,12 +496,18 @@ export default function MobileSigiSheet({
       const questionWithTicker = parsed.ticker ? parsed.originalQuestion : `${question} Focus on ${resolvedTicker}.`;
       const text = await sendMessage(`${questionWithTicker} Focus on ${resolvedTicker}.`, stock, effectiveSheetContext);
 
+      if (!text) {
+        setMobileSigiAnswer(null);
+        setMobileSigiInput("");
+        return;
+      }
+
       setMobileSigiAnswer({
         question,
         title: "Sigi Read",
         summary: text || "I'm not seeing a clear answer yet.",
         ticker: resolvedTicker,
-          actionLabel: resolvedTicker ? "Open Live Chart" : null,
+        actionLabel: resolvedTicker ? "Open Live Chart" : null,
       });
       setMobileSigiInput("");
     } catch (nextError) {
