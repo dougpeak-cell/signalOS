@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
+import { getFinnhubCompanyProfile } from "@/lib/stocks/finnhubCompanyProfile";
 
 export const dynamic = "force-dynamic";
-
-const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -12,7 +11,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "Missing ticker" }, { status: 400 });
   }
 
-  if (!FINNHUB_API_KEY) {
+  if (!process.env.FINNHUB_API_KEY) {
     return NextResponse.json(
       { ok: false, error: "Missing FINNHUB_API_KEY" },
       { status: 500 }
@@ -20,25 +19,20 @@ export async function GET(req: Request) {
   }
 
   try {
-    const res = await fetch(
-      `https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${FINNHUB_API_KEY}`,
-      { cache: "no-store" }
-    );
-
-    const data = await res.json();
+    const profile = await getFinnhubCompanyProfile(ticker);
 
     return NextResponse.json({
       ok: true,
       ticker,
-      name: data.name ?? null,
-      sector: data.finnhubIndustry ?? null,
-      exchange: data.exchange ?? null,
-      country: data.country ?? null,
-      currency: data.currency ?? null,
-      ipo: data.ipo ?? null,
-      marketCap: data.marketCapitalization ?? null,
-      logo: data.logo ?? null,
-      weburl: data.weburl ?? null,
+      name: profile?.name ?? null,
+      sector: profile?.sector ?? null,
+      exchange: profile?.exchange ?? null,
+      country: profile?.country ?? null,
+      currency: profile?.currency ?? null,
+      ipo: profile?.ipo ?? null,
+      marketCap: profile?.marketCap ?? null,
+      logo: profile?.logo ?? null,
+      weburl: profile?.weburl ?? null,
     });
   } catch (error) {
     console.error("Company profile error:", error);

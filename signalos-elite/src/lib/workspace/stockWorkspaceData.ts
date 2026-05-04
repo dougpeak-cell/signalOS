@@ -1,5 +1,6 @@
 import { computeFundamentalScore } from "@/lib/analysis/fundamentalScore";
 import { computePegFromGrowth } from "@/lib/analysis/computePeg";
+import { getHistoryBars } from "@/lib/market/historyBars";
 import { getMassiveFundamentals } from "@/lib/market/massiveFundamentals";
 import { fetchServerQuoteState } from "@/lib/market/serverQuote";
 import {
@@ -56,31 +57,7 @@ function buildFallbackRow(ticker: string): SignalDetailRow {
 }
 
 async function getPriceHistory(ticker: string) {
-  try {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      "http://localhost:3000";
-
-    const res = await fetch(
-      `${baseUrl}/api/history?ticker=${encodeURIComponent(
-        ticker
-      )}&range=6mo&interval=1day`,
-      { cache: "no-store" }
-    );
-
-    if (!res.ok) return [];
-
-    const data = await res.json();
-
-    if (Array.isArray(data?.bars)) return data.bars;
-    if (Array.isArray(data?.history)) return data.history;
-    if (Array.isArray(data?.prices)) return data.prices;
-
-    return [];
-  } catch {
-    return [];
-  }
+  return getHistoryBars(ticker, "6mo");
 }
 
 function computePercentChange(price: number | null, prevClose: number | null) {

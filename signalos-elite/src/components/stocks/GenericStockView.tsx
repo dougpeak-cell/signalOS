@@ -8,9 +8,12 @@ import StockDetailLivePanels from "@/components/stocks/StockDetailLivePanels";
 import { ClientProvider } from "@/components/ClientProvider";
 import { computeFundamentalScore } from "@/lib/analysis/fundamentalScore";
 import { computePegFromGrowth } from "@/lib/analysis/computePeg";
+import { getFinnhubFundamentals } from "@/lib/fundamentals/finnhubFundamentals";
+import { getHistoryBars } from "@/lib/market/historyBars";
 import { getMassiveFundamentals } from "@/lib/market/massiveFundamentals";
 import { fetchServerQuoteState } from "@/lib/market/serverQuote";
 import { computeTechnicalsFromHistory } from "@/lib/market/technicals";
+import { getFinnhubCompanyProfile } from "@/lib/stocks/finnhubCompanyProfile";
 
 type SignalRow = {
   id?: number;
@@ -55,23 +58,6 @@ type SignalRow = {
 type GenericStockViewProps = {
   ticker: string;
   context?: GenericStockViewContext;
-};
-
-type FinnhubFundamentals = {
-  pe: number | null;
-  peg: number | null;
-  marketCap: number | null;
-  revenue: number | null;
-  grossMargin: number | null;
-  operatingMargin: number | null;
-  netMargin: number | null;
-  roe: number | null;
-  currentRatio: number | null;
-  debtToEquity: number | null;
-  dividendYield: number | null;
-  beta: number | null;
-  week52High: number | null;
-  week52Low: number | null;
 };
 
 type CompanyProfile = {
@@ -284,103 +270,11 @@ async function getSignalByTicker(rawTicker: string): Promise<SignalRow | null> {
 }
 
 async function getPriceHistory(ticker: string) {
-  try {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      "http://localhost:3000";
-
-    const res = await fetch(
-      `${baseUrl}/api/history?ticker=${encodeURIComponent(
-        ticker
-      )}&range=6mo&interval=1day`,
-      { cache: "no-store" }
-    );
-
-    if (!res.ok) return [];
-
-    const data = await res.json();
-
-    if (Array.isArray(data?.bars)) return data.bars;
-    if (Array.isArray(data?.history)) return data.history;
-    if (Array.isArray(data?.prices)) return data.prices;
-
-    return [];
-  } catch {
-    return [];
-  }
-}
-
-async function getFinnhubFundamentals(ticker: string): Promise<FinnhubFundamentals | null> {
-  try {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      "http://localhost:3000";
-
-    const res = await fetch(`${baseUrl}/api/fundamentals?ticker=${encodeURIComponent(ticker)}`, {
-      cache: "no-store",
-    });
-
-    if (!res.ok) return null;
-
-    const data = (await res.json()) as Partial<FinnhubFundamentals> & { ok?: boolean };
-
-    if (!data?.ok) return null;
-
-    return {
-      pe: typeof data.pe === "number" ? data.pe : null,
-      peg: typeof data.peg === "number" ? data.peg : null,
-      marketCap: typeof data.marketCap === "number" ? data.marketCap : null,
-      revenue: typeof data.revenue === "number" ? data.revenue : null,
-      grossMargin: typeof data.grossMargin === "number" ? data.grossMargin : null,
-      operatingMargin: typeof data.operatingMargin === "number" ? data.operatingMargin : null,
-      netMargin: typeof data.netMargin === "number" ? data.netMargin : null,
-      roe: typeof data.roe === "number" ? data.roe : null,
-      currentRatio: typeof data.currentRatio === "number" ? data.currentRatio : null,
-      debtToEquity: typeof data.debtToEquity === "number" ? data.debtToEquity : null,
-      dividendYield: typeof data.dividendYield === "number" ? data.dividendYield : null,
-      beta: typeof data.beta === "number" ? data.beta : null,
-      week52High: typeof data.week52High === "number" ? data.week52High : null,
-      week52Low: typeof data.week52Low === "number" ? data.week52Low : null,
-    };
-  } catch {
-    return null;
-  }
+  return getHistoryBars(ticker, "6mo");
 }
 
 async function getCompanyProfile(ticker: string): Promise<CompanyProfile | null> {
-  try {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      "http://localhost:3000";
-
-    const res = await fetch(
-      `${baseUrl}/api/company-profile?ticker=${encodeURIComponent(ticker)}`,
-      { cache: "no-store" }
-    );
-
-    if (!res.ok) return null;
-
-    const data = (await res.json()) as Partial<CompanyProfile> & { ok?: boolean };
-
-    if (!data?.ok) return null;
-
-    return {
-      name: typeof data.name === "string" ? data.name : null,
-      sector: typeof data.sector === "string" ? data.sector : null,
-      exchange: typeof data.exchange === "string" ? data.exchange : null,
-      country: typeof data.country === "string" ? data.country : null,
-      currency: typeof data.currency === "string" ? data.currency : null,
-      ipo: typeof data.ipo === "string" ? data.ipo : null,
-      marketCap: typeof data.marketCap === "number" ? data.marketCap : null,
-      logo: typeof data.logo === "string" ? data.logo : null,
-      weburl: typeof data.weburl === "string" ? data.weburl : null,
-    };
-  } catch {
-    return null;
-  }
+  return getFinnhubCompanyProfile(ticker);
 }
 
 function buildSignalContext({
