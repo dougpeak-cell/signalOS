@@ -11,11 +11,13 @@ import { getSigiProfile } from "@/lib/sigi/sigiProfile";
 
 const navItems = [
   { href: "/today", label: "Today" },
-  { href: "/watchlist", label: "Watchlist" },
   { href: "/stocks", label: "Stocks" },
-  { href: "/education", label: "Education" },
+  { href: "/screener", label: "Screener" },
+  { href: "/watchlist", label: "Watchlist" },
+  { href: "/portfolio", label: "Portfolio" },
   { href: "/news", label: "News" },
   { href: "/experts", label: "Experts" },
+  { href: "/education", label: "Education" },
   { href: "/crypto", label: "Crypto" },
 ] as const;
 
@@ -136,8 +138,8 @@ export default function MobileBottomNav({
     : `fixed inset-x-3 z-50 md:hidden ${navPositionClass}`;
 
   const navGridClass = forceVisible
-    ? "grid min-h-[88px] grid-cols-4 items-center gap-1 overflow-hidden rounded-[24px] border border-cyan-300/15 bg-black/80 px-1.5 py-1.5 shadow-[0_0_12px_rgba(103,232,249,0.10),0_12px_24px_rgba(8,47,73,0.22)] backdrop-blur-2xl"
-    : "grid min-h-[104px] grid-cols-4 items-center gap-1 rounded-[28px] border border-cyan-300/20 bg-black/88 px-2 py-2 shadow-[0_0_28px_rgba(103,232,249,0.18),0_20px_50px_rgba(8,47,73,0.38)] backdrop-blur-xl sm:min-h-16 sm:grid-cols-8 sm:gap-0";
+    ? "grid min-h-[104px] grid-cols-5 items-center gap-1 overflow-hidden rounded-[24px] border border-cyan-300/15 bg-black/80 px-1.5 py-1.5 shadow-[0_0_12px_rgba(103,232,249,0.10),0_12px_24px_rgba(8,47,73,0.22)] backdrop-blur-2xl"
+    : "grid min-h-[104px] grid-cols-5 items-center gap-1 rounded-[28px] border border-cyan-300/20 bg-black/88 px-2 py-2 shadow-[0_0_28px_rgba(103,232,249,0.18),0_20px_50px_rgba(8,47,73,0.38)] backdrop-blur-xl sm:min-h-[104px] sm:grid-cols-5 sm:gap-1";
 
   return (
     <nav className={navShellClass}>

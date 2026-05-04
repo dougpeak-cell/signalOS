@@ -7,12 +7,12 @@ const MOBILE_PREVIEW_STORAGE_KEY = "signalos-dev-mobile-preview-today";
 
 const navItems = [
   { href: "/today", label: "Today" },
+  { href: "/stocks", label: "Stocks" },
+  { href: "/screener", label: "Screener" },
   { href: "/watchlist", label: "Watchlist" },
   { href: "/portfolio", label: "Portfolio" },
-  { href: "/screener", label: "Screener" },
   { href: "/news", label: "News" },
   { href: "/experts", label: "Experts" },
-  { href: "/stocks", label: "Stocks" },
   { href: "/education", label: "Education" },
 ];
 
