@@ -650,6 +650,7 @@ function PortfolioPageContent() {
   const [actionTicker, setActionTicker] = useState<string | null>(null);
   const [actionState, setActionState] = useState<ActionState>(null);
   const [editingTicker, setEditingTicker] = useState<string | null>(null);
+  const [showAddStock, setShowAddStock] = useState(false);
 
   function buildPortfolioHref(pathname: string) {
     return searchParams.get("mobilePreview") === "1"
@@ -754,6 +755,13 @@ function PortfolioPageContent() {
 
     openEdit(editingPosition);
   }, [actionState?.mode, actionTicker, editingPosition]);
+
+  useEffect(() => {
+    if (!showAddStock) return;
+    if (actionState?.mode === "create") return;
+
+    openCreatePosition();
+  }, [actionState?.mode, showAddStock]);
 
   const enrichedHoldings = useMemo(
     () =>
@@ -873,6 +881,7 @@ function PortfolioPageContent() {
   }
 
   function openAdd(ticker: string) {
+    setShowAddStock(false);
     setEditingTicker(null);
     setActionTicker(ticker);
     setActionState({ mode: "add", shares: "", price: "" });
@@ -909,18 +918,21 @@ function PortfolioPageContent() {
           : computedDefaults.conviction,
     };
 
+    setShowAddStock(true);
     setEditingTicker(null);
     setActionTicker(normalizedTicker || "__new__");
     setActionState(buildCreateState(normalizedTicker, defaults));
   }
 
   function openReduce(ticker: string) {
+    setShowAddStock(false);
     setEditingTicker(null);
     setActionTicker(ticker);
     setActionState({ mode: "reduce", shares: "", price: "" });
   }
 
   function openEdit(holding: Holding) {
+    setShowAddStock(false);
     setEditingTicker(normalizeTicker(holding.ticker));
     setActionTicker(holding.ticker);
     setActionState({
@@ -937,6 +949,7 @@ function PortfolioPageContent() {
   }
 
   function closeActionPanel() {
+    setShowAddStock(false);
     setEditingTicker(null);
     setActionTicker(null);
     setActionState(null);
@@ -1175,20 +1188,28 @@ function PortfolioPageContent() {
                     the same intelligence system.
                   </p>
 
-                  <div className="mt-4 flex flex-wrap gap-2 md:mt-6 md:gap-3">
+                  <div className="mt-8 flex flex-wrap gap-3">
                     <Link
                       href={buildPortfolioHref("/")}
-                      className="inline-flex min-h-11 items-center rounded-xl border border-white/10 bg-white/4 px-4 py-2 font-semibold text-white transition hover:bg-white/10"
+                      className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10"
                     >
                       Today
                     </Link>
 
                     <Link
                       href={buildPortfolioHref("/watchlist")}
-                      className="inline-flex min-h-11 items-center rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
+                      className="rounded-xl border border-cyan-400/40 bg-cyan-400/10 px-5 py-3 text-sm font-bold text-cyan-200 transition hover:bg-cyan-400/20"
                     >
                       Watchlist
                     </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowAddStock(true)}
+                      className="rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-5 py-3 text-sm font-bold text-emerald-200 shadow-[0_0_24px_rgba(16,185,129,0.18)] transition hover:bg-emerald-400/20 hover:text-white"
+                    >
+                      + Add Stock
+                    </button>
 
                     <button
                       type="button"
@@ -1203,7 +1224,7 @@ function PortfolioPageContent() {
                         setActionTicker(null);
                         setActionState(null);
                       }}
-                      className="min-h-11 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2 font-semibold text-red-200 transition hover:bg-red-400/20"
+                      className="rounded-xl border border-red-400/40 bg-red-400/10 px-5 py-3 text-sm font-bold text-red-200 transition hover:bg-red-400/20"
                     >
                       Reset Portfolio
                     </button>
