@@ -295,6 +295,27 @@ export function removeFromWatchlist(ticker: string): string[] {
   return nextEntries.map((entry) => entry.ticker);
 }
 
+export function clearWatchlist(): string[] {
+  if (typeof window === "undefined") return [];
+
+  for (const key of WATCHLIST_STORAGE_KEYS) {
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // ignore storage failures
+    }
+  }
+
+  try {
+    window.localStorage.removeItem(WATCHLIST_HIDDEN_KEY);
+  } catch {
+    // ignore storage failures
+  }
+
+  window.dispatchEvent(new Event("signalos:watchlist-updated"));
+  return [];
+}
+
 export function toggleWatchlistTicker(
   ticker: string,
   metadata?: WatchlistEntryInput | null
