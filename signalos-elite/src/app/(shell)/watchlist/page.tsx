@@ -680,8 +680,6 @@ function WatchlistRowItem({
   stockHref: string;
   onRemove: (ticker: string) => void;
 }) {
-  const [quickViewOpen, setQuickViewOpen] = useState(false);
-
   return (
     <div
       className={`group relative rounded-xl bg-white/1.5 px-4 py-3 transition duration-200 hover:border-cyan-400/20 hover:bg-cyan-400/4 ${
@@ -758,43 +756,26 @@ function WatchlistRowItem({
 
         <div className="flex flex-col gap-3 border-t border-white/6 pt-3 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0">
-            {quickViewOpen ? (
-              <>
-                <p className="max-w-136 text-sm leading-6 text-white/72">
-                  {row.thesis}
-                </p>
+            <p className="max-w-136 text-sm leading-6 text-white/72">
+              {row.thesis}
+            </p>
 
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {typeof row.marketCap === "number" && Number.isFinite(row.marketCap) ? (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
-                      Mkt Cap {formatCompactCurrency(row.marketCap)}
-                    </span>
-                  ) : null}
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {typeof row.marketCap === "number" && Number.isFinite(row.marketCap) ? (
+                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
+                  Mkt Cap {formatCompactCurrency(row.marketCap)}
+                </span>
+              ) : null}
 
-                  {hasUsablePrice(row.price) ? (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
-                      Price {formatPrice(row.price)}
-                    </span>
-                  ) : null}
-                </div>
-              </>
-            ) : (
-              <div className="text-xs text-white/48">
-                Tap Quick View for thesis and extra row details.
-              </div>
-            )}
+              {hasUsablePrice(row.price) ? (
+                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
+                  Price {formatPrice(row.price)}
+                </span>
+              ) : null}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 md:justify-end">
-            <button
-              type="button"
-              onClick={() => setQuickViewOpen((value) => !value)}
-              aria-expanded={quickViewOpen}
-              className="inline-flex h-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 px-2 text-[11px] font-medium text-white/80 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
-            >
-              {quickViewOpen ? "Hide Quick View" : "Quick View"}
-            </button>
-
             <a
               href={portfolioHref}
               onClick={() =>
