@@ -85,6 +85,14 @@ function normalizeTicker(value: string): string {
   return value.trim().toUpperCase();
 }
 
+function normalizeUpdatedAt(value: number | null | undefined, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return fallback;
+  if (value < 10_000_000_000) return value * 1_000;
+  if (value >= 10_000_000_000_000_000) return Math.floor(value / 1_000_000);
+  if (value >= 10_000_000_000_000) return Math.floor(value / 1_000);
+  return value;
+}
+
 function isUsableHistorySeries(values: number[]): boolean {
   if (!Array.isArray(values)) return false;
   if (values.length < 2) return false;
@@ -196,6 +204,8 @@ async function fetchLiveQuotesBatch(
 > {
   if (!tickers.length) return [];
 
+  const now = Date.now();
+
   try {
     const res = await fetch(
       `/api/massive/quotes?tickers=${encodeURIComponent(tickers.join(","))}`,
@@ -233,10 +243,7 @@ async function fetchLiveQuotesBatch(
         typeof item.avgVolume === "number" && Number.isFinite(item.avgVolume) && item.avgVolume > 0
           ? item.avgVolume
           : null,
-      updatedMs:
-        typeof item.updatedMs === "number" && Number.isFinite(item.updatedMs)
-          ? item.updatedMs
-          : null,
+      updatedMs: normalizeUpdatedAt(item.updatedMs, now),
     }));
   } catch {
     return [];

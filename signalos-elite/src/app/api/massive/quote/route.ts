@@ -46,8 +46,9 @@ function toPositiveNumber(value: unknown): number | null {
 
 function normalizeUpdatedMs(raw: number | null): number | null {
   if (raw == null) return null;
-  if (raw > 1_000_000_000_000_000) return Math.floor(raw / 1_000_000);
-  if (raw > 1_000_000_000_000) return Math.floor(raw / 1_000);
+  if (raw > 0 && raw < 10_000_000_000) return raw * 1_000;
+  if (raw >= 10_000_000_000_000_000) return Math.floor(raw / 1_000_000);
+  if (raw >= 10_000_000_000_000) return Math.floor(raw / 1_000);
   return raw;
 }
 
