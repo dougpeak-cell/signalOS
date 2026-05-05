@@ -815,7 +815,7 @@ export default function ExpertsPage() {
                     className="relative mt-3 flex items-center justify-between gap-2 border-t border-white/8 pt-3 opacity-75 transition-opacity duration-300 group-hover:opacity-100"
                   >
                     <Link
-                      href={`/stocks/${row.symbol}/day`}
+                      href={`/stocks/${row.symbol}`}
                       className={[
                         "inline-flex h-8 items-center rounded-xl border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] transition-all",
                         accent.chartButton,
