@@ -1082,7 +1082,12 @@ function PortfolioPageContent() {
     if (actionState.mode === "create") {
       const nextTicker = normalizeTicker(actionState.ticker);
       const entryPrice = Number(actionState.entryPrice);
-      const currentPrice = Number(actionState.currentPrice);
+      const requestedPrice = Number(actionState.currentPrice);
+      const liveQuotePrice = quoteMap[nextTicker]?.price ?? getQuotePrice(nextTicker);
+      const currentPrice =
+        typeof liveQuotePrice === "number" && Number.isFinite(liveQuotePrice) && liveQuotePrice > 0
+          ? Number(liveQuotePrice.toFixed(2))
+          : requestedPrice;
       const shares = 1;
       const derivedDefaults = buildPortfolioDefaultsForPrice(currentPrice);
       const targetPrice =
@@ -1097,7 +1102,7 @@ function PortfolioPageContent() {
 
       if (!nextTicker) return;
       if (!Number.isFinite(entryPrice) || entryPrice <= 0) return;
-      if (!Number.isFinite(currentPrice) || currentPrice <= 0) return;
+      if (!Number.isFinite(requestedPrice) || requestedPrice <= 0) return;
 
       setHoldings((prev) => {
         const existingIndex = prev.findIndex((holding) => holding.ticker === nextTicker);
@@ -1519,7 +1524,7 @@ function PortfolioPageContent() {
 
                           <div>
                             <label className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                              Price
+                              Price (Gain/Loss Price)
                             </label>
                             <input
                               type="number"
