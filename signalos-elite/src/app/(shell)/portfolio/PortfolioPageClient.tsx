@@ -292,6 +292,14 @@ function buildCreateState(
   };
 }
 
+type PortfolioHydratedQuote = {
+  price: number;
+  changePct: number | null;
+  volume: number | null;
+  avgVolume: number | null;
+  updatedAt: number | null;
+};
+
 async function fetchLiveCreatePrice(ticker: string): Promise<number | null> {
   const normalizedTicker = normalizeTicker(ticker);
 
@@ -778,6 +786,9 @@ function PortfolioPageContent() {
   const { quoteMap, ensureQuotes, refreshQuotesNow } = useLiveMarket();
   const { setActiveTicker } = useSelectedTicker();
   const [holdings, setHoldings] = useState<Holding[]>(INITIAL_HOLDINGS);
+  const [hydratedQuoteMap, setHydratedQuoteMap] = useState<Record<string, PortfolioHydratedQuote>>(
+    {}
+  );
   const [hasLoadedPortfolio, setHasLoadedPortfolio] = useState(false);
   const [actionTicker, setActionTicker] = useState<string | null>(null);
   const [actionState, setActionState] = useState<ActionState>(null);
@@ -830,6 +841,81 @@ function PortfolioPageContent() {
     portfolioTickers,
     refreshQuotesNow,
   ]);
+
+  useEffect(() => {
+    if (!hasLoadedPortfolio || portfolioTickers.length === 0) {
+      setHydratedQuoteMap({});
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const response = await fetch(
+          `/api/massive/quotes?tickers=${encodeURIComponent(portfolioTickers.join(","))}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
+
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as {
+          quotes?: Array<{
+            ticker?: string;
+            price?: number | null;
+            changePercent?: number | null;
+            changePct?: number | null;
+            volume?: number | null;
+            avgVolume?: number | null;
+            updatedMs?: number | null;
+          }>;
+        };
+
+        if (cancelled || !Array.isArray(payload.quotes)) return;
+
+        const nextHydratedQuotes = payload.quotes.reduce<Record<string, PortfolioHydratedQuote>>(
+          (result, quote) => {
+            const ticker = normalizeTicker(String(quote?.ticker ?? ""));
+            const price = typeof quote?.price === "number" ? quote.price : null;
+
+            if (!ticker || price == null || !Number.isFinite(price) || price <= 0) {
+              return result;
+            }
+
+            result[ticker] = {
+              price: Number(price.toFixed(2)),
+              changePct:
+                typeof quote?.changePercent === "number"
+                  ? quote.changePercent
+                  : typeof quote?.changePct === "number"
+                    ? quote.changePct
+                    : null,
+              volume: typeof quote?.volume === "number" ? quote.volume : null,
+              avgVolume: typeof quote?.avgVolume === "number" ? quote.avgVolume : null,
+              updatedAt:
+                typeof quote?.updatedMs === "number" && Number.isFinite(quote.updatedMs)
+                  ? quote.updatedMs
+                  : null,
+            };
+
+            return result;
+          },
+          {}
+        );
+
+        if (!cancelled) {
+          setHydratedQuoteMap(nextHydratedQuotes);
+        }
+      } catch {}
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasLoadedPortfolio, holdingTickersKey, portfolioTickers]);
 
   useEffect(() => {
     if (!hasLoadedPortfolio) return;
@@ -899,7 +985,7 @@ function PortfolioPageContent() {
     () =>
       holdings.map((holding) => {
         const ticker = normalizeTicker(holding.ticker);
-        const liveQuote = quoteMap[ticker];
+        const liveQuote = quoteMap[ticker] ?? hydratedQuoteMap[ticker];
         const livePrice = liveQuote?.price ?? holding.currentPrice ?? 0;
         const signalLevels = deriveHoldingSignalLevels(holding, livePrice);
         const signalAwareHolding = {
@@ -931,7 +1017,7 @@ function PortfolioPageContent() {
           updatedTone: getHoldingUpdatedTone(updatedAt),
         };
       }),
-    [holdings, quoteMap]
+    [holdings, hydratedQuoteMap, quoteMap]
   );
 
   const portfolioValue = useMemo(
