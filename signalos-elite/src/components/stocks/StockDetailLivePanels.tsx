@@ -69,11 +69,6 @@ function formatUpside(v: number | null) {
   return `${rounded > 0 ? "+" : ""}${rounded.toFixed(1)}%`;
 }
 
-function formatSignedPercent(value: number | null) {
-  if (value == null || !Number.isFinite(value)) return "—";
-  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
-}
-
 function percentTone(value: number | null) {
   if (value == null || !Number.isFinite(value)) return "text-white/35";
   if (value > 0) return "text-emerald-300";
@@ -241,17 +236,54 @@ export default function StockDetailLivePanels({
   }, [liveTicker, marketDataActions]);
 
   const marketDataQuote = marketData?.getQuote(liveTicker);
-  const liveQuote = liveMarket?.quoteMap[liveTicker];
-  const analysisPrice =
+  const quote = liveMarket?.quoteMap[liveTicker];
+  const lastClose = technicals.lastClose ?? initialPrice;
+  const previousClose =
+    marketDataQuote?.previousClose ??
+    marketDataQuote?.prevClose ??
+    initialPrice ??
+    lastClose ??
+    null;
+  const livePrice =
     marketDataQuote?.currentPrice ??
     marketDataQuote?.price ??
-    liveQuote?.price ??
-    initialPrice;
-  const analysisChangePct =
-    marketDataQuote?.changePercent ??
-    liveQuote?.changePct ??
-    initialChangePct;
-  const technicalAnchorPrice = technicals.lastClose ?? initialPrice;
+    quote?.price ??
+    initialPrice ??
+    null;
+  const safePrice =
+    typeof livePrice === "number" && Number.isFinite(livePrice) && livePrice > 0
+      ? livePrice
+      : typeof quote?.price === "number" && Number.isFinite(quote.price) && quote.price > 0
+        ? quote.price
+        : typeof lastClose === "number" && Number.isFinite(lastClose) && lastClose > 0
+          ? lastClose
+          : null;
+  const safeChange =
+    typeof quote?.change === "number" && Number.isFinite(quote.change)
+      ? quote.change
+      : safePrice != null && typeof previousClose === "number" && Number.isFinite(previousClose) && previousClose > 0
+        ? safePrice - previousClose
+        : null;
+  const safeChangePct =
+    typeof quote?.changePct === "number" && Number.isFinite(quote.changePct)
+      ? quote.changePct
+      : safeChange != null && typeof previousClose === "number" && Number.isFinite(previousClose) && previousClose > 0
+        ? (safeChange / previousClose) * 100
+        : null;
+  const hasChange =
+    safeChange != null &&
+    safeChangePct != null &&
+    Number.isFinite(safeChange) &&
+    Number.isFinite(safeChangePct);
+  const changeTone =
+    hasChange && safeChange > 0
+      ? "text-emerald-300"
+      : hasChange && safeChange < 0
+        ? "text-rose-300"
+        : "text-white/45";
+  const analysisPrice = safePrice;
+  const analysisChangePct = safeChangePct;
+  const technicalAnchorPrice = lastClose;
 
   const normalizedConviction =
     row.conviction != null && row.conviction <= 1
@@ -320,8 +352,10 @@ export default function StockDetailLivePanels({
           key: "price",
           label: "Price",
           value: money(analysisPrice),
-          subtext: formatSignedPercent(analysisChangePct),
-          subtextClassName: percentTone(analysisChangePct),
+          subtext: hasChange
+            ? `${safeChange > 0 ? "+" : ""}${safeChange.toFixed(2)} (${safeChangePct > 0 ? "+" : ""}${safeChangePct.toFixed(2)}%)`
+            : "Live syncing...",
+          subtextClassName: changeTone,
         }
       : null,
     target != null
