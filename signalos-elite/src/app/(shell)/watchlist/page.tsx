@@ -425,6 +425,10 @@ function formatPrice(value: number) {
   })}`;
 }
 
+function hasUsablePrice(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
 function formatCompactCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -476,10 +480,7 @@ function applyLiveQuoteToRow(
       typeof quote.name === "string" && quote.name.trim().length > 0
         ? quote.name
         : row.name,
-    price:
-      typeof quote.price === "number" && Number.isFinite(quote.price)
-        ? quote.price
-        : row.price,
+    price: hasUsablePrice(quote.price) ? quote.price : row.price,
     changePct:
       typeof quote.changePct === "number" && Number.isFinite(quote.changePct)
         ? quote.changePct
@@ -728,10 +729,10 @@ function WatchlistRowItem({
               Price
             </div>
             <div className="mt-1 text-lg font-semibold text-white">
-              {formatPrice(row.price)}
+              {hasUsablePrice(row.price) ? formatPrice(row.price) : "Awaiting quote"}
             </div>
             <div className={`mt-1 text-sm font-medium ${changeClasses(row.changePct)}`}>
-              {formatPct(row.changePct)}
+              {hasUsablePrice(row.price) ? formatPct(row.changePct) : "-"}
             </div>
           </div>
 
@@ -766,7 +767,7 @@ function WatchlistRowItem({
                 </span>
               ) : null}
 
-              {typeof row.price === "number" && Number.isFinite(row.price) ? (
+              {hasUsablePrice(row.price) ? (
                 <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
                   Price {formatPrice(row.price)}
                 </span>
@@ -1127,10 +1128,7 @@ export default function WatchlistPage() {
 
             result[ticker] = {
               name: typeof quote?.name === "string" ? quote.name : null,
-              price:
-                typeof quote?.price === "number" && Number.isFinite(quote.price)
-                  ? quote.price
-                  : null,
+              price: hasUsablePrice(quote?.price) ? quote.price : null,
               changePct:
                 typeof quote?.changePercent === "number" && Number.isFinite(quote.changePercent)
                   ? quote.changePercent
@@ -1162,6 +1160,38 @@ export default function WatchlistPage() {
       cancelled = true;
     };
   }, [hasLoadedWatchlist, watchlistTickers, watchlistTickersKey]);
+
+  useEffect(() => {
+    if (!hasLoadedWatchlist || watchlistRows.length === 0) return;
+
+    setWatchlistRows((prev) => {
+      let changed = false;
+
+      const next = prev.map((row) => {
+        const symbol = normalizeTicker(row.ticker);
+        const quote = quoteMap[symbol] ?? hydratedQuoteMap[symbol];
+
+        if (!quote) return row;
+
+        const hydratedRow = applyLiveQuoteToRow(row, quote);
+
+        if (
+          hydratedRow.price !== row.price ||
+          hydratedRow.changePct !== row.changePct ||
+          hydratedRow.name !== row.name ||
+          hydratedRow.volume !== row.volume ||
+          hydratedRow.avgVolume !== row.avgVolume
+        ) {
+          changed = true;
+          return hydratedRow;
+        }
+
+        return row;
+      });
+
+      return changed ? next : prev;
+    });
+  }, [hasLoadedWatchlist, hydratedQuoteMap, quoteMap, watchlistRows.length]);
 
   const scoredRows = useMemo(
     () =>
