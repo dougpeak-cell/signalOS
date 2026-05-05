@@ -3361,6 +3361,11 @@ const gapFillLabel =
     .sort((a, b) => b - a);
 
   const topStrengths = new Set(sortedStrengths.slice(0, 2));
+  const liveSignalDriverSlots = useMemo(
+    () =>
+      Array.from({ length: 4 }, (_, index) => liveSignalDrivers[index] ?? null),
+    [liveSignalDrivers]
+  );
   const showAuxPanels = !floatingMode && !focusMode && !expanded && !hideStatsAndLegend;
 
   return (
@@ -4037,27 +4042,40 @@ const gapFillLabel =
                         Live score
                       </div>
 
-                      <div className="mt-2 flex min-h-30 flex-wrap content-start gap-1.5 overflow-hidden">
+                      <div className="mt-2 grid h-32 grid-rows-4 gap-1.5 overflow-hidden">
                         {liveSignalDrivers.length > 0 ? (
-                          liveSignalDrivers.map((driver) => (
-                            <span
-                              key={driver.key}
-                              className={[
-                                "rounded-full border px-2 py-1 text-[10px] font-semibold",
-                                driver.tone === "positive"
-                                  ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-200"
-                                  : driver.tone === "negative"
-                                    ? "border-rose-400/25 bg-rose-400/10 text-rose-200"
-                                    : "border-white/10 bg-white/5 text-white/70",
-                              ].join(" ")}
-                            >
-                              {driver.label} {driver.delta > 0 ? `+${driver.delta}` : driver.delta}
-                            </span>
-                          ))
+                          liveSignalDriverSlots.map((driver, index) =>
+                            driver ? (
+                              <span
+                                key={driver.key}
+                                className={[
+                                  "inline-flex items-center rounded-full border px-2 py-1 text-[10px] font-semibold",
+                                  driver.tone === "positive"
+                                    ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-200"
+                                    : driver.tone === "negative"
+                                      ? "border-rose-400/25 bg-rose-400/10 text-rose-200"
+                                      : "border-white/10 bg-white/5 text-white/70",
+                                ].join(" ")}
+                              >
+                                {driver.label} {driver.delta > 0 ? `+${driver.delta}` : driver.delta}
+                              </span>
+                            ) : (
+                              <span
+                                key={`live-driver-placeholder-${index}`}
+                                aria-hidden="true"
+                                className="rounded-full border border-transparent px-2 py-1 opacity-0"
+                              />
+                            )
+                          )
                         ) : (
-                          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold text-white/65">
-                            No active live drivers
-                          </span>
+                          <>
+                            <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold text-white/65">
+                              No active live drivers
+                            </span>
+                            <span aria-hidden="true" className="rounded-full border border-transparent px-2 py-1 opacity-0" />
+                            <span aria-hidden="true" className="rounded-full border border-transparent px-2 py-1 opacity-0" />
+                            <span aria-hidden="true" className="rounded-full border border-transparent px-2 py-1 opacity-0" />
+                          </>
                         )}
                       </div>
                     </>
