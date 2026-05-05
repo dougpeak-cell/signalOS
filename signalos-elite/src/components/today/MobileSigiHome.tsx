@@ -218,7 +218,7 @@ export default function MobileSigiHome({
   const todaySnapshotTicker = leadOpportunity?.ticker ?? leadSetup?.ticker ?? null;
   const chartHref = todaySnapshotTicker
     ? `/stocks/${todaySnapshotTicker}/live?source=%2Ftoday&session=${defaultSetupSession}`
-    : "/stocks";
+    : "/today";
 
   function buildPreviewHref(href: string) {
     if (searchParams.get("mobilePreview") !== "1") {

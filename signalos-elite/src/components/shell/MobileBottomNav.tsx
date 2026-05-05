@@ -41,18 +41,9 @@ export default function MobileBottomNav({
   const isMobilePreviewEnabled = searchParams.get("mobilePreview") === "1";
   const lastScrollYRef = useRef(0);
   const showNavTimeoutRef = useRef<number | null>(null);
-  const [isPreviewNavHidden, setIsPreviewNavHidden] = useState(false);
+  const [isNavHidden, setIsNavHidden] = useState(false);
 
   useEffect(() => {
-    if (!forceVisible) {
-      setIsPreviewNavHidden(false);
-      if (showNavTimeoutRef.current !== null) {
-        window.clearTimeout(showNavTimeoutRef.current);
-        showNavTimeoutRef.current = null;
-      }
-      return;
-    }
-
     const syncScrollState = () => {
       const nextScrollY = window.scrollY;
       const delta = nextScrollY - lastScrollYRef.current;
@@ -63,12 +54,12 @@ export default function MobileBottomNav({
       }
 
       if (nextScrollY <= 24) {
-        setIsPreviewNavHidden(false);
+        setIsNavHidden(false);
       } else if (delta > 18) {
-        setIsPreviewNavHidden(true);
+        setIsNavHidden(true);
       } else if (delta < -12) {
         showNavTimeoutRef.current = window.setTimeout(() => {
-          setIsPreviewNavHidden(false);
+          setIsNavHidden(false);
           showNavTimeoutRef.current = null;
         }, 90);
       }
@@ -86,7 +77,7 @@ export default function MobileBottomNav({
       }
       window.removeEventListener("scroll", syncScrollState);
     };
-  }, [forceVisible]);
+  }, []);
 
   function withPreviewParam(href: string) {
     if (!isMobilePreviewEnabled) {
@@ -131,11 +122,16 @@ export default function MobileBottomNav({
   const navShellClass = forceVisible
     ? [
         "fixed bottom-2 left-1/2 z-50 w-[min(calc(100%-1rem),392px)] -translate-x-1/2 will-change-transform transition-[transform,opacity] duration-150 ease-out",
-        isPreviewNavHidden
+        isNavHidden
           ? "translate-y-[calc(100%+1.5rem)] opacity-0 pointer-events-none"
           : "translate-y-0 opacity-100",
       ].join(" ")
-    : `fixed inset-x-3 z-50 md:hidden ${navPositionClass}`;
+    : [
+        `fixed inset-x-3 z-50 md:hidden ${navPositionClass} will-change-transform transition-[transform,opacity] duration-150 ease-out`,
+        isNavHidden
+          ? "translate-y-[calc(100%+1.5rem)] opacity-0 pointer-events-none"
+          : "translate-y-0 opacity-100",
+      ].join(" ");
 
   const navGridClass = forceVisible
     ? "grid min-h-[104px] grid-cols-5 items-center gap-1 overflow-hidden rounded-[24px] border border-cyan-300/15 bg-black/80 px-1.5 py-1.5 shadow-[0_0_12px_rgba(103,232,249,0.10),0_12px_24px_rgba(8,47,73,0.22)] backdrop-blur-2xl"
@@ -156,8 +152,8 @@ export default function MobileBottomNav({
               href={buildNavHref(item.href)}
               className={[
                 forceVisible
-                  ? "flex min-h-9 flex-col items-center justify-center rounded-[18px] px-1 text-[8px] font-semibold uppercase tracking-widest transition"
-                  : "flex min-h-11 flex-col items-center justify-center rounded-2xl px-1 text-[9px] font-semibold uppercase tracking-[0.12em] transition sm:text-[9px]",
+                  ? "flex min-h-9 flex-col items-center justify-center rounded-[18px] px-0.5 py-1 text-[8px] font-semibold text-center transition"
+                  : "flex min-h-11 flex-col items-center justify-center rounded-2xl px-0.5 py-1 text-[8px] font-semibold text-center transition sm:text-[8px]",
                 active
                   ? "bg-cyan-400/12 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.14)]"
                   : "text-white/56 hover:bg-white/6 hover:text-white",
@@ -171,7 +167,9 @@ export default function MobileBottomNav({
                   active ? "bg-cyan-300" : "bg-white/25",
                 ].join(" ")}
               />
-              {item.label}
+              <span className="block max-w-full text-balance text-center leading-tight whitespace-normal">
+                {item.label}
+              </span>
             </Link>
           );
         })}
@@ -180,17 +178,19 @@ export default function MobileBottomNav({
           type="button"
           onClick={openSigi}
           className={[
-            "col-span-1 flex flex-col items-center justify-center border border-cyan-400/20 bg-cyan-400/12 px-1 font-semibold uppercase text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/18",
+            "col-span-1 flex flex-col items-center justify-center border border-cyan-400/20 bg-cyan-400/12 px-0.5 py-1 font-semibold text-cyan-100 text-center shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/18",
             forceVisible
-              ? "min-h-9 rounded-[18px] text-[8px] tracking-widest"
-              : "min-h-11 rounded-2xl text-[9px] tracking-[0.12em]",
+              ? "min-h-9 rounded-[18px] text-[8px]"
+              : "min-h-11 rounded-2xl text-[8px]",
           ].join(" ")}
         >
           <span className={[
             "h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.8)]",
             forceVisible ? "mb-0.5" : "mb-1",
           ].join(" ")} />
-          Sigi
+          <span className="block max-w-full text-balance text-center leading-tight whitespace-normal">
+            Sigi
+          </span>
         </button>
       </div>
     </nav>
