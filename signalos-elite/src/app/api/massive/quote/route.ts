@@ -261,6 +261,11 @@ export type MassiveQuoteResponse = {
   points: number[];
 };
 
+type ResolveMassiveQuoteOptions = {
+  includePoints?: boolean;
+  includeFundamentals?: boolean;
+};
+
 const lastGoodStockQuoteCache = new Map<
   string,
   StableStockQuote & { cachedAt: number }
@@ -286,6 +291,17 @@ function isProxyTradeInconsistent({
 }
 
 async function fetchStockQuote(ticker: string): Promise<{
+  price: number | null;
+  prevClose: number | null;
+  updatedMs: number | null;
+} | null> {
+  return fetchStockQuoteInternal(ticker, true);
+}
+
+async function fetchStockQuoteInternal(
+  ticker: string,
+  reconcileWithSeries: boolean
+): Promise<{
   price: number | null;
   prevClose: number | null;
   updatedMs: number | null;
@@ -326,31 +342,33 @@ async function fetchStockQuote(ticker: string): Promise<{
     let price = tradePrice ?? dayClose ?? prevClose;
     const updatedMs = normalizeUpdatedMs(toNumber(snapshot?.updated));
 
-    const series = await fetchStockIntradaySeries(ticker);
-    const seriesLast = series.at(-1) ?? null;
+    if (reconcileWithSeries) {
+      const series = await fetchStockIntradaySeries(ticker);
+      const seriesLast = series.at(-1) ?? null;
 
-    // Polygon snapshots can intermittently collapse to prevDay only after hours.
-    // When that happens, prefer the latest intraday series close over a synthetic 0% move.
-    if (
-      seriesLast != null &&
-      (price == null ||
-        ((tradePrice == null || tradePrice === prevClose) &&
-          (dayClose == null || dayClose === prevClose) &&
-          prevClose != null &&
-          price === prevClose &&
-          seriesLast !== prevClose))
-    ) {
-      price = seriesLast;
-    }
+      // Polygon snapshots can intermittently collapse to prevDay only after hours.
+      // When that happens, prefer the latest intraday series close over a synthetic 0% move.
+      if (
+        seriesLast != null &&
+        (price == null ||
+          ((tradePrice == null || tradePrice === prevClose) &&
+            (dayClose == null || dayClose === prevClose) &&
+            prevClose != null &&
+            price === prevClose &&
+            seriesLast !== prevClose))
+      ) {
+        price = seriesLast;
+      }
 
-    if (
-      isProxyTradeInconsistent({
-        tradePrice,
-        seriesLast,
-        dayClose,
-      })
-    ) {
-      price = seriesLast ?? dayClose ?? prevClose;
+      if (
+        isProxyTradeInconsistent({
+          tradePrice,
+          seriesLast,
+          dayClose,
+        })
+      ) {
+        price = seriesLast ?? dayClose ?? prevClose;
+      }
     }
 
     if (price == null) return null;
@@ -419,6 +437,17 @@ async function fetchStableStockQuote(ticker: string, attempts = 3) {
   }
 
   return getCachedGoodStockQuote(ticker) ?? lastQuote;
+}
+
+async function fetchLightweightStockQuote(ticker: string) {
+  const nextQuote = await fetchStockQuoteInternal(ticker, false);
+
+  if (!isSuspiciousStockQuote(nextQuote)) {
+    rememberGoodStockQuote(ticker, nextQuote);
+    return nextQuote;
+  }
+
+  return getCachedGoodStockQuote(ticker) ?? nextQuote;
 }
 
 type IntradayPoint = {
@@ -523,8 +552,11 @@ async function fetchStockIntradaySeries(ticker: string): Promise<number[]> {
 }
 
 export async function resolveMassiveQuote(
-  ticker: string
+  ticker: string,
+  options: ResolveMassiveQuoteOptions = {}
 ): Promise<MassiveQuoteResponse | null> {
+    const includePoints = options.includePoints ?? true;
+    const includeFundamentals = options.includeFundamentals ?? true;
     const trueIndexTicker = INDEX_MAP[ticker] ?? null;
     const proxyTicker = INDEX_PROXY_FALLBACK[ticker] ?? null;
     const isHeadlineIndexRequest = Boolean(trueIndexTicker);
@@ -558,19 +590,23 @@ export async function resolveMassiveQuote(
         updatedMs = indexQuote.updatedMs;
         isMarketOpen = indexQuote.isMarketOpen;
         source = "true-index";
-        points = await fetchMassiveIndexIntradaySeries(trueIndexTicker);
+        points = includePoints
+          ? await fetchMassiveIndexIntradaySeries(trueIndexTicker)
+          : [];
       }
     }
 
     if (price == null && !isHeadlineIndexRequest) {
-      const stockQuote = await fetchStableStockQuote(ticker);
+      const stockQuote = includePoints
+        ? await fetchStableStockQuote(ticker)
+        : await fetchLightweightStockQuote(ticker);
 
       if (stockQuote) {
         price = stockQuote.price;
         prevClose = stockQuote.prevClose;
         updatedMs = stockQuote.updatedMs;
         source = "stock";
-        points = await fetchStockIntradaySeries(ticker);
+        points = includePoints ? await fetchStockIntradaySeries(ticker) : [];
       }
     }
 
@@ -585,7 +621,7 @@ export async function resolveMassiveQuote(
         updatedMs = proxyQuote.updatedMs;
         source = "index-proxy";
         lookupTicker = proxyTicker;
-        points = proxySeries;
+        points = includePoints ? proxySeries : [];
 
         if (
           isProxyTradeInconsistent({
@@ -665,9 +701,11 @@ export async function resolveMassiveQuote(
           : null;
     }
 
-    const fundamentals = await getMassiveFundamentals(ticker, {
-      profile: "discovery",
-    });
+    const fundamentals = includeFundamentals
+      ? await getMassiveFundamentals(ticker, {
+          profile: "discovery",
+        })
+      : { volume: null, avgVolume: null };
 
     return {
       ticker,

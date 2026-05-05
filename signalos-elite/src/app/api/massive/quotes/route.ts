@@ -64,7 +64,10 @@ function normalizeQuote(
 
 async function fetchSingleQuote(ticker: string): Promise<NormalizedQuote> {
   try {
-    const quote = await resolveMassiveQuote(ticker);
+    const quote = await resolveMassiveQuote(ticker, {
+      includePoints: false,
+      includeFundamentals: false,
+    });
 
     if (!quote) {
       return {

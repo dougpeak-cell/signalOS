@@ -8,6 +8,7 @@ import { useOptionalSelectedTicker } from "@/components/sigi/SelectedTickerConte
 import ReturnToContextButton from "@/components/shared/ReturnToContextButton";
 import { useSyncedWatchlist } from "@/hooks/useSyncedWatchlist";
 import { prefetchCompanyProfile } from "@/lib/companyCache";
+import { getQuoteByTicker } from "@/lib/market/quotes";
 import {
   isLeadershipView,
   matchesThemeOrSector,
@@ -416,6 +417,14 @@ export default function ScreenerResultsClient({ stocks }: Props) {
       }
 
       const quote = quoteMap?.[ticker];
+      const fallbackQuote = getQuoteByTicker(ticker);
+      const fallbackPrice = fallbackQuote?.price ?? null;
+      const fallbackChangePercent =
+        fallbackQuote?.price != null &&
+        fallbackQuote?.prevClose != null &&
+        fallbackQuote.prevClose !== 0
+          ? ((fallbackQuote.price - fallbackQuote.prevClose) / fallbackQuote.prevClose) * 100
+          : 0;
       const signalosScore = calculateOpportunityScore(quote, index);
 
       return {
@@ -430,14 +439,14 @@ export default function ScreenerResultsClient({ stocks }: Props) {
         masterScore: signalosScore,
         signalosScore,
         thesis: `${sectorKey} leader available for SigiOS review.`,
-        price: quote?.price ?? null,
+        price: quote?.price ?? fallbackPrice,
         target: null,
         signal: "Neutral" as const,
         tier: null,
         entryLow: null,
         entryHigh: null,
         stopLoss: null,
-        changePercent: quote?.changePercent ?? 0,
+        changePercent: quote?.changePercent ?? fallbackChangePercent,
         isFallbackOnly: true,
       } satisfies ScreenerStock;
     });
@@ -446,6 +455,14 @@ export default function ScreenerResultsClient({ stocks }: Props) {
   const allMarketRows = useMemo<ScreenerStock[]>(() => {
     return ALL_MARKET_UNIVERSE.map((ticker, index) => {
       const quote = quoteMap?.[ticker];
+      const fallbackQuote = getQuoteByTicker(ticker);
+      const fallbackPrice = fallbackQuote?.price ?? null;
+      const fallbackChangePercent =
+        fallbackQuote?.price != null &&
+        fallbackQuote?.prevClose != null &&
+        fallbackQuote.prevClose !== 0
+          ? ((fallbackQuote.price - fallbackQuote.prevClose) / fallbackQuote.prevClose) * 100
+          : 0;
       const signalosScore = calculateOpportunityScore(quote, index);
 
       return {
@@ -460,7 +477,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
         masterLabel: undefined,
         masterTone: undefined,
         score: signalosScore,
-        price: quote?.price ?? quote?.last ?? null,
+        price: quote?.price ?? quote?.last ?? fallbackPrice,
         target: null,
         upside: null,
         signal: "Neutral",
@@ -473,7 +490,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
           quote?.changePercent ??
           quote?.changePct ??
           quote?.changesPercentage ??
-          0,
+          fallbackChangePercent,
         signalosScore,
         isFallbackOnly: true,
       };
@@ -514,6 +531,18 @@ export default function ScreenerResultsClient({ stocks }: Props) {
     () => feedRows.slice(0, visibleCount),
     [feedRows, visibleCount]
   );
+  const quoteTickers = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          visibleFeedRows
+            .map((row) => row.ticker?.toUpperCase())
+            .filter((ticker): ticker is string => Boolean(ticker))
+        )
+      ),
+    [visibleFeedRows]
+  );
+  const quoteTickersKey = quoteTickers.join(",");
 
   const displayRows = useMemo(
     () =>
@@ -601,115 +630,125 @@ export default function ScreenerResultsClient({ stocks }: Props) {
   }, [sectorFilter, search]);
 
   useEffect(() => {
-    const tickers = Array.from(
-      new Set(
-        feedRows
-          .map((row) => row.ticker?.toUpperCase())
-          .filter((t): t is string => Boolean(t))
-      )
-    );
-
-    if (!tickers.length) return;
+    if (!quoteTickers.length) return;
 
     let cancelled = false;
+    const controller = new AbortController();
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
     void (async () => {
-      try {
-        const res = await fetch(
-          `/api/massive/quotes?tickers=${encodeURIComponent(tickers.join(","))}`,
-          { cache: "no-store" }
-        );
-
-        const text = await res.text();
-        if (!res.ok) {
-          console.error("quotes fetch failed", res.status, text);
-          return;
-        }
-
+      for (let attempt = 0; attempt < 3; attempt += 1) {
         try {
-          const data = JSON.parse(text) as any;
-          const normalizedData = Array.isArray(data?.quotes) ? data.quotes : data;
-
-          if (cancelled) return;
-
-          setQuoteMap((prev) => {
-            const next = { ...prev };
-
-            const getNum = (value: any) =>
-              typeof value === "number" && Number.isFinite(value) ? value : null;
-
-            const extract = (item: any) => {
-              return {
-                price:
-                  getNum(item?.price) ??
-                  getNum(item?.last) ??
-                  getNum(item?.lastPrice) ??
-                  getNum(item?.close) ??
-                  getNum(item?.quote?.price) ??
-                  getNum(item?.data?.price),
-
-                last:
-                  getNum(item?.last) ??
-                  getNum(item?.lastPrice) ??
-                  getNum(item?.price) ??
-                  getNum(item?.quote?.last) ??
-                  getNum(item?.data?.last),
-
-                changePercent:
-                  getNum(item?.changePercent) ??
-                  getNum(item?.changePct) ??
-                  getNum(item?.percentChange) ??
-                  getNum(item?.pctChange) ??
-                  getNum(item?.quote?.changePercent) ??
-                  getNum(item?.data?.changePercent),
-
-                changePct:
-                  getNum(item?.changePct) ??
-                  getNum(item?.pctChange) ??
-                  getNum(item?.changePercent) ??
-                  getNum(item?.data?.changePct),
-
-                changesPercentage:
-                  getNum(item?.changesPercentage) ??
-                  getNum(item?.percentChange) ??
-                  getNum(item?.changePercent) ??
-                  getNum(item?.data?.changesPercentage),
-              };
-            };
-
-            if (Array.isArray(normalizedData)) {
-              for (const item of normalizedData) {
-                const ticker = String(item?.ticker ?? item?.symbol ?? "")
-                  .toUpperCase()
-                  .trim();
-
-                if (!ticker) continue;
-
-                next[ticker] = extract(item);
-              }
-            } else if (normalizedData?.data) {
-              for (const [ticker, item] of Object.entries(normalizedData.data)) {
-                next[ticker.toUpperCase()] = extract(item);
-              }
-            } else if (normalizedData && typeof normalizedData === "object") {
-              for (const [ticker, item] of Object.entries(normalizedData)) {
-                next[ticker.toUpperCase()] = extract(item);
-              }
+          const res = await fetch(
+            `/api/massive/quotes?tickers=${encodeURIComponent(quoteTickers.join(","))}`,
+            {
+              cache: "no-store",
+              signal: controller.signal,
             }
-            return next;
-          });
-        } catch {
-          console.error("quotes response was not valid JSON", text);
+          );
+
+          const text = await res.text();
+          if (!res.ok) {
+            if (attempt < 2) {
+              await wait(250 * (attempt + 1));
+            }
+            continue;
+          }
+
+          try {
+            const data = JSON.parse(text) as any;
+            const normalizedData = Array.isArray(data?.quotes) ? data.quotes : data;
+
+            if (cancelled) return;
+
+            setQuoteMap((prev) => {
+              const next = { ...prev };
+
+              const getNum = (value: any) =>
+                typeof value === "number" && Number.isFinite(value) ? value : null;
+
+              const extract = (item: any) => {
+                return {
+                  price:
+                    getNum(item?.price) ??
+                    getNum(item?.last) ??
+                    getNum(item?.lastPrice) ??
+                    getNum(item?.close) ??
+                    getNum(item?.quote?.price) ??
+                    getNum(item?.data?.price),
+
+                  last:
+                    getNum(item?.last) ??
+                    getNum(item?.lastPrice) ??
+                    getNum(item?.price) ??
+                    getNum(item?.quote?.last) ??
+                    getNum(item?.data?.last),
+
+                  changePercent:
+                    getNum(item?.changePercent) ??
+                    getNum(item?.changePct) ??
+                    getNum(item?.percentChange) ??
+                    getNum(item?.pctChange) ??
+                    getNum(item?.quote?.changePercent) ??
+                    getNum(item?.data?.changePercent),
+
+                  changePct:
+                    getNum(item?.changePct) ??
+                    getNum(item?.pctChange) ??
+                    getNum(item?.changePercent) ??
+                    getNum(item?.data?.changePct),
+
+                  changesPercentage:
+                    getNum(item?.changesPercentage) ??
+                    getNum(item?.percentChange) ??
+                    getNum(item?.changePercent) ??
+                    getNum(item?.data?.changesPercentage),
+                };
+              };
+
+              if (Array.isArray(normalizedData)) {
+                for (const item of normalizedData) {
+                  const ticker = String(item?.ticker ?? item?.symbol ?? "")
+                    .toUpperCase()
+                    .trim();
+
+                  if (!ticker) continue;
+
+                  next[ticker] = extract(item);
+                }
+              } else if (normalizedData?.data) {
+                for (const [ticker, item] of Object.entries(normalizedData.data)) {
+                  next[ticker.toUpperCase()] = extract(item);
+                }
+              } else if (normalizedData && typeof normalizedData === "object") {
+                for (const [ticker, item] of Object.entries(normalizedData)) {
+                  next[ticker.toUpperCase()] = extract(item);
+                }
+              }
+              return next;
+            });
+
+            return;
+          } catch {
+            if (attempt < 2) {
+              await wait(250 * (attempt + 1));
+            }
+          }
+        } catch (err) {
+          if (cancelled) return;
+          if (err instanceof DOMException && err.name === "AbortError") return;
+          if (attempt < 2) {
+            await wait(250 * (attempt + 1));
+          }
         }
-      } catch (err) {
-        console.error("quotes fetch error", err);
       }
     })();
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [feedRows]);
+  }, [quoteTickers, quoteTickersKey]);
 
   function addTickerToWatchlist(ticker: string) {
     addTicker(ticker);
@@ -781,9 +820,9 @@ export default function ScreenerResultsClient({ stocks }: Props) {
               typeof quote?.changePercent === "number"
                 ? quote.changePercent
                 : stock.changePercent;
-            const stablePrice = hasMounted ? livePrice : null;
+            const stablePrice = hasUsablePrice(livePrice) ? livePrice : null;
             const stableChangePercent =
-              hasMounted && hasUsablePrice(stablePrice) && hasUsablePercent(liveChangePercent)
+              hasUsablePrice(stablePrice) && hasUsablePercent(liveChangePercent)
                 ? liveChangePercent
                 : null;
             const score = Number(stock.signalosScore);

@@ -275,7 +275,7 @@ async function getAllSignals(): Promise<SignalRow[]> {
     `);
 
   if (error) {
-    console.error("Screener query failed:", error.message);
+    console.warn("Screener query failed:", error.message);
     return [];
   }
 
@@ -367,7 +367,7 @@ async function searchSymbols(rawQuery: string): Promise<SignalRow[]> {
         }
       }
     } catch (exactTickerError) {
-      console.error("Exact ticker screener fallback failed:", exactTickerError);
+      console.warn("Exact ticker screener fallback failed:", exactTickerError);
     }
   }
 
@@ -378,7 +378,7 @@ async function searchSymbols(rawQuery: string): Promise<SignalRow[]> {
     .limit(100);
 
   if (error) {
-    console.error("Symbol screener fallback failed:", error.message);
+    console.warn("Symbol screener fallback failed:", error.message);
   } else {
     for (const row of (data ?? []) as SymbolSearchRow[]) {
       if (typeof row.ticker !== "string" || row.ticker.trim().length === 0) continue;
@@ -436,7 +436,7 @@ async function searchSymbols(rawQuery: string): Promise<SignalRow[]> {
         }
       }
     } catch (massiveError) {
-      console.error("Global screener fallback failed:", massiveError);
+      console.warn("Global screener fallback failed:", massiveError);
     }
   }
 

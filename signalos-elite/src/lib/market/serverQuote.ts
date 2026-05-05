@@ -1,6 +1,6 @@
-import { headers } from "next/headers";
 import { resolveMarketTickerAlias } from "@/lib/market/indexAliases";
 import { getQuoteState } from "@/lib/market/quotes";
+import { resolveMassiveQuote } from "@/app/api/massive/quote/route";
 
 export type ServerQuoteState = {
   price: number | null;
@@ -12,6 +12,20 @@ export type ServerQuoteState = {
 
 export type ServerQuoteMap = Record<string, ServerQuoteState>;
 
+const MARKET_API_KEY =
+  process.env.POLYGON_API_KEY ??
+  process.env.MASSIVE_API_KEY ??
+  process.env.NEXT_PUBLIC_MASSIVE_API_KEY ??
+  "";
+
+type DirectStockSnapshot = {
+  results?: {
+    day?: { c?: number };
+    prevDay?: { c?: number };
+    lastTrade?: { p?: number };
+  };
+};
+
 function toNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
@@ -21,15 +35,59 @@ function toNumber(value: unknown): number | null {
   return null;
 }
 
-async function getRequestOrigin() {
-  const headerStore = await headers();
-  const protocol = headerStore.get("x-forwarded-proto") ?? "http";
-  const host =
-    headerStore.get("x-forwarded-host") ??
-    headerStore.get("host") ??
-    "localhost:3000";
+function isDirectStockTicker(ticker: string) {
+  return !ticker.startsWith("^") && !ticker.startsWith("I:");
+}
 
-  return `${protocol}://${host}`;
+async function fetchDirectServerQuoteState(
+  ticker: string
+): Promise<ServerQuoteState | null> {
+  if (!MARKET_API_KEY || !isDirectStockTicker(ticker)) {
+    return null;
+  }
+
+  try {
+    const res = await fetch(
+      `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${encodeURIComponent(ticker)}?apiKey=${MARKET_API_KEY}`,
+      {
+        method: "GET",
+        cache: "no-store",
+      }
+    );
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const payload = (await res.json()) as DirectStockSnapshot;
+    const snapshot = payload.results;
+    const price =
+      toNumber(snapshot?.lastTrade?.p) ??
+      toNumber(snapshot?.day?.c) ??
+      toNumber(snapshot?.prevDay?.c);
+
+    if (price == null || price <= 0) {
+      return null;
+    }
+
+    const prevClose = toNumber(snapshot?.prevDay?.c);
+    const change =
+      prevClose != null && prevClose !== 0 ? price - prevClose : null;
+    const changePct =
+      change != null && prevClose != null && prevClose !== 0
+        ? (change / prevClose) * 100
+        : null;
+
+    return {
+      price,
+      prevClose,
+      change,
+      changePct,
+      source: "api",
+    };
+  } catch {
+    return null;
+  }
 }
 
 function buildFallbackQuoteState(ticker: string): ServerQuoteState {
@@ -84,47 +142,39 @@ export async function fetchServerQuoteMap(
   ) as ServerQuoteMap;
 
   try {
-    const baseOrigin = origin ?? (await getRequestOrigin());
-    const chunks = chunkArray(normalizedTickers, 50);
-    const responses = await Promise.all(
-      chunks.map(async (chunk) => {
-        const res = await fetch(
-          `${baseOrigin}/api/quotes?tickers=${encodeURIComponent(chunk.join(","))}`,
-          {
-            method: "GET",
-            cache: "no-store",
-          }
-        );
-
-        if (!res.ok) return [] as Array<Record<string, unknown>>;
-
-        const payload = (await res.json()) as {
-          quotes?: Array<Record<string, unknown>>;
-        };
-
-        return Array.isArray(payload.quotes) ? payload.quotes : [];
-      })
-    );
-
     const next: ServerQuoteMap = { ...fallbackMap };
 
-    for (const row of responses.flat()) {
-      const ticker = resolveMarketTickerAlias(String(row?.ticker ?? "").trim());
+    const responses = await Promise.all(
+      normalizedTickers.map(async (ticker) => ({
+        ticker,
+        directQuote: await fetchDirectServerQuoteState(ticker),
+        routeQuote: await resolveMassiveQuote(ticker, {
+          includePoints: false,
+          includeFundamentals: false,
+        }),
+      }))
+    );
+
+    for (const row of responses) {
+      const ticker = resolveMarketTickerAlias(String(row.ticker ?? "").trim());
       if (!ticker) continue;
 
-      const price = toNumber(row?.price) ?? toNumber(row?.currentPrice);
+      const price =
+        row.directQuote?.price ??
+        toNumber(row.routeQuote?.price);
       if (price == null) continue;
 
       const prevClose =
-        toNumber(row?.previousClose) ??
-        toNumber(row?.prevClose) ??
+        row.directQuote?.prevClose ??
+        toNumber(row.routeQuote?.prevClose) ??
         null;
       const change =
-        toNumber(row?.change) ??
+        row.directQuote?.change ??
+        toNumber(row.routeQuote?.change) ??
         (prevClose != null && prevClose !== 0 ? price - prevClose : null);
       const changePct =
-        toNumber(row?.changePercent) ??
-        toNumber(row?.changePct) ??
+        row.directQuote?.changePct ??
+        toNumber(row.routeQuote?.changePct) ??
         (change != null && prevClose != null && prevClose !== 0
           ? (change / prevClose) * 100
           : null);
@@ -163,44 +213,35 @@ export async function fetchServerQuoteState(
   const fallback = buildFallbackQuoteState(normalizedTicker);
 
   try {
-    const baseOrigin = origin ?? (await getRequestOrigin());
-    const res = await fetch(
-      `${baseOrigin}/api/massive/quote?ticker=${encodeURIComponent(normalizedTicker)}`,
-      {
-        method: "GET",
-        cache: "no-store",
-      }
-    );
+    const directQuote = await fetchDirectServerQuoteState(normalizedTicker);
+    const payload = directQuote
+      ? null
+      : await resolveMassiveQuote(normalizedTicker, {
+          includePoints: false,
+          includeFundamentals: false,
+        });
+    const price = directQuote?.price ?? toNumber(payload?.price);
 
-    if (res.ok) {
-      const payload = (await res.json()) as {
-        price?: unknown;
-        prevClose?: unknown;
-        change?: unknown;
-        changePct?: unknown;
+    if (price != null) {
+      const prevClose = directQuote?.prevClose ?? toNumber(payload?.prevClose);
+      const change =
+        directQuote?.change ??
+        toNumber(payload?.change) ??
+        (prevClose != null && prevClose !== 0 ? price - prevClose : null);
+      const changePct =
+        directQuote?.changePct ??
+        toNumber(payload?.changePct) ??
+        (change != null && prevClose != null && prevClose !== 0
+          ? (change / prevClose) * 100
+          : null);
+
+      return {
+        price,
+        prevClose,
+        change,
+        changePct,
+        source: "api",
       };
-
-      const price = toNumber(payload.price);
-
-      if (price != null) {
-        const prevClose = toNumber(payload.prevClose);
-        const change =
-          toNumber(payload.change) ??
-          (prevClose != null && prevClose !== 0 ? price - prevClose : null);
-        const changePct =
-          toNumber(payload.changePct) ??
-          (change != null && prevClose != null && prevClose !== 0
-            ? (change / prevClose) * 100
-            : null);
-
-        return {
-          price,
-          prevClose,
-          change,
-          changePct,
-          source: "api",
-        };
-      }
     }
   } catch {
     // Fall back to the static server-side quote table when the live route is unavailable.
