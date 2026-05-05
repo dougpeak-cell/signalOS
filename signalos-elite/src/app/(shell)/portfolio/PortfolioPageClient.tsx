@@ -1081,14 +1081,14 @@ function PortfolioPageContent() {
 
     if (actionState.mode === "create") {
       const nextTicker = normalizeTicker(actionState.ticker);
-      const entryPrice = Number(actionState.entryPrice);
+      const shares = Number(actionState.shares);
       const requestedPrice = Number(actionState.currentPrice);
       const liveQuotePrice = quoteMap[nextTicker]?.price ?? getQuotePrice(nextTicker);
       const currentPrice =
         typeof liveQuotePrice === "number" && Number.isFinite(liveQuotePrice) && liveQuotePrice > 0
           ? Number(liveQuotePrice.toFixed(2))
           : requestedPrice;
-      const shares = 1;
+      const entryPrice = requestedPrice;
       const derivedDefaults = buildPortfolioDefaultsForPrice(currentPrice);
       const targetPrice =
         derivedDefaults.targetPrice != null && Number.isFinite(derivedDefaults.targetPrice)
@@ -1101,6 +1101,7 @@ function PortfolioPageContent() {
       const conviction = derivedDefaults.conviction ?? 60;
 
       if (!nextTicker) return;
+  if (!Number.isFinite(shares) || shares <= 0) return;
       if (!Number.isFinite(entryPrice) || entryPrice <= 0) return;
       if (!Number.isFinite(requestedPrice) || requestedPrice <= 0) return;
 
@@ -1546,23 +1547,23 @@ function PortfolioPageContent() {
 
                           <div>
                             <label className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                              Average Buy
+                              Number of Stocks Purchased
                             </label>
                             <input
                               type="number"
-                              min="0"
-                              step="0.01"
-                              value={actionState.entryPrice}
+                              min="1"
+                              step="1"
+                              value={actionState.shares}
                               onChange={(e) =>
                                 setActionState({
                                   ...actionState,
-                                  entryPrice: e.target.value,
+                                  shares: e.target.value,
                                 })
                               }
                               className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
                             />
                             <div className="mt-1 text-[11px] text-white/38">
-                              Use your blended cost basis if the position was built across multiple buys.
+                              Enter how many shares you bought for this position.
                             </div>
                           </div>
                         </div>
