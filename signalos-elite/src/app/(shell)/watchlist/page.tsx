@@ -680,6 +680,8 @@ function WatchlistRowItem({
   stockHref: string;
   onRemove: (ticker: string) => void;
 }) {
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
+
   return (
     <div
       className={`group relative rounded-xl bg-white/1.5 px-4 py-3 transition duration-200 hover:border-cyan-400/20 hover:bg-cyan-400/4 ${
@@ -756,26 +758,43 @@ function WatchlistRowItem({
 
         <div className="flex flex-col gap-3 border-t border-white/6 pt-3 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0">
-            <p className="max-w-136 text-sm leading-6 text-white/72">
-              {row.thesis}
-            </p>
+            {quickViewOpen ? (
+              <>
+                <p className="max-w-136 text-sm leading-6 text-white/72">
+                  {row.thesis}
+                </p>
 
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {typeof row.marketCap === "number" && Number.isFinite(row.marketCap) ? (
-                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
-                  Mkt Cap {formatCompactCurrency(row.marketCap)}
-                </span>
-              ) : null}
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {typeof row.marketCap === "number" && Number.isFinite(row.marketCap) ? (
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
+                      Mkt Cap {formatCompactCurrency(row.marketCap)}
+                    </span>
+                  ) : null}
 
-              {hasUsablePrice(row.price) ? (
-                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
-                  Price {formatPrice(row.price)}
-                </span>
-              ) : null}
-            </div>
+                  {hasUsablePrice(row.price) ? (
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
+                      Price {formatPrice(row.price)}
+                    </span>
+                  ) : null}
+                </div>
+              </>
+            ) : (
+              <div className="text-xs text-white/48">
+                Tap Quick View for thesis and extra row details.
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 md:justify-end">
+            <button
+              type="button"
+              onClick={() => setQuickViewOpen((value) => !value)}
+              aria-expanded={quickViewOpen}
+              className="inline-flex h-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 px-2 text-[11px] font-medium text-white/80 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
+            >
+              {quickViewOpen ? "Hide Quick View" : "Quick View"}
+            </button>
+
             <a
               href={portfolioHref}
               onClick={() =>
@@ -878,6 +897,31 @@ function EmptyWatchlistRowItem() {
   );
 }
 
+function QuickWatchlistRowItem({ row, stockHref }: { row: WatchlistRow; stockHref: string }) {
+  return (
+    <Link
+      href={stockHref}
+      className="group flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/3 px-4 py-3 transition hover:border-cyan-400/20 hover:bg-cyan-400/5"
+    >
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <div className="text-lg font-semibold tracking-tight text-white">{row.ticker}</div>
+          <span className="truncate text-xs text-white/42">{row.name}</span>
+        </div>
+      </div>
+
+      <div className="text-right">
+        <div className="text-lg font-semibold text-white">
+          {hasUsablePrice(row.price) ? formatPrice(row.price) : "Awaiting quote"}
+        </div>
+        <div className={`mt-0.5 text-sm font-semibold ${changeClasses(row.changePct)}`}>
+          {hasUsablePrice(row.price) ? formatPct(row.changePct) : "Live syncing..."}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function WatchlistPage() {
   const searchParams = useSearchParams();
   const { watchlistTickers: accountWatchlistTickers } = useShellMarketContext();
@@ -896,6 +940,7 @@ export default function WatchlistPage() {
     {}
   );
   const [hasLoadedWatchlist, setHasLoadedWatchlist] = useState(false);
+  const watchlistMode = searchParams.get("mode") === "quick" ? "quick" : "detail";
 
   function buildPreviewHref(href: string) {
     if (searchParams.get("mobilePreview") !== "1") {
@@ -904,6 +949,21 @@ export default function WatchlistPage() {
 
     const separator = href.includes("?") ? "&" : "?";
     return `${href}${separator}mobilePreview=1`;
+  }
+
+  function buildWatchlistModeHref(mode: "detail" | "quick") {
+    const params = new URLSearchParams();
+
+    if (searchParams.get("mobilePreview") === "1") {
+      params.set("mobilePreview", "1");
+    }
+
+    if (mode === "quick") {
+      params.set("mode", "quick");
+    }
+
+    const query = params.toString();
+    return query ? `/watchlist?${query}` : "/watchlist";
   }
 
   function handleRemoveFromWatchlist(ticker: string) {
@@ -1236,6 +1296,28 @@ export default function WatchlistPage() {
             <div className="border-b border-white/6 px-4 py-4 md:px-5">
               <div className="flex flex-wrap items-center gap-3">
                 <Link
+                  href={buildWatchlistModeHref("detail")}
+                  className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition ${
+                    watchlistMode === "detail"
+                      ? "border-white/18 bg-white/10 text-white"
+                      : "border-white/10 bg-white/4 text-white/72 hover:border-white/18 hover:bg-white/8 hover:text-white"
+                  }`}
+                >
+                  Detail View
+                </Link>
+
+                <Link
+                  href={buildWatchlistModeHref("quick")}
+                  className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition ${
+                    watchlistMode === "quick"
+                      ? "border-cyan-400/30 bg-cyan-400/14 text-cyan-100"
+                      : "border-cyan-400/20 bg-cyan-400/10 text-cyan-200 hover:border-cyan-300/38 hover:bg-cyan-400/16 hover:text-cyan-100"
+                  }`}
+                >
+                  Quick View
+                </Link>
+
+                <Link
                   href={buildPreviewHref("/stocks")}
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-orange-400/24 bg-orange-400/10 px-4 text-sm font-medium text-orange-100 transition hover:border-orange-300/40 hover:bg-orange-400/16 hover:text-white"
                 >
@@ -1263,7 +1345,31 @@ export default function WatchlistPage() {
             </div>
 
             <div className="px-4 py-4 md:px-5 md:py-5">
-              <section className="relative mb-5 overflow-hidden rounded-3xl border border-cyan-400/15 p-4 shadow-[0_0_45px_rgba(34,211,238,0.08)] md:p-6">
+              {watchlistMode === "quick" ? (
+                <section className="mb-5 rounded-3xl border border-cyan-400/15 bg-[linear-gradient(180deg,rgba(7,17,31,0.96),rgba(3,9,18,0.98))] p-4 shadow-[0_0_35px_rgba(34,211,238,0.08)] md:p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <div className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-300">
+                        Quick View
+                      </div>
+                      <h1 className="mt-2 text-2xl font-black tracking-tight text-white md:text-3xl">
+                        Condensed Watchlist
+                      </h1>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
+                        A narrow watchlist mode that keeps only ticker, live price, and daily percent change visible.
+                      </p>
+                    </div>
+
+                    <Link
+                      href={buildWatchlistModeHref("detail")}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-white/12 bg-white/6 px-4 text-sm font-medium text-white/85 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+                    >
+                      Return Detail
+                    </Link>
+                  </div>
+                </section>
+              ) : (
+                <section className="relative mb-5 overflow-hidden rounded-3xl border border-cyan-400/15 p-4 shadow-[0_0_45px_rgba(34,211,238,0.08)] md:p-6">
                 <div
                   className="absolute inset-0 bg-cover bg-center opacity-60"
                   style={{
@@ -1323,8 +1429,10 @@ export default function WatchlistPage() {
                     </div>
                   </div>
                 </div>
-              </section>
+                </section>
+              )}
 
+              {watchlistMode === "detail" ? (
               <div className="mt-5 grid gap-3 md:grid-cols-3">
                 <div className="rounded-2xl border border-cyan-400/14 bg-cyan-400/5 px-4 py-3">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
@@ -1353,9 +1461,11 @@ export default function WatchlistPage() {
                   </div>
                 </div>
               </div>
+              ) : null}
 
-              <div className="mt-5 rounded-3xl border border-white/6 bg-white/2 p-3 md:p-4">
+              <div className={`mt-5 rounded-3xl border border-white/6 bg-white/2 ${watchlistMode === "quick" ? "p-2 md:p-3" : "p-3 md:p-4"}`}>
                 <div className="flex flex-col gap-3">
+                  {watchlistMode === "detail" ? (
                   <div className="hidden xl:grid xl:grid-cols-[220px_120px_140px_1fr_140px] xl:items-center xl:gap-4 xl:px-4">
                     <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/32">
                       Ticker
@@ -1370,6 +1480,7 @@ export default function WatchlistPage() {
                       Chart
                     </div>
                   </div>
+                  ) : null}
 
                   {hasLoadedWatchlist && scoredRows.length === 0 ? (
                     <EmptyWatchlistRowItem />
@@ -1381,23 +1492,34 @@ export default function WatchlistPage() {
                       const trend = getSeriesTrend(history);
 
                       return (
-                        <WatchlistRowItem
-                          key={symbol}
-                          isTop={index === 0}
-                          portfolioAddHref={buildPreviewHref(`/portfolio?focus=${symbol}`)}
-                          portfolioHref={buildPreviewHref(`/portfolio?focus=${symbol}`)}
-                          openChartHref={buildPreviewHref(`/stocks/${symbol}`)}
-                          stockHref={buildPreviewHref(`/stocks/${symbol}`)}
-                          sparklineData={history}
-                          sparklineLoading={historyLoading}
-                          sparklineStale={false}
-                          sparklineTrend={trend}
-                          onRemove={handleRemoveFromWatchlist}
-                          row={{
-                            ...item,
-                            ticker: symbol,
-                          }}
-                        />
+                        watchlistMode === "quick" ? (
+                          <QuickWatchlistRowItem
+                            key={symbol}
+                            stockHref={buildPreviewHref(`/stocks/${symbol}`)}
+                            row={{
+                              ...item,
+                              ticker: symbol,
+                            }}
+                          />
+                        ) : (
+                          <WatchlistRowItem
+                            key={symbol}
+                            isTop={index === 0}
+                            portfolioAddHref={buildPreviewHref(`/portfolio?focus=${symbol}`)}
+                            portfolioHref={buildPreviewHref(`/portfolio?focus=${symbol}`)}
+                            openChartHref={buildPreviewHref(`/stocks/${symbol}`)}
+                            stockHref={buildPreviewHref(`/stocks/${symbol}`)}
+                            sparklineData={history}
+                            sparklineLoading={historyLoading}
+                            sparklineStale={false}
+                            sparklineTrend={trend}
+                            onRemove={handleRemoveFromWatchlist}
+                            row={{
+                              ...item,
+                              ticker: symbol,
+                            }}
+                          />
+                        )
                       );
                     })
                   )}
