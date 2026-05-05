@@ -3244,14 +3244,39 @@ useEffect(() => {
     }
   }, [autoFollowEnabled, displayBars.length, timeframe]);
 
+  const livePrice = snapshot?.lastPrice ?? currentPrice ?? null;
+  const liveOpen = snapshot?.open ?? null;
+  const prevClose = snapshot?.prevClose ?? null;
+  const quotePrice = getQuotePrice(symbol);
+  const safePrice =
+    typeof livePrice === "number" && Number.isFinite(livePrice) && livePrice > 0
+      ? livePrice
+      : typeof quotePrice === "number" && Number.isFinite(quotePrice) && quotePrice > 0
+        ? quotePrice
+        : null;
+  const safeChange =
+    typeof snapshot?.change === "number" && Number.isFinite(snapshot.change)
+      ? snapshot.change
+      : safePrice != null && typeof prevClose === "number" && Number.isFinite(prevClose) && prevClose > 0
+        ? safePrice - prevClose
+        : null;
+  const safeChangePct =
+    typeof snapshot?.changePct === "number" && Number.isFinite(snapshot.changePct)
+      ? snapshot.changePct
+      : safeChange != null && typeof prevClose === "number" && Number.isFinite(prevClose) && prevClose > 0
+        ? (safeChange / prevClose) * 100
+        : null;
+  const hasChange =
+    safeChange != null &&
+    safeChangePct != null &&
+    Number.isFinite(safeChange) &&
+    Number.isFinite(safeChangePct);
   const positiveTone =
-  snapshot?.change != null
-    ? snapshot.change > 0
+    hasChange && safeChange > 0
       ? "text-emerald-300"
-      : snapshot.change < 0
+      : hasChange && safeChange < 0
         ? "text-rose-300"
-        : "text-white"
-    : "text-white";
+        : "text-white/45";
 
 const gap =
   snapshot?.open != null && snapshot?.prevClose != null
@@ -3262,10 +3287,6 @@ const gapPct =
   gap != null && snapshot?.prevClose
     ? (gap / snapshot.prevClose) * 100
     : null;
-
-const livePrice = snapshot?.lastPrice ?? currentPrice ?? null;
-const liveOpen = snapshot?.open ?? null;
-const prevClose = snapshot?.prevClose ?? null;
 
 const hasGapInputs =
   Number.isFinite(liveOpen) &&
@@ -3485,14 +3506,9 @@ const gapFillLabel =
             <div className="mt-2 flex flex-wrap items-end gap-3">
               <h1 className="text-4xl font-semibold tracking-tight text-white">{symbol}</h1>
               <div className="flex items-center gap-3 flex-wrap">
-  <div>
+    <div>
     <div className={`text-2xl font-semibold ${positiveTone}`}>
-      {formatPrice(
-    snapshot?.lastPrice ??
-      currentPrice ??
-      getQuotePrice(symbol) ??
-      null
-  )}
+      {formatPrice(safePrice)}
     </div>
 
     {liveCandleEnabled ? (
@@ -3543,8 +3559,10 @@ const gapFillLabel =
 ) : null}
 </div>
 
-<div className={`pb-1 text-sm font-medium ${positiveTone}`}>
-  {signedMoney(snapshot?.change)} ({signedPct(snapshot?.changePct)})
+<div className={`pb-1 text-sm font-bold ${positiveTone}`}>
+  {hasChange
+    ? `${safeChange > 0 ? "+" : ""}${safeChange.toFixed(2)} (${safeChangePct > 0 ? "+" : ""}${safeChangePct.toFixed(2)}%)`
+    : "Live syncing..."}
 </div>
             </div>
 
