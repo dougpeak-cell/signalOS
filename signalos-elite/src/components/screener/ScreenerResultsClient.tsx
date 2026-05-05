@@ -149,6 +149,10 @@ function hasUsablePrice(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
+function hasUsablePercent(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
 function formatPercent(value?: number | null) {
   if (typeof value !== "number" || !Number.isFinite(value)) return "—";
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
@@ -778,7 +782,10 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                 ? quote.changePercent
                 : stock.changePercent;
             const stablePrice = hasMounted ? livePrice : null;
-            const stableChangePercent = hasMounted ? liveChangePercent : null;
+            const stableChangePercent =
+              hasMounted && hasUsablePrice(stablePrice) && hasUsablePercent(liveChangePercent)
+                ? liveChangePercent
+                : null;
             const score = Number(stock.signalosScore);
             const safeScore = Number.isNaN(score) ? 50 : score;
             const tier = getOpportunityTier(safeScore);

@@ -8,6 +8,7 @@ import LiveStockChart from "@/components/stocks/LiveStockChart";
 import TickerLogo from "@/components/stocks/TickerLogo";
 import TechnicalIntelligenceCard from "@/components/stocks/TechnicalIntelligenceCard";
 import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
+import { useOptionalMarketData } from "@/components/providers/MarketDataProvider";
 import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
 import { computeMasterSignalScore } from "@/lib/analysis/masterSignalScore";
 import { buildExecutionModel } from "@/lib/engines/executionModel";
@@ -190,6 +191,7 @@ export default function StockDetailLivePanels({
 }: StockDetailLivePanelsProps) {
   const searchParams = useSearchParams();
   const liveMarket = useOptionalLiveMarket();
+  const marketData = useOptionalMarketData();
   const liveTicker = row.ticker.toUpperCase();
   const { watchlistTickerSet } = useStoredWatchlistTickers();
   const isTracked = watchlistTickerSet.has(liveTicker);
@@ -212,9 +214,28 @@ export default function StockDetailLivePanels({
     void liveMarket.refreshQuotesNow([liveTicker]);
   }, [liveMarket, liveTicker]);
 
+  useEffect(() => {
+    if (!marketData) return;
+
+    marketData.registerTickers([liveTicker], "critical");
+    void marketData.refreshNow();
+
+    return () => {
+      marketData.unregisterTickers([liveTicker], "critical");
+    };
+  }, [liveTicker, marketData]);
+
+  const marketDataQuote = marketData?.getQuote(liveTicker);
   const liveQuote = liveMarket?.quoteMap[liveTicker];
-  const analysisPrice = liveQuote?.price ?? initialPrice;
-  const analysisChangePct = liveQuote?.changePct ?? initialChangePct;
+  const analysisPrice =
+    marketDataQuote?.currentPrice ??
+    marketDataQuote?.price ??
+    liveQuote?.price ??
+    initialPrice;
+  const analysisChangePct =
+    marketDataQuote?.changePercent ??
+    liveQuote?.changePct ??
+    initialChangePct;
   const technicalAnchorPrice = technicals.lastClose ?? initialPrice;
 
   const normalizedConviction =
