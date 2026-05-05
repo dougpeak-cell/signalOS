@@ -794,7 +794,7 @@ function PortfolioPageContent() {
   const [actionState, setActionState] = useState<ActionState>(null);
   const [editingTicker, setEditingTicker] = useState<string | null>(null);
   const [showAddStock, setShowAddStock] = useState(false);
-  const [quickViewTickers, setQuickViewTickers] = useState<Record<string, boolean>>({});
+  const portfolioMode = searchParams.get("mode") === "quick" ? "quick" : "detail";
 
   function buildPortfolioHref(pathname: string) {
     return searchParams.get("mobilePreview") === "1"
@@ -802,15 +802,23 @@ function PortfolioPageContent() {
       : pathname;
   }
 
-  function handleResetPortfolio() {
-    setHoldings([]);
+  function buildPortfolioModeHref(mode: "detail" | "quick") {
+    const params = new URLSearchParams();
+
+    if (searchParams.get("mobilePreview") === "1") {
+      params.set("mobilePreview", "1");
+    }
+
+    if (mode === "quick") {
+      params.set("mode", "quick");
+    }
+
+    const query = params.toString();
+    return query ? `/portfolio?${query}` : "/portfolio";
   }
 
-  function toggleQuickView(ticker: string) {
-    setQuickViewTickers((current) => ({
-      ...current,
-      [ticker]: !current[ticker],
-    }));
+  function handleResetPortfolio() {
+    setHoldings([]);
   }
 
   const portfolioTickers = useMemo(
@@ -1421,6 +1429,28 @@ function PortfolioPageContent() {
 
                   <div className="mt-8 flex flex-wrap gap-3">
                     <Link
+                      href={buildPortfolioModeHref("detail")}
+                      className={`inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-bold transition ${
+                        portfolioMode === "detail"
+                          ? "border-white/18 bg-white/10 text-white"
+                          : "border-white/10 bg-white/4 text-white/72 hover:border-white/18 hover:bg-white/8 hover:text-white"
+                      }`}
+                    >
+                      Detail View
+                    </Link>
+
+                    <Link
+                      href={buildPortfolioModeHref("quick")}
+                      className={`inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-bold transition ${
+                        portfolioMode === "quick"
+                          ? "border-cyan-400/30 bg-cyan-400/14 text-cyan-100"
+                          : "border-cyan-400/20 bg-cyan-400/10 text-cyan-200 hover:border-cyan-300/38 hover:bg-cyan-400/16 hover:text-cyan-100"
+                      }`}
+                    >
+                      Quick View
+                    </Link>
+
+                    <Link
                       href={buildPortfolioHref("/")}
                       className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10"
                     >
@@ -1463,7 +1493,33 @@ function PortfolioPageContent() {
                 </div>
               </section>
 
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+              {portfolioMode === "quick" ? (
+                <section className="mb-3 rounded-[28px] border border-cyan-400/14 bg-[linear-gradient(180deg,rgba(7,17,31,0.96),rgba(3,9,18,0.98))] p-4 shadow-[0_0_35px_rgba(34,211,238,0.08)] sm:p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <div className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-300">
+                        Quick View
+                      </div>
+                      <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">
+                        Condensed Portfolio
+                      </h2>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
+                        A narrow portfolio mode that keeps each holding focused on ticker, live value, and core conviction.
+                      </p>
+                    </div>
+
+                    <Link
+                      href={buildPortfolioModeHref("detail")}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-white/12 bg-white/6 px-4 text-sm font-medium text-white/85 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+                    >
+                      Return Detail
+                    </Link>
+                  </div>
+                </section>
+              ) : null}
+
+              {portfolioMode === "detail" ? (
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
                 <div className="relative overflow-hidden rounded-[22px] p-px shadow-[0_0_0_1px_rgba(34,211,238,0.05),0_12px_28px_rgba(0,0,0,0.20)] sm:shadow-[0_0_0_1px_rgba(34,211,238,0.08),0_18px_50px_rgba(0,0,0,0.28)]">
                   <div className="pointer-events-none absolute inset-0 rounded-[22px] bg-[linear-gradient(135deg,rgba(34,211,238,0.32),rgba(56,189,248,0.10),rgba(16,185,129,0.16),rgba(250,204,21,0.10))] sm:bg-[linear-gradient(135deg,rgba(34,211,238,0.52),rgba(56,189,248,0.16),rgba(16,185,129,0.28),rgba(250,204,21,0.18))]" />
                   <div className="relative rounded-[21px] border border-black/40 bg-[linear-gradient(180deg,rgba(8,14,26,0.99),rgba(5,9,18,0.99))] p-3 sm:p-4 sm:border-black/55 sm:bg-[linear-gradient(180deg,rgba(8,14,26,0.98),rgba(5,9,18,0.98))]">
@@ -1581,13 +1637,16 @@ function PortfolioPageContent() {
                     </div>
                   </div>
                 </div>
-              </div>
+                </div>
+              ) : null}
 
-              <PortfolioSigiStrip
-                holdings={portfolioStripHoldings}
-                totalPnl={totalPnL}
-                totalPnlPercent={totalPnlPercent}
-              />
+              {portfolioMode === "detail" ? (
+                <PortfolioSigiStrip
+                  holdings={portfolioStripHoldings}
+                  totalPnl={totalPnL}
+                  totalPnlPercent={totalPnlPercent}
+                />
+              ) : null}
 
               <div className="overflow-hidden rounded-[28px] border border-cyan-400/14 bg-linear-to-b from-cyan-500/4 via-black to-black shadow-[0_0_0_1px_rgba(34,211,238,0.03)]">
                 <div className="border-b border-white/6 px-4 py-3 sm:px-5 sm:py-4">
@@ -1743,7 +1802,7 @@ function PortfolioPageContent() {
                       actionState?.mode === "edit" ? editingPosition ?? holding : holding;
 
                     const isActiveAction = actionTicker === holding.ticker && actionState;
-                    const quickViewOpen = Boolean(quickViewTickers[holding.ticker]);
+                    const quickViewOpen = portfolioMode === "quick";
 
                     return (
                       <div
@@ -1896,14 +1955,6 @@ function PortfolioPageContent() {
                           ) : null}
 
                           <div className="flex flex-wrap items-center gap-2 border-t border-white/6 pt-3 sm:pt-4">
-                            <button
-                              type="button"
-                              onClick={() => toggleQuickView(holding.ticker)}
-                              className="inline-flex h-9 items-center justify-center rounded-xl border border-white/10 bg-white/4 px-3 text-sm font-medium text-white/84 transition hover:border-white/18 hover:bg-white/[0.07] hover:text-white"
-                            >
-                              {quickViewOpen ? "Hide Quick View" : "Quick View"}
-                            </button>
-
                             <Link
                               href={`/stocks/${holding.ticker}`}
                               onClick={() => setActiveTicker(holding.ticker)}
