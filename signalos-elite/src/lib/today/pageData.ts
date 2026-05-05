@@ -1,5 +1,5 @@
 import type { GlobalPulseTickerItem } from "@/components/today/GlobalPulseTicker";
-import type { WatchlistItem } from "@/lib/intelligence/buildMarketIntel";
+import type { PortfolioItem, WatchlistItem } from "@/lib/intelligence/buildMarketIntel";
 import { getStoredMarketContext } from "@/lib/intelligence/contextStore";
 import { getMarketMovers, type MarketMoverRow } from "@/lib/market/movers";
 import { fetchFreeTickerPulses } from "@/lib/news/fetchFreeTickerPulses";
@@ -196,6 +196,33 @@ const FALLBACK_FEATURED_MACRO: TodayFeaturedMacroItem = {
   affected: ["NVDA", "MSFT", "AMD", "AAPL", "META"],
 };
 
+const DEFAULT_EARNINGS_FOCUS_TICKERS = [
+  "NVDA",
+  "MSFT",
+  "AAPL",
+  "AMZN",
+  "META",
+  "GOOG",
+  "TSLA",
+  "AMD",
+  "AVGO",
+  "NFLX",
+] as const;
+
+type FmpEarningsCalendarRow = {
+  symbol?: unknown;
+  ticker?: unknown;
+  company?: unknown;
+  companyName?: unknown;
+  name?: unknown;
+  date?: unknown;
+  publicationDate?: unknown;
+  earningsDate?: unknown;
+  reportedDate?: unknown;
+  time?: unknown;
+  when?: unknown;
+};
+
 function toNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
@@ -205,9 +232,18 @@ function toNumber(value: unknown): number | null {
   return null;
 }
 
+function normalizeTicker(value: unknown): string {
+  return typeof value === "string" ? value.trim().toUpperCase() : "";
+}
+
 function getWatchlistTicker(item: WatchlistItem): string {
-  if (typeof item === "string") return item.trim().toUpperCase();
-  return String(item.ticker ?? item.symbol ?? "").trim().toUpperCase();
+  if (typeof item === "string") return normalizeTicker(item);
+  return normalizeTicker(item.ticker ?? item.symbol ?? "");
+}
+
+function getPortfolioTicker(item: PortfolioItem): string {
+  if (typeof item === "string") return normalizeTicker(item);
+  return normalizeTicker((item as { ticker?: unknown; symbol?: unknown }).ticker ?? (item as { symbol?: unknown }).symbol ?? "");
 }
 
 function getWatchlistName(item: WatchlistItem): string {
@@ -447,12 +483,148 @@ function buildCommandCenterLosers(
 }
 
 function buildCommandCenterEarnings(): TodayCommandCenterEarningsRow[] {
-  return [
-    { ticker: "TSLA", name: "Tesla, Inc.", dateLabel: "Apr 22", timing: "Earnings" },
-    { ticker: "MSFT", name: "Microsoft Corp.", dateLabel: "Apr 29", timing: "Earnings" },
-    { ticker: "META", name: "Meta Platforms", dateLabel: "Apr 29", timing: "Earnings" },
-    { ticker: "GOOG", name: "Alphabet Inc.", dateLabel: "Apr 29", timing: "Earnings" },
+  return [];
+}
+
+function formatIsoDate(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function normalizeCalendarDate(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const match = value.trim().match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : null;
+}
+
+function formatCalendarDateLabel(value: string): string {
+  const [yearText, monthText, dayText] = value.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+function normalizeEarningsTiming(value: unknown): string {
+  if (typeof value !== "string") return "Earnings";
+
+  const normalized = value.trim().toLowerCase();
+
+  if (!normalized) return "Earnings";
+  if (["amc", "after market close", "after close", "after-hours"].includes(normalized)) {
+    return "AMC";
+  }
+  if (["bmo", "before market open", "before open", "pre-market"].includes(normalized)) {
+    return "BMO";
+  }
+
+  return "Earnings";
+}
+
+function normalizeEarningsCalendarRow(
+  candidate: unknown
+): (TodayCommandCenterEarningsRow & { sortDate: string }) | null {
+  if (!candidate || typeof candidate !== "object") return null;
+
+  const row = candidate as FmpEarningsCalendarRow;
+  const ticker = normalizeTicker(row.symbol ?? row.ticker ?? "");
+  const sortDate = normalizeCalendarDate(
+    row.date ?? row.publicationDate ?? row.earningsDate ?? row.reportedDate ?? null
+  );
+
+  if (!ticker || !sortDate) return null;
+
+  const nameCandidate = [row.company, row.companyName, row.name].find(
+    (value) => typeof value === "string" && value.trim().length > 0
+  );
+
+  return {
+    ticker,
+    name: typeof nameCandidate === "string" ? nameCandidate.trim() : ticker,
+    dateLabel: formatCalendarDateLabel(sortDate),
+    timing: normalizeEarningsTiming(row.time ?? row.when ?? null),
+    sortDate,
+  };
+}
+
+async function fetchUpcomingEarnings(
+  candidateTickers: string[]
+): Promise<TodayCommandCenterEarningsRow[]> {
+  const apiKey = process.env.FMP_API_KEY?.trim();
+  if (!apiKey) return [];
+
+  const today = new Date();
+  const fromDate = formatIsoDate(today);
+  const toDate = formatIsoDate(addDays(today, 21));
+  const prioritizedTickers = new Set(
+    [...candidateTickers, ...DEFAULT_EARNINGS_FOCUS_TICKERS]
+      .map((ticker) => normalizeTicker(ticker))
+      .filter(Boolean)
+  );
+
+  const urls = [
+    `https://financialmodelingprep.com/stable/earnings-calendar?from=${fromDate}&to=${toDate}&apikey=${apiKey}`,
+    `https://financialmodelingprep.com/api/v3/earning_calendar?from=${fromDate}&to=${toDate}&apikey=${apiKey}`,
   ];
+
+  let calendarRows: unknown[] = [];
+
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) continue;
+
+      const payload = await response.json();
+      if (Array.isArray(payload) && payload.length > 0) {
+        calendarRows = payload;
+        break;
+      }
+    } catch {
+      // Try the next known endpoint shape.
+    }
+  }
+
+  if (!calendarRows.length) return [];
+
+  const normalizedRows = Array.from(
+    new Map(
+      calendarRows
+        .map((row) => normalizeEarningsCalendarRow(row))
+        .filter((row): row is TodayCommandCenterEarningsRow & { sortDate: string } => row != null)
+        .filter((row) => row.sortDate >= fromDate)
+        .sort((left, right) => {
+          if (left.sortDate !== right.sortDate) {
+            return left.sortDate.localeCompare(right.sortDate);
+          }
+          return left.ticker.localeCompare(right.ticker);
+        })
+        .map((row) => [row.ticker, row])
+    ).values()
+  );
+
+  const prioritizedRows = normalizedRows.filter((row) => prioritizedTickers.has(row.ticker));
+  const selectedRows = (prioritizedRows.length > 0 ? prioritizedRows : normalizedRows)
+    .slice(0, 4)
+    .map(({ sortDate: _sortDate, ...row }) => row);
+
+  return selectedRows;
 }
 
 function buildCommandCenterNews(items: NewsItem[]): TodayCommandCenterNewsRow[] {
@@ -738,6 +910,7 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     pulseMap,
     commandCenterGainers,
     commandCenterLosers,
+    commandCenterEarnings,
     sectorHeatmapItems,
     globalPulseItems,
     featuredMacro,
@@ -760,6 +933,25 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     time(
       "commandCenterLosers",
       Promise.resolve().then(() => buildCommandCenterLosers(marketMovers, setupDiscovery))
+    ),
+    time(
+      "commandCenterEarnings",
+      withTimeout(
+        fetchUpcomingEarnings(
+          Array.from(
+            new Set([
+              ...storedMarketContext.watchlist.slice(0, 8).map(getWatchlistTicker),
+              ...storedMarketContext.portfolio.slice(0, 8).map(getPortfolioTicker),
+              ...setupDiscovery.top.slice(0, 8).map((item) => item.ticker),
+              ...setupDiscovery.emerging.slice(0, 6).map((item) => item.ticker),
+              ...preMarketTopSetups.slice(0, 6).map((item) => item.ticker),
+              ...regularMostTradedRows.slice(0, 6).map((row) => row.ticker),
+              ...preMarketRows.slice(0, 6).map((row) => row.ticker),
+            ])
+          )
+        ),
+        []
+      )
     ),
     time(
       "sectorHeatmapItems",
@@ -826,7 +1018,7 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     preMarketEmergingSetups,
     commandCenterGainers,
     commandCenterLosers,
-    commandCenterEarnings: buildCommandCenterEarnings(),
+    commandCenterEarnings,
     commandCenterNews: trendingNews,
     trendingNews,
     watchlistMovers,
