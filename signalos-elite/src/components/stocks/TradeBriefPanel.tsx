@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 type SignalLike = {
   time: number;
@@ -324,30 +324,34 @@ export default function TradeBriefPanel({
   priorityZones = [],
   confluenceState,
 }: Props) {
-  const [autoTrade, setAutoTrade] = useState<AutoTradePlan | null>(null);
+  const bias = useMemo(
+    () => inferBias(selectedSignal, brief, confluenceState),
+    [selectedSignal, brief, confluenceState]
+  );
 
-  useEffect(() => {
+  const autoTrade = useMemo(() => {
     const sourcePrice =
-      typeof livePrice === "number" && Number.isFinite(livePrice)
+      typeof livePrice === "number" && Number.isFinite(livePrice) && livePrice > 0
         ? livePrice
-        : typeof selectedSignal?.price === "number" && Number.isFinite(selectedSignal.price)
-          ? selectedSignal.price
-          : null;
+        : typeof brief?.price === "number" && Number.isFinite(brief.price)
+          ? brief.price
+          : 0;
 
-    if (typeof sourcePrice !== "number" || !Number.isFinite(sourcePrice)) {
-      setAutoTrade(null);
-      return;
+    if (selectedSignal) {
+      return Array.isArray(priorityZones) && priorityZones.length > 0
+        ? buildZoneTrade(sourcePrice, bias, priorityZones, confluenceState)
+        : buildFallbackTrade(
+            typeof selectedSignal.price === "number" &&
+              Number.isFinite(selectedSignal.price) &&
+              selectedSignal.price > 0
+              ? selectedSignal.price
+              : sourcePrice,
+            bias
+          );
     }
 
-    const bias = inferBias(selectedSignal, brief, confluenceState);
-
-    const generatedPlan =
-      Array.isArray(priorityZones) && priorityZones.length > 0
-        ? buildZoneTrade(sourcePrice, bias, priorityZones, confluenceState)
-        : buildFallbackTrade(sourcePrice, bias);
-
-    setAutoTrade(generatedPlan);
-  }, [selectedSignal, livePrice, brief, priorityZones, confluenceState]);
+    return buildFallbackTrade(sourcePrice, bias);
+  }, [selectedSignal, livePrice, brief, bias, priorityZones, confluenceState]);
 
   const safeBrief: TradeBriefLike = useMemo(
     () => ({
