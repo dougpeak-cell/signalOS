@@ -1802,7 +1802,7 @@ function PortfolioPageContent() {
                       actionState?.mode === "edit" ? editingPosition ?? holding : holding;
 
                     const isActiveAction = actionTicker === holding.ticker && actionState;
-                    const quickViewOpen = portfolioMode === "quick";
+                    const quickViewOpen = portfolioMode === "detail";
 
                     return (
                       <div
