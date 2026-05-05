@@ -292,30 +292,32 @@ function buildCreateState(
   };
 }
 
-function buildPortfolioDefaultsForTicker(ticker: string) {
-  const normalizedTicker = normalizeTicker(ticker);
-  const livePrice = getQuotePrice(normalizedTicker) ?? null;
+function buildPortfolioDefaultsForPrice(livePrice: number | null | undefined) {
+  const safeLivePrice =
+    typeof livePrice === "number" && Number.isFinite(livePrice) && livePrice > 0
+      ? livePrice
+      : null;
 
   const conviction = 60;
   const executionModel =
-    livePrice != null && Number.isFinite(livePrice) && livePrice > 0
+    safeLivePrice != null
       ? buildExecutionModel({
-          livePrice,
+          livePrice: safeLivePrice,
           tier: "strong",
           conviction,
         })
       : null;
 
   const targetModel =
-    livePrice != null && Number.isFinite(livePrice) && livePrice > 0
+    safeLivePrice != null
       ? buildTargetEngine({
-          livePrice,
+          livePrice: safeLivePrice,
           tier: "strong",
           conviction,
-          entryLow: executionModel?.entryLow ?? Number((livePrice * 0.975).toFixed(2)),
-          entryHigh: executionModel?.entryHigh ?? Number((livePrice * 0.99).toFixed(2)),
-          nearestResistance: Number((livePrice * 1.08).toFixed(2)),
-          nearestLiquidity: Number((livePrice * 0.96).toFixed(2)),
+          entryLow: executionModel?.entryLow ?? Number((safeLivePrice * 0.975).toFixed(2)),
+          entryHigh: executionModel?.entryHigh ?? Number((safeLivePrice * 0.99).toFixed(2)),
+          nearestResistance: Number((safeLivePrice * 1.08).toFixed(2)),
+          nearestLiquidity: Number((safeLivePrice * 0.96).toFixed(2)),
           atrPct: 0.03,
           momentumBias: "neutral",
         })
@@ -324,8 +326,8 @@ function buildPortfolioDefaultsForTicker(ticker: string) {
   const target =
     targetModel?.target != null && Number.isFinite(targetModel.target)
       ? targetModel.target
-      : livePrice != null
-        ? livePrice * 1.15
+      : safeLivePrice != null
+        ? safeLivePrice * 1.15
         : null;
 
   const stop =
@@ -333,16 +335,23 @@ function buildPortfolioDefaultsForTicker(ticker: string) {
       ? executionModel.stop
       : targetModel?.stop != null && Number.isFinite(targetModel.stop)
         ? targetModel.stop
-      : livePrice != null
-        ? livePrice * 0.92
-        : null;
+        : safeLivePrice != null
+          ? safeLivePrice * 0.92
+          : null;
 
   return {
-    livePrice,
+    livePrice: safeLivePrice,
     targetPrice: target,
     stopPrice: stop,
     conviction,
   };
+}
+
+function buildPortfolioDefaultsForTicker(ticker: string) {
+  const normalizedTicker = normalizeTicker(ticker);
+  const livePrice = getQuotePrice(normalizedTicker) ?? null;
+
+  return buildPortfolioDefaultsForPrice(livePrice);
 }
 
 function clampPercent(value: number) {
@@ -1072,30 +1081,33 @@ function PortfolioPageContent() {
 
     if (actionState.mode === "create") {
       const nextTicker = normalizeTicker(actionState.ticker);
-      const shares = Number(actionState.shares);
       const entryPrice = Number(actionState.entryPrice);
       const currentPrice = Number(actionState.currentPrice);
-      const targetPrice = Number(actionState.targetPrice);
+      const shares = 1;
+      const derivedDefaults = buildPortfolioDefaultsForPrice(currentPrice);
+      const targetPrice =
+        derivedDefaults.targetPrice != null && Number.isFinite(derivedDefaults.targetPrice)
+          ? Number(derivedDefaults.targetPrice.toFixed(2))
+          : null;
       const stopPrice =
-        actionState.stopPrice.trim() === "" ? null : Number(actionState.stopPrice);
-      const conviction = Number(actionState.conviction);
+        derivedDefaults.stopPrice != null && Number.isFinite(derivedDefaults.stopPrice)
+          ? Number(derivedDefaults.stopPrice.toFixed(2))
+          : null;
+      const conviction = derivedDefaults.conviction ?? 60;
 
       if (!nextTicker) return;
-      if (!Number.isFinite(shares) || shares <= 0) return;
       if (!Number.isFinite(entryPrice) || entryPrice <= 0) return;
       if (!Number.isFinite(currentPrice) || currentPrice <= 0) return;
-      if (!Number.isFinite(targetPrice) || targetPrice <= 0) return;
-      if (stopPrice != null && (!Number.isFinite(stopPrice) || stopPrice <= 0)) return;
 
       setHoldings((prev) => {
         const existingIndex = prev.findIndex((holding) => holding.ticker === nextTicker);
         const nextHolding: Holding = {
           ticker: nextTicker,
           name: actionState.name.trim() || nextTicker,
-          direction: actionState.direction,
-          status: actionState.status.trim() || "New Position",
-          tag: actionState.tag.trim() || "Command Bar",
-          thesis: actionState.thesis.trim() || "Added from SigiOS Command.",
+          direction: "Long",
+          status: "open",
+          tag: "Portfolio",
+          thesis: "Added manually to portfolio.",
           shares,
           entryPrice,
           currentPrice,
@@ -1472,19 +1484,25 @@ function PortfolioPageContent() {
                             <input
                               type="text"
                               value={actionState.ticker}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                const nextTicker = normalizeTicker(e.target.value);
+                                const shouldSyncName =
+                                  actionState.name.trim() === "" ||
+                                  actionState.name.trim() === actionState.ticker;
+
                                 setActionState({
                                   ...actionState,
-                                  ticker: normalizeTicker(e.target.value),
-                                })
-                              }
+                                  ticker: nextTicker,
+                                  name: shouldSyncName ? nextTicker : actionState.name,
+                                });
+                              }}
                               className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
                             />
                           </div>
 
                           <div>
                             <label className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                              Name
+                              Company Name
                             </label>
                             <input
                               type="text"
@@ -1501,89 +1519,7 @@ function PortfolioPageContent() {
 
                           <div>
                             <label className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                              Direction
-                            </label>
-                            <select
-                              value={actionState.direction}
-                              onChange={(e) =>
-                                setActionState({
-                                  ...actionState,
-                                  direction: e.target.value as PositionDirection,
-                                })
-                              }
-                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
-                            >
-                              <option value="Long">Long</option>
-                              <option value="Short">Short</option>
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                              Plan Strength
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              step="1"
-                              value={actionState.conviction}
-                              onChange={(e) =>
-                                setActionState({
-                                  ...actionState,
-                                  conviction: e.target.value,
-                                })
-                              }
-                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
-                            />
-                            <div className="mt-1 text-[11px] text-white/38">
-                              Tunes target and stop models. The row conviction badge is derived live.
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-                          <div>
-                            <label className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                              Shares
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={actionState.shares}
-                              onChange={(e) =>
-                                setActionState({
-                                  ...actionState,
-                                  shares: e.target.value,
-                                })
-                              }
-                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                              Entry
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={actionState.entryPrice}
-                              onChange={(e) =>
-                                setActionState({
-                                  ...actionState,
-                                  entryPrice: e.target.value,
-                                })
-                              }
-                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                              Current
+                              Price
                             </label>
                             <input
                               type="number"
@@ -1598,97 +1534,31 @@ function PortfolioPageContent() {
                               }
                               className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
                             />
+                            <div className="mt-1 text-[11px] text-white/38">
+                              Used as the live price reference for gain and loss.
+                            </div>
                           </div>
 
                           <div>
                             <label className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                              Target
+                              Average Buy
                             </label>
                             <input
                               type="number"
                               min="0"
                               step="0.01"
-                              value={actionState.targetPrice}
+                              value={actionState.entryPrice}
                               onChange={(e) =>
                                 setActionState({
                                   ...actionState,
-                                  targetPrice: e.target.value,
+                                  entryPrice: e.target.value,
                                 })
                               }
                               className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
                             />
-                          </div>
-
-                          <div>
-                            <label className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                              Stop
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={actionState.stopPrice}
-                              onChange={(e) =>
-                                setActionState({
-                                  ...actionState,
-                                  stopPrice: e.target.value,
-                                })
-                              }
-                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                          <div>
-                            <label className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                              Status
-                            </label>
-                            <input
-                              type="text"
-                              value={actionState.status}
-                              onChange={(e) =>
-                                setActionState({
-                                  ...actionState,
-                                  status: e.target.value,
-                                })
-                              }
-                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                              Tag
-                            </label>
-                            <input
-                              type="text"
-                              value={actionState.tag}
-                              onChange={(e) =>
-                                setActionState({
-                                  ...actionState,
-                                  tag: e.target.value,
-                                })
-                              }
-                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
-                            />
-                          </div>
-
-                          <div className="md:col-span-2 xl:col-span-1">
-                            <label className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                              Thesis
-                            </label>
-                            <input
-                              type="text"
-                              value={actionState.thesis}
-                              onChange={(e) =>
-                                setActionState({
-                                  ...actionState,
-                                  thesis: e.target.value,
-                                })
-                              }
-                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
-                            />
+                            <div className="mt-1 text-[11px] text-white/38">
+                              Use your blended cost basis if the position was built across multiple buys.
+                            </div>
                           </div>
                         </div>
 
