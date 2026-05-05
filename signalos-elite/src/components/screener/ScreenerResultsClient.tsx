@@ -145,6 +145,10 @@ function formatPrice(value?: number | null) {
     : "$--";
 }
 
+function hasUsablePrice(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
 function formatPercent(value?: number | null) {
   if (typeof value !== "number" || !Number.isFinite(value)) return "—";
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
@@ -507,7 +511,31 @@ export default function ScreenerResultsClient({ stocks }: Props) {
     [feedRows, visibleCount]
   );
 
-  const displayRows = useMemo(() => visibleFeedRows, [visibleFeedRows]);
+  const displayRows = useMemo(
+    () =>
+      visibleFeedRows.map((row) => {
+        const quote = quoteMap[row.ticker.toUpperCase()];
+        const livePrice =
+          quote?.price ??
+          quote?.last ??
+          null;
+        const liveChangePercent =
+          quote?.changePercent ??
+          quote?.changePct ??
+          quote?.changesPercentage ??
+          null;
+
+        return {
+          ...row,
+          price: hasUsablePrice(livePrice) ? livePrice : row.price,
+          changePercent:
+            typeof liveChangePercent === "number" && Number.isFinite(liveChangePercent)
+              ? liveChangePercent
+              : row.changePercent,
+        };
+      }),
+    [quoteMap, visibleFeedRows]
+  );
   const renderedFeedRows = displayRows;
   const canShowMore = feedRows.length > visibleCount;
 
@@ -584,7 +612,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
     void (async () => {
       try {
         const res = await fetch(
-          `/api/quotes?tickers=${encodeURIComponent(tickers.join(","))}`,
+          `/api/massive/quotes?tickers=${encodeURIComponent(tickers.join(","))}`,
           { cache: "no-store" }
         );
 
