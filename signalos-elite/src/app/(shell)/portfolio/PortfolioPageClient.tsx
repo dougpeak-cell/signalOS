@@ -682,6 +682,39 @@ function MetricCell({
   );
 }
 
+function QuickPortfolioRowItem({
+  ticker,
+  name,
+  livePrice,
+  pnlPct,
+}: {
+  ticker: string;
+  name: string;
+  livePrice: number;
+  pnlPct: number;
+}) {
+  const changeTone = pnlPct > 0 ? "text-emerald-300" : pnlPct < 0 ? "text-rose-300" : "text-white/55";
+
+  return (
+    <Link
+      href={`/stocks/${ticker}`}
+      className="group flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/3 px-4 py-3 transition hover:border-cyan-400/20 hover:bg-cyan-400/5"
+    >
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <div className="text-lg font-semibold tracking-tight text-white">{ticker}</div>
+          <span className="truncate text-xs text-white/42">{name}</span>
+        </div>
+      </div>
+
+      <div className="text-right">
+        <div className="text-lg font-semibold text-white">{formatMoney(livePrice)}</div>
+        <div className={`mt-0.5 text-sm font-semibold ${changeTone}`}>{formatPct(pnlPct)}</div>
+      </div>
+    </Link>
+  );
+}
+
 function PortfolioPageSkeleton() {
   return (
     <main className="min-h-screen bg-black text-white">
@@ -1803,6 +1836,18 @@ function PortfolioPageContent() {
 
                     const isActiveAction = actionTicker === holding.ticker && actionState;
                     const quickViewOpen = portfolioMode === "detail";
+
+                    if (portfolioMode === "quick") {
+                      return (
+                        <QuickPortfolioRowItem
+                          key={holding.ticker}
+                          ticker={holding.ticker}
+                          name={holding.name}
+                          livePrice={holding.livePrice}
+                          pnlPct={holding.pnlPct}
+                        />
+                      );
+                    }
 
                     return (
                       <div
