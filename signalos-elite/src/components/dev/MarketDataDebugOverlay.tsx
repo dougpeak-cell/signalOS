@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOptionalMarketData } from "@/components/providers/MarketDataProvider";
 
 function formatTime(value: number | null): string {
@@ -119,9 +119,14 @@ function IntelBlock({
 
 export default function MarketDataDebugOverlay() {
   const marketData = useOptionalMarketData();
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
 
-  if (!marketData) {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || !marketData) {
     return null;
   }
 
