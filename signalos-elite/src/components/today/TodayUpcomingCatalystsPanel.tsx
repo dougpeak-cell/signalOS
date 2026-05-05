@@ -2,6 +2,25 @@ import Link from "next/link";
 import { SectionHeader } from "@/components/today/SectionHeader";
 import type { RankedSetupItem } from "@/lib/today/setupDiscovery";
 
+type CatalystPanelItem = RankedSetupItem & {
+  pulse?: {
+    topLabel?: string | null;
+  } | null;
+};
+
+function catalystBadgeLabel(item: CatalystPanelItem) {
+  if (item.hasEarnings) return "Earnings catalyst";
+  if (item.hasAnalystAction) return "Analyst action";
+  if (item.hasMajorNews) return "News catalyst";
+  if (item.hasSectorTailwind) return item.catalystLabel;
+
+  const pulseLabel = String(item.pulse?.topLabel ?? "").trim();
+  if (pulseLabel) return pulseLabel;
+
+  const fallbackLabel = String(item.catalystLabel ?? "").trim();
+  return fallbackLabel && fallbackLabel !== "Flow setup" ? fallbackLabel : null;
+}
+
 function catalystTone(label?: string | null) {
   const normalized = String(label ?? "").toLowerCase();
 
@@ -19,19 +38,17 @@ function catalystTone(label?: string | null) {
 export default function TodayUpcomingCatalystsPanel({
   items,
 }: {
-  items: RankedSetupItem[];
+  items: CatalystPanelItem[];
 }) {
   const rows = items
+    .map((item) => ({
+      item,
+      badgeLabel: catalystBadgeLabel(item),
+    }))
+    .filter((row) => Boolean(row.badgeLabel))
     .filter(
-      (item) =>
-        item.hasEarnings ||
-        item.hasAnalystAction ||
-        item.hasMajorNews ||
-        item.hasSectorTailwind
-    )
-    .filter(
-      (item, index, collection) =>
-        collection.findIndex((candidate) => candidate.ticker === item.ticker) === index
+      (row, index, collection) =>
+        collection.findIndex((candidate) => candidate.item.ticker === row.item.ticker) === index
     )
     .slice(0, 4);
 
@@ -45,7 +62,7 @@ export default function TodayUpcomingCatalystsPanel({
 
       <div className="space-y-3">
         {rows.length ? (
-          rows.map((item) => (
+          rows.map(({ item, badgeLabel }) => (
             <Link
               key={item.ticker}
               href={`/stocks/${item.ticker}`}
@@ -57,10 +74,10 @@ export default function TodayUpcomingCatalystsPanel({
               </div>
               <div
                 className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${catalystTone(
-                  item.catalystLabel
+                  badgeLabel
                 )}`}
               >
-                {item.catalystLabel}
+                {badgeLabel}
               </div>
             </Link>
           ))
