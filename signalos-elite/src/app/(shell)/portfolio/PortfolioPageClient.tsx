@@ -292,6 +292,31 @@ function buildCreateState(
   };
 }
 
+async function fetchLiveCreatePrice(ticker: string): Promise<number | null> {
+  const normalizedTicker = normalizeTicker(ticker);
+
+  if (!normalizedTicker) return null;
+
+  try {
+    const response = await fetch(
+      `/api/massive/quote?ticker=${encodeURIComponent(normalizedTicker)}`,
+      {
+        method: "GET",
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) return null;
+
+    const payload = (await response.json()) as { price?: unknown };
+    const price = typeof payload.price === "number" ? payload.price : Number(payload.price);
+
+    return Number.isFinite(price) && price > 0 ? Number(price.toFixed(2)) : null;
+  } catch {
+    return null;
+  }
+}
+
 function buildPortfolioDefaultsForPrice(livePrice: number | null | undefined) {
   const safeLivePrice =
     typeof livePrice === "number" && Number.isFinite(livePrice) && livePrice > 0
@@ -1076,14 +1101,17 @@ function PortfolioPageContent() {
     );
   }
 
-  function handleApplyAction(ticker: string) {
+  async function handleApplyAction(ticker: string) {
     if (!actionState || actionTicker !== ticker) return;
 
     if (actionState.mode === "create") {
       const nextTicker = normalizeTicker(actionState.ticker);
       const shares = Number(actionState.shares);
       const requestedPrice = Number(actionState.currentPrice);
-      const liveQuotePrice = quoteMap[nextTicker]?.price ?? getQuotePrice(nextTicker);
+      const liveQuotePrice =
+        (await fetchLiveCreatePrice(nextTicker)) ??
+        quoteMap[nextTicker]?.price ??
+        getQuotePrice(nextTicker);
       const currentPrice =
         typeof liveQuotePrice === "number" && Number.isFinite(liveQuotePrice) && liveQuotePrice > 0
           ? Number(liveQuotePrice.toFixed(2))
@@ -1131,6 +1159,9 @@ function PortfolioPageContent() {
           index === existingIndex ? nextHolding : holding
         );
       });
+
+      ensureQuotes([nextTicker]);
+      void refreshQuotesNow([nextTicker]);
 
       closeActionPanel();
       return;
