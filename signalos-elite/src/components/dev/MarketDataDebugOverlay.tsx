@@ -126,19 +126,21 @@ export default function MarketDataDebugOverlay() {
     setMounted(true);
   }, []);
 
+  const totalTracked = useMemo(() => {
+    if (!marketData) return 0;
+
+    return (
+      marketData.debug.criticalTickers.length +
+      marketData.debug.visibleTickers.length +
+      marketData.debug.backgroundTickers.length
+    );
+  }, [marketData]);
+
   if (!mounted || !marketData) {
     return null;
   }
 
   const { refreshNow, refreshIntel, intel, debug } = marketData;
-
-  const totalTracked = useMemo(() => {
-    return (
-      debug.criticalTickers.length +
-      debug.visibleTickers.length +
-      debug.backgroundTickers.length
-    );
-  }, [debug]);
 
   return (
     <div className="pointer-events-none fixed right-3 bottom-24 z-40 md:right-3 md:bottom-3 md:z-90">
