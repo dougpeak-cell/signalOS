@@ -794,6 +794,7 @@ function PortfolioPageContent() {
   const [actionState, setActionState] = useState<ActionState>(null);
   const [editingTicker, setEditingTicker] = useState<string | null>(null);
   const [showAddStock, setShowAddStock] = useState(false);
+  const [quickViewTickers, setQuickViewTickers] = useState<Record<string, boolean>>({});
 
   function buildPortfolioHref(pathname: string) {
     return searchParams.get("mobilePreview") === "1"
@@ -803,6 +804,13 @@ function PortfolioPageContent() {
 
   function handleResetPortfolio() {
     setHoldings([]);
+  }
+
+  function toggleQuickView(ticker: string) {
+    setQuickViewTickers((current) => ({
+      ...current,
+      [ticker]: !current[ticker],
+    }));
   }
 
   const portfolioTickers = useMemo(
@@ -1735,6 +1743,7 @@ function PortfolioPageContent() {
                       actionState?.mode === "edit" ? editingPosition ?? holding : holding;
 
                     const isActiveAction = actionTicker === holding.ticker && actionState;
+                    const quickViewOpen = Boolean(quickViewTickers[holding.ticker]);
 
                     return (
                       <div
@@ -1771,9 +1780,11 @@ function PortfolioPageContent() {
                                 {holding.name}
                               </div>
 
-                              <div className="mt-1.5 max-w-3xl text-sm leading-5 text-white/58 sm:leading-6">
-                                {holding.thesis}
-                              </div>
+                              {quickViewOpen ? (
+                                <div className="mt-1.5 max-w-3xl text-sm leading-5 text-white/58 sm:leading-6">
+                                  {holding.thesis}
+                                </div>
+                              ) : null}
                             </div>
 
                             <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:w-72 2xl:w-80">
@@ -1797,90 +1808,102 @@ function PortfolioPageContent() {
                             </div>
                           </div>
 
-                          <div className="grid gap-3 xl:grid-cols-2">
-                            <ProgressBar
-                              label="Progress to Target"
-                              value={progressToTarget}
-                              tone="emerald"
-                              valuePrecision={0}
-                            />
-                            <ProgressBar
-                              label="Risk Distance"
-                              value={riskDistance}
-                              tone="rose"
-                              valuePrecision={1}
-                            />
-                          </div>
+                          {quickViewOpen ? (
+                            <>
+                              <div className="grid gap-3 xl:grid-cols-2">
+                                <ProgressBar
+                                  label="Progress to Target"
+                                  value={progressToTarget}
+                                  tone="emerald"
+                                  valuePrecision={0}
+                                />
+                                <ProgressBar
+                                  label="Risk Distance"
+                                  value={riskDistance}
+                                  tone="rose"
+                                  valuePrecision={1}
+                                />
+                              </div>
 
-                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
-                            <MetricCell label="Shares" value={String(holding.shares)} />
-                            <MetricCell
-                              label="Cost Basis"
-                              value={displayEntry}
-                            />
-                            <MetricCell
-                              label="Entry Range"
-                              value={displaySignalEntry}
-                              tone="neutral"
-                            />
-                            <MetricCell
-                              label="Current"
-                              value={formatMoney(holding.livePrice)}
-                              emphasized
-                              tone={
-                                hasEntry
-                                  ? holding.livePrice >= holding.entryPrice
-                                    ? "positive"
-                                    : "negative"
-                                  : "neutral"
-                              }
-                            />
-                            <MetricCell
-                              label="Target"
-                              value={formatMoney(holding.signalTargetPrice ?? holding.targetPrice)}
-                              tone="positive"
-                            />
-                            <MetricCell
-                              label="Stop"
-                              value={
-                                holding.signalStopPrice != null
-                                  ? formatMoney(holding.signalStopPrice)
-                                  : holding.stopPrice != null
-                                    ? formatMoney(holding.stopPrice)
-                                    : "—"
-                              }
-                              tone="negative"
-                            />
-                            <MetricCell
-                              label="P/L"
-                              value={displayPL}
-                              tone={hasEntry ? (holding.pnl >= 0 ? "positive" : "negative") : "neutral"}
-                            />
-                          </div>
+                              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
+                                <MetricCell label="Shares" value={String(holding.shares)} />
+                                <MetricCell
+                                  label="Cost Basis"
+                                  value={displayEntry}
+                                />
+                                <MetricCell
+                                  label="Entry Range"
+                                  value={displaySignalEntry}
+                                  tone="neutral"
+                                />
+                                <MetricCell
+                                  label="Current"
+                                  value={formatMoney(holding.livePrice)}
+                                  emphasized
+                                  tone={
+                                    hasEntry
+                                      ? holding.livePrice >= holding.entryPrice
+                                        ? "positive"
+                                        : "negative"
+                                      : "neutral"
+                                  }
+                                />
+                                <MetricCell
+                                  label="Target"
+                                  value={formatMoney(holding.signalTargetPrice ?? holding.targetPrice)}
+                                  tone="positive"
+                                />
+                                <MetricCell
+                                  label="Stop"
+                                  value={
+                                    holding.signalStopPrice != null
+                                      ? formatMoney(holding.signalStopPrice)
+                                      : holding.stopPrice != null
+                                        ? formatMoney(holding.stopPrice)
+                                        : "—"
+                                  }
+                                  tone="negative"
+                                />
+                                <MetricCell
+                                  label="P/L"
+                                  value={displayPL}
+                                  tone={hasEntry ? (holding.pnl >= 0 ? "positive" : "negative") : "neutral"}
+                                />
+                              </div>
 
-                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <MetricCell
-                              label="P/L %"
-                              value={displayPLPct}
-                              tone={hasEntry ? (holding.pnlPct >= 0 ? "positive" : "negative") : "neutral"}
-                            />
-                            <MetricCell
-                              label="Risk/Reward"
-                              value={displayRiskReward}
-                              tone="neutral"
-                            />
-                            <MetricCell
-                              label="Exposure"
-                              value={hasEntry ? `${exposurePercent.toFixed(1)}%` : "—"}
-                            />
-                            <MetricCell
-                              label="Updated"
-                              value={holding.updatedLabel}
-                              tone={holding.updatedTone}
-                            />
-                          </div>
+                              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                <MetricCell
+                                  label="P/L %"
+                                  value={displayPLPct}
+                                  tone={hasEntry ? (holding.pnlPct >= 0 ? "positive" : "negative") : "neutral"}
+                                />
+                                <MetricCell
+                                  label="Risk/Reward"
+                                  value={displayRiskReward}
+                                  tone="neutral"
+                                />
+                                <MetricCell
+                                  label="Exposure"
+                                  value={hasEntry ? `${exposurePercent.toFixed(1)}%` : "—"}
+                                />
+                                <MetricCell
+                                  label="Updated"
+                                  value={holding.updatedLabel}
+                                  tone={holding.updatedTone}
+                                />
+                              </div>
+                            </>
+                          ) : null}
 
                           <div className="flex flex-wrap items-center gap-2 border-t border-white/6 pt-3 sm:pt-4">
+                            <button
+                              type="button"
+                              onClick={() => toggleQuickView(holding.ticker)}
+                              className="inline-flex h-9 items-center justify-center rounded-xl border border-white/10 bg-white/4 px-3 text-sm font-medium text-white/84 transition hover:border-white/18 hover:bg-white/[0.07] hover:text-white"
+                            >
+                              {quickViewOpen ? "Hide Quick View" : "Quick View"}
+                            </button>
+
                             <Link
                               href={`/stocks/${holding.ticker}`}
                               onClick={() => setActiveTicker(holding.ticker)}
@@ -1922,7 +1945,7 @@ function PortfolioPageContent() {
                             </button>
                           </div>
 
-                          {isActiveAction && (
+                          {quickViewOpen && isActiveAction && (
                             <div className="rounded-2xl border border-cyan-400/16 bg-cyan-400/4 p-4">
                               {actionState.mode === "add" && (
                                 <div className="space-y-4">

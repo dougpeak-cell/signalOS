@@ -167,6 +167,7 @@ function WatchlistStockCard({
   pulse?: TickerNewsPulse;
 }) {
   const rowRef = useRef<HTMLDivElement | null>(null);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
   const { setActiveTicker } = useSelectedTicker();
   const liveMarket = useOptionalLiveMarket();
   const normalizedTicker = normalizeTicker(stock.ticker);
@@ -259,13 +260,24 @@ function WatchlistStockCard({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => onRemove(stock.ticker)}
-          className="inline-flex items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-200 transition hover:border-rose-400/30 hover:bg-rose-500/15"
-        >
-          Remove
-        </button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setQuickViewOpen((value) => !value)}
+            aria-expanded={quickViewOpen}
+            className="inline-flex items-center justify-center rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-200 transition hover:border-cyan-400/30 hover:bg-cyan-400/15"
+          >
+            {quickViewOpen ? "Hide Quick View" : "Quick View"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onRemove(stock.ticker)}
+            className="inline-flex items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-200 transition hover:border-rose-400/30 hover:bg-rose-500/15"
+          >
+            Remove
+          </button>
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
@@ -299,7 +311,11 @@ function WatchlistStockCard({
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
+      {quickViewOpen ? (
+        <>
           <div className="mt-4 overflow-hidden rounded-2xl border border-white/8 bg-black/20 px-3 py-2">
             <MiniSparkline
               ticker={stock.ticker}
@@ -307,66 +323,66 @@ function WatchlistStockCard({
               height={40}
             />
           </div>
-        </div>
-      </div>
 
-      <div className="mt-4">
-        <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-white/45">
-          <span>Signal Strength</span>
-          <span>{stock.conviction}%</span>
-        </div>
-        <div className="h-2 overflow-hidden rounded-full bg-white/10">
-          <div
-            className={`h-full rounded-full ${convictionBarClasses(stock.conviction)}`}
-            style={{ width: `${stock.conviction}%` }}
-          />
-        </div>
-      </div>
+          <div className="mt-4">
+            <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-white/45">
+              <span>Signal Strength</span>
+              <span>{stock.conviction}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white/10">
+              <div
+                className={`h-full rounded-full ${convictionBarClasses(stock.conviction)}`}
+                style={{ width: `${stock.conviction}%` }}
+              />
+            </div>
+          </div>
 
-      <p className="mt-4 line-clamp-3 text-sm leading-6 text-white/68">
-        {stock.thesis}
-      </p>
+          <p className="mt-4 line-clamp-3 text-sm leading-6 text-white/68">
+            {stock.thesis}
+          </p>
 
-      {pulse ? (
-        <div
-          title={pulse.headline}
-          className={[
-            "mt-4 flex flex-wrap items-center gap-2 rounded-2xl border px-3 py-2 text-xs",
-            pulse.hasBreaking
-              ? "border-amber-400/20 bg-amber-400/10"
-              : "border-white/10 bg-black/20",
-          ].join(" ")}
-        >
-          <span className={`h-2.5 w-2.5 rounded-full ${pulseToneDotClass(pulse.tone)}`} />
-          <span className="text-white/65">
-            {pulse.freshCount} fresh headline{pulse.freshCount === 1 ? "" : "s"}
-          </span>
-          {pulse.topLabel ? (
-            <span className={`font-semibold ${pulseToneTextClass(pulse.tone)}`}>
-              {pulse.topLabel}
-            </span>
+          {pulse ? (
+            <div
+              title={pulse.headline}
+              className={[
+                "mt-4 flex flex-wrap items-center gap-2 rounded-2xl border px-3 py-2 text-xs",
+                pulse.hasBreaking
+                  ? "border-amber-400/20 bg-amber-400/10"
+                  : "border-white/10 bg-black/20",
+              ].join(" ")}
+            >
+              <span className={`h-2.5 w-2.5 rounded-full ${pulseToneDotClass(pulse.tone)}`} />
+              <span className="text-white/65">
+                {pulse.freshCount} fresh headline{pulse.freshCount === 1 ? "" : "s"}
+              </span>
+              {pulse.topLabel ? (
+                <span className={`font-semibold ${pulseToneTextClass(pulse.tone)}`}>
+                  {pulse.topLabel}
+                </span>
+              ) : null}
+              {pulse.newestAgeLabel ? (
+                <span className="text-white/45">{pulse.newestAgeLabel}</span>
+              ) : null}
+            </div>
           ) : null}
-          {pulse.newestAgeLabel ? (
-            <span className="text-white/45">{pulse.newestAgeLabel}</span>
-          ) : null}
-        </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Link
+              href={stock.href}
+              className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/85 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+            >
+              View Stock
+            </Link>
+
+            <Link
+              href={stock.liveHref}
+              className="inline-flex items-center justify-center rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-200 transition hover:border-cyan-400/30 hover:bg-cyan-400/15"
+            >
+              Open Chart
+            </Link>
+          </div>
+        </>
       ) : null}
-
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Link
-          href={stock.href}
-          className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/85 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
-        >
-          View Stock
-        </Link>
-
-        <Link
-          href={stock.liveHref}
-          className="inline-flex items-center justify-center rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-200 transition hover:border-cyan-400/30 hover:bg-cyan-400/15"
-        >
-          Open Chart
-        </Link>
-      </div>
     </div>
   );
 }

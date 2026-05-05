@@ -237,6 +237,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
   const { addTicker, hasTicker } = useSyncedWatchlist();
   const [hasMounted, setHasMounted] = useState(false);
   const [visibleCount, setVisibleCount] = useState(10);
+  const [quickViewTickers, setQuickViewTickers] = useState<Record<string, boolean>>({});
   const [quoteMap, setQuoteMap] = useState<
     Record<
       string,
@@ -269,6 +270,13 @@ export default function ScreenerResultsClient({ stocks }: Props) {
   useEffect(() => {
     setHasMounted(true);
   }, []);
+
+  function toggleQuickView(ticker: string) {
+    setQuickViewTickers((current) => ({
+      ...current,
+      [ticker]: !current[ticker],
+    }));
+  }
 
   const finalDisplayedRows = useMemo(() => {
     const baseRows = Array.isArray(stocks) ? stocks : [];
@@ -831,6 +839,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
             const changeClass =
               (stableChangePercent ?? 0) >= 0 ? "text-emerald-300" : "text-red-300";
             const watchlisted = hasTicker(ticker);
+            const quickViewOpen = Boolean(quickViewTickers[ticker]);
 
             return (
               <div
@@ -857,9 +866,11 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                     <div className="font-bold leading-5 text-white/90">
                       {stock.company ?? stock.name ?? ticker}
                     </div>
-                    <div className="mt-0.5 line-clamp-2 text-[11px] leading-4.5 text-white/45">
-                      {stock.thesis ?? "Live SigiOS match"}
-                    </div>
+                    {quickViewOpen ? (
+                      <div className="mt-0.5 line-clamp-2 text-[11px] leading-4.5 text-white/45">
+                        {stock.thesis ?? "Live SigiOS match"}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="font-black tabular-nums text-white">
@@ -888,6 +899,14 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                   </div>
 
                   <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleQuickView(ticker)}
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold text-white/80 hover:bg-white/10"
+                    >
+                      {quickViewOpen ? "Hide" : "Quick View"}
+                    </button>
+
                     <Link
                       href={buildPreviewHref(`/stocks/${ticker.toLowerCase()}`)}
                       onClick={() => selectedTicker?.setActiveTicker(ticker)}
@@ -939,7 +958,9 @@ export default function ScreenerResultsClient({ stocks }: Props) {
 
                   <div>
                     <div className="font-bold text-white/90">{stock.company ?? stock.name ?? ticker}</div>
-                    <div className="mt-0.5 line-clamp-2 text-[11px] leading-5 text-white/45">{getThesisLabel(stock)}</div>
+                    {quickViewOpen ? (
+                      <div className="mt-0.5 line-clamp-2 text-[11px] leading-5 text-white/45">{getThesisLabel(stock)}</div>
+                    ) : null}
                   </div>
 
                   <div>
@@ -952,7 +973,15 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleQuickView(ticker)}
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold text-white/80 hover:bg-white/10"
+                    >
+                      {quickViewOpen ? "Hide" : "Quick View"}
+                    </button>
+
                     <Link
                       href={buildPreviewHref(`/stocks/${ticker.toLowerCase()}`)}
                       onClick={() => selectedTicker?.setActiveTicker(ticker)}
@@ -969,6 +998,12 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                       {watchlisted ? "Added" : "Watchlist"}
                     </button>
                   </div>
+
+                  {quickViewOpen ? (
+                    <div className="rounded-xl border border-white/8 bg-black/20 px-3 py-2 text-[11px] leading-5 text-white/55 md:hidden">
+                      Sector: {stock.sector ?? "Market"} · Score {safeScore.toFixed(0)}/100
+                    </div>
+                  ) : null}
                 </div>
               </div>
             );
