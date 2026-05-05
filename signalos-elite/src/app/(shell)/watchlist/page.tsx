@@ -20,7 +20,11 @@ import {
 } from "@/lib/portfolio/localPortfolio";
 import { removeFromWatchlist } from "@/lib/storage/watchlist";
 import { calculateWatchlistScore } from "@/lib/watchlist/calculateWatchlistScore";
-import { readHiddenWatchlistTickers } from "@/lib/watchlist/localWatchlist";
+import {
+  readHiddenWatchlistTickers,
+  readWatchlistEntries,
+  type WatchlistStoredEntry,
+} from "@/lib/watchlist/localWatchlist";
 
 type SignalTone = "Bullish" | "Neutral" | "Bearish";
 
@@ -178,6 +182,47 @@ function createWatchlistRow(ticker: string): WatchlistRow {
     signal: "Neutral",
     thesis: "Added from SigiOS Command.",
     sparkline: [100, 100],
+  });
+}
+
+function createWatchlistRowFromEntry(entry: WatchlistStoredEntry): WatchlistRow {
+  const ticker = normalizeTicker(entry.ticker);
+  const fallback = createWatchlistRow(ticker);
+  const currentPrice =
+    typeof entry.currentPrice === "number" && Number.isFinite(entry.currentPrice) && entry.currentPrice > 0
+      ? entry.currentPrice
+      : typeof entry.price === "number" && Number.isFinite(entry.price) && entry.price > 0
+        ? entry.price
+        : 0;
+
+  return withMasterScore({
+    ...fallback,
+    name: entry.name?.trim() || fallback.name,
+    sector: entry.sector?.trim() || fallback.sector,
+    price: currentPrice,
+    changePct:
+      typeof entry.changePercent === "number" && Number.isFinite(entry.changePercent)
+        ? entry.changePercent
+        : fallback.changePct,
+    conviction:
+      typeof entry.conviction === "number" && Number.isFinite(entry.conviction)
+        ? entry.conviction
+        : fallback.conviction,
+    score:
+      typeof entry.score === "number" && Number.isFinite(entry.score)
+        ? entry.score
+        : fallback.score,
+    masterScore:
+      typeof entry.masterScore === "number" && Number.isFinite(entry.masterScore)
+        ? entry.masterScore
+        : fallback.masterScore,
+    signal:
+      entry.signal === "Bullish" || entry.signal === "Bearish" || entry.signal === "Neutral"
+        ? entry.signal
+        : fallback.signal,
+    target:
+      typeof entry.target === "number" && Number.isFinite(entry.target) ? entry.target : null,
+    thesis: entry.thesis?.trim() || fallback.thesis,
   });
 }
 
@@ -888,6 +933,7 @@ export default function WatchlistPage() {
 
   useEffect(() => {
     try {
+      const canonicalEntries = readWatchlistEntries();
       const rawRows = window.localStorage.getItem(WATCHLIST_STORAGE_KEY);
       const parsedRows = rawRows ? JSON.parse(rawRows) : null;
       const storedRows = Array.isArray(parsedRows)
@@ -938,7 +984,17 @@ export default function WatchlistPage() {
         sourceTickers.includes(normalizeTicker(row.ticker))
       );
 
-      const mergedRows = mergeWatchlistRows(baseRows, sourceTickers);
+      const canonicalRows = canonicalEntries
+        .filter((entry) => sourceTickers.includes(normalizeTicker(entry.ticker)))
+        .map((entry) => createWatchlistRowFromEntry(entry));
+
+      const mergedBaseRows = Array.from(
+        new Map(
+          [...canonicalRows, ...baseRows].map((row) => [normalizeTicker(row.ticker), row])
+        ).values()
+      );
+
+      const mergedRows = mergeWatchlistRows(mergedBaseRows, sourceTickers);
 
       setWatchlistRows(mergedRows);
 
