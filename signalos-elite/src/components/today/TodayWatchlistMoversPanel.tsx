@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import { SectionHeader } from "@/components/today/SectionHeader";
 import {
@@ -9,7 +10,13 @@ import {
   rowListItemClass,
   supportSectionClass,
 } from "@/components/today/TodayLayoutPrimitives";
+import { useSyncedWatchlist } from "@/hooks/useSyncedWatchlist";
+import { readWatchlistEntries } from "@/lib/watchlist/localWatchlist";
 import type { TodayWatchlistMoverRow } from "@/lib/today/pageData";
+
+function normalizeTicker(value: string) {
+  return value.trim().toUpperCase();
+}
 
 function percentClass(value?: number | null) {
   if (value == null || !Number.isFinite(value)) return "text-white/45";
@@ -35,10 +42,58 @@ export default function TodayWatchlistMoversPanel({
   rows: TodayWatchlistMoverRow[];
 }) {
   const { setActiveTicker } = useSelectedTicker();
+  const { quoteMap, ensureQuotes } = useLiveMarket();
+  const { tickers: syncedWatchlistTickers } = useSyncedWatchlist();
+
+  const syncedWatchlistRows = useMemo(() => {
+    const storedEntries = new Map(
+      readWatchlistEntries().map((entry) => [normalizeTicker(entry.ticker), entry])
+    );
+
+    return syncedWatchlistTickers
+      .map((ticker) => normalizeTicker(ticker))
+      .filter(Boolean)
+      .flatMap((ticker) => {
+        const quote = quoteMap[ticker];
+        const storedEntry = storedEntries.get(ticker);
+        const changePct = quote?.changePct ?? storedEntry?.changePercent ?? null;
+
+        if (changePct == null || changePct <= 0) {
+          return [];
+        }
+
+        const fallbackRow = rows.find((row) => normalizeTicker(row.ticker) === ticker);
+
+        return [
+          {
+            ticker,
+            name: quote?.name ?? storedEntry?.name ?? fallbackRow?.name ?? ticker,
+            price: quote?.price ?? storedEntry?.currentPrice ?? storedEntry?.price ?? fallbackRow?.price ?? null,
+            changePct,
+            pulse: fallbackRow?.pulse ?? null,
+          } satisfies TodayWatchlistMoverRow,
+        ];
+      })
+      .sort((left, right) => (right.changePct ?? 0) - (left.changePct ?? 0));
+  }, [quoteMap, rows, syncedWatchlistTickers]);
+
+  const watchlistQuoteSignature = useMemo(
+    () => syncedWatchlistTickers.map((ticker) => normalizeTicker(ticker)).filter(Boolean).join(","),
+    [syncedWatchlistTickers]
+  );
+
+  useEffect(() => {
+    if (syncedWatchlistTickers.length) {
+      ensureQuotes(syncedWatchlistTickers);
+    }
+  }, [ensureQuotes, syncedWatchlistTickers, watchlistQuoteSignature]);
+
   const visibleRows = useMemo(() => {
     const seenTickers = new Set<string>();
 
-    return rows.filter((row) => {
+    const sourceRows = syncedWatchlistRows.length ? syncedWatchlistRows : rows;
+
+    return sourceRows.filter((row) => {
       const ticker = row.ticker.trim().toUpperCase();
       if (!ticker || seenTickers.has(ticker)) {
         return false;
@@ -47,7 +102,7 @@ export default function TodayWatchlistMoversPanel({
       seenTickers.add(ticker);
       return true;
     }).slice(0, 4);
-  }, [rows]);
+  }, [rows, syncedWatchlistRows]);
 
   return (
     <section className={supportSectionClass}>
