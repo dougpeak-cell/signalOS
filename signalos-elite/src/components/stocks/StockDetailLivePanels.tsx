@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
 import TickerLogo from "@/components/stocks/TickerLogo";
@@ -193,6 +193,21 @@ export default function StockDetailLivePanels({
   const liveMarket = useOptionalLiveMarket();
   const marketData = useOptionalMarketData();
   const liveTicker = row.ticker.toUpperCase();
+  const marketDataActions = useMemo(
+    () =>
+      marketData
+        ? {
+            registerTickers: marketData.registerTickers,
+            unregisterTickers: marketData.unregisterTickers,
+            refreshNow: marketData.refreshNow,
+          }
+        : null,
+    [
+      marketData?.registerTickers,
+      marketData?.unregisterTickers,
+      marketData?.refreshNow,
+    ]
+  );
   const { watchlistTickerSet } = useStoredWatchlistTickers();
   const isTracked = watchlistTickerSet.has(liveTicker);
 
@@ -215,15 +230,15 @@ export default function StockDetailLivePanels({
   }, [liveMarket, liveTicker]);
 
   useEffect(() => {
-    if (!marketData) return;
+    if (!marketDataActions) return;
 
-    marketData.registerTickers([liveTicker], "critical");
-    void marketData.refreshNow();
+    marketDataActions.registerTickers([liveTicker], "critical");
+    void marketDataActions.refreshNow();
 
     return () => {
-      marketData.unregisterTickers([liveTicker], "critical");
+      marketDataActions.unregisterTickers([liveTicker], "critical");
     };
-  }, [liveTicker, marketData]);
+  }, [liveTicker, marketDataActions]);
 
   const marketDataQuote = marketData?.getQuote(liveTicker);
   const liveQuote = liveMarket?.quoteMap[liveTicker];

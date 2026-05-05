@@ -4024,8 +4024,8 @@ const gapFillLabel =
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 lg:w-56">
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+              <div className="grid grid-cols-2 items-stretch gap-3 lg:w-56">
+                <div className="h-full rounded-2xl border border-white/10 bg-white/5 p-3">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-neutral-500">
                     score
                   </div>
@@ -4037,7 +4037,7 @@ const gapFillLabel =
                         Live score
                       </div>
 
-                      <div className="mt-2 flex flex-wrap gap-1.5">
+                      <div className="mt-2 flex min-h-30 flex-wrap content-start gap-1.5 overflow-hidden">
                         {liveSignalDrivers.length > 0 ? (
                           liveSignalDrivers.map((driver) => (
                             <span
@@ -4064,7 +4064,7 @@ const gapFillLabel =
                   ) : null}
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                <div className="h-full rounded-2xl border border-white/10 bg-white/5 p-3">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-neutral-500">
                     confidence
                   </div>
