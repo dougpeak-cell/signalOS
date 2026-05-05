@@ -407,6 +407,14 @@ type FundamentalsResponse = {
   dividendYield?: number | null;
 };
 
+type HydratedWatchlistQuote = {
+  price?: number | null;
+  changePct?: number | null;
+  volume?: number | null;
+  avgVolume?: number | null;
+  name?: string | null;
+};
+
 function applyLiveQuoteToRow(
   row: WatchlistRow,
   quote: {
@@ -838,6 +846,9 @@ export default function WatchlistPage() {
   } = useLiveMarket();
   const { tickers: syncedWatchlistTickers } = useSyncedWatchlist();
   const [watchlistRows, setWatchlistRows] = useState<WatchlistRow[]>([]);
+  const [hydratedQuoteMap, setHydratedQuoteMap] = useState<Record<string, HydratedWatchlistQuote>>(
+    {}
+  );
   const [hasLoadedWatchlist, setHasLoadedWatchlist] = useState(false);
 
   function buildPreviewHref(href: string) {
@@ -1018,17 +1029,95 @@ export default function WatchlistPage() {
     watchlistTickersKey,
   ]);
 
+  useEffect(() => {
+    if (!hasLoadedWatchlist || watchlistTickers.length === 0) {
+      setHydratedQuoteMap({});
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const response = await fetch(
+          `/api/massive/quotes?tickers=${encodeURIComponent(watchlistTickers.join(","))}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
+
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as {
+          quotes?: Array<{
+            ticker?: string;
+            name?: string | null;
+            price?: number | null;
+            changePercent?: number | null;
+            changePct?: number | null;
+            volume?: number | null;
+            avgVolume?: number | null;
+          }>;
+        };
+
+        if (cancelled || !Array.isArray(payload.quotes)) return;
+
+        const nextHydratedQuotes = payload.quotes.reduce<Record<string, HydratedWatchlistQuote>>(
+          (result, quote) => {
+            const ticker = normalizeTicker(String(quote?.ticker ?? ""));
+
+            if (!ticker) return result;
+
+            result[ticker] = {
+              name: typeof quote?.name === "string" ? quote.name : null,
+              price:
+                typeof quote?.price === "number" && Number.isFinite(quote.price)
+                  ? quote.price
+                  : null,
+              changePct:
+                typeof quote?.changePercent === "number" && Number.isFinite(quote.changePercent)
+                  ? quote.changePercent
+                  : typeof quote?.changePct === "number" && Number.isFinite(quote.changePct)
+                    ? quote.changePct
+                    : null,
+              volume:
+                typeof quote?.volume === "number" && Number.isFinite(quote.volume)
+                  ? quote.volume
+                  : null,
+              avgVolume:
+                typeof quote?.avgVolume === "number" && Number.isFinite(quote.avgVolume)
+                  ? quote.avgVolume
+                  : null,
+            };
+
+            return result;
+          },
+          {}
+        );
+
+        if (!cancelled) {
+          setHydratedQuoteMap(nextHydratedQuotes);
+        }
+      } catch {}
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasLoadedWatchlist, watchlistTickers, watchlistTickersKey]);
+
   const scoredRows = useMemo(
     () =>
       [...watchlistRows]
         .map((row) => {
           const symbol = normalizeTicker(row.ticker);
-          const quote = quoteMap[symbol];
+          const quote = quoteMap[symbol] ?? hydratedQuoteMap[symbol];
 
           return quote ? applyLiveQuoteToRow(row, quote) : row;
         })
         .sort((a, b) => Number(b.tradeScore ?? b.qualityScore ?? b.score ?? 0) - Number(a.tradeScore ?? a.qualityScore ?? a.score ?? 0)),
-    [quoteMap, watchlistRows]
+    [hydratedQuoteMap, quoteMap, watchlistRows]
   );
 
   const averageScore = useMemo(() => {
