@@ -748,6 +748,24 @@ function isPreMarketActiveCandidate(candidate: SetupDiscoveryCandidate): boolean
   return price >= 1 && volume >= 25_000 && move >= 1;
 }
 
+function isPreMarketEmergingCandidate(candidate: SetupDiscoveryCandidate): boolean {
+  const price = toNumber(candidate.price) ?? 0;
+  const volume = toNumber(candidate.volume) ?? 0;
+  const avgVolume = toNumber(candidate.avgVolume) ?? 0;
+  const move = Math.abs(toNumber(candidate.changePercent) ?? 0);
+  const rvol = toNumber(candidate.rvol) ?? 0;
+  const hasCatalyst = Boolean(
+    candidate.hasNews || candidate.hasEarnings || candidate.hasAnalystAction || candidate.hasSectorTailwind
+  );
+
+  return (
+    price >= 1 &&
+    volume >= 100_000 &&
+    avgVolume >= 50_000 &&
+    (move >= 0.5 || rvol >= 1.25 || hasCatalyst)
+  );
+}
+
 export function countPreMarketQualifiedCandidates(setupDiscovery: SetupDiscoveryData): number {
   return setupDiscovery.candidates.filter((candidate) => isPreMarketActiveCandidate(candidate)).length;
 }
@@ -766,7 +784,7 @@ export function buildPreMarketEmergingSetups(
 
   return rankSetupCandidates(
     setupDiscovery.candidates.filter((candidate) => {
-      return isPreMarketActiveCandidate(candidate) && !topTickers.has(candidate.ticker);
+      return isPreMarketEmergingCandidate(candidate) && !topTickers.has(candidate.ticker);
     }),
     "emerging"
   ).slice(0, 6);

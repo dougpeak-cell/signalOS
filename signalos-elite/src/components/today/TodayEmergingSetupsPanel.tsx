@@ -86,7 +86,7 @@ export default function TodayEmergingSetupsPanel({
         title={title}
         subtitle={subtitle}
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 justify-end">
             <SessionToggleButton
               active={sessionView === "regular"}
               onClick={() => setSessionView("regular")}
@@ -103,7 +103,7 @@ export default function TodayEmergingSetupsPanel({
               href={emergingHref}
               className="rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs text-white/70"
             >
-              Explore Emerging
+              Emerging
             </Link>
           </div>
         }
