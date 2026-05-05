@@ -21,7 +21,7 @@ export const SECTOR_STOCKS: Record<string, string[]> = {
   ],
   Energy: [
     "XOM", "CVX", "COP", "SLB", "EOG", "MPC", "PSX", "VLO", "OXY", "HAL",
-    "KMI", "WMB", "OKE", "BKR", "FANG", "DVN", "HES", "CTRA", "APA", "PXD",
+    "KMI", "WMB", "OKE", "BKR", "FANG", "DVN", "HES", "CTRA", "APA",
   ],
   "Communication Services": [
     "GOOGL", "META", "NFLX", "TMUS", "VZ", "T", "DIS", "CMCSA", "CHTR", "SPOT",
@@ -185,7 +185,6 @@ export const COMPANY_NAMES: Record<string, string> = {
   HES: "Hess",
   CTRA: "Coterra Energy",
   APA: "APA Corporation",
-  PXD: "Pioneer Natural Resources",
   TMUS: "T-Mobile US",
   VZ: "Verizon",
   T: "AT&T",
