@@ -327,7 +327,9 @@ async function fetchStockQuoteInternal(
     const json = await res.json();
 
     if (!res.ok) {
-      console.error(`Polygon stock snapshot failed for ${ticker}: ${res.status}`);
+      if (res.status !== 404) {
+        console.error(`Polygon stock snapshot failed for ${ticker}: ${res.status}`);
+      }
       return null;
     }
 
