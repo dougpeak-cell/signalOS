@@ -1,24 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveMarketTickerAlias } from "@/lib/market/indexAliases";
-
-type UpstreamQuote = {
-  ticker?: string;
-  symbol?: string;
-  name?: string | null;
-  price?: number | null;
-  lastPrice?: number | null;
-  last?: number | null;
-  value?: number | null;
-  change?: number | null;
-  changePercent?: number | null;
-  changePct?: number | null;
-  volume?: number | null;
-  avgVolume?: number | null;
-  updated?: number | null;
-  updatedMs?: number | null;
-  timestamp?: number | null;
-  lastUpdated?: number | null;
-};
+import { resolveMassiveQuote, type MassiveQuoteResponse } from "@/app/api/massive/quote/route";
 
 type NormalizedQuote = {
   ticker: string;
@@ -48,36 +30,29 @@ function normalizeUpdatedMs(raw: number | null): number | null {
 }
 
 function normalizeQuote(
-  raw: UpstreamQuote,
+  raw: MassiveQuoteResponse,
   fallbackTicker: string
 ): NormalizedQuote {
-  const ticker = normalizeTicker(raw.ticker || raw.symbol || fallbackTicker);
+  const ticker = normalizeTicker(raw.ticker || fallbackTicker);
 
   const price =
-    toNumber(raw.lastPrice) ??
     toNumber(raw.price) ??
-    toNumber(raw.last) ??
-    toNumber(raw.value);
+    null;
 
   const change = toNumber(raw.change);
 
   const changePercent =
-    toNumber(raw.changePercent) ??
     toNumber(raw.changePct);
 
   const volume = toNumber(raw.volume);
   const avgVolume = toNumber(raw.avgVolume);
 
   const updatedMs = normalizeUpdatedMs(
-    toNumber(raw.updated) ??
-    toNumber(raw.updatedMs) ??
-    toNumber(raw.timestamp) ??
-    toNumber(raw.lastUpdated)
+    toNumber(raw.updatedMs)
   );
 
   return {
     ticker,
-    name: raw.name?.trim() || undefined,
     price: price != null && price > 0 ? price : null,
     change,
     changePercent,
@@ -87,20 +62,11 @@ function normalizeQuote(
   };
 }
 
-async function fetchSingleQuote(
-  origin: string,
-  ticker: string
-): Promise<NormalizedQuote> {
+async function fetchSingleQuote(ticker: string): Promise<NormalizedQuote> {
   try {
-    const res = await fetch(
-      `${origin}/api/massive/quote?ticker=${encodeURIComponent(ticker)}`,
-      {
-        method: "GET",
-        cache: "no-store",
-      }
-    );
+    const quote = await resolveMassiveQuote(ticker);
 
-    if (!res.ok) {
+    if (!quote) {
       return {
         ticker,
         price: null,
@@ -112,8 +78,7 @@ async function fetchSingleQuote(
       };
     }
 
-    const json = (await res.json()) as UpstreamQuote;
-    return normalizeQuote(json, ticker);
+    return normalizeQuote(quote, ticker);
   } catch {
     return {
       ticker,
@@ -147,10 +112,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const origin = req.nextUrl.origin;
-
     const results = await Promise.all(
-      tickers.map((ticker) => fetchSingleQuote(origin, ticker))
+      tickers.map((ticker) => fetchSingleQuote(ticker))
     );
 
     return NextResponse.json({ quotes: results });

@@ -245,6 +245,22 @@ type StableStockQuote = {
   updatedMs: number | null;
 };
 
+export type MassiveQuoteResponse = {
+  ticker: string;
+  lookupTicker: string;
+  source: "stock" | "true-index" | "index-proxy" | "fallback";
+  price: number;
+  prevClose: number | null;
+  change: number | null;
+  changePct: number | null;
+  direction: "up" | "down" | "flat";
+  volume: number | null;
+  avgVolume: number | null;
+  updatedMs: number;
+  isMarketOpen: boolean | null;
+  points: number[];
+};
+
 const lastGoodStockQuoteCache = new Map<
   string,
   StableStockQuote & { cachedAt: number }
@@ -506,17 +522,9 @@ async function fetchStockIntradaySeries(ticker: string): Promise<number[]> {
   }
 }
 
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const requestedTicker = searchParams.get("ticker") ?? searchParams.get("symbol");
-
-    if (!requestedTicker) {
-      return NextResponse.json({ error: "Missing ticker" }, { status: 400 });
-    }
-
-    const ticker = resolveMarketTickerAlias(requestedTicker);
-
+export async function resolveMassiveQuote(
+  ticker: string
+): Promise<MassiveQuoteResponse | null> {
     const trueIndexTicker = INDEX_MAP[ticker] ?? null;
     const proxyTicker = INDEX_PROXY_FALLBACK[ticker] ?? null;
     const isHeadlineIndexRequest = Boolean(trueIndexTicker);
@@ -626,10 +634,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (price == null) {
-      return NextResponse.json(
-        { ticker, lookupTicker, error: "No price available" },
-        { status: 404 }
-      );
+      return null;
     }
 
     const needsSeriesDerivedChange =
@@ -664,7 +669,7 @@ export async function GET(req: NextRequest) {
       profile: "discovery",
     });
 
-    return NextResponse.json({
+    return {
       ticker,
       lookupTicker,
       source,
@@ -685,7 +690,29 @@ export async function GET(req: NextRequest) {
       updatedMs: updatedMs ?? Date.now(),
       isMarketOpen,
       points,
-    });
+    };
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const requestedTicker = searchParams.get("ticker") ?? searchParams.get("symbol");
+
+    if (!requestedTicker) {
+      return NextResponse.json({ error: "Missing ticker" }, { status: 400 });
+    }
+
+    const ticker = resolveMarketTickerAlias(requestedTicker);
+    const quote = await resolveMassiveQuote(ticker);
+
+    if (!quote) {
+      return NextResponse.json(
+        { ticker, error: "No price available" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(quote);
   } catch (error) {
     console.error("Quote route failed:", error);
 
