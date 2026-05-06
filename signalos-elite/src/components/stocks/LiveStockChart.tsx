@@ -495,15 +495,15 @@ function getBarSpacingForViewport(mode: CandleDensityMode) {
 function getPriceScaleMargins(mode: PriceScaleMode) {
   if (mode === "compressed") {
     return {
-      top: 0.22,
-      bottom: 0.12,
+      top: 0.3,
+      bottom: 0.18,
     };
   }
 
   if (mode === "expanded") {
     return {
-      top: 0.08,
-      bottom: 0.02,
+      top: 0.03,
+      bottom: 0.01,
     };
   }
 
@@ -511,6 +511,18 @@ function getPriceScaleMargins(mode: PriceScaleMode) {
     top: 0.14,
     bottom: 0.05,
   };
+}
+
+function getBarsToShowForDensity(baseBars: number, mode: CandleDensityMode) {
+  if (mode === "more") {
+    return Math.round(baseBars * 1.45);
+  }
+
+  if (mode === "fewer") {
+    return Math.round(baseBars * 0.72);
+  }
+
+  return baseBars;
 }
 
 function intervalToMinutes(interval: ChartInterval): number {
@@ -1220,6 +1232,8 @@ export default function LiveStockChart({
   const initialLiveRangeAppliedRef = useRef(false);
   const autoFollowPreferenceLoadedRef = useRef(false);
   const liveRangeSpanRef = useRef<number | null>(null);
+  const candleDensityModeRef = useRef<CandleDensityMode>("standard");
+  const priceScaleModeRef = useRef<PriceScaleMode>("standard");
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
@@ -1238,6 +1252,11 @@ export default function LiveStockChart({
   const [isMobileZoneSheetOpen, setIsMobileZoneSheetOpen] = useState(false);
 
   const [baseBars, setBaseBars] = useState<BaseBar[]>([]);
+
+  useEffect(() => {
+    candleDensityModeRef.current = candleDensityMode;
+    priceScaleModeRef.current = priceScaleMode;
+  }, [candleDensityMode, priceScaleMode]);
 
   useEffect(() => {
     if (!baseBars.length) return;
@@ -2185,7 +2204,10 @@ export default function LiveStockChart({
         targetIndex = bestIdx;
       }
 
-      const smartBarsToShow = Math.max(40, getSmartBarsToShow(displayBars, timeframe));
+      const smartBarsToShow = Math.max(
+        40,
+        getBarsToShowForDensity(getSmartBarsToShow(displayBars, timeframe), candleDensityMode)
+      );
       const leftBars = Math.max(18, Math.floor(smartBarsToShow * 0.45));
       const rightBars = Math.max(12, Math.floor(smartBarsToShow * 0.25));
 
@@ -2205,7 +2227,7 @@ export default function LiveStockChart({
       userDetachedFromLiveRef.current = true;
       setShowReturnToLive(true);
     },
-    [displayBars, timeframe]
+    [candleDensityMode, displayBars, timeframe]
   );
 
   const returnToLive = useCallback(() => {
@@ -2213,7 +2235,10 @@ export default function LiveStockChart({
     if (!chart || !displayBars.length) return;
 
     const totalBars = displayBars.length;
-    const barsToShow = getSmartBarsToShow(displayBars, timeframe);
+    const barsToShow = getBarsToShowForDensity(
+      getSmartBarsToShow(displayBars, timeframe),
+      candleDensityMode
+    );
     const to = Math.max(0, totalBars - 1);
     const from = Math.max(0, to - barsToShow);
     liveRangeSpanRef.current = Math.max(20, to - from);
@@ -2229,7 +2254,7 @@ export default function LiveStockChart({
     initialLiveRangeAppliedRef.current = true;
     userDetachedFromLiveRef.current = false;
     setShowReturnToLive(false);
-  }, [displayBars, timeframe]);
+  }, [candleDensityMode, displayBars, timeframe]);
 
   useEffect(() => {
     if (!autoFollowEnabled) return;
@@ -2893,11 +2918,11 @@ useEffect(() => {
       chart.applyOptions({
         timeScale: {
           rightOffset: getRightOffsetForViewport(),
-          barSpacing: getBarSpacingForViewport(candleDensityMode),
+          barSpacing: getBarSpacingForViewport(candleDensityModeRef.current),
           minBarSpacing: 6,
         },
         rightPriceScale: {
-          scaleMargins: getPriceScaleMargins(priceScaleMode),
+          scaleMargins: getPriceScaleMargins(priceScaleModeRef.current),
         },
       });
     };
@@ -2936,7 +2961,7 @@ useEffect(() => {
       heatPriceLinesRef.current = [];
       selectedSignalPriceLineRef.current = null;
     };
-  }, [candleDensityMode, priceScaleMode]);
+  }, []);
 
   useEffect(() => {
     const chart = chartApiRef.current;
@@ -2951,7 +2976,39 @@ useEffect(() => {
         scaleMargins: getPriceScaleMargins(priceScaleMode),
       },
     });
-  }, [candleDensityMode, priceScaleMode]);
+
+    if (displayBars.length === 0) {
+      return;
+    }
+
+    const currentRange = chart.timeScale().getVisibleLogicalRange();
+    const totalBars = displayBars.length;
+    const latestIndex = Math.max(0, totalBars - 1);
+    const nextSpan = Math.max(
+      20,
+      getBarsToShowForDensity(getSmartBarsToShow(displayBars, timeframe), candleDensityMode)
+    );
+    const safeTo =
+      currentRange && Number.isFinite(currentRange.to)
+        ? clamp(currentRange.to, Math.min(nextSpan, latestIndex), latestIndex)
+        : latestIndex;
+    const safeFrom = Math.max(0, safeTo - nextSpan);
+
+    liveRangeSpanRef.current = nextSpan;
+    isProgrammaticRangeChangeRef.current = true;
+    chart.timeScale().setVisibleLogicalRange({
+      from: safeFrom,
+      to: Math.max(safeFrom + 20, safeTo),
+    });
+
+    if (autoFollowEnabled && !userDetachedFromLiveRef.current) {
+      chart.timeScale().scrollToRealTime();
+    }
+
+    requestAnimationFrame(() => {
+      isProgrammaticRangeChangeRef.current = false;
+    });
+  }, [autoFollowEnabled, candleDensityMode, displayBars, priceScaleMode, timeframe]);
 
   useEffect(() => {
     const chart = chartApiRef.current;
@@ -3363,7 +3420,10 @@ useEffect(() => {
 
     const totalBars = displayBars.length;
     const to = Math.max(0, totalBars - 1);
-    const defaultBarsToShow = getSmartBarsToShow(displayBars, timeframe);
+    const defaultBarsToShow = getBarsToShowForDensity(
+      getSmartBarsToShow(displayBars, timeframe),
+      candleDensityMode
+    );
     const timeframeChanged = previousTimeframeRef.current !== timeframe;
     const shouldApplyLiveRange =
       (!autoFollowLockOff && (autoFollowEnabled || timeframeChanged)) ||
@@ -3395,7 +3455,7 @@ useEffect(() => {
         setShowReturnToLive(false);
       }
     }
-  }, [autoFollowEnabled, autoFollowLockOff, displayBars.length, timeframe]);
+  }, [autoFollowEnabled, autoFollowLockOff, candleDensityMode, displayBars.length, timeframe]);
 
   const livePrice = snapshot?.lastPrice ?? currentPrice ?? null;
   const liveOpen = snapshot?.open ?? null;
@@ -3769,7 +3829,7 @@ const gapFillLabel =
                 type="button"
                 onClick={handleAutoFollowToggle}
                 disabled={autoFollowLockOff && !autoFollowEnabled}
-                className={`inline-flex min-h-11 items-center rounded-2xl border px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                className={`inline-flex min-h-11 touch-manipulation items-center rounded-2xl border px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
                   autoFollowEnabled
                     ? "border-cyan-400/30 bg-cyan-400/12 text-cyan-100"
                     : "border-white/10 bg-white/5 text-white/72"
@@ -3783,7 +3843,7 @@ const gapFillLabel =
               <button
                 type="button"
                 onClick={handleAutoFollowLockToggle}
-                className={`inline-flex min-h-11 items-center rounded-2xl border px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                className={`inline-flex min-h-11 touch-manipulation items-center rounded-2xl border px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
                   autoFollowLockOff
                     ? "border-amber-400/30 bg-amber-400/12 text-amber-100"
                     : "border-white/10 bg-white/5 text-white/72"
@@ -3799,7 +3859,7 @@ const gapFillLabel =
                     value === "more" ? "standard" : value === "standard" ? "fewer" : "more"
                   )
                 }
-                className="inline-flex min-h-11 items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/84 transition"
+                className="inline-flex min-h-11 touch-manipulation items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/84 transition"
               >
                 {CANDLE_DENSITY_LABELS[candleDensityMode]}
               </button>
@@ -3815,7 +3875,7 @@ const gapFillLabel =
                         : "compressed"
                   )
                 }
-                className="inline-flex min-h-11 items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/84 transition"
+                className="inline-flex min-h-11 touch-manipulation items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/84 transition"
               >
                 {PRICE_SCALE_LABELS[priceScaleMode]}
               </button>
@@ -3823,7 +3883,7 @@ const gapFillLabel =
               <button
                 type="button"
                 onClick={() => setIsMobileControlSheetOpen(true)}
-                className="inline-flex min-h-11 items-center rounded-2xl border border-cyan-400/22 bg-cyan-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-100"
+                className="inline-flex min-h-11 touch-manipulation items-center rounded-2xl border border-cyan-400/22 bg-cyan-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-100"
               >
                 Chart Controls
               </button>
@@ -3832,7 +3892,7 @@ const gapFillLabel =
                 <button
                   type="button"
                   onClick={() => setIsMobileZoneSheetOpen(true)}
-                  className="inline-flex min-h-11 items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/84"
+                  className="inline-flex min-h-11 touch-manipulation items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/84"
                 >
                   Zone Intel
                 </button>
