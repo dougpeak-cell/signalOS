@@ -10,7 +10,8 @@ export default function SigiEyeLogo({
   const iconId = useId().replace(/:/g, "");
   const glowFilterId = `sigiLogoGlow-${iconId}`;
   const auraId = `sigiEyeAura-${iconId}`;
-  const pupilGradientId = `sigiPupilGradient-${iconId}`;
+  const scanGradientId = `sigiScanGradient-${iconId}`;
+  const rearArcGradientId = `sigiRearArcGradient-${iconId}`;
 
   return (
     <svg
@@ -37,17 +38,27 @@ export default function SigiEyeLogo({
           <stop offset="100%" stopColor="#020617" stopOpacity="0" />
         </radialGradient>
 
-        <linearGradient id={pupilGradientId} x1="0" x2="1">
-          <stop offset="0%" stopColor="#7c3aed" />
-          <stop offset="45%" stopColor="#ec4899" />
-          <stop offset="100%" stopColor="#22d3ee" />
+        <linearGradient id={scanGradientId} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#14532d" stopOpacity="0" />
+          <stop offset="35%" stopColor="#22c55e" stopOpacity="0.28" />
+          <stop offset="50%" stopColor="#bbf7d0" stopOpacity="0.98" />
+          <stop offset="65%" stopColor="#22c55e" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#14532d" stopOpacity="0" />
+        </linearGradient>
+
+        <linearGradient id={rearArcGradientId} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#bbf7d0" stopOpacity="0" />
+          <stop offset="24%" stopColor="#bbf7d0" stopOpacity="0.05" />
+          <stop offset="50%" stopColor="#bbf7d0" stopOpacity="0.16" />
+          <stop offset="76%" stopColor="#bbf7d0" stopOpacity="0.05" />
+          <stop offset="100%" stopColor="#bbf7d0" stopOpacity="0" />
         </linearGradient>
       </defs>
 
       <style>{`
-        .sigi-logo-pupil-${iconId} {
+        .sigi-logo-scan-${iconId} {
           transform-origin: 130px 75px;
-          animation: ${animate ? `sigiLogoScan-${iconId} 4.2s ease-in-out infinite` : "none"};
+          animation: ${animate ? `sigiLogoScan-${iconId} 3.4s linear infinite` : "none"};
         }
 
         .sigi-logo-aura-${iconId} {
@@ -55,16 +66,23 @@ export default function SigiEyeLogo({
           animation: ${animate ? `sigiLogoBreath-${iconId} 3.4s ease-in-out infinite` : "none"};
         }
 
+        .sigi-logo-hotspot-${iconId} {
+          transform-origin: 130px 75px;
+          animation: ${animate ? `sigiLogoHotspot-${iconId} 3.4s linear infinite` : "none"};
+        }
+
         .sigi-logo-shell-${iconId} {
           animation: ${animate ? `sigiShellGlow-${iconId} 3.4s ease-in-out infinite` : "none"};
         }
 
         @keyframes sigiLogoScan-${iconId} {
-          0%, 100% { transform: translateX(0px); }
-          22% { transform: translateX(-12px); }
-          44% { transform: translateX(0px); }
-          68% { transform: translateX(12px); }
-          88% { transform: translateX(0px); }
+          0% { transform: translateX(34px); opacity: 0; }
+          8% { opacity: 1; }
+          46% { transform: translateX(-34px); opacity: 1; }
+          50% { transform: translateX(-34px); opacity: 0.65; }
+          54% { transform: translateX(-34px); opacity: 1; }
+          92% { transform: translateX(34px); opacity: 1; }
+          100% { transform: translateX(34px); opacity: 0; }
         }
 
         @keyframes sigiLogoBreath-${iconId} {
@@ -77,8 +95,15 @@ export default function SigiEyeLogo({
           50% { opacity: 1; }
         }
 
+        @keyframes sigiLogoHotspot-${iconId} {
+          0%, 14%, 36%, 64%, 86%, 100% { opacity: 0.58; transform: scale(0.88); }
+          21%, 25%, 71%, 75% { opacity: 0.88; transform: scale(1.12); }
+          22%, 23%, 24%, 72%, 73%, 74% { opacity: 1; transform: scale(1.28); }
+        }
+
         @media (prefers-reduced-motion: reduce) {
-          .sigi-logo-pupil-${iconId},
+          .sigi-logo-scan-${iconId},
+          .sigi-logo-hotspot-${iconId},
           .sigi-logo-aura-${iconId},
           .sigi-logo-shell-${iconId} {
             animation: none;
@@ -140,19 +165,70 @@ export default function SigiEyeLogo({
         strokeWidth="2"
       />
 
-      <g className={`sigi-logo-pupil-${iconId}`}>
-        <ellipse
-          cx="130"
-          cy="75"
-          rx="18"
-          ry="47"
-          fill={`url(#${pupilGradientId})`}
-          stroke="#f0abfc"
-          strokeWidth="3"
+      <g className={`sigi-logo-scan-${iconId}`}>
+        <rect
+          x="96"
+          y="41"
+          width="68"
+          height="68"
+          rx="34"
+          fill={`url(#${scanGradientId})`}
+          opacity="0.45"
+        />
+        <rect
+          x="124"
+          y="37"
+          width="12"
+          height="76"
+          rx="6"
+          fill="#4ade80"
           filter={`url(#${glowFilterId})`}
         />
-        <ellipse cx="124" cy="60" rx="5" ry="20" fill="#ffffff" opacity="0.42" />
-        <ellipse cx="137" cy="83" rx="3" ry="28" fill="#020617" opacity="0.22" />
+        <rect
+          x="127"
+          y="33"
+          width="6"
+          height="84"
+          rx="3"
+          fill="#dcfce7"
+          opacity="0.95"
+        />
+        <g className={`sigi-logo-hotspot-${iconId}`}>
+          <path
+            d="M123 75 A12 8 0 1 0 123 83"
+            transform="rotate(-20 130 75)"
+            fill="none"
+            stroke={`url(#${rearArcGradientId})`}
+            strokeWidth="1.1"
+            strokeLinecap="round"
+            opacity="0.92"
+          />
+          <path
+            d="M142 65 A17 12 0 1 1 142 77"
+            transform="rotate(-20 130 75)"
+            fill="none"
+            stroke="#ecfdf5"
+            strokeWidth="3.4"
+            strokeLinecap="round"
+            opacity="0.96"
+            filter={`url(#${glowFilterId})`}
+          />
+          <circle
+            cx="130"
+            cy="75"
+            r="14"
+            fill="#86efac"
+            opacity="0.92"
+            filter={`url(#${glowFilterId})`}
+          />
+          <circle
+            cx="130"
+            cy="75"
+            r="6"
+            fill="#f0fdf4"
+            opacity="0.98"
+          />
+        </g>
       </g>
     </svg>
   );
