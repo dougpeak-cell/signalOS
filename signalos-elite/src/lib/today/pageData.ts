@@ -104,9 +104,13 @@ export type TodayPageData = {
   defaultSetupSession: TodaySetupSession;
   topSetups: TodaySetupItem[];
   preMarketTopSetups: TodaySetupItem[];
+  preMarketSourceRowCount: number;
   preMarketRawCandidateCount: number;
   emergingSetups: RankedSetupItem[];
   preMarketEmergingSetups: RankedSetupItem[];
+  preMarketEmergingCandidateCount: number;
+  preMarketTopFallbackUsed: boolean;
+  preMarketEmergingFallbackUsed: boolean;
   commandCenterGainers: TodayCommandCenterMoverRow[];
   commandCenterLosers: TodayCommandCenterMoverRow[];
   commandCenterEarnings: TodayCommandCenterEarningsRow[];
@@ -432,6 +436,106 @@ function buildPreMarketRows(candidates: SetupDiscoveryCandidate[]): TodayMostTra
     })
     .slice(0, 10)
     .map(toMostTradedRow);
+}
+
+function isPreMarketSourceCandidate(candidate: SetupDiscoveryCandidate): boolean {
+  return candidate.session === "pre-market";
+}
+
+function countPreMarketSourceRows(setupDiscovery: SetupDiscoveryData): number {
+  return setupDiscovery.candidates.filter((candidate) => isPreMarketSourceCandidate(candidate)).length;
+}
+
+function countPreMarketEmergingCandidates(setupDiscovery: SetupDiscoveryData): number {
+  const topTickers = new Set(buildPreMarketTopSetups(setupDiscovery).map((item) => item.ticker));
+
+  return setupDiscovery.candidates.filter((candidate) => {
+    return isPreMarketEmergingCandidate(candidate) && !topTickers.has(candidate.ticker);
+  }).length;
+}
+
+function buildPreMarketFallbackRankedItems(
+  rows: TodayMostTradedRow[],
+  candidates: SetupDiscoveryCandidate[],
+  kind: "top" | "emerging",
+  excludeTickers?: Set<string>
+): RankedSetupItem[] {
+  const candidateMap = new Map(candidates.map((candidate) => [candidate.ticker, candidate]));
+
+  return rows
+    .filter((row) => !excludeTickers?.has(row.ticker))
+    .slice(0, 6)
+    .map((row, index) => {
+      const candidate = candidateMap.get(row.ticker);
+      const move = toNumber(row.changePercent) ?? 0;
+      const rvol = toNumber(row.rvol) ?? 0;
+      const volume = toNumber(row.volume) ?? 0;
+      const price = toNumber(row.price);
+      const bias: RankedSetupItem["bias"] = move > 0 ? "bullish" : move < 0 ? "bearish" : "neutral";
+      const setupBiasLabel = bias === "bullish" ? "Bullish" : bias === "bearish" ? "Bearish" : "Neutral";
+      const setupLabel =
+        candidate?.setupLabel ??
+        (kind === "top"
+          ? bias === "bearish"
+            ? "Pre-market reversal"
+            : "Pre-market leader"
+          : "Pre-market emerging");
+      const catalystLabel =
+        candidate?.hasNews || candidate?.hasEarnings || candidate?.hasAnalystAction || candidate?.hasSectorTailwind
+          ? candidate.hasEarnings
+            ? "Earnings catalyst"
+            : candidate.hasAnalystAction
+              ? "Analyst catalyst"
+              : candidate.hasSectorTailwind
+                ? `${candidate.sector ?? "Sector"} tailwind`
+                : "News catalyst"
+          : "Pre-market flow";
+      const structureLabel = candidate?.setupLabel ?? (kind === "top" ? "High momentum" : "Expansion forming");
+      const whyThisSetup = [
+        `${move >= 0 ? "+" : ""}${move.toFixed(1)}% pre-market move`,
+        rvol > 0 ? `RVOL ${rvol.toFixed(1)}x` : null,
+        volume > 0 ? `Vol ${(volume / 1_000_000).toFixed(volume >= 1_000_000 ? 1 : 2)}M` : null,
+        catalystLabel,
+      ].filter(Boolean).join(" • ");
+      const score = Math.max(
+        35,
+        Math.min(99, Math.round(Math.abs(move) * 8 + rvol * 12 + volume / 1_000_000 + Math.max(0, 12 - index)))
+      );
+
+      return {
+        bucket: kind,
+        ticker: row.ticker,
+        name: candidate?.name ?? row.name ?? row.ticker,
+        sector: candidate?.sector ?? null,
+        price,
+        changePercent: move,
+        volume: volume || null,
+        avgVolume: toNumber(candidate?.avgVolume),
+        rvol: rvol || null,
+        marketCap: toNumber(candidate?.marketCap),
+        bias,
+        setupBiasLabel,
+        setupLabel,
+        whyThisSetup,
+        shortReasonTag: kind === "top" ? "pre-market flow" : "emerging pre-market",
+        catalystLabel,
+        structureLabel,
+        score,
+        momentumScore: Math.min(100, Math.round(Math.abs(move) * 10)),
+        liquidityScore: Math.min(100, Math.round(volume / 250_000) * 10),
+        rvolScore: Math.min(100, Math.round(rvol * 20)),
+        catalystScore: candidate?.hasNews || candidate?.hasEarnings || candidate?.hasAnalystAction || candidate?.hasSectorTailwind ? 75 : 35,
+        technicalScore: toNumber(candidate?.technicalScore) ?? toNumber(candidate?.score) ?? score,
+        trendAlignmentScore: bias === "neutral" ? 45 : 75,
+        qualityScore: toNumber(candidate?.marketCap) && (toNumber(candidate?.marketCap) ?? 0) >= 2_000_000_000 ? 60 : 40,
+        floatExpansionScore: 40,
+        hasMajorNews: Boolean(candidate?.hasNews),
+        hasEarnings: Boolean(candidate?.hasEarnings),
+        hasAnalystAction: Boolean(candidate?.hasAnalystAction),
+        hasSectorTailwind: Boolean(candidate?.hasSectorTailwind),
+        isMajorIndexMember: Boolean(candidate?.majorIndexMember),
+      } satisfies RankedSetupItem;
+    });
 }
 
 function buildCommandCenterGainers(
@@ -883,8 +987,8 @@ export async function getTodayPageData(): Promise<TodayPageData> {
   const defaultSetupSession: TodaySetupSession = isPreMarketNow() ? "pre" : "regular";
 
   const [
-    preMarketTopSetups,
-    preMarketEmergingSetups,
+    computedPreMarketTopSetups,
+    computedPreMarketEmergingSetups,
     regularMostTradedRows,
     preMarketRows,
     trendingNews,
@@ -911,7 +1015,38 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     ),
   ]);
 
+  const preMarketSourceRowCount = countPreMarketSourceRows(setupDiscovery);
   const preMarketRawCandidateCount = countPreMarketQualifiedCandidates(setupDiscovery);
+  const preMarketEmergingCandidateCount = countPreMarketEmergingCandidates(setupDiscovery);
+  const fallbackPreMarketTopSetups = buildPreMarketFallbackRankedItems(
+    preMarketRows,
+    setupDiscovery.candidates,
+    "top"
+  );
+  const preMarketTopSetups =
+    computedPreMarketTopSetups.length > 0
+      ? computedPreMarketTopSetups
+      : fallbackPreMarketTopSetups;
+  const preMarketTopFallbackUsed =
+    computedPreMarketTopSetups.length === 0 && preMarketTopSetups.length > 0;
+  const fallbackPreMarketEmergingSetups = buildPreMarketFallbackRankedItems(
+    preMarketRows,
+    setupDiscovery.candidates,
+    "emerging",
+    new Set(preMarketTopSetups.map((item) => item.ticker))
+  );
+  const preMarketEmergingSetups =
+    computedPreMarketEmergingSetups.length > 0
+      ? computedPreMarketEmergingSetups
+      : fallbackPreMarketEmergingSetups;
+  const preMarketEmergingFallbackUsed =
+    computedPreMarketEmergingSetups.length === 0 && preMarketEmergingSetups.length > 0;
+
+  if (isPreMarketNow()) {
+    console.log(
+      `[Today premarket] source=${preMarketSourceRowCount} qualifiedTop=${preMarketRawCandidateCount} qualifiedEmerging=${preMarketEmergingCandidateCount} renderedTop=${preMarketTopSetups.length} renderedEmerging=${preMarketEmergingSetups.length} fallbackTop=${preMarketTopFallbackUsed} fallbackEmerging=${preMarketEmergingFallbackUsed} moverRows=${preMarketRows.length}`
+    );
+  }
 
   const pulseTickers = Array.from(
     new Set([
@@ -1031,9 +1166,13 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     defaultSetupSession,
     topSetups,
     preMarketTopSetups: enrichedPreMarketTopSetups,
+    preMarketSourceRowCount,
     preMarketRawCandidateCount,
     emergingSetups: setupDiscovery.emerging,
     preMarketEmergingSetups,
+    preMarketEmergingCandidateCount,
+    preMarketTopFallbackUsed,
+    preMarketEmergingFallbackUsed,
     commandCenterGainers,
     commandCenterLosers,
     commandCenterEarnings,

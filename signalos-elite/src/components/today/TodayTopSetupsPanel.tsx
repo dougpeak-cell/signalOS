@@ -78,12 +78,16 @@ function pulseBadgeClass(tone?: "positive" | "neutral" | "negative" | null) {
 export default function TodayTopSetupsPanel({
   items,
   preMarketItems,
+  preMarketSourceRowCount = 0,
   preMarketRawCandidateCount = 0,
+  preMarketFallbackUsed = false,
   defaultSession = "regular",
 }: {
   items: TodaySetupItem[];
   preMarketItems: TodaySetupItem[];
+  preMarketSourceRowCount?: number;
   preMarketRawCandidateCount?: number;
+  preMarketFallbackUsed?: boolean;
   defaultSession?: SetupSession;
 }) {
   const [sessionView, setSessionView] = useState<SetupSession>(() =>
@@ -93,12 +97,30 @@ export default function TodayTopSetupsPanel({
   const preMarketActive = isPreMarketNow();
   const preMarketRows = preMarketActive && preMarketItems.length ? preMarketItems : [];
   const preMarketMessage = preMarketActive
-    ? "Pre-market is active. No qualified setups are passing filters yet."
+    ? preMarketSourceRowCount === 0
+      ? "Pre-market is active, but the source feed has not returned rows yet."
+      : "Pre-market is active. No qualified setups are passing filters yet."
     : "Pre-market opens at 4:00 AM ET.";
   const preMarketFilteredCount = Math.max(
     0,
     preMarketRawCandidateCount - preMarketItems.length
   );
+  const preMarketHealthLabel =
+    preMarketSourceRowCount === 0
+      ? "Source empty"
+      : preMarketFallbackUsed
+        ? "Fallback movers"
+        : preMarketRawCandidateCount === 0
+          ? "Filtered"
+          : "Live feed";
+  const preMarketHealthTone =
+    preMarketSourceRowCount === 0
+      ? "border-rose-400/20 bg-rose-400/10 text-rose-200"
+      : preMarketFallbackUsed
+        ? "border-amber-400/20 bg-amber-400/10 text-amber-200"
+        : preMarketRawCandidateCount === 0
+          ? "border-white/10 bg-white/5 text-white/70"
+          : "border-emerald-400/20 bg-emerald-400/10 text-emerald-200";
 
   const activeSetups = useMemo(
     () => (sessionView === "pre" ? preMarketRows : items).slice(0, 4),
@@ -146,17 +168,34 @@ export default function TodayTopSetupsPanel({
       />
 
       {sessionView === "pre" ? (
+        <>
         <div className="mt-3 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.16em] text-white/40">
-          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
-            Raw: {preMarketRawCandidateCount}
+          <span className={`rounded-full border px-2 py-1 ${preMarketHealthTone}`}>
+            {preMarketHealthLabel}
           </span>
           <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
-            Displayed: {preMarketItems.length}
+            Source: {preMarketSourceRowCount}
+          </span>
+          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
+            Qualified: {preMarketRawCandidateCount}
+          </span>
+          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
+            Rendered: {preMarketItems.length}
           </span>
           <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
             Filtered Out: {preMarketFilteredCount}
           </span>
         </div>
+        <div className="mt-2 text-xs text-white/45">
+          {preMarketSourceRowCount === 0
+            ? "No pre-market rows have reached Today from the mover source yet."
+            : preMarketFallbackUsed
+              ? "Using direct pre-market mover rows because setup qualification returned zero names."
+              : preMarketRawCandidateCount === 0
+                ? "Source rows are present, but they were filtered out before rendering."
+                : "Pre-market source rows are flowing and qualifying normally."}
+        </div>
+        </>
       ) : null}
 
       <div className="space-y-3">

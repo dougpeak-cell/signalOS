@@ -22,9 +22,13 @@ export default async function TodayPage({
       defaultSetupSession={todayPageData.defaultSetupSession}
       topSetups={todayPageData.topSetups}
       preMarketTopSetups={todayPageData.preMarketTopSetups}
+      preMarketSourceRowCount={todayPageData.preMarketSourceRowCount}
       preMarketRawCandidateCount={todayPageData.preMarketRawCandidateCount}
       emergingSetups={todayPageData.emergingSetups}
       preMarketEmergingSetups={todayPageData.preMarketEmergingSetups}
+      preMarketEmergingCandidateCount={todayPageData.preMarketEmergingCandidateCount}
+      preMarketTopFallbackUsed={todayPageData.preMarketTopFallbackUsed}
+      preMarketEmergingFallbackUsed={todayPageData.preMarketEmergingFallbackUsed}
       commandCenterGainers={todayPageData.commandCenterGainers}
       commandCenterLosers={todayPageData.commandCenterLosers}
       commandCenterEarnings={todayPageData.commandCenterEarnings}

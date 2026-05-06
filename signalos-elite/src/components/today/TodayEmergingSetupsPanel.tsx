@@ -59,10 +59,16 @@ function emergingTag(item: {
 export default function TodayEmergingSetupsPanel({
   items,
   preMarketItems,
+  preMarketSourceRowCount = 0,
+  preMarketQualifiedCount = 0,
+  preMarketFallbackUsed = false,
   defaultSession = "regular",
 }: {
   items: RankedSetupItem[];
   preMarketItems: RankedSetupItem[];
+  preMarketSourceRowCount?: number;
+  preMarketQualifiedCount?: number;
+  preMarketFallbackUsed?: boolean;
   defaultSession?: SetupSession;
 }) {
   const [sessionView, setSessionView] = useState<SetupSession>(defaultSession);
@@ -78,6 +84,22 @@ export default function TodayEmergingSetupsPanel({
       ? "Early expansion names showing speculative flow and unusual pre-market activity."
       : "Higher-energy names showing expansion and unusual activity.";
   const emergingHref = `/screener/setups?view=emerging&session=${sessionView}`;
+  const preMarketHealthLabel =
+    preMarketSourceRowCount === 0
+      ? "Source empty"
+      : preMarketFallbackUsed
+        ? "Fallback movers"
+        : preMarketQualifiedCount === 0
+          ? "Filtered"
+          : "Live feed";
+  const preMarketHealthTone =
+    preMarketSourceRowCount === 0
+      ? "border-rose-400/20 bg-rose-400/10 text-rose-200"
+      : preMarketFallbackUsed
+        ? "border-amber-400/20 bg-amber-400/10 text-amber-200"
+        : preMarketQualifiedCount === 0
+          ? "border-white/10 bg-white/5 text-white/70"
+          : "border-emerald-400/20 bg-emerald-400/10 text-emerald-200";
 
   return (
     <section className="rounded-2xl border border-cyan-500/20 bg-slate-950/88 p-5 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
@@ -108,6 +130,34 @@ export default function TodayEmergingSetupsPanel({
           </div>
         }
       />
+
+      {sessionView === "pre" ? (
+        <>
+          <div className="mt-3 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.16em] text-white/40">
+            <span className={`rounded-full border px-2 py-1 ${preMarketHealthTone}`}>
+              {preMarketHealthLabel}
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
+              Source: {preMarketSourceRowCount}
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
+              Qualified: {preMarketQualifiedCount}
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
+              Rendered: {preMarketItems.length}
+            </span>
+          </div>
+          <div className="mt-2 text-xs text-white/45">
+            {preMarketSourceRowCount === 0
+              ? "No pre-market rows have reached Today from the mover source yet."
+              : preMarketFallbackUsed
+                ? "Using direct pre-market mover rows because emerging qualification returned zero names."
+                : preMarketQualifiedCount === 0
+                  ? "Source rows are present, but none qualified for the emerging panel."
+                  : "Pre-market emerging names are qualifying normally."}
+          </div>
+        </>
+      ) : null}
 
       <div className="space-y-3">
         {emergingSetups.length ? (

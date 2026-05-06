@@ -22,9 +22,13 @@ type TodayPageShellProps = Pick<
 	| "defaultSetupSession"
 	| "topSetups"
 	| "preMarketTopSetups"
+	| "preMarketSourceRowCount"
 	| "preMarketRawCandidateCount"
 	| "emergingSetups"
 	| "preMarketEmergingSetups"
+	| "preMarketEmergingCandidateCount"
+	| "preMarketTopFallbackUsed"
+	| "preMarketEmergingFallbackUsed"
 	| "commandCenterGainers"
 	| "commandCenterLosers"
 	| "commandCenterEarnings"
@@ -47,9 +51,13 @@ export default function TodayPageShell({
 	defaultSetupSession,
 	topSetups,
 	preMarketTopSetups,
+	preMarketSourceRowCount,
 	preMarketRawCandidateCount,
 	emergingSetups,
 	preMarketEmergingSetups,
+	preMarketEmergingCandidateCount,
+	preMarketTopFallbackUsed,
+	preMarketEmergingFallbackUsed,
 	commandCenterGainers,
 	commandCenterLosers,
 	commandCenterEarnings,
@@ -103,12 +111,17 @@ export default function TodayPageShell({
 						<TodayTopSetupsPanel
 							items={topSetups}
 							preMarketItems={preMarketTopSetups}
+							preMarketSourceRowCount={preMarketSourceRowCount}
 							preMarketRawCandidateCount={preMarketRawCandidateCount}
+							preMarketFallbackUsed={preMarketTopFallbackUsed}
 							defaultSession={defaultSetupSession}
 						/>
 						<TodayEmergingSetupsPanel
 							items={emergingSetups}
 							preMarketItems={preMarketEmergingSetups}
+							preMarketSourceRowCount={preMarketSourceRowCount}
+							preMarketQualifiedCount={preMarketEmergingCandidateCount}
+							preMarketFallbackUsed={preMarketEmergingFallbackUsed}
 							defaultSession={defaultSetupSession}
 						/>
 					</section>
