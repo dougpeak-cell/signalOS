@@ -4434,7 +4434,7 @@ const gapFillLabel =
         ) : null}
 
         <div
-          className={`glow-panel relative mt-4 rounded-3xl p-2 transition-all duration-300 sm:p-2.5 ${signalGlow(
+          className={`glow-panel relative mt-4 rounded-3xl p-0.5 transition-all duration-300 sm:p-2.5 ${signalGlow(
             activeSignalLabel
           )}`}
         >

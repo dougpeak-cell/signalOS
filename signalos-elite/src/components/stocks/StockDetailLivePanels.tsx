@@ -665,7 +665,7 @@ export default function StockDetailLivePanels({
         </details>
 
         <div className="mt-5 overflow-hidden rounded-3xl border border-cyan-400/15 bg-[radial-gradient(circle_at_top,rgba(0,160,255,0.08),transparent_28%),linear-gradient(180deg,rgba(5,10,20,0.96),rgba(0,0,0,0.98))] shadow-[0_0_45px_rgba(0,145,255,0.08)]">
-          <div className="min-h-220 w-full p-2 md:p-3">
+          <div className="min-h-220 w-full p-0.5 md:p-3">
             <div className="h-full overflow-hidden rounded-[20px] border border-cyan-400/12 bg-black/70 shadow-[inset_0_0_25px_rgba(0,140,255,0.08)]">
               <div className="min-h-220 w-full">
                 <LiveStockChart
