@@ -88,6 +88,38 @@ function round2(value: number | null) {
     : null;
 }
 
+function getDirectionalLevelCopy(
+  bias: string | null | undefined,
+  level: "stop" | "target"
+) {
+  const normalizedBias = String(bias ?? "").toLowerCase();
+
+  if (level === "stop") {
+    if (normalizedBias === "bearish") {
+      return { label: "Stop Above", detail: "above entry" };
+    }
+
+    if (normalizedBias === "bullish") {
+      return { label: "Stop Below", detail: "below entry" };
+    }
+  }
+
+  if (level === "target") {
+    if (normalizedBias === "bearish") {
+      return { label: "Target Below", detail: "below entry" };
+    }
+
+    if (normalizedBias === "bullish") {
+      return { label: "Target Above", detail: "above entry" };
+    }
+  }
+
+  return {
+    label: level === "stop" ? "Stop" : "Target",
+    detail: null,
+  };
+}
+
 function inferBias(
   selectedSignal?: SignalLike,
   brief?: TradeBriefLike | null,
@@ -427,6 +459,8 @@ export default function TradeBriefPanel({
     : hasGeneratedTrade
       ? "Generated Setup"
       : "No Active Signal";
+  const stopCopy = getDirectionalLevelCopy(safeBrief.bias, "stop");
+  const targetCopy = getDirectionalLevelCopy(safeBrief.bias, "target");
 
   return (
     <section className="rounded-[28px] border border-cyan-500/15 bg-[linear-gradient(180deg,rgba(10,16,33,0.95),rgba(7,11,22,0.98))] p-5 shadow-[0_0_0_1px_rgba(0,255,200,0.03),0_0_20px_rgba(0,255,200,0.05)]">
@@ -477,20 +511,30 @@ export default function TradeBriefPanel({
 
         <div className="rounded-2xl border border-white/10 bg-white/3 p-4">
           <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-            Stop
+            {stopCopy.label}
           </div>
           <div className="mt-2 text-lg font-semibold text-white">
             {formatPrice(safeBrief.stop)}
           </div>
+          {stopCopy.detail ? (
+            <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/38">
+              {stopCopy.detail}
+            </div>
+          ) : null}
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/3 p-4">
           <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-            Target
+            {targetCopy.label}
           </div>
           <div className="mt-2 text-lg font-semibold text-white">
             {formatPrice(safeBrief.target)}
           </div>
+          {targetCopy.detail ? (
+            <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/38">
+              {targetCopy.detail}
+            </div>
+          ) : null}
         </div>
       </div>
 
