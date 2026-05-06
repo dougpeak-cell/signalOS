@@ -13,6 +13,7 @@ type Props = {
   footer?: ReactNode;
   initialFocusRef?: RefObject<HTMLElement | null>;
   forceVisible?: boolean;
+  backdropClassName?: string;
 };
 
 export default function MobileSignalSheet({
@@ -24,6 +25,7 @@ export default function MobileSignalSheet({
   footer,
   initialFocusRef,
   forceVisible = false,
+  backdropClassName = "bg-black/72 backdrop-blur-sm",
 }: Props) {
   const mobilePreviewWidth = useResponsiveMobilePreviewWidth(forceVisible);
 
@@ -60,7 +62,7 @@ export default function MobileSignalSheet({
         type="button"
         aria-label="Close sheet"
         onClick={onClose}
-        className="absolute inset-0 bg-black/72 backdrop-blur-sm"
+        className={`absolute inset-0 ${backdropClassName}`}
       />
 
       <div

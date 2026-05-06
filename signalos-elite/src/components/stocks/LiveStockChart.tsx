@@ -4035,6 +4035,7 @@ const gapFillLabel =
           onClose={() => setIsMobileControlSheetOpen(false)}
           title={`${symbol} Chart Controls`}
           subtitle="Timeframes, anchors, and live chart tools tuned for mobile."
+          backdropClassName="bg-transparent"
         >
           <div className="space-y-4">
             <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
