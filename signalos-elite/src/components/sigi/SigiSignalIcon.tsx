@@ -7,10 +7,12 @@ export default function SigiSignalIcon({
   size?: number;
   pulse?: boolean;
 }) {
+  const height = Math.round((size * 150) / 260);
+
   return (
     <div
       className="transition group-hover:scale-105"
-      style={{ width: size, height: (size * 150) / 260 }}
+      style={{ width: size, height }}
     >
       <SigiEyeLogo className="h-full w-full" animate={pulse} />
     </div>

@@ -19,10 +19,12 @@ export default function SigiEyeLogo({
       role="img"
       aria-label="SigiOS scanning eye logo"
       xmlns="http://www.w3.org/2000/svg"
+      shapeRendering="geometricPrecision"
+      textRendering="geometricPrecision"
     >
       <defs>
         <filter id={glowFilterId} x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="4" result="blur" />
+          <feGaussianBlur stdDeviation="2.2" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
