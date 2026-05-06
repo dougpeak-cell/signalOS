@@ -627,14 +627,14 @@ export default function StockDetailLivePanels({
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-left">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/75">
-                Chart Controls
+                Quick Actions
               </div>
               <div className="mt-1 text-sm text-white/58">
                 Quick workspace, watchlist, and portfolio actions.
               </div>
             </div>
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
-              Open
+              Actions
             </span>
           </summary>
 
