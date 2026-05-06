@@ -77,15 +77,21 @@ export default function MobileSignalSheet({
       <div
         className="fixed inset-x-0 bottom-0 z-50 min-h-[72vh] overflow-hidden rounded-t-4xl border border-cyan-400/20 bg-slate-950/95 px-5 pb-6 pt-4 shadow-[0_-20px_60px_rgba(34,211,238,0.20)] backdrop-blur-2xl"
         style={
-          forceDesktopPreview
-            ? {
-                left: "50%",
-                right: "auto",
-                width: "100%",
-                maxWidth: `${mobilePreviewWidth}px`,
-                transform: "translateX(-50%)",
-              }
-            : undefined
+          {
+            paddingTop: "max(1rem, env(safe-area-inset-top))",
+            paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
+            paddingLeft: "max(1.25rem, env(safe-area-inset-left))",
+            paddingRight: "max(1.25rem, env(safe-area-inset-right))",
+            ...(forceDesktopPreview
+              ? {
+                  left: "50%",
+                  right: "auto",
+                  width: "100%",
+                  maxWidth: `${mobilePreviewWidth}px`,
+                  transform: "translateX(-50%)",
+                }
+              : null),
+          }
         }
       >
         <div className="mx-auto flex w-14 justify-center pt-3">
@@ -104,7 +110,7 @@ export default function MobileSignalSheet({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-sm font-semibold text-white/76 transition hover:bg-white/10 hover:text-white"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center self-start rounded-2xl border border-white/10 bg-white/5 px-3 text-sm font-semibold text-white/76 transition hover:bg-white/10 hover:text-white"
           >
             Close
           </button>
