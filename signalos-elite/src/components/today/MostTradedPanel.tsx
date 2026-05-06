@@ -101,6 +101,23 @@ export default function MostTradedPanel({
     ? "Pre-market is active. No qualified setups are passing filters yet."
     : "Pre-market opens at 4:00 AM ET.";
 
+  useEffect(() => {
+    const syncSessionView = () => {
+      setSessionView((current) => {
+        const expected = isPreMarketNow() ? "pre" : "regular";
+        return current === expected ? current : expected;
+      });
+    };
+
+    syncSessionView();
+
+    const intervalId = window.setInterval(syncSessionView, 60_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
   const activeMostTradedRows = useMemo(() => {
     return sessionView === "pre" ? filteredPreMarketRows : regularMostTraded;
   }, [sessionView, filteredPreMarketRows, regularMostTraded]);
