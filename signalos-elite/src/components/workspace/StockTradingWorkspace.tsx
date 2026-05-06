@@ -269,8 +269,8 @@ export default function StockTradingWorkspace({ data }: Props) {
   const activeLayout = isMobilePreview
     ? {
         ...WORKSPACE_LAYOUT_META["chart-full"],
-        chartMinHeightClassName: "min-h-[420px]",
-        chartInnerMinHeightClassName: "min-h-[400px]",
+        chartMinHeightClassName: "min-h-[340px]",
+        chartInnerMinHeightClassName: "min-h-[320px]",
       }
     : WORKSPACE_LAYOUT_META[workspaceConfig.layout];
   const modeMeta = WORKSPACE_MODE_META[workspaceMode];

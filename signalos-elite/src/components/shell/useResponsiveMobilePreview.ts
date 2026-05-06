@@ -6,13 +6,13 @@ type MobilePreviewMode = "standard" | "dense";
 
 function getPreviewWidth(mode: MobilePreviewMode) {
   if (typeof window === "undefined") {
-    return mode === "dense" ? 500 : 430;
+    return mode === "dense" ? 560 : 468;
   }
 
   const viewportWidth = window.innerWidth;
-  const gutter = viewportWidth >= 900 ? 24 : 16;
+  const gutter = 0;
   const maxUsableWidth = Math.max(320, viewportWidth - gutter * 2);
-  const targetWidth = mode === "dense" ? 500 : 430;
+  const targetWidth = mode === "dense" ? 560 : 468;
 
   return Math.min(maxUsableWidth, targetWidth);
 }
@@ -21,7 +21,7 @@ export function useResponsiveMobilePreviewWidth(
   enabled: boolean,
   mode: MobilePreviewMode = "standard"
 ) {
-  const [previewWidth, setPreviewWidth] = useState(430);
+  const [previewWidth, setPreviewWidth] = useState(468);
 
   useEffect(() => {
     if (!enabled) {

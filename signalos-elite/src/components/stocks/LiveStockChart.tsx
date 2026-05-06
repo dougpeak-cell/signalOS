@@ -206,6 +206,8 @@ type VwapAnchorMode = "day-open" | "session-high" | "session-low" | "custom";
 type Timeframe = number;
 type ChartRange = "1D" | "5D" | "1M" | "6M" | "1Y" | "5Y";
 type ChartInterval = "1m" | "2m" | "3m" | "5m" | "10m" | "15m" | "1h" | "1d" | "1w";
+type CandleDensityMode = "more" | "standard" | "fewer";
+type PriceScaleMode = "compressed" | "standard" | "expanded";
 
 type BaseBar = {
   time: number;
@@ -460,6 +462,56 @@ const ALLOWED_INTERVALS_BY_RANGE: Record<ChartRange, readonly ChartInterval[]> =
 };
 
 const LIVE_CHART_AUTO_FOLLOW_STORAGE_KEY = "signalos.live-chart.auto-follow.v1";
+const LIVE_CHART_AUTO_FOLLOW_LOCK_STORAGE_KEY = "signalos.live-chart.auto-follow-lock.v1";
+const LIVE_CHART_CANDLE_DENSITY_STORAGE_KEY = "signalos.live-chart.candle-density.v1";
+const LIVE_CHART_PRICE_SCALE_STORAGE_KEY = "signalos.live-chart.price-scale.v1";
+
+const CANDLE_DENSITY_LABELS: Record<CandleDensityMode, string> = {
+  more: "More Candles",
+  standard: "Standard Density",
+  fewer: "Fewer Candles",
+};
+
+const PRICE_SCALE_LABELS: Record<PriceScaleMode, string> = {
+  compressed: "Compress Scale",
+  standard: "Standard Scale",
+  expanded: "Expand Scale",
+};
+
+function getBarSpacingForViewport(mode: CandleDensityMode) {
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+
+  if (isMobile) {
+    if (mode === "more") return 8;
+    if (mode === "fewer") return 16;
+    return 12;
+  }
+
+  if (mode === "more") return 5;
+  if (mode === "fewer") return 9;
+  return 7;
+}
+
+function getPriceScaleMargins(mode: PriceScaleMode) {
+  if (mode === "compressed") {
+    return {
+      top: 0.22,
+      bottom: 0.12,
+    };
+  }
+
+  if (mode === "expanded") {
+    return {
+      top: 0.08,
+      bottom: 0.02,
+    };
+  }
+
+  return {
+    top: 0.14,
+    bottom: 0.05,
+  };
+}
 
 function intervalToMinutes(interval: ChartInterval): number {
   switch (interval) {
@@ -1175,6 +1227,9 @@ export default function LiveStockChart({
   const [chartInterval, setChartInterval] = useState<ChartInterval>("1m");
   const [liveCandleEnabled, setLiveCandleEnabled] = useState(false);
   const [autoFollowEnabled, setAutoFollowEnabled] = useState(false);
+  const [autoFollowLockOff, setAutoFollowLockOff] = useState(false);
+  const [candleDensityMode, setCandleDensityMode] = useState<CandleDensityMode>("standard");
+  const [priceScaleMode, setPriceScaleMode] = useState<PriceScaleMode>("standard");
   const [vwapAnchorMode, setVwapAnchorMode] = useState<VwapAnchorMode>("day-open");
   const [customAnchorTime, setCustomAnchorTime] = useState<number | null>(null);
   const [focusMode, setFocusMode] = useState<boolean>(focusModeProp ?? expanded);
@@ -1246,7 +1301,23 @@ export default function LiveStockChart({
   );
 
   const handleAutoFollowToggle = useCallback(() => {
+    if (autoFollowLockOff && !autoFollowEnabled) {
+      return;
+    }
+
     setAutoFollowEnabled((value) => !value);
+  }, [autoFollowEnabled, autoFollowLockOff]);
+
+  const handleAutoFollowLockToggle = useCallback(() => {
+    setAutoFollowLockOff((value) => {
+      const next = !value;
+
+      if (next) {
+        setAutoFollowEnabled(false);
+      }
+
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -1259,11 +1330,41 @@ export default function LiveStockChart({
     autoFollowPreferenceLoadedRef.current = true;
 
     try {
-      setAutoFollowEnabled(
-        window.localStorage.getItem(LIVE_CHART_AUTO_FOLLOW_STORAGE_KEY) === "1"
+      const savedAutoFollowLockedOff =
+        window.localStorage.getItem(LIVE_CHART_AUTO_FOLLOW_LOCK_STORAGE_KEY) === "1";
+      const savedCandleDensity = window.localStorage.getItem(
+        LIVE_CHART_CANDLE_DENSITY_STORAGE_KEY
       );
+      const savedPriceScale = window.localStorage.getItem(
+        LIVE_CHART_PRICE_SCALE_STORAGE_KEY
+      );
+
+      setAutoFollowLockOff(savedAutoFollowLockedOff);
+      setAutoFollowEnabled(
+        !savedAutoFollowLockedOff &&
+          window.localStorage.getItem(LIVE_CHART_AUTO_FOLLOW_STORAGE_KEY) === "1"
+      );
+
+      if (
+        savedCandleDensity === "more" ||
+        savedCandleDensity === "standard" ||
+        savedCandleDensity === "fewer"
+      ) {
+        setCandleDensityMode(savedCandleDensity);
+      }
+
+      if (
+        savedPriceScale === "compressed" ||
+        savedPriceScale === "standard" ||
+        savedPriceScale === "expanded"
+      ) {
+        setPriceScaleMode(savedPriceScale);
+      }
     } catch {
       setAutoFollowEnabled(false);
+      setAutoFollowLockOff(false);
+      setCandleDensityMode("standard");
+      setPriceScaleMode("standard");
     }
   }, []);
 
@@ -1279,6 +1380,42 @@ export default function LiveStockChart({
       // ignore storage failures
     }
   }, [autoFollowEnabled]);
+
+  useEffect(() => {
+    if (!autoFollowPreferenceLoadedRef.current) return;
+
+    try {
+      window.localStorage.setItem(
+        LIVE_CHART_AUTO_FOLLOW_LOCK_STORAGE_KEY,
+        autoFollowLockOff ? "1" : "0"
+      );
+    } catch {
+      // ignore storage failures
+    }
+  }, [autoFollowLockOff]);
+
+  useEffect(() => {
+    if (!autoFollowPreferenceLoadedRef.current) return;
+
+    try {
+      window.localStorage.setItem(
+        LIVE_CHART_CANDLE_DENSITY_STORAGE_KEY,
+        candleDensityMode
+      );
+      window.localStorage.setItem(
+        LIVE_CHART_PRICE_SCALE_STORAGE_KEY,
+        priceScaleMode
+      );
+    } catch {
+      // ignore storage failures
+    }
+  }, [candleDensityMode, priceScaleMode]);
+
+  useEffect(() => {
+    if (autoFollowLockOff && autoFollowEnabled) {
+      setAutoFollowEnabled(false);
+    }
+  }, [autoFollowEnabled, autoFollowLockOff]);
 
   useEffect(() => {
     initialLiveRangeAppliedRef.current = false;
@@ -2655,7 +2792,7 @@ useEffect(() => {
         horzLines: { color: "rgba(255,255,255,0.07)", visible: true },
       },
       timeScale: {
-        barSpacing: isMobile ? 10 : 6,
+        barSpacing: getBarSpacingForViewport(candleDensityMode),
         rightOffset: getRightOffsetForViewport(),
         borderVisible: false,
         timeVisible: true,
@@ -2664,10 +2801,7 @@ useEffect(() => {
       },
       rightPriceScale: {
         borderVisible: false,
-        scaleMargins: {
-          top: 0.14,
-          bottom: 0.05,
-        },
+        scaleMargins: getPriceScaleMargins(priceScaleMode),
       },
       crosshair: {
         mode: 0,
@@ -2676,7 +2810,7 @@ useEffect(() => {
         mouseWheel: true,
         pressedMouseMove: true,
         horzTouchDrag: true,
-        vertTouchDrag: false,
+        vertTouchDrag: true,
       },
       handleScale: {
         axisPressedMouseMove: true,
@@ -2759,8 +2893,11 @@ useEffect(() => {
       chart.applyOptions({
         timeScale: {
           rightOffset: getRightOffsetForViewport(),
-          barSpacing: typeof window !== "undefined" && window.innerWidth < 640 ? 14 : 10,
+          barSpacing: getBarSpacingForViewport(candleDensityMode),
           minBarSpacing: 6,
+        },
+        rightPriceScale: {
+          scaleMargins: getPriceScaleMargins(priceScaleMode),
         },
       });
     };
@@ -2799,7 +2936,22 @@ useEffect(() => {
       heatPriceLinesRef.current = [];
       selectedSignalPriceLineRef.current = null;
     };
-  }, []);
+  }, [candleDensityMode, priceScaleMode]);
+
+  useEffect(() => {
+    const chart = chartApiRef.current;
+    if (!chart) return;
+
+    chart.applyOptions({
+      timeScale: {
+        barSpacing: getBarSpacingForViewport(candleDensityMode),
+        minBarSpacing: 6,
+      },
+      rightPriceScale: {
+        scaleMargins: getPriceScaleMargins(priceScaleMode),
+      },
+    });
+  }, [candleDensityMode, priceScaleMode]);
 
   useEffect(() => {
     const chart = chartApiRef.current;
@@ -3214,7 +3366,8 @@ useEffect(() => {
     const defaultBarsToShow = getSmartBarsToShow(displayBars, timeframe);
     const timeframeChanged = previousTimeframeRef.current !== timeframe;
     const shouldApplyLiveRange =
-      autoFollowEnabled || timeframeChanged || !initialLiveRangeAppliedRef.current;
+      (!autoFollowLockOff && (autoFollowEnabled || timeframeChanged)) ||
+      !initialLiveRangeAppliedRef.current;
 
     if (shouldApplyLiveRange) {
       const nextSpan = timeframeChanged
@@ -3237,12 +3390,12 @@ useEffect(() => {
       previousTimeframeRef.current = timeframe;
       liveRangeSpanRef.current = Math.max(20, to - from);
 
-      if (timeframeChanged || autoFollowEnabled) {
+      if ((!autoFollowLockOff && timeframeChanged) || autoFollowEnabled) {
         userDetachedFromLiveRef.current = false;
         setShowReturnToLive(false);
       }
     }
-  }, [autoFollowEnabled, displayBars.length, timeframe]);
+  }, [autoFollowEnabled, autoFollowLockOff, displayBars.length, timeframe]);
 
   const livePrice = snapshot?.lastPrice ?? currentPrice ?? null;
   const liveOpen = snapshot?.open ?? null;
@@ -3615,13 +3768,56 @@ const gapFillLabel =
               <button
                 type="button"
                 onClick={handleAutoFollowToggle}
+                disabled={autoFollowLockOff && !autoFollowEnabled}
                 className={`inline-flex min-h-11 items-center rounded-2xl border px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
                   autoFollowEnabled
                     ? "border-cyan-400/30 bg-cyan-400/12 text-cyan-100"
                     : "border-white/10 bg-white/5 text-white/72"
+                } ${autoFollowLockOff && !autoFollowEnabled ? "cursor-not-allowed opacity-60" : ""}`}
+              >
+                {autoFollowLockOff
+                  ? "Auto-follow Locked Off"
+                  : `Auto-follow ${autoFollowEnabled ? "On" : "Off"}`}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleAutoFollowLockToggle}
+                className={`inline-flex min-h-11 items-center rounded-2xl border px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                  autoFollowLockOff
+                    ? "border-amber-400/30 bg-amber-400/12 text-amber-100"
+                    : "border-white/10 bg-white/5 text-white/72"
                 }`}
               >
-                Auto-follow {autoFollowEnabled ? "On" : "Off"}
+                {autoFollowLockOff ? "Lock Off On" : "Lock Off"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setCandleDensityMode((value) =>
+                    value === "more" ? "standard" : value === "standard" ? "fewer" : "more"
+                  )
+                }
+                className="inline-flex min-h-11 items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/84 transition"
+              >
+                {CANDLE_DENSITY_LABELS[candleDensityMode]}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPriceScaleMode((value) =>
+                    value === "compressed"
+                      ? "standard"
+                      : value === "standard"
+                        ? "expanded"
+                        : "compressed"
+                  )
+                }
+                className="inline-flex min-h-11 items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/84 transition"
+              >
+                {PRICE_SCALE_LABELS[priceScaleMode]}
               </button>
 
               <button
@@ -3822,17 +4018,72 @@ const gapFillLabel =
                 })}
               </div>
 
+              <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
+                Candle Density
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(["more", "standard", "fewer"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setCandleDensityMode(mode)}
+                    className={`min-h-11 rounded-xl border px-4 text-sm transition ${
+                      candleDensityMode === mode
+                        ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-200"
+                        : "border-white/10 bg-white/5 text-white/80"
+                    }`}
+                  >
+                    {CANDLE_DENSITY_LABELS[mode]}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
+                Price Scale
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(["compressed", "standard", "expanded"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setPriceScaleMode(mode)}
+                    className={`min-h-11 rounded-xl border px-4 text-sm transition ${
+                      priceScaleMode === mode
+                        ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-200"
+                        : "border-white/10 bg-white/5 text-white/80"
+                    }`}
+                  >
+                    {PRICE_SCALE_LABELS[mode]}
+                  </button>
+                ))}
+              </div>
+
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={handleAutoFollowToggle}
+                  disabled={autoFollowLockOff && !autoFollowEnabled}
                   className={`inline-flex min-h-11 items-center rounded-xl border px-4 text-xs font-semibold uppercase tracking-[0.14em] transition ${
                     autoFollowEnabled
                       ? "border-cyan-400/35 bg-cyan-400/12 text-cyan-200"
                       : "border-white/10 bg-white/5 text-white/72 hover:border-cyan-400/25 hover:text-cyan-200"
+                  } ${autoFollowLockOff && !autoFollowEnabled ? "cursor-not-allowed opacity-60" : ""}`}
+                >
+                  {autoFollowLockOff
+                    ? "Auto-follow Locked Off"
+                    : `Auto-follow ${autoFollowEnabled ? "On" : "Off"}`}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleAutoFollowLockToggle}
+                  className={`inline-flex min-h-11 items-center rounded-xl border px-4 text-xs font-semibold uppercase tracking-[0.14em] transition ${
+                    autoFollowLockOff
+                      ? "border-amber-400/35 bg-amber-400/12 text-amber-200"
+                      : "border-white/10 bg-white/5 text-white/72 hover:border-amber-400/25 hover:text-amber-200"
                   }`}
                 >
-                  Auto-follow {autoFollowEnabled ? "On" : "Off"}
+                  {autoFollowLockOff ? "Lock Auto-Follow Off On" : "Lock Auto-Follow Off"}
                 </button>
 
                 <button
@@ -3851,6 +4102,10 @@ const gapFillLabel =
                   <span className="mr-2 inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.9)]" />
                   Live Candle
                 </button>
+              </div>
+
+              <div className="mt-3 text-sm text-white/52">
+                Pan left and right to expose more history. Pinch or drag the vertical scale to refine the candle view, and lock auto-follow off when you want the chart to stay in exploration mode.
               </div>
             </div>
 
@@ -4141,7 +4396,7 @@ const gapFillLabel =
               className={
                 isChartFullscreen
                   ? "relative h-screen w-screen overflow-hidden bg-[#11161c]"
-                  : "relative h-180 w-full overflow-hidden rounded-[22px] bg-[#11161c] 2xl:h-195"
+                  : "relative h-104 w-full overflow-hidden rounded-[22px] bg-[#11161c] sm:h-128 xl:h-180 2xl:h-195"
               }
             >
               <div ref={chartHostRef} className="h-full w-full bg-[#11161c]" />
