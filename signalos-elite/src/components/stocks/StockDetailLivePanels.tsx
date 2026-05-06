@@ -205,7 +205,6 @@ export default function StockDetailLivePanels({
   );
   const { watchlistTickerSet } = useStoredWatchlistTickers();
   const isTracked = watchlistTickerSet.has(liveTicker);
-  const isMobilePreview = searchParams.get("mobilePreview") === "1";
 
   function buildPreviewHref(href: string) {
     if (searchParams.get("mobilePreview") !== "1") {
@@ -681,35 +680,6 @@ export default function StockDetailLivePanels({
           </div>
         </div>
       </section>
-
-      {isMobilePreview ? null : (
-        <div className="fixed inset-x-3 bottom-24 z-40 md:hidden">
-          <div className="grid grid-cols-3 gap-2 rounded-[26px] border border-white/10 bg-black/88 p-2 shadow-[0_18px_46px_rgba(0,0,0,0.5)] backdrop-blur-xl">
-            <button
-              type="button"
-              onClick={() => addStoredWatchlistTicker(liveTicker)}
-              disabled={isTracked}
-              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-500/15 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200 disabled:cursor-default disabled:opacity-70"
-            >
-              {isTracked ? "Tracked" : "Watchlist"}
-            </button>
-
-            <Link
-              href={`/portfolio?focus=${liveTicker}`}
-              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-200"
-            >
-              Portfolio
-            </Link>
-
-            <Link
-              href={buildPreviewHref(`/stocks/${liveTicker.toLowerCase()}/workspace`)}
-              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-cyan-400/25 bg-cyan-400/10 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-200"
-            >
-              Workspace
-            </Link>
-          </div>
-        </div>
-      )}
 
       <section className="glow-card rounded-[28px] p-5">
         <div className="flex items-start justify-between gap-4">
