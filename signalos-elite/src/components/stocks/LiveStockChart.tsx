@@ -1155,7 +1155,7 @@ function getLastPriceFromBars(bars: BaseBar[]): number | null {
 
 function getRightOffsetForViewport() {
   if (typeof window === "undefined") return 7;
-  return window.innerWidth < 640 ? 10 : 7;
+  return window.innerWidth < 640 ? 2 : 7;
 }
 
 function isSameBar(a: BaseBar | undefined, b: BaseBar | undefined) {
@@ -2810,7 +2810,7 @@ useEffect(() => {
           color: "#11161c",
         },
         textColor: "#cbd5e1",
-        fontSize: isMobile ? 13 : 11,
+        fontSize: isMobile ? 10 : 11,
       },
       grid: {
         vertLines: { color: "rgba(255,255,255,0.06)", visible: true },
