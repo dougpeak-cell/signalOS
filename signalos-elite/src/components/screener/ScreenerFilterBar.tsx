@@ -104,15 +104,6 @@ export default function ScreenerFilterBar({
     router.replace(buildHref({ query: debouncedQuery }));
   }, [currentQuery, debouncedQuery, router]);
 
-  const resetHref = (() => {
-    const params = new URLSearchParams(searchParams.toString());
-
-    params.delete("q");
-    params.delete("sector");
-
-    return params.toString() ? `${pathname}?${params.toString()}` : pathname;
-  })();
-
   function buildHref(next: {
     query?: string;
     sector?: string;
@@ -145,6 +136,10 @@ export default function ScreenerFilterBar({
     setQuery(nextQuery);
   }
 
+  function submitSearch() {
+    router.replace(buildHref({ query }));
+  }
+
   return (
     <div className="space-y-4 rounded-[26px] border border-cyan-400/16 bg-[linear-gradient(180deg,rgba(7,12,24,0.9),rgba(4,8,18,0.96))] p-4 shadow-[0_0_0_1px_rgba(34,211,238,0.04),0_20px_50px_rgba(0,0,0,0.24)] sm:p-5">
       <div className="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_110px] xl:items-center">
@@ -152,16 +147,23 @@ export default function ScreenerFilterBar({
           type="text"
           value={query}
           onChange={(event) => applySearch(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              submitSearch();
+            }
+          }}
           placeholder="Search ticker or company..."
           className="rounded-2xl border border-cyan-500/20 bg-cyan-500/4 px-4 py-3 text-sm font-medium text-white placeholder:text-white/35 outline-none shadow-[0_0_18px_rgba(0,255,200,0.08)] transition focus:border-cyan-400/40"
         />
 
-        <Link
-          href={resetHref}
+        <button
+          type="button"
+          onClick={submitSearch}
           className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/4 px-5 py-3 text-sm font-semibold text-white/75 transition hover:border-white/20 hover:bg-white/6"
         >
-          Reset
-        </Link>
+          Enter
+        </button>
       </div>
 
       <div className="space-y-2">
