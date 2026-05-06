@@ -4084,6 +4084,28 @@ const gapFillLabel =
               </div>
 
               <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
+                Live
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleIntervalChange("1m");
+                    setLiveCandleEnabled((value) => !value);
+                  }}
+                  disabled={!canUseLive}
+                  className={`inline-flex min-h-11 items-center rounded-xl border px-4 text-xs font-black uppercase tracking-[0.12em] transition ${
+                    liveCandleEnabled
+                      ? "border-emerald-400/35 bg-emerald-400/12 text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.16)]"
+                      : "border-white/10 bg-white/3.5 text-white/45 hover:border-emerald-400/25 hover:text-emerald-200"
+                  } ${!canUseLive ? "cursor-not-allowed opacity-40" : ""}`}
+                >
+                  <span className="mr-2 inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.9)]" />
+                  Live Candle
+                </button>
+              </div>
+
+              <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">
                 Candle Density
               </div>
               <div className="mt-3 flex flex-wrap gap-2">

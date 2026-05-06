@@ -1,7 +1,9 @@
 "use client";
 
 import type { ReactNode, RefObject } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { createPortal } from "react-dom";
 import { useResponsiveMobilePreviewWidth } from "@/components/shell/useResponsiveMobilePreview";
 
 type Props = {
@@ -27,7 +29,14 @@ export default function MobileSignalSheet({
   forceVisible = false,
   backdropClassName = "bg-black/72 backdrop-blur-sm",
 }: Props) {
-  const mobilePreviewWidth = useResponsiveMobilePreviewWidth(forceVisible);
+  const searchParams = useSearchParams();
+  const forceDesktopPreview = forceVisible || searchParams.get("mobilePreview") === "1";
+  const mobilePreviewWidth = useResponsiveMobilePreviewWidth(forceDesktopPreview);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -54,10 +63,10 @@ export default function MobileSignalSheet({
     };
   }, [initialFocusRef, onClose, open]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
-    <div className={forceVisible ? "fixed inset-0 z-120" : "fixed inset-0 z-120 md:hidden"} aria-modal="true" role="dialog">
+  return createPortal(
+    <div className={forceDesktopPreview ? "fixed inset-0 z-120" : "fixed inset-0 z-120 md:hidden"} aria-modal="true" role="dialog">
       <button
         type="button"
         aria-label="Close sheet"
@@ -68,7 +77,7 @@ export default function MobileSignalSheet({
       <div
         className="fixed inset-x-0 bottom-0 z-50 min-h-[72vh] overflow-hidden rounded-t-4xl border border-cyan-400/20 bg-slate-950/95 px-5 pb-6 pt-4 shadow-[0_-20px_60px_rgba(34,211,238,0.20)] backdrop-blur-2xl"
         style={
-          forceVisible
+          forceDesktopPreview
             ? {
                 left: "50%",
                 right: "auto",
@@ -105,6 +114,7 @@ export default function MobileSignalSheet({
 
         {footer ? <div className="border-t border-white/8 px-5 py-4">{footer}</div> : null}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
