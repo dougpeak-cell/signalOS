@@ -10,8 +10,6 @@ export default function SigiEyeLogo({
   const iconId = useId().replace(/:/g, "");
   const glowFilterId = `sigiLogoGlow-${iconId}`;
   const auraId = `sigiEyeAura-${iconId}`;
-  const scanGradientId = `sigiScanGradient-${iconId}`;
-  const rearArcGradientId = `sigiRearArcGradient-${iconId}`;
 
   return (
     <svg
@@ -38,37 +36,17 @@ export default function SigiEyeLogo({
           <stop offset="100%" stopColor="#020617" stopOpacity="0" />
         </radialGradient>
 
-        <linearGradient id={scanGradientId} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#14532d" stopOpacity="0" />
-          <stop offset="35%" stopColor="#22c55e" stopOpacity="0.28" />
-          <stop offset="50%" stopColor="#bbf7d0" stopOpacity="0.98" />
-          <stop offset="65%" stopColor="#22c55e" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#14532d" stopOpacity="0" />
-        </linearGradient>
-
-        <linearGradient id={rearArcGradientId} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#bbf7d0" stopOpacity="0" />
-          <stop offset="24%" stopColor="#bbf7d0" stopOpacity="0.05" />
-          <stop offset="50%" stopColor="#bbf7d0" stopOpacity="0.16" />
-          <stop offset="76%" stopColor="#bbf7d0" stopOpacity="0.05" />
-          <stop offset="100%" stopColor="#bbf7d0" stopOpacity="0" />
-        </linearGradient>
       </defs>
 
       <style>{`
         .sigi-logo-scan-${iconId} {
           transform-origin: 130px 75px;
-          animation: ${animate ? `sigiLogoScan-${iconId} 3.4s linear infinite` : "none"};
+          animation: ${animate ? `sigiLogoScan-${iconId} 6.2s linear infinite` : "none"};
         }
 
         .sigi-logo-aura-${iconId} {
           transform-origin: 130px 75px;
           animation: ${animate ? `sigiLogoBreath-${iconId} 3.4s ease-in-out infinite` : "none"};
-        }
-
-        .sigi-logo-hotspot-${iconId} {
-          transform-origin: 130px 75px;
-          animation: ${animate ? `sigiLogoHotspot-${iconId} 3.4s linear infinite` : "none"};
         }
 
         .sigi-logo-shell-${iconId} {
@@ -95,15 +73,8 @@ export default function SigiEyeLogo({
           50% { opacity: 1; }
         }
 
-        @keyframes sigiLogoHotspot-${iconId} {
-          0%, 14%, 36%, 64%, 86%, 100% { opacity: 0.58; transform: scale(0.88); }
-          21%, 25%, 71%, 75% { opacity: 0.88; transform: scale(1.12); }
-          22%, 23%, 24%, 72%, 73%, 74% { opacity: 1; transform: scale(1.28); }
-        }
-
         @media (prefers-reduced-motion: reduce) {
           .sigi-logo-scan-${iconId},
-          .sigi-logo-hotspot-${iconId},
           .sigi-logo-aura-${iconId},
           .sigi-logo-shell-${iconId} {
             animation: none;
@@ -167,21 +138,13 @@ export default function SigiEyeLogo({
 
       <g className={`sigi-logo-scan-${iconId}`}>
         <rect
-          x="96"
-          y="41"
-          width="68"
-          height="68"
-          rx="34"
-          fill={`url(#${scanGradientId})`}
-          opacity="0.45"
-        />
-        <rect
-          x="124"
-          y="37"
-          width="12"
-          height="76"
-          rx="6"
+          x="121"
+          y="36"
+          width="18"
+          height="78"
+          rx="9"
           fill="#4ade80"
+          opacity="0.28"
           filter={`url(#${glowFilterId})`}
         />
         <rect
@@ -192,43 +155,8 @@ export default function SigiEyeLogo({
           rx="3"
           fill="#dcfce7"
           opacity="0.95"
+          filter={`url(#${glowFilterId})`}
         />
-        <g className={`sigi-logo-hotspot-${iconId}`}>
-          <path
-            d="M123 75 A12 8 0 1 0 123 83"
-            transform="rotate(-20 130 75)"
-            fill="none"
-            stroke={`url(#${rearArcGradientId})`}
-            strokeWidth="1.1"
-            strokeLinecap="round"
-            opacity="0.92"
-          />
-          <path
-            d="M142 65 A17 12 0 1 1 142 77"
-            transform="rotate(-20 130 75)"
-            fill="none"
-            stroke="#ecfdf5"
-            strokeWidth="3.4"
-            strokeLinecap="round"
-            opacity="0.96"
-            filter={`url(#${glowFilterId})`}
-          />
-          <circle
-            cx="130"
-            cy="75"
-            r="14"
-            fill="#86efac"
-            opacity="0.92"
-            filter={`url(#${glowFilterId})`}
-          />
-          <circle
-            cx="130"
-            cy="75"
-            r="6"
-            fill="#f0fdf4"
-            opacity="0.98"
-          />
-        </g>
       </g>
     </svg>
   );
