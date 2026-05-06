@@ -899,14 +899,6 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                   </div>
 
                   <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => toggleQuickView(ticker)}
-                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold text-white/80 hover:bg-white/10"
-                    >
-                      {quickViewOpen ? "Hide" : "Quick View"}
-                    </button>
-
                     <Link
                       href={buildPreviewHref(`/stocks/${ticker.toLowerCase()}`)}
                       onClick={() => selectedTicker?.setActiveTicker(ticker)}
