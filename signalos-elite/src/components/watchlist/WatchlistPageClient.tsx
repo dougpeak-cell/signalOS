@@ -158,21 +158,29 @@ function createFallbackWatchlistStock(
 function WatchlistStockCard({
   stock,
   opportunitiesMode,
+  forceQuickView = false,
   onRemove,
   pulse,
 }: {
   stock: WatchlistStock;
   opportunitiesMode: boolean;
+  forceQuickView?: boolean;
   onRemove: (ticker: string) => void;
   pulse?: TickerNewsPulse;
 }) {
   const rowRef = useRef<HTMLDivElement | null>(null);
-  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const [quickViewOpen, setQuickViewOpen] = useState(forceQuickView);
   const { setActiveTicker } = useSelectedTicker();
   const liveMarket = useOptionalLiveMarket();
   const normalizedTicker = normalizeTicker(stock.ticker);
   const liveQuote =
     liveMarket?.quoteMap[normalizedTicker] ?? liveMarket?.quoteMap[stock.ticker] ?? null;
+
+  useEffect(() => {
+    if (forceQuickView) {
+      setQuickViewOpen(true);
+    }
+  }, [forceQuickView]);
 
   useVisibleTickerRegistration(rowRef, [stock.ticker], {
     rootMargin: "500px 0px",
@@ -441,6 +449,7 @@ export default function WatchlistPageClient({
   allStocks: WatchlistStock[];
 }) {
   const searchParams = useSearchParams();
+  const shouldForceQuickView = searchParams.get("quickView") === "1";
   const withPreviewParam = useMemo(() => {
     return (href: string) => {
       if (searchParams.get("mobilePreview") !== "1") {
@@ -786,6 +795,7 @@ export default function WatchlistPageClient({
                         key={stock.ticker}
                         stock={stock}
                         opportunitiesMode={opportunitiesMode}
+                        forceQuickView={shouldForceQuickView}
                         onRemove={removeFromWatchlist}
                         pulse={pulseMap[stock.ticker]}
                       />

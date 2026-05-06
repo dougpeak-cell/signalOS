@@ -827,7 +827,13 @@ function PortfolioPageContent() {
   const [actionState, setActionState] = useState<ActionState>(null);
   const [editingTicker, setEditingTicker] = useState<string | null>(null);
   const [showAddStock, setShowAddStock] = useState(false);
-  const portfolioMode = searchParams.get("mode") === "quick" ? "quick" : "detail";
+  const shouldForceQuickView = searchParams.get("quickView") === "1";
+  const portfolioMode =
+    searchParams.get("mode") === "detail"
+      ? "detail"
+      : searchParams.get("mode") === "quick" || shouldForceQuickView
+        ? "quick"
+        : "detail";
 
   function buildPortfolioHref(pathname: string) {
     return searchParams.get("mobilePreview") === "1"

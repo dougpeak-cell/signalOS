@@ -98,6 +98,11 @@ export default function MobileBottomNav({
   function buildNavHref(href: string) {
     const nextHref = withPreviewParam(href);
 
+    if (href === "/watchlist" || href === "/portfolio") {
+      const separator = nextHref.includes("?") ? "&" : "?";
+      return `${nextHref}${separator}quickView=1`;
+    }
+
     if (href !== "/education") {
       return nextHref;
     }

@@ -921,7 +921,13 @@ export default function WatchlistPage() {
     {}
   );
   const [hasLoadedWatchlist, setHasLoadedWatchlist] = useState(false);
-  const watchlistMode = searchParams.get("mode") === "quick" ? "quick" : "detail";
+  const shouldForceQuickView = searchParams.get("quickView") === "1";
+  const watchlistMode =
+    searchParams.get("mode") === "detail"
+      ? "detail"
+      : searchParams.get("mode") === "quick" || shouldForceQuickView
+        ? "quick"
+        : "detail";
 
   function buildPreviewHref(href: string) {
     if (searchParams.get("mobilePreview") !== "1") {
