@@ -3716,67 +3716,71 @@ const gapFillLabel =
               Live Chart
             </div>
 
-            <div className="mt-2 flex flex-wrap items-end gap-3">
-              <h1 className="text-4xl font-semibold tracking-tight text-white">{symbol}</h1>
-              <div className="flex items-center gap-3 flex-wrap">
-    <div>
-    <div className={`text-2xl font-semibold ${positiveTone}`}>
-      {formatPrice(safePrice)}
-    </div>
+            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4">
+              <div className="flex flex-col gap-2 sm:min-w-40">
+                <h1 className="text-4xl font-semibold tracking-tight text-white">{symbol}</h1>
+                <div>
+                  <div className={`text-2xl font-semibold ${positiveTone}`}>
+                    {formatPrice(safePrice)}
+                  </div>
 
-    {liveCandleEnabled ? (
-      <div className="mt-1 flex items-center gap-2 text-xs text-emerald-300">
-        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-        Live candle updating
-      </div>
-    ) : null}
-  </div>
+                  {liveCandleEnabled ? (
+                    <div className="mt-1 flex items-center gap-2 text-xs text-emerald-300">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                      Live candle updating
+                    </div>
+                  ) : null}
+                </div>
 
-  {gapPct != null && (
-    <div
-      className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]
-      ${
-        gapPct > 0
-          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-          : gapPct < 0
-          ? "border-rose-500/30 bg-rose-500/10 text-rose-300"
-          : "border-white/10 bg-white/5 text-white/60"
-      }`}
-    >
-      {gapPct > 0 ? "Gap Up" : gapPct < 0 ? "Gap Down" : "Flat"}{" "}
-      {gapPct > 0 ? "+" : ""}
-      {gapPct.toFixed(2)}%
-    </div>
-  )}
-  {gapFillLabel ? (
-  <div
-    className={[
-      "rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]",
-      isGapFilled
-        ? "border-emerald-400/30 bg-emerald-400/12 text-emerald-300"
-        : "border-white/10 bg-white/5 text-white/70",
-    ].join(" ")}
-  >
-    {gapFillLabel}
-  </div>
-) : null}
-{gapIntelLabel ? (
-  <div
-    className={[
-      "rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]",
-      gapIntelTone ?? "border-white/10 bg-white/5 text-white/70",
-    ].join(" ")}
-  >
-    {gapIntelLabel}
-  </div>
-) : null}
-</div>
+                <div className={`text-sm font-bold ${positiveTone}`}>
+                  {hasChange
+                    ? `${safeChange > 0 ? "+" : ""}${safeChange.toFixed(2)} (${safeChangePct > 0 ? "+" : ""}${safeChangePct.toFixed(2)}%)`
+                    : "Live syncing..."}
+                </div>
+              </div>
 
-<div className={`pb-1 text-sm font-bold ${positiveTone}`}>
-  {hasChange
-    ? `${safeChange > 0 ? "+" : ""}${safeChange.toFixed(2)} (${safeChangePct > 0 ? "+" : ""}${safeChangePct.toFixed(2)}%)`
-    : "Live syncing..."}
-</div>
+              <div className="flex flex-wrap items-start gap-2 sm:max-w-md sm:pb-1">
+                {gapPct != null ? (
+                  <div
+                    className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]
+                    ${
+                      gapPct > 0
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                        : gapPct < 0
+                        ? "border-rose-500/30 bg-rose-500/10 text-rose-300"
+                        : "border-white/10 bg-white/5 text-white/60"
+                    }`}
+                  >
+                    {gapPct > 0 ? "Gap Up" : gapPct < 0 ? "Gap Down" : "Flat"}{" "}
+                    {gapPct > 0 ? "+" : ""}
+                    {gapPct.toFixed(2)}%
+                  </div>
+                ) : null}
+
+                {gapFillLabel ? (
+                  <div
+                    className={[
+                      "rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]",
+                      isGapFilled
+                        ? "border-emerald-400/30 bg-emerald-400/12 text-emerald-300"
+                        : "border-white/10 bg-white/5 text-white/70",
+                    ].join(" ")}
+                  >
+                    {gapFillLabel}
+                  </div>
+                ) : null}
+
+                {gapIntelLabel ? (
+                  <div
+                    className={[
+                      "rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]",
+                      gapIntelTone ?? "border-white/10 bg-white/5 text-white/70",
+                    ].join(" ")}
+                  >
+                    {gapIntelLabel}
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div className="mt-2 text-sm text-white/50">

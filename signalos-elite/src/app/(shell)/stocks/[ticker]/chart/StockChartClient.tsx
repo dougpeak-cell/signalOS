@@ -148,7 +148,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
 
   return (
     <main className="bg-black text-white">
-      <div className="w-full max-w-none px-1 pb-6 pt-2 xl:px-1.5 2xl:px-2">
+      <div className="w-full max-w-none px-0 pb-6 pt-2 sm:px-1 xl:px-1.5 2xl:px-2">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <Link
@@ -182,8 +182,66 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
 
         <div className={shellClassName}>
           <section className="min-w-0">
-            <div className="relative overflow-hidden rounded-3xl border border-cyan-400/20 bg-[radial-gradient(circle_at_top,rgba(0,160,255,0.10),transparent_24%),linear-gradient(180deg,rgba(4,10,20,0.98),rgba(0,0,0,1))] shadow-[0_0_55px_rgba(0,145,255,0.10)]">
-              <div className="absolute left-4 top-4 z-20 flex flex-wrap items-center gap-2">
+            <div className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_top,rgba(0,160,255,0.10),transparent_24%),linear-gradient(180deg,rgba(4,10,20,0.98),rgba(0,0,0,1))] shadow-[0_0_55px_rgba(0,145,255,0.10)]">
+              <div className="flex flex-col gap-3 px-2 pb-0 pt-3 sm:hidden">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href="/watchlist"
+                      className="inline-flex items-center rounded-full border border-white/10 bg-black/55 px-3 py-1.5 text-xs font-medium text-white/70 backdrop-blur transition hover:border-cyan-400/30 hover:bg-cyan-400/10 hover:text-white"
+                    >
+                      ← Watchlist
+                    </Link>
+
+                    <div className="rounded-full border border-white/10 bg-black/45 px-3 py-1.5 text-sm font-semibold tracking-[0.2em] text-white/95 backdrop-blur">
+                      {stock.ticker}
+                    </div>
+
+                    <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-300 backdrop-blur">
+                      Day Chart Focus
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setRailCollapsed((v) => !v)}
+                    className="rounded-full border border-white/10 bg-black/55 px-3 py-1.5 text-[11px] font-medium text-white/75 backdrop-blur transition hover:border-cyan-400/30 hover:bg-cyan-400/10 hover:text-white"
+                  >
+                    {railCollapsed ? "Show Rail" : "Hide Rail"}
+                  </button>
+                </div>
+
+                {topSignals.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {topSignals.map((signal) => (
+                      <div
+                        key={`${signal.type}-${signal.time}-${signal.label ?? ""}-mobile`}
+                        className={`rounded-full border px-3 py-1 text-[11px] font-semibold shadow-lg backdrop-blur ${signalToneClasses(
+                          signal.tone
+                        )}`}
+                      >
+                        {signal.label ?? signal.type}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div className="flex flex-wrap gap-2">
+                  {confluenceBadges.map((item) => (
+                    <div
+                      key={`${item.label}-mobile`}
+                      className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] backdrop-blur ${confluenceBadgeClasses(
+                        item.active,
+                        item.emphasis
+                      )}`}
+                    >
+                      {item.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="absolute left-2 top-4 z-20 hidden flex-wrap items-center gap-2 sm:left-4 sm:flex">
                 <Link
                   href="/watchlist"
                   className="inline-flex items-center rounded-full border border-white/10 bg-black/55 px-3 py-1.5 text-xs font-medium text-white/70 backdrop-blur transition hover:border-cyan-400/30 hover:bg-cyan-400/10 hover:text-white"
@@ -200,7 +258,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
                 </div>
               </div>
 
-              <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
+              <div className="absolute right-2 top-4 z-20 hidden items-center gap-2 sm:right-4 sm:flex">
                 <button
                   type="button"
                   onClick={() => setRailCollapsed((v) => !v)}
@@ -211,7 +269,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
               </div>
 
               {topSignals.length > 0 ? (
-                <div className="pointer-events-none absolute left-4 top-16 z-20 flex max-w-[70%] flex-wrap gap-2">
+                <div className="pointer-events-none absolute left-2 top-16 z-20 hidden max-w-[78%] flex-wrap gap-2 sm:left-4 sm:flex sm:max-w-[70%]">
                   {topSignals.map((signal) => (
                     <div
                       key={`${signal.type}-${signal.time}-${signal.label ?? ""}`}
@@ -239,7 +297,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
                 ))}
               </div>
 
-              <div className="relative z-0 p-2 pt-14 xl:p-2.5 xl:pt-24">
+              <div className="relative z-0 px-0.5 pb-0.5 pt-2 sm:p-2 sm:pt-14 xl:p-2.5 xl:pt-24">
                 <div className="overflow-hidden rounded-[22px] border border-cyan-400/15 bg-black/70 shadow-[inset_0_0_25px_rgba(0,140,255,0.08)]">
                   <div className="min-h-160 w-full">
                     <LiveStockChart
@@ -256,7 +314,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
 
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-black via-black/65 to-transparent" />
 
-              <div className="absolute bottom-4 left-4 z-20">
+              <div className="absolute bottom-4 left-2 z-20 sm:left-4">
                 <div className="rounded-2xl border border-cyan-400/15 bg-black/65 px-4 py-3 backdrop-blur">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/70">
                     Live Setup Beacon
@@ -271,7 +329,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
                 </div>
               </div>
 
-              <div className="absolute bottom-4 right-4 z-20">
+              <div className="absolute bottom-4 right-2 z-20 sm:right-4">
                 <div className="flex flex-wrap justify-end gap-2">
                   <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-300">
                     {railSignals.length} signals
@@ -325,7 +383,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
 
             <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
               <div className="min-h-0">
-                <div className="relative h-full overflow-hidden rounded-[28px] border border-cyan-400/20 bg-[radial-gradient(circle_at_top,rgba(0,160,255,0.10),transparent_24%),linear-gradient(180deg,rgba(4,10,20,0.98),rgba(0,0,0,1))] shadow-[0_0_55px_rgba(0,145,255,0.10)]">
+                <div className="relative h-full overflow-hidden rounded-[28px] bg-[radial-gradient(circle_at_top,rgba(0,160,255,0.10),transparent_24%),linear-gradient(180deg,rgba(4,10,20,0.98),rgba(0,0,0,1))] shadow-[0_0_55px_rgba(0,145,255,0.10)]">
                   <div className="absolute left-4 top-4 z-20 flex flex-wrap items-center gap-2">
                     <div className="rounded-full border border-white/10 bg-black/45 px-3 py-1.5 text-sm font-semibold tracking-[0.2em] text-white/95 backdrop-blur">
                       {stock.ticker}
