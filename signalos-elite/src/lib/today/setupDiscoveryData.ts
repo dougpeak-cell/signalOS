@@ -220,12 +220,16 @@ export async function getSetupDiscoveryData(
     const fundamentals = fundamentalsMap.get(ticker);
     const livePrice = item.price ?? getQuotePrice(ticker) ?? signalRow?.price ?? null;
     const changePercent = item.changePct ?? null;
+    const isPreMarketSession = item.session === "pre-market";
     const tone = signalRow ? signalToneFromRow(signalRow, livePrice) : changePercent != null && changePercent > 0 ? "bullish" : changePercent != null && changePercent < 0 ? "bearish" : "neutral";
     const signal = tone === "bullish" ? "Bullish" : tone === "bearish" ? "Bearish" : "Neutral";
     const catalystFlags = signalRow ? inferCatalystFlags(signalRow) : { hasNews: false, hasEarnings: false, hasAnalystAction: false, hasSectorTailwind: false };
-    const volume = fundamentals?.volume ?? null;
+    const volume = item.volume ?? fundamentals?.volume ?? null;
     const avgVolume = fundamentals?.avgVolume ?? null;
-    const rvol = volume != null && avgVolume != null && avgVolume > 0 ? volume / avgVolume : null;
+    const rvol =
+      isPreMarketSession && volume != null && avgVolume != null && avgVolume > 0
+        ? volume / avgVolume
+        : item.rvol ?? (volume != null && avgVolume != null && avgVolume > 0 ? volume / avgVolume : null);
 
     mergedCandidates.set(
       ticker,
