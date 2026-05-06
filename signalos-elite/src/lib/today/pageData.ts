@@ -397,6 +397,18 @@ function toMostTradedRow(candidate: SetupDiscoveryCandidate): TodayMostTradedRow
   };
 }
 
+function toMostTradedRowFromMover(row: MarketMoverRow): TodayMostTradedRow {
+  return {
+    ticker: row.ticker,
+    name: row.name ?? row.ticker,
+    price: row.price ?? undefined,
+    changePercent: row.changePct ?? undefined,
+    volume: row.volume ?? undefined,
+    rvol: row.rvol ?? undefined,
+    pulse: null,
+  };
+}
+
 function buildRegularMostTradedRows(candidates: SetupDiscoveryCandidate[]): TodayMostTradedRow[] {
   return [...candidates]
     .filter((candidate) => (toNumber(candidate.price) ?? 0) >= 2)
@@ -990,7 +1002,7 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     computedPreMarketTopSetups,
     computedPreMarketEmergingSetups,
     regularMostTradedRows,
-    preMarketRows,
+    preMarketRowsFromCandidates,
     trendingNews,
   ] = await Promise.all([
     time(
@@ -1014,6 +1026,27 @@ export async function getTodayPageData(): Promise<TodayPageData> {
       Promise.resolve().then(() => buildCommandCenterNews(marketNews))
     ),
   ]);
+
+  const preMarketRows =
+    preMarketRowsFromCandidates.length > 0
+      ? preMarketRowsFromCandidates
+      : isPreMarketNow()
+        ? [...marketMovers.gainers, ...marketMovers.losers]
+            .sort((left, right) => {
+              const rightScore =
+                Math.abs(right.changePct ?? 0) * 10 +
+                (right.rvol ?? 0) * 8 +
+                (right.volume ?? 0) / 1_000_000;
+              const leftScore =
+                Math.abs(left.changePct ?? 0) * 10 +
+                (left.rvol ?? 0) * 8 +
+                (left.volume ?? 0) / 1_000_000;
+
+              return rightScore - leftScore;
+            })
+            .slice(0, 10)
+            .map(toMostTradedRowFromMover)
+        : [];
 
   const preMarketSourceRowCount = countPreMarketSourceRows(setupDiscovery);
   const preMarketRawCandidateCount = countPreMarketQualifiedCandidates(setupDiscovery);

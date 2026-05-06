@@ -938,10 +938,29 @@ export async function TodayPageShell() {
     .slice(0, 5)
     .map((row: any) => toMostTradedCardRow(row));
 
-  const mostTradedPreMarket: MostTradedCardRow[] =
+  const fetchedPreMarketMostTraded =
     currentPhase === "premarket"
       ? await fetchPreMarketMostTradedRows(tickers, signalNamesByTicker)
       : [];
+
+  const mostTradedPreMarket: MostTradedCardRow[] =
+    fetchedPreMarketMostTraded.length > 0
+      ? fetchedPreMarketMostTraded
+      : currentPhase === "premarket"
+        ? [...marketMovers.gainers, ...marketMovers.losers]
+            .sort((left, right) => scorePreMarketLeader(right) - scorePreMarketLeader(left))
+            .slice(0, 8)
+            .map((row) =>
+              toMostTradedCardRow({
+                ticker: row.ticker,
+                name: row.name,
+                price: row.price,
+                changePercent: row.changePct,
+                volume: row.volume,
+                rvol: row.rvol,
+              })
+            )
+        : [];
 
   if (!strongest) {
     return (
