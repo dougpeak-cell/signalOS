@@ -3710,7 +3710,8 @@ const gapFillLabel =
         ref={liveChartCardRef}
         className="overflow-hidden rounded-3xl border border-cyan-400/15 bg-black/70 shadow-[inset_0_0_25px_rgba(0,140,255,0.08)]"
       >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="px-4 pb-4 pt-5 sm:px-5 sm:pb-5 sm:pt-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
               Live Chart
@@ -3918,6 +3919,7 @@ const gapFillLabel =
                         : "VWAP Custom"}
               </div>
             </div>
+          </div>
           </div>
 
           <div className="hidden flex-col items-end gap-2 md:flex">
