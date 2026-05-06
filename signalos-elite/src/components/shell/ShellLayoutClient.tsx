@@ -152,8 +152,10 @@ function ShellLayoutContent({
 
   const isWorkspaceStockPage =
     pathname.startsWith("/stocks/") && pathname.includes("/workspace");
+  const isStockChartPage = /^\/stocks\/[^/]+\/chart(?:\/.*)?$/i.test(pathname);
   const isCryptoMode = pathname.startsWith("/crypto");
   const isScreenerRoute = pathname.startsWith("/screener");
+  const shouldShowMobileBottomNav = !isDevMobilePreview || !isStockChartPage;
 
   const hideShellRightRail = isWorkspaceStockPage || isScreenerRoute;
   const shellMarketContextValue = useMemo(
@@ -211,7 +213,7 @@ function ShellLayoutContent({
 
           {!isDevMobilePreview ? <SigiMiniPanel /> : null}
           <MobileSigiSheet forceDesktopPreview={isDevMobilePreview} />
-          <MobileBottomNav forceVisible={isDevMobilePreview} />
+          {shouldShowMobileBottomNav ? <MobileBottomNav forceVisible={isDevMobilePreview} /> : null}
         </ShellMarketContextProvider>
       </SigiPanelProvider>
     </SelectedSignalProvider>
