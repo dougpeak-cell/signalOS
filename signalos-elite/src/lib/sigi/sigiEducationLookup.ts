@@ -42,11 +42,23 @@ function normalize(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9/ ]/g, "").trim();
 }
 
+function matchesWholeNormalizedTerm(message: string, candidate: string) {
+  if (message === candidate) {
+    return true;
+  }
+
+  const escaped = candidate.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`(?:^| )${escaped}(?:$| )`);
+  return pattern.test(message);
+}
+
 export function findEducationEntry(message: string): EducationEntry | null {
   const clean = normalize(message);
 
   for (const [alias, term] of Object.entries(EDUCATION_ALIASES)) {
-    if (clean.includes(alias)) {
+    const normalizedAlias = normalize(alias);
+
+    if (matchesWholeNormalizedTerm(clean, normalizedAlias)) {
       return (
         fundamentalsPack.find(
           (entry) => entry.term.toLowerCase() === term.toLowerCase()
@@ -56,9 +68,10 @@ export function findEducationEntry(message: string): EducationEntry | null {
   }
 
   return (
-    fundamentalsPack.find((entry) =>
-      clean.includes(entry.term.toLowerCase())
-    ) ?? null
+    fundamentalsPack.find((entry) => {
+      const normalizedTerm = normalize(entry.term);
+      return matchesWholeNormalizedTerm(clean, normalizedTerm);
+    }) ?? null
   );
 }
 
