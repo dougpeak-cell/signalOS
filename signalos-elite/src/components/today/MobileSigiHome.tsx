@@ -479,17 +479,6 @@ export default function MobileSigiHome({
         <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(8,47,73,0.22),transparent_42%,rgba(8,145,178,0.08))]" />
         <div className="absolute -right-10 top-6 h-28 w-28 rounded-full bg-cyan-400/10 blur-2xl" />
         <div className="absolute -left-8 bottom-6 h-24 w-24 rounded-full bg-sky-500/10 blur-2xl" />
-        {sigiName ? (
-          <button
-            type="button"
-            onClick={() => void resetSigiProfile()}
-            disabled={isResettingSigi}
-            className="absolute right-4 top-4 z-30 inline-flex min-h-9 items-center rounded-full border border-white/10 bg-black/55 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 shadow-[0_0_16px_rgba(34,211,238,0.18)] transition hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
-            aria-label="Reset Sigi profile"
-          >
-            {isResettingSigi ? "Resetting..." : "Reset SIGI profile"}
-          </button>
-        ) : null}
 
         <div className={`relative z-10 flex items-start ${sigiName ? "gap-4" : "gap-3"}`}>
           <div className={`shrink-0 rounded-3xl border border-cyan-400/20 bg-cyan-400/8 shadow-[0_0_26px_rgba(34,211,238,0.12)] ${sigiName ? "p-2" : "p-1.5"}`}>
@@ -497,8 +486,21 @@ export default function MobileSigiHome({
           </div>
 
           <div className="min-w-0">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/84">
-              Mobile Sigi Command Center
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/84">
+                Mobile Sigi Command Center
+              </div>
+              {sigiName ? (
+                <button
+                  type="button"
+                  onClick={() => void resetSigiProfile()}
+                  disabled={isResettingSigi}
+                  className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-white/10 bg-black/55 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 shadow-[0_0_16px_rgba(34,211,238,0.18)] transition hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+                  aria-label="Reset Sigi profile"
+                >
+                  {isResettingSigi ? "Resetting..." : "Reset SIGI profile"}
+                </button>
+              ) : null}
             </div>
             {process.env.NODE_ENV !== "production" ? (
               <div className="mt-1 inline-flex rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">
