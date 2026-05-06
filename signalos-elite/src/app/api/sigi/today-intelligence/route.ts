@@ -55,13 +55,44 @@ function summarizeToday(data: TodayIntelligenceRequest) {
     `${n.headline} ${n.category ?? ""}`.toLowerCase().includes("ai")
   );
 
+  const indexChanges = [
+    { ticker: "SPY", value: pulse.spy ?? null },
+    { ticker: "QQQ", value: pulse.qqq ?? null },
+    { ticker: "IWM", value: pulse.iwm ?? null },
+    { ticker: "DIA", value: pulse.dia ?? null },
+  ].filter((item) => Number.isFinite(item.value ?? NaN));
+
+  const strongestIndex = [...indexChanges].sort(
+    (a, b) => Number(b.value ?? 0) - Number(a.value ?? 0)
+  )[0];
+
+  const weakestIndex = [...indexChanges].sort(
+    (a, b) => Number(a.value ?? 0) - Number(b.value ?? 0)
+  )[0];
+
+  const vixTone = Number.isFinite(pulse.vix ?? NaN)
+    ? (pulse.vix ?? 0) > 2
+      ? "Volatility is expanding, so upside follow-through needs more proof."
+      : (pulse.vix ?? 0) < -2
+        ? "Volatility is easing, which is more supportive for continuation setups."
+        : "Volatility is steady, so leadership matters more than panic or relief."
+    : null;
+
+  const setupBreadthText =
+    setups.length === 0
+      ? "No qualified setups are active yet, so SIGI is reading price structure more than the scan."
+      : bullish.length > bearish.length
+        ? `Bullish setups lead ${bullish.length}-${bearish.length}, so buyers have the cleaner early edge.`
+        : bearish.length > bullish.length
+          ? `Bearish setups lead ${bearish.length}-${bullish.length}, so risk control still matters.`
+          : `Bullish and bearish setups are balanced at ${bullish.length}-${bearish.length}, so the tape looks selective rather than broad.`;
+
   const marketStructure =
     `SPY is ${pct(pulse.spy)}, QQQ is ${pct(pulse.qqq)}, IWM is ${pct(pulse.iwm)}, and DIA is ${pct(pulse.dia)}. ` +
-    (bullish.length > bearish.length
-      ? `Bullish setups currently lead bearish setups ${bullish.length}-${bearish.length}, but confirmation should be checked against breadth and news.`
-      : bearish.length > bullish.length
-        ? `Bearish setups currently lead bullish setups ${bearish.length}-${bullish.length}, so risk control matters.`
-        : `Bullish and bearish setups are balanced, so the tape looks selective rather than broad.`);
+    (strongestIndex && weakestIndex && strongestIndex.ticker !== weakestIndex.ticker
+      ? `${strongestIndex.ticker} is leading while ${weakestIndex.ticker} is lagging, which points to ${strongestIndex.value === weakestIndex.value ? "an even tape" : "uneven participation"}. `
+      : "Participation across the major indexes is still forming. ") +
+    `${setupBreadthText}${vixTone ? ` ${vixTone}` : ""}`;
 
   const bestOpportunity = best
     ? `${best.ticker} is the highest-ranked active setup right now with a ${best.signal ?? "current"} signal${best.score ? ` and score ${best.score}` : ""}. Treat it as the first name to investigate, not an automatic buy.`

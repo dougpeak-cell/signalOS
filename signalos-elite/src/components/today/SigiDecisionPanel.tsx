@@ -23,6 +23,7 @@ import { fetchTodayIntelligence } from "@/lib/sigi/fetchTodayIntelligence";
 import {
   getSigiMarketCondition,
 } from "@/lib/sigi/sigiMarketCondition";
+import { isPreMarketNow } from "@/lib/today/marketPhase";
 import {
   matchSigiIntentWithContext,
 } from "@/lib/sigi/sigiIntentRouter";
@@ -75,6 +76,17 @@ const NON_TICKER_INTENTS = new Set<string>([
 ]);
 
 const MARKET_CONDITION_TICKERS = ["SPY", "QQQ", "IWM", "DIA", "^VIX"] as const;
+
+function getSigiIntelligenceResetKey() {
+  const easternDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  return `${easternDate}:${isPreMarketNow() ? "pre" : "regular"}`;
+}
 
 function withTicker(question: string, ticker: string) {
   return `${question} Focus on ${ticker}.`;
@@ -185,6 +197,9 @@ export default function SigiDecisionPanel({
   const [todayIntel, setTodayIntel] = useState<any>(null);
   const [lastInteraction, setLastInteraction] = useState<"click" | "type">("type");
   const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [intelligenceResetKey, setIntelligenceResetKey] = useState(() =>
+    getSigiIntelligenceResetKey()
+  );
   const suggestions = searchTickers(sigiInput);
   const watchlistTickers = useMemo(
     () => watchlistRows.map((item) => item.ticker).filter(Boolean),
@@ -293,6 +308,23 @@ export default function SigiDecisionPanel({
   }, [ensureQuotes]);
 
   useEffect(() => {
+    const syncIntelligenceResetKey = () => {
+      setIntelligenceResetKey((current) => {
+        const next = getSigiIntelligenceResetKey();
+        return current === next ? current : next;
+      });
+    };
+
+    syncIntelligenceResetKey();
+
+    const intervalId = window.setInterval(syncIntelligenceResetKey, 60_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
     fetchTodayIntelligence({
       marketPulse: {
         spy: marketPulse?.spy,
@@ -307,7 +339,7 @@ export default function SigiDecisionPanel({
     })
       .then(setTodayIntel)
       .catch(console.error);
-  }, [marketPulse, topSetups, news, watchlistTickers]);
+  }, [marketPulse, topSetups, news, watchlistTickers, intelligenceResetKey]);
 
   useEffect(() => {
     const handleInteraction = (event: Event) => {
