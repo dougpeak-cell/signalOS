@@ -774,6 +774,19 @@ export default async function NewsPage() {
                 {leadStory.summary}
               </p>
 
+              <div className="mt-5 overflow-hidden rounded-3xl border border-white/10 bg-black/25">
+                <div className="aspect-video w-full">
+                  <NewsImage
+                    src={leadStory.image ?? leadStory.imageUrl}
+                    href={leadStory.url}
+                    title={leadStory.headline}
+                    variant="banner"
+                    className="h-full rounded-none"
+                    fallbackClassName="h-full rounded-none border-b-0"
+                  />
+                </div>
+              </div>
+
               <div className="mt-5 rounded-2xl border border-white/10 bg-white/3 p-4">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
                   Market Impact

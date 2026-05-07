@@ -14,26 +14,68 @@ type NewsImageProps = {
 
 function NewsImageFallback({
   variant = "thumbnail",
+  title,
   className = "",
 }: {
   variant?: "banner" | "thumbnail";
+  title?: string;
   className?: string;
 }) {
   const heightClass = variant === "banner" ? "h-[130px] md:h-[180px]" : "h-[90px]";
+  const fallbackTitle = title?.trim() || "Headline visual unavailable";
+  const kicker = variant === "banner" ? "Market Headline" : "Live Update";
+
+  if (variant === "thumbnail") {
+    return (
+      <div
+        className={[
+          heightClass,
+          "relative w-full overflow-hidden rounded-t-2xl border-b border-cyan-400/20",
+          "bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.18),transparent_30%),linear-gradient(135deg,#020617,#031226,#000)]",
+          className,
+        ].join(" ")}
+      >
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,rgba(34,211,238,0.08)_45%,transparent_72%)] opacity-70" />
+        <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-black/35 px-2 py-1 text-[8px] font-semibold uppercase tracking-[0.2em] text-cyan-100/75 backdrop-blur-sm">
+          <span className="h-1.5 w-1.5 rounded-full bg-cyan-300/80" />
+          {kicker}
+        </div>
+        <div className="absolute inset-x-4 bottom-4 h-px bg-cyan-300/25 shadow-[0_0_18px_rgba(34,211,238,0.3)]" />
+      </div>
+    );
+  }
 
   return (
     <div
       className={[
         heightClass,
-        "relative flex w-full items-center justify-center overflow-hidden rounded-t-2xl",
-        "border-b border-cyan-400/20 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.22),transparent_35%),linear-gradient(135deg,#020617,#020b1f,#000)]",
+        "relative w-full overflow-hidden rounded-t-2xl border-b border-cyan-400/20",
+        "bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.16),transparent_35%),linear-gradient(135deg,#020617,#031226,#000)]",
         className,
       ].join(" ")}
     >
-      <div className="absolute inset-0 opacity-25 bg-[linear-gradient(115deg,transparent_0%,rgba(34,211,238,0.12)_45%,transparent_70%)]" />
-      <div className="absolute inset-x-6 bottom-4 h-px bg-cyan-300/30 shadow-[0_0_18px_rgba(34,211,238,0.45)]" />
-      <div className="relative text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-100/80">
-        SIGI Market News
+      <div className="absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,rgba(34,211,238,0.08)_45%,transparent_72%)] opacity-70" />
+      <div className="absolute inset-x-0 top-0 h-16 bg-linear-to-b from-cyan-400/8 to-transparent" />
+      <div className="absolute inset-x-6 bottom-5 h-px bg-cyan-300/25 shadow-[0_0_18px_rgba(34,211,238,0.3)]" />
+      <div className="absolute left-5 top-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-black/35 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-100/75 backdrop-blur-sm">
+        <span className="h-1.5 w-1.5 rounded-full bg-cyan-300/80" />
+        {kicker}
+      </div>
+
+      <div className="absolute inset-x-5 bottom-5 rounded-2xl border border-white/8 bg-black/30 px-4 py-3 backdrop-blur-[2px]">
+        <div className="text-[8px] font-semibold uppercase tracking-[0.24em] text-cyan-100/55">
+          SIGI Market News
+        </div>
+        <div
+          className={[
+            "mt-2 text-white/88",
+            variant === "banner"
+              ? "line-clamp-3 text-sm font-semibold leading-5"
+              : "line-clamp-2 text-[11px] font-semibold leading-4",
+          ].join(" ")}
+        >
+          {fallbackTitle}
+        </div>
       </div>
     </div>
   );
@@ -72,7 +114,7 @@ export default function NewsImage({
       <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/25 to-transparent" />
     </div>
   ) : (
-    <NewsImageFallback variant={variant} className={fallbackClassName} />
+    <NewsImageFallback variant={variant} title={imageTitle} className={fallbackClassName} />
   );
 
   if (!href) return content;
