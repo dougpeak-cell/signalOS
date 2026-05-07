@@ -350,9 +350,19 @@ function getModelAlignmentClasses(alignment: ExpertModelRow["alignment"]) {
 
 export default function ExpertsPage() {
   const [fmpRows, setFmpRows] = useState<FmpExpertRow[]>([]);
+  const [fmpSectorRows, setFmpSectorRows] = useState<Record<string, FmpExpertRow[]>>({});
   const [isLoadingFmpRows, setIsLoadingFmpRows] = useState(true);
   const [fmpLoadError, setFmpLoadError] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [selectedExpertSector, setSelectedExpertSector] = useState("All");
+
+  const expertSectorTabs = ["All", ...Object.keys(fmpSectorRows)];
+
+  useEffect(() => {
+    if (selectedExpertSector !== "All" && !(selectedExpertSector in fmpSectorRows)) {
+      setSelectedExpertSector("All");
+    }
+  }, [fmpSectorRows, selectedExpertSector]);
 
   useEffect(() => {
     let alive = true;
@@ -379,15 +389,21 @@ export default function ExpertsPage() {
         }
 
         const rows = Array.isArray(json.rows) ? json.rows : [];
-        rows.sort(
-          (left: FmpExpertRow, right: FmpExpertRow) =>
-            getPublishedDateValue(right.publishedDate) - getPublishedDateValue(left.publishedDate)
+        const sectorRows = Object.fromEntries(
+          Object.entries(
+            json?.sectorRows && typeof json.sectorRows === "object" ? json.sectorRows : {}
+          ).map(([sector, sectorRows]) => [
+            sector,
+            Array.isArray(sectorRows) ? (sectorRows as FmpExpertRow[]) : [],
+          ])
         );
         setFmpRows(rows);
+        setFmpSectorRows(sectorRows);
       } catch (error) {
         console.error("FMP experts load failed:", error);
         if (!alive) return;
         setFmpRows([]);
+        setFmpSectorRows({});
         setFmpLoadError("Experts analyst feed is unavailable right now.");
       } finally {
         if (alive) setIsLoadingFmpRows(false);
@@ -420,6 +436,10 @@ export default function ExpertsPage() {
   ).length;
   const selectedModelRow =
     modelRows.find((model) => model.name === selectedModel) ?? null;
+  const visibleFmpRows =
+    selectedExpertSector === "All"
+      ? fmpRows
+      : fmpSectorRows[selectedExpertSector] ?? [];
 
   return (
     <main className="min-h-screen w-full bg-black text-white">
@@ -663,7 +683,7 @@ export default function ExpertsPage() {
                   Analyst Top Picks Across the Market
                 </div>
                 <p className="mt-1 text-[14px] leading-6 text-white/48">
-                  Diversified analyst signals from today, the last 7 days, and the last 14 days ranked by upside, rating quality, recency, and sector balance.
+                  Diversified analyst signals from today, the last 7 days, and the last 14 days ranked by upside, rating quality, recency, and sector balance. Use sector tabs to drill into the top 10 analyst-ranked names inside each group.
                 </p>
               </div>
               <div className="relative inline-flex items-center rounded-full border border-emerald-400/40 bg-emerald-400/10 px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200 shadow-[0_0_20px_rgba(16,185,129,0.25)]">
@@ -671,8 +691,37 @@ export default function ExpertsPage() {
                 LIVE
               </div>
             </div>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              {expertSectorTabs.map((sector) => (
+                <button
+                  key={sector}
+                  type="button"
+                  onClick={() => setSelectedExpertSector(sector)}
+                  className={[
+                    "rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] transition-all",
+                    selectedExpertSector === sector
+                      ? "border-cyan-300/35 bg-cyan-400/12 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.12)]"
+                      : "border-white/10 bg-white/4 text-white/55 hover:border-white/20 hover:text-white",
+                  ].join(" ")}
+                >
+                  {sector}
+                </button>
+              ))}
+            </div>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/8 bg-black/25 px-4 py-3 text-sm text-white/55">
+              <div>
+                {selectedExpertSector === "All"
+                  ? `Showing diversified top picks from a broader 30-name consensus pool.`
+                  : `Showing the top ${Math.min(10, visibleFmpRows.length)} analyst-ranked names in ${selectedExpertSector}.`}
+              </div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/35">
+                {selectedExpertSector === "All"
+                  ? `${fmpRows.length} ranked picks`
+                  : `${visibleFmpRows.length} sector picks`}
+              </div>
+            </div>
             <div className="space-y-4">
-              {fmpRows.map((row) => {
+              {visibleFmpRows.map((row) => {
                 const tone = upsideTone(row.upsidePercent);
                 const accent = getAccentClasses(row.upsidePercent);
                 const signalDirection = getSignalDirectionLabel(row.upsidePercent);
@@ -844,9 +893,11 @@ export default function ExpertsPage() {
                   {fmpLoadError}
                 </div>
               ) : null}
-              {!isLoadingFmpRows && !fmpLoadError && fmpRows.length === 0 ? (
+              {!isLoadingFmpRows && !fmpLoadError && visibleFmpRows.length === 0 ? (
                 <div className="rounded-2xl border border-white/10 bg-black/30 p-6 text-sm text-white/45">
-                  No analyst picks were found for today, the last 7 days, or the last 14 days.
+                  {selectedExpertSector === "All"
+                    ? "No analyst picks were found for today, the last 7 days, or the last 14 days."
+                    : `No analyst picks were found for ${selectedExpertSector} in the current 14-day window.`}
                 </div>
               ) : null}
             </div>

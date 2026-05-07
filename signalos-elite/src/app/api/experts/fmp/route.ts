@@ -18,7 +18,7 @@ const SECTOR_BUCKETS = [
   "Basic Materials",
 ];
 
-const BROAD_CANDIDATE_LIMIT = 20;
+const BROAD_CANDIDATE_LIMIT = 30;
 
 type PickRow = {
   symbol: string;
@@ -417,6 +417,13 @@ export async function GET() {
       bySector.set(row.sector, list);
     }
 
+    const sectorRows = Object.fromEntries(
+      SECTOR_BUCKETS.map((sector) => [
+        sector,
+        [...(bySector.get(sector) ?? [])].sort((a, b) => b.score - a.score).slice(0, 10),
+      ]).filter((entry) => entry[1].length > 0)
+    );
+
     const diversified: PickRow[] = [];
     const selectedSymbols = new Set<string>();
 
@@ -457,6 +464,7 @@ export async function GET() {
       ok: true,
       source: strictRows.length > 0 ? "fmp_diversified_analyst_picks" : "fmp_latest_analyst_picks_fallback",
       rows,
+      sectorRows,
     });
   } catch (error) {
     console.error("FMP diversified experts error:", error);
