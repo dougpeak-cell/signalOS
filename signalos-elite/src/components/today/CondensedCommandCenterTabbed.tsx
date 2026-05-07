@@ -123,18 +123,16 @@ function sortByMove(rows: MoverRow[]) {
 }
 
 function sortByHighVolume(rows: MoverRow[]) {
-  return [...rows]
-    .filter((row) => {
-      const price = row.price ?? 0;
-      const volume = row.volume ?? 0;
+  const normalizedRows = [...rows].filter((row) => {
+    const volume = row.volume ?? 0;
 
-      return (
-        !isWarrant(row.name, row.ticker) &&
-        !isEtf(row.name) &&
-        price > 2 &&
-        volume > 0
-      );
-    })
+    return !isWarrant(row.name, row.ticker) && !isEtf(row.name) && volume > 0;
+  });
+
+  const preferredRows = normalizedRows.filter((row) => (row.price ?? 0) > 2);
+  const candidateRows = preferredRows.length > 0 ? preferredRows : normalizedRows;
+
+  return candidateRows
     .sort((a, b) => {
       const volumeDiff = (b.volume ?? 0) - (a.volume ?? 0);
       if (volumeDiff !== 0) return volumeDiff;
