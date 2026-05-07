@@ -2,6 +2,7 @@
 
 import type { ReactElement } from "react";
 import Link from "next/link";
+import NewsImage from "@/components/news/NewsImage";
 import { renderTickerParagraphs } from "@/components/sigi/renderTickerText";
 import { SectionHeader } from "@/components/today/SectionHeader";
 import { getSigiBackgroundStyle } from "@/lib/sigiBackgrounds";
@@ -31,6 +32,7 @@ export default function MarketThesisHero(): ReactElement {
     heroStory?.items
       ?.find((item) => item.headline?.trim() === title)
       ?.url?.trim() || heroStory?.items?.[0]?.url?.trim() || null;
+  const heroImage = heroStory?.image?.trim() || null;
 
   const narrative =
     heroStory?.whyItMatters?.trim() ||
@@ -114,6 +116,15 @@ export default function MarketThesisHero(): ReactElement {
             Catalyst: {toTitleCase(catalystLabel)}
           </div>
         </div>
+
+        <NewsImage
+          src={heroImage}
+          href={href}
+          title={title}
+          variant="banner"
+          unavailableBehavior="collapse"
+          className="mt-6 aspect-video h-full overflow-hidden rounded-3xl border border-white/10 bg-black/25"
+        />
       </div>
     </section>
   );
