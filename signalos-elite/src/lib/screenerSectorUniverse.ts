@@ -7,6 +7,9 @@ export const SECTOR_STOCKS: Record<string, string[]> = {
     "NVDA", "AMD", "MSFT", "GOOGL", "META", "AMZN", "PLTR", "SNOW", "CRM", "ORCL",
     "AVGO", "TSM", "ASML", "MU", "ARM", "PANW", "CRWD", "ANET", "DDOG", "NOW",
   ],
+  Quantum: [
+    "IBM", "IONQ", "QBTS", "QUBT", "RGTI",
+  ],
   Semiconductors: [
     "NVDA", "AMD", "AVGO", "ARM", "MU", "TSM", "ASML", "LRCX", "KLAC", "AMAT",
     "QCOM", "TXN", "ADI", "MRVL", "NXPI", "MCHP", "ON", "INTC", "SWKS", "TER",
@@ -352,6 +355,7 @@ export const COMPANY_NAMES: Record<string, string> = {
   BBAI: "BigBear.ai",
   AI: "C3.ai",
   QBTS: "D-Wave Quantum",
+  QUBT: "Quantum Computing",
   RGTI: "Rigetti Computing",
   IONQ: "IonQ",
   OKLO: "Oklo",
@@ -419,6 +423,7 @@ const SECTOR_ALIASES: Record<string, string> = {
   etf: "ETFs",
   etfs: "ETFs",
   options: "Options",
+  quantum: "Quantum",
   "real estate": "Real Estate",
   "small cap": "Small Caps",
   "small caps": "Small Caps",
@@ -431,6 +436,14 @@ const SECTOR_ALIASES: Record<string, string> = {
   "long-term investing": "Long-term Investing",
   "short term trading": "Short-term Trading",
   "short-term trading": "Short-term Trading",
+};
+
+const TICKER_SECTOR_OVERRIDES: Record<string, string> = {
+  IBM: "Quantum",
+  IONQ: "Quantum",
+  QBTS: "Quantum",
+  QUBT: "Quantum",
+  RGTI: "Quantum",
 };
 
 export function resolveSectorUniverseKey(rawSector: string | null | undefined) {
@@ -451,4 +464,24 @@ export function resolveSectorUniverseKey(rawSector: string | null | undefined) {
       (key) => key.toLowerCase() === normalizedSector
     ) ?? ""
   );
+}
+
+export function getDisplaySectorForTicker(
+  ticker: string | null | undefined,
+  fallbackSector: string | null | undefined
+) {
+  const normalizedTicker = (ticker ?? "").trim().toUpperCase();
+  const override = normalizedTicker ? TICKER_SECTOR_OVERRIDES[normalizedTicker] : "";
+
+  if (override) {
+    return override;
+  }
+
+  const normalizedSector = resolveSectorUniverseKey(fallbackSector);
+
+  if (normalizedSector) {
+    return normalizedSector;
+  }
+
+  return (fallbackSector ?? "").trim();
 }

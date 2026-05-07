@@ -16,6 +16,7 @@ import {
 } from "@/lib/routing/queryContext";
 import {
   COMPANY_NAMES,
+  getDisplaySectorForTicker,
   resolveSectorUniverseKey,
   SECTOR_STOCKS,
 } from "@/lib/screenerSectorUniverse";
@@ -206,6 +207,10 @@ function getScoreColor(score: number) {
 }
 
 function getTickerSector(ticker: string) {
+  const overriddenSector = getDisplaySectorForTicker(ticker, "");
+
+  if (overriddenSector) return overriddenSector;
+
   for (const [sector, tickers] of Object.entries(SECTOR_STOCKS)) {
     if (tickers.includes(ticker)) return sector;
   }

@@ -14,6 +14,12 @@ export type SigiInterestDefinition = {
 export const SIGI_INTEREST_DEFINITIONS: SigiInterestDefinition[] = [
   { label: "Technology" },
   { label: "AI" },
+  {
+    label: "Quantum",
+    primarySectors: ["Quantum", "Technology"],
+    themeTags: ["QUANTUM", "QUANTUM COMPUTING"],
+    tickers: ["IBM", "IONQ", "QBTS", "QUBT", "RGTI"],
+  },
   { label: "Semiconductors" },
   { label: "Energy" },
   { label: "Healthcare" },

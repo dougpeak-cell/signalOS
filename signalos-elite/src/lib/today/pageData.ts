@@ -5,6 +5,7 @@ import { getMarketMovers, type MarketMoverRow } from "@/lib/market/movers";
 import { fetchFreeTickerPulses } from "@/lib/news/fetchFreeTickerPulses";
 import { fetchTopMarketNews, type NewsItem } from "@/lib/news";
 import type { TickerNewsPulse } from "@/lib/news/tickerNewsPulse";
+import { getDisplaySectorForTicker } from "@/lib/screenerSectorUniverse";
 import { getCurrentMarketPhase, isPreMarketNow } from "@/lib/today/marketPhase";
 import {
   rankSetupCandidates,
@@ -805,7 +806,7 @@ function buildSectorHeatmapItems(candidates: SetupDiscoveryCandidate[]): TodaySe
   const grouped = new Map<string, SetupDiscoveryCandidate[]>();
 
   for (const candidate of candidates) {
-    const sector = String(candidate.sector ?? "").trim();
+    const sector = getDisplaySectorForTicker(candidate.ticker, candidate.sector);
     if (!sector) continue;
     const bucket = grouped.get(sector) ?? [];
     bucket.push(candidate);

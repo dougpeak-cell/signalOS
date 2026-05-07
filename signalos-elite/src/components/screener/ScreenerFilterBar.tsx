@@ -36,6 +36,7 @@ const sectorFilters = [
   "All",
   "Technology",
   "AI",
+  "Quantum",
   "Semiconductors",
   "Software",
   "Healthcare",

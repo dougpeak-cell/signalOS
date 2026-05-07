@@ -13,6 +13,7 @@ import {
 } from "@/lib/market/serverQuote";
 import {
   COMPANY_NAMES,
+  getDisplaySectorForTicker,
   resolveSectorUniverseKey,
   SECTOR_STOCKS,
 } from "@/lib/screenerSectorUniverse";
@@ -548,11 +549,13 @@ function enrichRowWithMarketData(
         toFiniteNumber(row.upside) ??
         engineTarget.upsidePct;
 
-  const sector =
+  const sector = getDisplaySectorForTicker(
+    ticker,
     fundamentals?.sector?.trim() ||
-    signal?.sector?.trim() ||
-    row.sector?.trim() ||
-    "Unclassified";
+      signal?.sector?.trim() ||
+      row.sector?.trim() ||
+      "Unclassified"
+  );
 
   return {
     ...row,
@@ -666,7 +669,7 @@ export default async function ScreenerPage({
       })();
 
   const filteredRows = searchMatchedRows.filter((row) => {
-    const normalizedRowSector = (row.sector ?? "").toLowerCase();
+    const normalizedRowSector = getDisplaySectorForTicker(row.ticker, row.sector).toLowerCase();
 
     return (
       !hasActiveSector ||
