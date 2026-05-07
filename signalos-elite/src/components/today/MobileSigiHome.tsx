@@ -270,7 +270,7 @@ export default function MobileSigiHome({
 
           return Math.abs(right.changePercent ?? 0) - Math.abs(left.changePercent ?? 0);
         })
-        .slice(0, 6),
+        .slice(0, 5),
     [highVolumeRows]
   );
   const lastUpdatedLabel = useMemo(
@@ -670,35 +670,35 @@ export default function MobileSigiHome({
           </span>
         </div>
 
-        <div className="mt-3 space-y-3">
+        <div className="mt-3 space-y-1.5">
           {mobileHighVolumeRows.length > 0 ? (
             mobileHighVolumeRows.map((row) => (
-              <div key={row.ticker} className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/4 px-3 py-3">
+              <div key={row.ticker} className="flex items-center justify-between gap-2.5 rounded-xl border border-white/8 bg-white/3 px-3 py-2">
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold text-white">{row.ticker}</div>
-                  <div className="truncate text-xs text-white/50">{row.name ?? row.ticker}</div>
-                  <div className={`mt-1 text-xs ${changeClass(row.changePercent)}`}>
+                  <div className={`mt-0.5 text-xs ${changeClass(row.changePercent)}`}>
                     {formatChange(row.changePercent)}
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <div className="text-sm font-semibold text-white">{formatCompactNumber(row.volume)}</div>
-                  <div className="mt-1 text-[11px] text-white/52">
+                <div className="w-19 shrink-0 text-right">
+                  <div className="text-[15px] font-semibold text-white">{formatCompactNumber(row.volume)}</div>
+                  <div className="mt-0.5 text-[10px] text-white/48">
                     RVOL {typeof row.rvol === "number" && Number.isFinite(row.rvol) ? `${row.rvol.toFixed(1)}x` : "-"}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      router.push(
-                        `/stocks/${row.ticker}/live?source=%2Ftoday&session=${defaultSetupSession}`
-                      )
-                    }
-                    className="mt-2 min-h-9 rounded-lg border border-cyan-300/30 px-2.5 py-1 text-[11px] font-semibold text-cyan-100"
-                  >
-                    Open
-                  </button>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      `/stocks/${row.ticker}/live?source=%2Ftoday&session=${defaultSetupSession}`
+                    )
+                  }
+                  className="min-h-9 shrink-0 rounded-lg border border-cyan-300/30 px-2.5 text-[11px] font-semibold text-cyan-100"
+                >
+                  Open
+                </button>
               </div>
             ))
           ) : (
