@@ -275,9 +275,9 @@ async function getBroadConsensusCandidates() {
     .slice(0, BROAD_CANDIDATE_LIMIT);
 }
 
-async function getFallbackSectorCandidates() {
+async function getSectorCandidates(sectors: string[]) {
   const sectorCandidates = await Promise.all(
-    SECTOR_BUCKETS.map(async (sector) => {
+    sectors.map(async (sector) => {
       const url =
         `https://financialmodelingprep.com/stable/company-screener` +
         `?sector=${encodeURIComponent(sector)}` +
@@ -303,30 +303,111 @@ async function getFallbackSectorCandidates() {
   return sectorCandidates.flat();
 }
 
+async function getFallbackSectorCandidates() {
+  return getSectorCandidates(SECTOR_BUCKETS);
+}
+
+async function enrichCandidateRows(candidates: Array<{ symbol: string; consensusScore?: number }>) {
+  const enriched = await Promise.all(
+    candidates.map(async (candidate) => {
+      const profileJson = await fetchJson(
+        `https://financialmodelingprep.com/stable/profile?symbol=${candidate.symbol}&apikey=${FMP_API_KEY}`
+      );
+
+      const profile = Array.isArray(profileJson) ? profileJson[0] : profileJson;
+
+      return {
+        symbol: candidate.symbol,
+        companyName:
+          typeof profile?.companyName === "string" ? profile.companyName : candidate.symbol,
+        sector: normalizeSector(typeof profile?.sector === "string" ? profile.sector : null),
+        price: toFiniteNumber(profile?.price),
+        consensusScore: candidate.consensusScore,
+      } satisfies CandidateRow;
+    })
+  );
+
+  return enriched.filter((candidate) => candidate.price != null);
+}
+
+async function scoreCandidateRows(candidates: CandidateRow[]) {
+  return Promise.all(
+    candidates.map(async (candidate) => {
+      const [targetJson, gradesJson] = await Promise.all([
+        fetchJson(
+          `https://financialmodelingprep.com/stable/price-target-consensus?symbol=${candidate.symbol}&apikey=${FMP_API_KEY}`
+        ),
+        fetchJson(
+          `https://financialmodelingprep.com/stable/grades?symbol=${candidate.symbol}&apikey=${FMP_API_KEY}`
+        ),
+      ]);
+
+      const target = Array.isArray(targetJson) ? targetJson[0] : targetJson;
+      const grades = Array.isArray(gradesJson)
+        ? gradesJson
+        : gradesJson
+          ? [gradesJson]
+          : [];
+      const grade = pickBestRecentGrade(grades);
+      const publishedDate = grade?.publishedDate ?? grade?.date ?? null;
+      const recencyBucket = getRecencyBucket(publishedDate);
+
+      const targetConsensus =
+        typeof target?.targetConsensus === "number"
+          ? target.targetConsensus
+          : typeof target?.targetPrice === "number"
+            ? target.targetPrice
+            : null;
+
+      const price = candidate.price;
+
+      const upsidePercent =
+        price && targetConsensus
+          ? ((targetConsensus - price) / price) * 100
+          : null;
+
+      const score =
+        clamp(upsidePercent ?? 0, -25, 50) +
+        gradeScore(grade?.newGrade ?? grade?.grade ?? null) +
+        recencyBucketScore(recencyBucket);
+
+      return {
+        symbol: candidate.symbol,
+        companyName: candidate.companyName,
+        sector: candidate.sector,
+        price,
+        targetConsensus,
+        targetHigh: target?.targetHigh ?? null,
+        targetLow: target?.targetLow ?? null,
+        lastGrade: grade?.newGrade ?? grade?.grade ?? null,
+        firm: grade?.gradingCompany ?? grade?.firm ?? null,
+        publishedDate,
+        recencyBucket,
+        upsidePercent,
+        score,
+      } satisfies PickRow;
+    })
+  );
+}
+
+function addQualifiedRows(bySector: Map<string, PickRow[]>, rows: PickRow[]) {
+  for (const row of rows) {
+    if (!row.targetConsensus || !row.lastGrade) continue;
+
+    const ageInDays = getAgeInDays(row.publishedDate);
+    if (ageInDays != null && ageInDays > ANALYST_LOOKBACK_DAYS) continue;
+
+    const list = bySector.get(row.sector) ?? [];
+    list.push(row);
+    bySector.set(row.sector, list);
+  }
+}
+
 async function buildCandidateRows() {
   try {
     const broadCandidates = await getBroadConsensusCandidates();
 
-    const enriched = await Promise.all(
-      broadCandidates.map(async (candidate) => {
-        const profileJson = await fetchJson(
-          `https://financialmodelingprep.com/stable/profile?symbol=${candidate.symbol}&apikey=${FMP_API_KEY}`
-        );
-
-        const profile = Array.isArray(profileJson) ? profileJson[0] : profileJson;
-
-        return {
-          symbol: candidate.symbol,
-          companyName:
-            typeof profile?.companyName === "string" ? profile.companyName : candidate.symbol,
-          sector: normalizeSector(typeof profile?.sector === "string" ? profile.sector : null),
-          price: toFiniteNumber(profile?.price),
-          consensusScore: candidate.consensusScore,
-        } satisfies CandidateRow;
-      })
-    );
-
-    const valid = enriched.filter((candidate) => candidate.price != null);
+    const valid = await enrichCandidateRows(broadCandidates);
     if (valid.length > 0) return valid;
   } catch (error) {
     console.error("FMP broad analyst universe error:", error);
@@ -345,83 +426,30 @@ export async function GET() {
 
   try {
     const candidates = await buildCandidateRows();
-
-    const enriched = await Promise.all(
-      candidates.map(async (candidate) => {
-        const [targetJson, gradesJson] = await Promise.all([
-          fetchJson(
-            `https://financialmodelingprep.com/stable/price-target-consensus?symbol=${candidate.symbol}&apikey=${FMP_API_KEY}`
-          ),
-          fetchJson(
-            `https://financialmodelingprep.com/stable/grades?symbol=${candidate.symbol}&apikey=${FMP_API_KEY}`
-          ),
-        ]);
-
-        const target = Array.isArray(targetJson) ? targetJson[0] : targetJson;
-        const grades = Array.isArray(gradesJson)
-          ? gradesJson
-          : gradesJson
-            ? [gradesJson]
-            : [];
-        const grade = pickBestRecentGrade(grades);
-        const publishedDate = grade?.publishedDate ?? grade?.date ?? null;
-        const recencyBucket = getRecencyBucket(publishedDate);
-
-        const targetConsensus =
-          typeof target?.targetConsensus === "number"
-            ? target.targetConsensus
-            : typeof target?.targetPrice === "number"
-              ? target.targetPrice
-              : null;
-
-        const price = candidate.price;
-
-        const upsidePercent =
-          price && targetConsensus
-            ? ((targetConsensus - price) / price) * 100
-            : null;
-
-        const score =
-          clamp(upsidePercent ?? 0, -25, 50) +
-          gradeScore(grade?.newGrade ?? grade?.grade ?? null) +
-          recencyBucketScore(recencyBucket);
-
-        return {
-          symbol: candidate.symbol,
-          companyName: candidate.companyName,
-          sector: candidate.sector,
-          price,
-          targetConsensus,
-          targetHigh: target?.targetHigh ?? null,
-          targetLow: target?.targetLow ?? null,
-          lastGrade: grade?.newGrade ?? grade?.grade ?? null,
-          firm: grade?.gradingCompany ?? grade?.firm ?? null,
-          publishedDate,
-          recencyBucket,
-          upsidePercent,
-          score,
-        } satisfies PickRow;
-      })
-    );
+    const enriched = await scoreCandidateRows(candidates);
 
     const bySector = new Map<string, PickRow[]>();
+    addQualifiedRows(bySector, enriched);
 
-    for (const row of enriched) {
-      if (!row.targetConsensus || !row.lastGrade) continue;
+    const missingSectors = SECTOR_BUCKETS.filter((sector) => (bySector.get(sector) ?? []).length === 0);
 
-      const ageInDays = getAgeInDays(row.publishedDate);
-      if (ageInDays != null && ageInDays > ANALYST_LOOKBACK_DAYS) continue;
+    if (missingSectors.length > 0) {
+      const seenSymbols = new Set(candidates.map((candidate) => candidate.symbol));
+      const backfillCandidates = (await getSectorCandidates(missingSectors)).filter(
+        (candidate) => !seenSymbols.has(candidate.symbol)
+      );
 
-      const list = bySector.get(row.sector) ?? [];
-      list.push(row);
-      bySector.set(row.sector, list);
+      if (backfillCandidates.length > 0) {
+        const backfillRows = await scoreCandidateRows(backfillCandidates);
+        addQualifiedRows(bySector, backfillRows);
+      }
     }
 
     const sectorRows = Object.fromEntries(
       SECTOR_BUCKETS.map((sector) => [
         sector,
         [...(bySector.get(sector) ?? [])].sort((a, b) => b.score - a.score).slice(0, 10),
-      ]).filter((entry) => entry[1].length > 0)
+      ])
     );
 
     const diversified: PickRow[] = [];
