@@ -754,6 +754,62 @@ async function fetchUpcomingEarnings(
   return selectedRows;
 }
 
+function buildFallbackCommandCenterEarningsRows(options: {
+  watchlist: WatchlistItem[];
+  topSetups: RankedSetupItem[];
+  emergingSetups: RankedSetupItem[];
+  preMarketTopSetups: RankedSetupItem[];
+  regularMostTradedRows: TodayMostTradedRow[];
+  preMarketRows: TodayMostTradedRow[];
+}): TodayCommandCenterEarningsRow[] {
+  const candidates = [
+    ...options.watchlist.slice(0, 6).map((item) => ({
+      ticker: getWatchlistTicker(item),
+      name: getWatchlistName(item),
+      dateLabel: "Calendar refresh",
+      timing: "Watchlist",
+    })),
+    ...options.topSetups.slice(0, 6).map((item) => ({
+      ticker: item.ticker,
+      name: item.name,
+      dateLabel: "Next cycle",
+      timing: "Setup",
+    })),
+    ...options.emergingSetups.slice(0, 4).map((item) => ({
+      ticker: item.ticker,
+      name: item.name,
+      dateLabel: "Next cycle",
+      timing: "Emerging",
+    })),
+    ...options.preMarketTopSetups.slice(0, 4).map((item) => ({
+      ticker: item.ticker,
+      name: item.name,
+      dateLabel: "Premarket",
+      timing: "Watch",
+    })),
+    ...options.regularMostTradedRows.slice(0, 4).map((row) => ({
+      ticker: row.ticker,
+      name: row.name ?? row.ticker,
+      dateLabel: "Active tape",
+      timing: "Watch",
+    })),
+    ...options.preMarketRows.slice(0, 4).map((row) => ({
+      ticker: row.ticker,
+      name: row.name ?? row.ticker,
+      dateLabel: "Premarket",
+      timing: "Watch",
+    })),
+  ];
+
+  return candidates
+    .filter((row) => row.ticker)
+    .filter(
+      (row, index, collection) =>
+        collection.findIndex((candidate) => candidate.ticker === row.ticker) === index
+    )
+    .slice(0, 4);
+}
+
 function buildCommandCenterNews(items: NewsItem[]): TodayCommandCenterNewsRow[] {
   if (items.length === 0) {
     return FALLBACK_TRENDING_NEWS_ROWS;
@@ -1111,7 +1167,7 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     pulseMap,
     commandCenterGainers,
     commandCenterLosers,
-    commandCenterEarnings,
+    rawCommandCenterEarnings,
     sectorHeatmapItems,
     globalPulseItems,
     featuredMacro,
@@ -1151,7 +1207,8 @@ export async function getTodayPageData(): Promise<TodayPageData> {
             ])
           )
         ),
-        []
+        [],
+        3000
       )
     ),
     time(
@@ -1175,6 +1232,18 @@ export async function getTodayPageData(): Promise<TodayPageData> {
       Promise.resolve().then(() => buildRisks(setupDiscovery))
     ),
   ]);
+
+  const commandCenterEarnings =
+    rawCommandCenterEarnings.length > 0
+      ? rawCommandCenterEarnings
+      : buildFallbackCommandCenterEarningsRows({
+          watchlist: storedMarketContext.watchlist,
+          topSetups: setupDiscovery.top,
+          emergingSetups: setupDiscovery.emerging,
+          preMarketTopSetups,
+          regularMostTradedRows,
+          preMarketRows,
+        });
 
   const [
     topSetups,

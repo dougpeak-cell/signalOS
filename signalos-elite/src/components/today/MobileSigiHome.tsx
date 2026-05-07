@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactElement } from "react";
-import { useLiveMarket } from "@/components/market/LiveMarketProvider";
+import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
 import { useOptionalMarketData } from "@/components/providers/MarketDataProvider";
 import { useShellMarketContext } from "@/components/shell/ShellMarketContext";
 import { openMobileSigiSheet } from "@/components/shell/mobileSigiSheetEvents";
@@ -115,6 +115,7 @@ export default function MobileSigiHome({
     portfolioTickers: accountPortfolioTickers,
   } = useShellMarketContext();
   const marketData = useOptionalMarketData();
+  const liveMarket = useOptionalLiveMarket();
   const {
     ensureQuotes,
     ensureHistory,
@@ -122,7 +123,14 @@ export default function MobileSigiHome({
     refreshHistoryNow,
     quoteMap,
     historyMap,
-  } = useLiveMarket();
+  } = {
+    ensureQuotes: liveMarket?.ensureQuotes ?? (() => {}),
+    ensureHistory: liveMarket?.ensureHistory ?? (() => {}),
+    refreshQuotesNow: liveMarket?.refreshQuotesNow ?? (() => Promise.resolve()),
+    refreshHistoryNow: liveMarket?.refreshHistoryNow ?? (() => Promise.resolve()),
+    quoteMap: liveMarket?.quoteMap ?? {},
+    historyMap: liveMarket?.historyMap ?? {},
+  };
   const refreshNow = marketData?.refreshNow ?? (() => Promise.resolve());
   const refreshIntel = marketData?.refreshIntel ?? (() => Promise.resolve());
   const lastUpdatedAt = marketData?.lastUpdatedAt ?? null;

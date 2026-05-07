@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { useLiveMarket } from "@/components/market/LiveMarketProvider";
+import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
 import CondensedCommandCenterTabbed from "@/components/today/CondensedCommandCenterTabbed";
 import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
 
@@ -258,7 +258,10 @@ export default function CondensedCommandCenterLive({
   earnings: EarningsRow[];
   news: NewsRow[];
 }) {
-  const { quoteMap, ensureQuotes, refreshQuotesNow } = useLiveMarket();
+  const liveMarket = useOptionalLiveMarket();
+  const quoteMap = liveMarket?.quoteMap ?? {};
+  const ensureQuotes = liveMarket?.ensureQuotes ?? (() => {});
+  const refreshQuotesNow = liveMarket?.refreshQuotesNow ?? (() => Promise.resolve());
   const { watchlistTickers } = useStoredWatchlistTickers();
   const requestedWatchlistSignatureRef = useRef("");
   const [validatedNewsTickers, setValidatedNewsTickers] = useState<Set<string>>(new Set());
