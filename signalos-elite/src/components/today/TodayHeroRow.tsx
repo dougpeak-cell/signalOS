@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import MarketThesisHero from "@/components/today/MarketThesisHero";
 import SigiDecisionPanel from "@/components/today/SigiDecisionPanel";
 import { TodayHeroProvider } from "@/components/today/TodayHeroContext";
+import { getHeroStoryPayload } from "@/lib/news/heroStory";
 import type {
   TodayCommandCenterNewsRow,
   TodayCommandCenterMoverRow,
@@ -9,7 +10,7 @@ import type {
   TodayWatchlistMoverRow,
 } from "@/lib/today/pageData";
 
-export default function TodayHeroRow({
+export default async function TodayHeroRow({
   topSetups,
   movers,
   news,
@@ -19,9 +20,11 @@ export default function TodayHeroRow({
   movers: TodayCommandCenterMoverRow[];
   news: TodayCommandCenterNewsRow[];
   watchlistRows: TodayWatchlistMoverRow[];
-}): ReactElement {
+}): Promise<ReactElement> {
+  const initialHeroStory = await getHeroStoryPayload();
+
   return (
-    <TodayHeroProvider>
+    <TodayHeroProvider initialHeroStory={initialHeroStory}>
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.45fr_0.95fr]">
         <MarketThesisHero />
         <SigiDecisionPanel

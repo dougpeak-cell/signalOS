@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { HeroStory } from "./TodayHeroPanel";
 
-export function useHeroStory() {
-  const [heroStory, setHeroStory] = useState<HeroStory | null>(null);
+export function useHeroStory(initialHeroStory: HeroStory | null = null) {
+  const [heroStory, setHeroStory] = useState<HeroStory | null>(initialHeroStory);
   const [isLoadingHero, setIsLoadingHero] = useState(false);
   const heroRequestIdRef = useRef(0);
 
@@ -35,8 +35,12 @@ export function useHeroStory() {
   }, []);
 
   useEffect(() => {
+    if (initialHeroStory) {
+      return;
+    }
+
     void loadHeroStory();
-  }, [loadHeroStory]);
+  }, [initialHeroStory, loadHeroStory]);
 
   return {
     heroStory,

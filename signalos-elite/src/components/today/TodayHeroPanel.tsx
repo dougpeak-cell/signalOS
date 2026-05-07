@@ -18,7 +18,7 @@ export type HeroStoryItem = {
   importance?: number;
   impact?: string;
   whyItMatters?: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
 };
 
 export type HeroStoryStage =
@@ -34,7 +34,7 @@ export type HeroStory = {
   summary: string;
   image?: string | null;
   source?: string;
-  timestamp?: string;
+  timestamp?: string | null;
   ticker?: string | null;
   whyItMatters?: string;
   items?: HeroStoryItem[];

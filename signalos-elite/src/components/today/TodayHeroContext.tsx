@@ -25,8 +25,14 @@ type TodayHeroContextValue = {
 
 const TodayHeroContext = createContext<TodayHeroContextValue | null>(null);
 
-export function TodayHeroProvider({ children }: { children: ReactNode }): ReactElement {
-  const { heroStory, loadHeroStory } = useHeroStory();
+export function TodayHeroProvider({
+  children,
+  initialHeroStory = null,
+}: {
+  children: ReactNode;
+  initialHeroStory?: HeroStory | null;
+}): ReactElement {
+  const { heroStory, loadHeroStory } = useHeroStory(initialHeroStory);
   const { activeTicker } = useSelectedTicker();
   const [stockContext, setStockContext] = useState<SigiStockContext | null>(null);
   const stockContextRequestIdRef = useRef(0);
