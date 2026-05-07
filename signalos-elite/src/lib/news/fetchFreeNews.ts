@@ -4,6 +4,8 @@ import { detectNewsImpact, scoreNewsItem } from "@/lib/news/scoreNewsHeaderItems
 
 type FreeNewsSource = string;
 
+const ARTICLE_IMAGE_LOOKUP_LIMIT = 8;
+
 type FreeRssItem = {
   id: string;
   title: string;
@@ -57,18 +59,89 @@ function extractAttribute(block: string, tagPattern: string, attribute: string):
   return match?.[1]?.trim() ?? "";
 }
 
+function decodeHtmlEntities(value: string = ""): string {
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+}
+
+function resolveUrl(value?: string | null, baseUrl?: string): string | null {
+  const candidate = decodeHtmlEntities(String(value ?? "").trim());
+  if (!candidate) return null;
+
+  try {
+    const resolved = baseUrl ? new URL(candidate, baseUrl) : new URL(candidate);
+    if (resolved.protocol !== "http:" && resolved.protocol !== "https:") {
+      return null;
+    }
+
+    return resolved.toString();
+  } catch {
+    return null;
+  }
+}
+
+function extractMetaContent(html: string, attribute: string, value: string): string {
+  const match = html.match(
+    new RegExp(
+      `<meta[^>]+${attribute}=["']${value}["'][^>]+content=["']([^"']+)["'][^>]*>|<meta[^>]+content=["']([^"']+)["'][^>]+${attribute}=["']${value}["'][^>]*>`,
+      "i"
+    )
+  );
+
+  return match?.[1]?.trim() ?? match?.[2]?.trim() ?? "";
+}
+
+function extractLinkHref(html: string, relValue: string): string {
+  const match = html.match(
+    new RegExp(
+      `<link[^>]+rel=["'][^"']*${relValue}[^"']*["'][^>]+href=["']([^"']+)["'][^>]*>|<link[^>]+href=["']([^"']+)["'][^>]+rel=["'][^"']*${relValue}[^"']*["'][^>]*>`,
+      "i"
+    )
+  );
+
+  return match?.[1]?.trim() ?? match?.[2]?.trim() ?? "";
+}
+
+function extractJsonLdImage(html: string): string {
+  const scripts = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi) ?? [];
+
+  for (const script of scripts) {
+    const rawJson = script
+      .replace(/<script[^>]*>/i, "")
+      .replace(/<\/script>$/i, "")
+      .trim();
+
+    const objectMatch = rawJson.match(/"image"\s*:\s*"([^"]+)"/i);
+    if (objectMatch?.[1]) return objectMatch[1].trim();
+
+    const arrayMatch = rawJson.match(/"image"\s*:\s*\[(.*?)\]/i);
+    if (arrayMatch?.[1]) {
+      const firstImageMatch = arrayMatch[1].match(/"([^"]+)"/);
+      if (firstImageMatch?.[1]) return firstImageMatch[1].trim();
+    }
+  }
+
+  return "";
+}
+
 function extractImageUrl(block: string): string | undefined {
-  const mediaContent = extractAttribute(block, "media:content", "url");
+  const mediaContent = resolveUrl(extractAttribute(block, "media:content", "url"));
   if (mediaContent) return mediaContent;
 
-  const mediaThumbnail = extractAttribute(block, "media:thumbnail", "url");
+  const mediaThumbnail = resolveUrl(extractAttribute(block, "media:thumbnail", "url"));
   if (mediaThumbnail) return mediaThumbnail;
 
-  const enclosure = extractAttribute(block, "enclosure", "url");
+  const enclosure = resolveUrl(extractAttribute(block, "enclosure", "url"));
   if (enclosure) return enclosure;
 
   const imageMatch = block.match(/<img[^>]*\bsrc=["']([^"']+)["'][^>]*>/i);
-  return imageMatch?.[1]?.trim() || undefined;
+  return resolveUrl(imageMatch?.[1]) ?? undefined;
 }
 
 function normalizeNewsImage(raw: {
@@ -77,7 +150,77 @@ function normalizeNewsImage(raw: {
   thumbnail?: string | null;
   urlToImage?: string | null;
 }) {
-  return raw.image || raw.imageUrl || raw.thumbnail || raw.urlToImage || null;
+  return (
+    resolveUrl(raw.image) ||
+    resolveUrl(raw.imageUrl) ||
+    resolveUrl(raw.thumbnail) ||
+    resolveUrl(raw.urlToImage) ||
+    null
+  );
+}
+
+async function fetchArticleImageUrl(articleUrl: string): Promise<string | null> {
+  try {
+    const response = await fetch(articleUrl, {
+      method: "GET",
+      headers: {
+        accept: "text/html,application/xhtml+xml,*/*",
+      },
+      next: { revalidate: 900 },
+    });
+
+    if (!response.ok) return null;
+
+    const html = await response.text();
+    const imageCandidate =
+      extractMetaContent(html, "property", "og:image") ||
+      extractMetaContent(html, "name", "twitter:image") ||
+      extractMetaContent(html, "property", "twitter:image") ||
+      extractLinkHref(html, "image_src") ||
+      extractJsonLdImage(html);
+
+    return resolveUrl(imageCandidate, articleUrl);
+  } catch {
+    return null;
+  }
+}
+
+async function enrichRssItemsWithImages(items: FreeRssItem[]): Promise<FreeRssItem[]> {
+  const missingImageItems = items
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => !normalizeNewsImage(item) && Boolean(item.link))
+    .slice(0, ARTICLE_IMAGE_LOOKUP_LIMIT);
+
+  if (missingImageItems.length === 0) {
+    return items;
+  }
+
+  const lookups = await Promise.all(
+    missingImageItems.map(async ({ index, item }) => ({
+      index,
+      imageUrl: await fetchArticleImageUrl(item.link),
+    }))
+  );
+
+  if (lookups.every((lookup) => !lookup.imageUrl)) {
+    return items;
+  }
+
+  const enrichedItems = [...items];
+
+  for (const lookup of lookups) {
+    if (!lookup.imageUrl) continue;
+
+    enrichedItems[lookup.index] = {
+      ...enrichedItems[lookup.index],
+      imageUrl: lookup.imageUrl,
+      image: lookup.imageUrl,
+      thumbnail: lookup.imageUrl,
+      urlToImage: lookup.imageUrl,
+    };
+  }
+
+  return enrichedItems;
 }
 
 function toIsoOrNow(value: string): string {
@@ -281,7 +424,8 @@ async function fetchRssWithOptions(
     if (!response.ok) return [];
 
     const xml = await response.text();
-    return extractRssItems(xml, source, options);
+    const items = extractRssItems(xml, source, options);
+    return enrichRssItemsWithImages(items);
   } catch {
     return [];
   }

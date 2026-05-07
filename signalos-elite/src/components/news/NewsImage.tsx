@@ -10,6 +10,7 @@ type NewsImageProps = {
   variant?: "banner" | "thumbnail";
   className?: string;
   fallbackClassName?: string;
+  unavailableBehavior?: "fallback" | "collapse";
 };
 
 function NewsImageFallback({
@@ -89,12 +90,17 @@ export default function NewsImage({
   variant = "thumbnail",
   className = "",
   fallbackClassName = "",
+  unavailableBehavior = "fallback",
 }: NewsImageProps) {
   const [failed, setFailed] = useState(false);
 
   const imageTitle = title ?? alt ?? "Market news image";
   const heightClass = variant === "banner" ? "h-[130px] md:h-[180px]" : "h-[90px]";
   const validSrc = typeof src === "string" && src.trim().length > 8 && !failed;
+
+  if (!validSrc && unavailableBehavior === "collapse") {
+    return null;
+  }
 
   const content = validSrc ? (
     <div
