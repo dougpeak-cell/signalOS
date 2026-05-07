@@ -8,7 +8,7 @@ export const SECTOR_STOCKS: Record<string, string[]> = {
     "AVGO", "TSM", "ASML", "MU", "ARM", "PANW", "CRWD", "ANET", "DDOG", "NOW",
   ],
   Quantum: [
-    "IBM", "IONQ", "QBTS", "QUBT", "RGTI",
+    "IBM", "INFQ", "IONQ", "QBTS", "QUBT", "RGTI",
   ],
   Semiconductors: [
     "NVDA", "AMD", "AVGO", "ARM", "MU", "TSM", "ASML", "LRCX", "KLAC", "AMAT",
@@ -441,6 +441,7 @@ const SECTOR_ALIASES: Record<string, string> = {
 
 const TICKER_SECTOR_OVERRIDES: Record<string, string> = {
   IBM: "Quantum",
+  INFQ: "Quantum",
   IONQ: "Quantum",
   QBTS: "Quantum",
   QUBT: "Quantum",
