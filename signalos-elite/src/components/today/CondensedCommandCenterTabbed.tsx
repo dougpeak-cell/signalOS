@@ -27,6 +27,7 @@ type EarningsRow = {
   name: string;
   dateLabel: string;
   timing: string;
+  isFallback?: boolean;
 };
 
 type NewsRow = {
@@ -369,11 +370,24 @@ function EarningsColumn({
   earnings: EarningsRow[];
   onOpenStock: (ticker: string, source: string) => void;
 }) {
+  const hasFallbackRows = earnings.some((item) => item.isFallback);
+
   return (
     <div className={`${supportSectionClass} border-white/8 bg-black/20`}>
-      <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300/72">
-        Upcoming Earnings
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300/72">
+          Upcoming Earnings
+        </div>
+        <div className="text-[11px] text-white/40">
+          {hasFallbackRows ? "Focus watch" : "Current calendar"}
+        </div>
       </div>
+
+      {hasFallbackRows ? (
+        <div className="mb-3 rounded-2xl border border-amber-400/15 bg-amber-400/8 px-3 py-2 text-[11px] text-amber-100/85">
+          Live earnings dates were unavailable. Showing names in focus instead.
+        </div>
+      ) : null}
 
       <div className={internalCardStackClass}>
         {earnings.length ? (
@@ -385,7 +399,7 @@ function EarningsColumn({
               className={`w-full rounded-2xl border border-white/8 bg-white/2 text-left transition hover:border-cyan-400/20 hover:bg-cyan-400/4 ${rowListItemClass}`}
             >
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="text-lg font-semibold text-white">
                     {item.ticker}
                   </div>
@@ -394,11 +408,11 @@ function EarningsColumn({
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <div className="text-sm font-medium text-white/78">
+                <div className="shrink-0 text-right">
+                  <div className="whitespace-nowrap text-sm font-medium text-white/78">
                     {item.dateLabel}
                   </div>
-                  <div className="text-[11px] uppercase tracking-[0.14em] text-white/38">
+                  <div className="max-w-[6.5rem] whitespace-normal text-[11px] uppercase tracking-[0.14em] text-white/38">
                     {item.timing}
                   </div>
                 </div>

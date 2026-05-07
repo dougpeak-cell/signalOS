@@ -45,6 +45,7 @@ export type TodayCommandCenterEarningsRow = {
   name: string;
   dateLabel: string;
   timing: string;
+  isFallback?: boolean;
 };
 
 export type TodayCommandCenterNewsRow = {
@@ -687,6 +688,7 @@ function normalizeEarningsCalendarRow(
     name: typeof nameCandidate === "string" ? nameCandidate.trim() : ticker,
     dateLabel: formatCalendarDateLabel(sortDate),
     timing: normalizeEarningsTiming(row.time ?? row.when ?? null),
+    isFallback: false,
     sortDate,
   };
 }
@@ -766,38 +768,44 @@ function buildFallbackCommandCenterEarningsRows(options: {
     ...options.watchlist.slice(0, 6).map((item) => ({
       ticker: getWatchlistTicker(item),
       name: getWatchlistName(item),
-      dateLabel: "Calendar refresh",
+      dateLabel: "Calendar pending",
       timing: "Watchlist",
+      isFallback: true,
     })),
     ...options.topSetups.slice(0, 6).map((item) => ({
       ticker: item.ticker,
       name: item.name,
-      dateLabel: "Next cycle",
-      timing: "Setup",
+      dateLabel: "Calendar pending",
+      timing: "Setup watch",
+      isFallback: true,
     })),
     ...options.emergingSetups.slice(0, 4).map((item) => ({
       ticker: item.ticker,
       name: item.name,
-      dateLabel: "Next cycle",
-      timing: "Emerging",
+      dateLabel: "Calendar pending",
+      timing: "Emerging watch",
+      isFallback: true,
     })),
     ...options.preMarketTopSetups.slice(0, 4).map((item) => ({
       ticker: item.ticker,
       name: item.name,
-      dateLabel: "Premarket",
-      timing: "Watch",
+      dateLabel: "Calendar pending",
+      timing: "Premarket watch",
+      isFallback: true,
     })),
     ...options.regularMostTradedRows.slice(0, 4).map((row) => ({
       ticker: row.ticker,
       name: row.name ?? row.ticker,
-      dateLabel: "Active tape",
-      timing: "Watch",
+      dateLabel: "Calendar pending",
+      timing: "Tape watch",
+      isFallback: true,
     })),
     ...options.preMarketRows.slice(0, 4).map((row) => ({
       ticker: row.ticker,
       name: row.name ?? row.ticker,
-      dateLabel: "Premarket",
-      timing: "Watch",
+      dateLabel: "Calendar pending",
+      timing: "Premarket watch",
+      isFallback: true,
     })),
   ];
 
