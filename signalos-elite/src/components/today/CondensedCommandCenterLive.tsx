@@ -8,7 +8,7 @@ import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
 
 type MoverRow = {
   ticker: string;
-  name: string;
+  name?: string;
   price?: number | null;
   changePct?: number | null;
   changePercent?: number | null;
