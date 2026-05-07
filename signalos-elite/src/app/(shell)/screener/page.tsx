@@ -884,6 +884,11 @@ export default async function ScreenerPage({
   const eliteCount = allStocks.filter((row) => row.masterLabel === "Elite").length;
   const strongCount = allStocks.filter((row) => row.masterLabel === "Strong").length;
   const riskCount = allStocks.filter((row) => row.masterLabel === "Risk").length;
+  const filteredMatchTickers = filteredRows.map((row) => row.ticker.toUpperCase());
+  const filteredMatchSummary =
+    filteredMatchTickers.length === 1
+      ? filteredMatchTickers[0]
+      : filteredMatchTickers.slice(0, 3).join(", ");
 
   const avgScore =
     allStocks.length > 0
@@ -1027,7 +1032,9 @@ export default async function ScreenerPage({
           <div className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.12)]">
             {isResultsFallback
               ? "Showing top available ideas"
-              : `${filteredRows.length} matches`}
+              : filteredRows.length === 1
+                ? `1 signal match: ${filteredMatchSummary}`
+                : `${filteredRows.length} signal matches${filteredMatchSummary ? `: ${filteredMatchSummary}` : ""}`}
           </div>
         </div>
 
@@ -1065,6 +1072,14 @@ export default async function ScreenerPage({
             >
               Clear all
             </Link>
+          </div>
+        ) : null}
+
+        {hasActiveSector && filteredRows.length > 0 && isSectorUniverseFallback ? (
+          <div className="mb-4 rounded-2xl border border-cyan-400/18 bg-cyan-400/6 px-4 py-3 text-sm text-cyan-50 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.04)]">
+            {filteredRows.length === 1
+              ? `${filteredMatchSummary} is the only current signal-backed match for ${effectiveSectorParam}. Showing broader ${effectiveSectorParam} names below for context.`
+              : `${filteredRows.length} signal-backed matches were found for ${effectiveSectorParam}: ${filteredMatchSummary}. Showing broader ${effectiveSectorParam} names below for context.`}
           </div>
         ) : null}
 

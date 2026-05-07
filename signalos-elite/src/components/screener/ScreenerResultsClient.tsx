@@ -237,6 +237,12 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   );
 }
 
+function summarizeTickers(tickers: string[]) {
+  if (tickers.length === 0) return "";
+  if (tickers.length === 1) return tickers[0];
+  return tickers.slice(0, 3).join(", ");
+}
+
 export default function ScreenerResultsClient({ stocks }: Props) {
   const selectedTicker = useOptionalSelectedTicker();
   const { addTicker, hasTicker } = useSyncedWatchlist();
@@ -388,18 +394,9 @@ export default function ScreenerResultsClient({ stocks }: Props) {
     return [...matches, ...nonMatches];
   }, [leadershipMode, routeTheme, search, stocks]);
 
-  const topRows = useMemo(
-    () =>
-      [...(Array.isArray(stocks) ? stocks : [])].sort(
-        (a, b) =>
-          Number(b.signalosScore ?? b.masterScore ?? b.score ?? b.conviction ?? 0) -
-          Number(a.signalosScore ?? a.masterScore ?? a.score ?? a.conviction ?? 0)
-      ),
-    [stocks]
-  );
-  const matchedRowCount = topRows.length;
-
   const filteredRows = finalDisplayedRows;
+  const matchedSignalTickers = filteredRows.map((row) => row.ticker.toUpperCase());
+  const matchedSignalSummary = summarizeTickers(matchedSignalTickers);
   const sectorUniverseKey = resolveSectorUniverseKey(sectorFilter);
   const sectorUniverseCount = sectorUniverseKey
     ? (SECTOR_STOCKS[sectorUniverseKey]?.length ?? 0)
@@ -586,6 +583,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
   const canShowMore = feedRows.length > visibleCount;
 
   const resultCount = feedRows.length;
+  const matchedRowCount = resultCount;
   const scoreValues = feedRows.map((row) =>
     Math.max(0, Math.min(100, row.masterScore ?? row.score ?? row.conviction ?? 0))
   );
@@ -793,6 +791,14 @@ export default function ScreenerResultsClient({ stocks }: Props) {
               </Link>
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {shouldUseSectorUniverse && matchedSignalTickers.length > 0 ? (
+        <div className="mb-4 rounded-2xl border border-cyan-400/18 bg-cyan-400/6 px-4 py-3 text-sm text-cyan-50 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.04)]">
+          {matchedSignalTickers.length === 1
+            ? `${matchedSignalSummary} is the current signal-backed match in this filter. Additional names below are broader sector/context rows.`
+            : `${matchedSignalTickers.length} signal-backed matches were found: ${matchedSignalSummary}. Additional names below are broader sector/context rows.`}
         </div>
       ) : null}
 
