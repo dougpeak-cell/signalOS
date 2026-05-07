@@ -87,6 +87,7 @@ export default function TodayPageShell({
 					opportunities={opportunities}
 					risks={risks}
 					leadershipWatch={leadershipWatch}
+					highVolumeRows={defaultSetupSession === "pre" ? preMarketRows : regularMostTradedRows}
 					watchlistRows={watchlistMovers}
 					defaultSetupSession={defaultSetupSession}
 					forceVisible={isDevMobilePreview}
@@ -138,6 +139,7 @@ export default function TodayPageShell({
 						<CondensedCommandCenterLive
 							gainers={commandCenterGainers}
 							losers={commandCenterLosers}
+							highVolumeRows={defaultSetupSession === "pre" ? preMarketRows : regularMostTradedRows}
 							earnings={commandCenterEarnings}
 							news={commandCenterNews}
 						/>

@@ -250,11 +250,13 @@ function resolveRvol(
 export default function CondensedCommandCenterLive({
   gainers,
   losers,
+  highVolumeRows,
   earnings,
   news,
 }: {
   gainers: MoverRow[];
   losers: MoverRow[];
+  highVolumeRows: MoverRow[];
   earnings: EarningsRow[];
   news: NewsRow[];
 }) {
@@ -585,6 +587,7 @@ export default function CondensedCommandCenterLive({
     <CondensedCommandCenterTabbed
       gainers={liveGainers}
       losers={liveLosers}
+      highVolumeRows={highVolumeRows}
       earnings={earnings}
       watchlist={watchlistMoverRows}
       news={normalizedNews}

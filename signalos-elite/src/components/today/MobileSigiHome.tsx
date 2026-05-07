@@ -26,6 +26,7 @@ import {
 } from "@/lib/portfolio/localPortfolio";
 import type {
   TodayCommandCenterNewsRow,
+  TodayMostTradedRow,
   TodayOpportunityItem,
   TodayRiskItem,
   TodaySetupItem,
@@ -39,6 +40,7 @@ type MobileSigiHomeProps = {
   opportunities: TodayOpportunityItem[];
   risks: TodayRiskItem[];
   leadershipWatch: TodaySetupItem[];
+  highVolumeRows: TodayMostTradedRow[];
   watchlistRows: TodayWatchlistMoverRow[];
   defaultSetupSession: TodaySetupSession;
   forceVisible?: boolean;
@@ -97,12 +99,22 @@ function buildLastUpdatedLabel(value: number | null) {
   });
 }
 
+function formatCompactNumber(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "--";
+
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: value >= 1_000_000 ? 1 : 0,
+  }).format(value);
+}
+
 export default function MobileSigiHome({
   topSetups,
   news,
   opportunities,
   risks,
   leadershipWatch,
+  highVolumeRows,
   watchlistRows,
   defaultSetupSession,
   forceVisible = false,
@@ -245,6 +257,22 @@ export default function MobileSigiHome({
     return `${href}${separator}${nextQuery}`;
   }
   const bestStocks = useMemo(() => topSetups.slice(0, 5), [topSetups]);
+  const mobileHighVolumeRows = useMemo(
+    () =>
+      [...highVolumeRows]
+        .filter((row) => (row.volume ?? 0) > 0)
+        .sort((left, right) => {
+          const volumeDiff = (right.volume ?? 0) - (left.volume ?? 0);
+          if (volumeDiff !== 0) return volumeDiff;
+
+          const rvolDiff = (right.rvol ?? 0) - (left.rvol ?? 0);
+          if (rvolDiff !== 0) return rvolDiff;
+
+          return Math.abs(right.changePercent ?? 0) - Math.abs(left.changePercent ?? 0);
+        })
+        .slice(0, 6),
+    [highVolumeRows]
+  );
   const lastUpdatedLabel = useMemo(
     () => buildLastUpdatedLabel(lastRefreshedAt ?? lastUpdatedAt),
     [lastRefreshedAt, lastUpdatedAt]
@@ -625,6 +653,60 @@ export default function MobileSigiHome({
             <div className="mt-2 line-clamp-3 text-xs leading-5 text-white/58">{item.detail}</div>
           </Link>
         ))}
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-black/40 p-4 shadow-[0_12px_26px_rgba(0,0,0,0.18)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-[0.16em] text-cyan-300">
+              High Volume
+            </div>
+            <div className="mt-1 text-xs leading-5 text-white/56">
+              Most active stocks by current volume.
+            </div>
+          </div>
+          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/44">
+            Top {mobileHighVolumeRows.length || 0}
+          </span>
+        </div>
+
+        <div className="mt-3 space-y-3">
+          {mobileHighVolumeRows.length > 0 ? (
+            mobileHighVolumeRows.map((row) => (
+              <div key={row.ticker} className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/4 px-3 py-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold text-white">{row.ticker}</div>
+                  <div className="truncate text-xs text-white/50">{row.name ?? row.ticker}</div>
+                  <div className={`mt-1 text-xs ${changeClass(row.changePercent)}`}>
+                    {formatChange(row.changePercent)}
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-sm font-semibold text-white">{formatCompactNumber(row.volume)}</div>
+                  <div className="mt-1 text-[11px] text-white/52">
+                    RVOL {typeof row.rvol === "number" && Number.isFinite(row.rvol) ? `${row.rvol.toFixed(1)}x` : "-"}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push(
+                        `/stocks/${row.ticker}/live?source=%2Ftoday&session=${defaultSetupSession}`
+                      )
+                    }
+                    className="mt-2 min-h-9 rounded-lg border border-cyan-300/30 px-2.5 py-1 text-[11px] font-semibold text-cyan-100"
+                  >
+                    Open
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-white/3 px-4 py-3 text-sm text-white/52">
+              Live volume leaders are loading.
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="mb-6 rounded-2xl border border-white/10 bg-black/40 p-4">

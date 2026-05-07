@@ -420,12 +420,14 @@ function EarningsColumn({
 export default function CondensedCommandCenterTabbed({
   gainers,
   losers,
+  highVolumeRows,
   earnings,
   watchlist,
   news,
 }: {
   gainers: MoverRow[];
   losers: MoverRow[];
+  highVolumeRows: MoverRow[];
   earnings: EarningsRow[];
   watchlist: WatchlistRow[];
   news: NewsRow[];
@@ -443,7 +445,9 @@ export default function CondensedCommandCenterTabbed({
     const institutionalGainers = gainers.filter(isInstitutionalMover);
     const institutionalLosers = losers.filter(isInstitutionalMover);
     const baseRows = [...gainers, ...losers];
-    const highVolRows = sortByHighVolume(baseRows);
+    const highVolRows = sortByHighVolume(
+      highVolumeRows.length > 0 ? highVolumeRows : baseRows
+    );
 
     const topGainers = sortByMove(institutionalGainers);
     const topLosers = sortByMove(institutionalLosers);
@@ -458,7 +462,7 @@ export default function CondensedCommandCenterTabbed({
       etfGainers: sortByMove(etfGainers),
       etfLosers: sortByMove(etfLosers),
     };
-  }, [gainers, losers]);
+  }, [gainers, losers, highVolumeRows]);
 
   const gainersToShow =
     tab === "etf" ? tabData.etfGainers : tabData.topGainers;

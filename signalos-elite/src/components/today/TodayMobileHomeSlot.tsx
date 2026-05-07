@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactElement } from "react";
 import MobileSigiHome from "@/components/today/MobileSigiHome";
 import type {
   TodayCommandCenterNewsRow,
+  TodayMostTradedRow,
   TodayOpportunityItem,
   TodayRiskItem,
   TodaySetupItem,
@@ -17,6 +18,7 @@ type TodayMobileHomeSlotProps = {
   opportunities: TodayOpportunityItem[];
   risks: TodayRiskItem[];
   leadershipWatch: TodaySetupItem[];
+  highVolumeRows: TodayMostTradedRow[];
   watchlistRows: TodayWatchlistMoverRow[];
   defaultSetupSession: TodaySetupSession;
   forceVisible?: boolean;
@@ -28,6 +30,7 @@ export default function TodayMobileHomeSlot({
   opportunities,
   risks,
   leadershipWatch,
+  highVolumeRows,
   watchlistRows,
   defaultSetupSession,
   forceVisible = false,
@@ -64,6 +67,7 @@ export default function TodayMobileHomeSlot({
       opportunities={opportunities}
       risks={risks}
       leadershipWatch={leadershipWatch}
+      highVolumeRows={highVolumeRows}
       watchlistRows={watchlistRows}
       defaultSetupSession={defaultSetupSession}
       forceVisible={forceVisible}
