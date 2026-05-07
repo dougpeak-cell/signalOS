@@ -126,9 +126,15 @@ function finalizeMoverRows(rows: MarketMoverRow[], limit = 5): MarketMoverRow[] 
 }
 
 async function enrichReferenceData(rows: MarketMoverRow[], apiKey: string) {
+  if (!apiKey || rows.length === 0) {
+    return rows;
+  }
+
   const enriched = await Promise.all(
     rows.map(async (row) => {
-      if (row.name && row.name !== row.ticker && row.sector) return row;
+      // The upstream mover feeds already provide usable display names. Avoid
+      // extra per-ticker reference lookups unless we truly need to fill one in.
+      if (row.name && row.name !== row.ticker) return row;
 
       try {
         const url = `https://api.massive.com/v3/reference/tickers/${encodeURIComponent(

@@ -123,7 +123,7 @@ export async function getSetupDiscoveryData(
 ): Promise<SetupDiscoveryData> {
   const signalLimit = options.signalLimit ?? 60;
   const setupUniverseLimit = options.setupUniverseLimit ?? 30;
-  const signalSeedLimit = Math.max(signalLimit, 400);
+  const signalSeedLimit = Math.max(signalLimit * 2, 160);
 
   const [signalRows, marketSetupUniverse] = await Promise.all([
     // Seed discovery from a broader latest-signals pool so Top Setups does not collapse
@@ -139,6 +139,14 @@ export async function getSetupDiscoveryData(
     ])
   );
 
+  const fundamentalsTickerLimit = Math.max(signalLimit, setupUniverseLimit * 2, 80);
+  const fundamentalsTickers = Array.from(
+    new Set([
+      ...marketSetupUniverse.map((row) => normalizeTicker(row.ticker)),
+      ...signalRows.slice(0, fundamentalsTickerLimit).map((row) => normalizeTicker(row.ticker)),
+    ])
+  );
+
   const [marketSetupSignalRows, fundamentalsEntries] = await Promise.all([
     time(
       "setupDiscovery.marketSetupSignals",
@@ -147,7 +155,7 @@ export async function getSetupDiscoveryData(
     time(
       "setupDiscovery.fundamentals",
       Promise.all(
-        allTickers.map(async (ticker) => [
+        fundamentalsTickers.map(async (ticker) => [
           ticker,
           await getMassiveFundamentals(ticker, { profile: "discovery" }),
         ] as const)

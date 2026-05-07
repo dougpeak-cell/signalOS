@@ -1056,14 +1056,17 @@ export async function getTodayPageData(): Promise<TodayPageData> {
       "setupDiscovery",
       getSetupDiscoveryData({
         signalLimit: 80,
-        setupUniverseLimit: 40,
+        setupUniverseLimit: 24,
       })
     ),
     time(
       "marketNews",
       withTimeout(fetchTopMarketNews({ limit: 8, lookbackHours: 24 }), [], 3000)
     ),
-    time("marketMovers", getMarketMovers()),
+    time(
+      "marketMovers",
+      withTimeout(getMarketMovers(), { gainers: [], losers: [] }, 2500)
+    ),
     time("storedMarketContext", getStoredMarketContext()),
   ]);
 
