@@ -2,7 +2,7 @@ import type { NewsCategory, NewsItem, NewsTone } from "@/lib/news";
 import { toSignalNewsItem } from "@/lib/news/freeNewsSignalItems";
 import { detectNewsImpact, scoreNewsItem } from "@/lib/news/scoreNewsHeaderItems";
 
-type FreeNewsSource = "Yahoo Finance" | "Google News";
+type FreeNewsSource = string;
 
 type FreeRssItem = {
   id: string;
@@ -87,7 +87,11 @@ function toIsoOrNow(value: string): string {
     : new Date().toISOString();
 }
 
-function extractRssItems(xml: string, source: FreeNewsSource): FreeRssItem[] {
+function extractRssItems(
+  xml: string,
+  source: FreeNewsSource,
+  options?: { preferSourceTag?: boolean }
+): FreeRssItem[] {
   const itemBlocks = xml.match(/<item[\s\S]*?<\/item>/gi) ?? [];
 
   return itemBlocks
@@ -96,15 +100,18 @@ function extractRssItems(xml: string, source: FreeNewsSource): FreeRssItem[] {
       const link = extractTag(block, "link");
       const pubDate = extractTag(block, "pubDate");
       const description = extractTag(block, "description");
+      const sourceTag = extractTag(block, "source");
+      const resolvedSource =
+        options?.preferSourceTag && sourceTag.trim().length > 0 ? sourceTag.trim() : source;
 
       if (!title || !link) return null;
 
       return {
-        id: `${source}-${pubDate || index}-${title}-${link}-${index}`,
+        id: `${resolvedSource}-${pubDate || index}-${title}-${link}-${index}`,
         title,
         link,
         publishedAt: toIsoOrNow(pubDate),
-        source,
+        source: resolvedSource,
         summary: description || undefined,
         imageUrl: extractImageUrl(block),
       };
@@ -254,6 +261,14 @@ function mapFreeRssItemToNewsItem(item: FreeRssItem, knownTickers: string[] = []
 }
 
 async function fetchRss(url: string, source: FreeNewsSource): Promise<FreeRssItem[]> {
+  return fetchRssWithOptions(url, source);
+}
+
+async function fetchRssWithOptions(
+  url: string,
+  source: FreeNewsSource,
+  options?: { preferSourceTag?: boolean }
+): Promise<FreeRssItem[]> {
   try {
     const response = await fetch(url, {
       method: "GET",
@@ -266,7 +281,7 @@ async function fetchRss(url: string, source: FreeNewsSource): Promise<FreeRssIte
     if (!response.ok) return [];
 
     const xml = await response.text();
-    return extractRssItems(xml, source);
+    return extractRssItems(xml, source, options);
   } catch {
     return [];
   }
@@ -285,6 +300,12 @@ function yahooFinanceTickerUrl(ticker: string): string {
   return `https://feeds.finance.yahoo.com/rss/2.0/headline?s=${encodeURIComponent(
     ticker
   )}&region=US&lang=en-US`;
+}
+
+function usNewsMoneySearchUrl(): string {
+  return googleNewsSearchUrl(
+    "site:money.usnews.com/investing/news (stocks OR market OR earnings OR analyst) when:1d"
+  );
 }
 
 function isWithinLookbackHours(publishedAt: string, lookbackHours: number): boolean {
@@ -333,6 +354,9 @@ export async function fetchTopFreeMarketNews(options?: {
       googleNewsSearchUrl("earnings OR analyst upgrade OR market movers stocks when:1d"),
       "Google News"
     ),
+    fetchRssWithOptions(usNewsMoneySearchUrl(), "Google News", {
+      preferSourceTag: true,
+    }),
   ]);
 
   return sortByPublishedDesc(

@@ -488,8 +488,13 @@ export default async function NewsPage() {
     mode: "personal",
     watchlistTickers: WATCHLIST,
   });
-  const liveStream = rankedMarket.ranked.slice(0, 8);
-  const leadStory = rankedMarket.primary ?? null;
+  const leadStory =
+    rankedMarket.ranked.find((item: any) => Boolean(item?.image || item?.imageUrl)) ??
+    rankedMarket.primary ??
+    null;
+  const liveStream = rankedMarket.ranked
+    .filter((item: any) => item?.id !== leadStory?.id)
+    .slice(0, 8);
   const visibleNewsItems = rankedMarket.ranked.length > 0 ? rankedMarket.ranked : newsItems;
   const watchlistSet = new Set(WATCHLIST.map((ticker) => ticker.toUpperCase()));
   const visibleWatchlistItems =
@@ -952,13 +957,23 @@ export default async function NewsPage() {
                   </div>
 
                   <div className="space-y-3">
-                    {liveStream.slice(1, 5).map((item: any, index: number) => (
+                    {liveStream.slice(0, 4).map((item: any, index: number) => (
                       <Link
                         key={`${item.url ?? item.id ?? item.headline}-${index}`}
                         href={item.url}
                         className={`group block rounded-[18px] border p-3 transition hover:bg-white/4.5 ${getDriverToneClasses(item.tone).border} ${getDriverToneClasses(item.tone).bg}`}
                       >
                         <div className="flex items-start justify-between gap-3">
+                          <div className="w-28 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/35">
+                            <NewsImage
+                              src={item.image ?? item.imageUrl}
+                              title={item.headline}
+                              variant="thumbnail"
+                              className="rounded-none"
+                              fallbackClassName="rounded-none border-b-0"
+                            />
+                          </div>
+
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${getDriverToneClasses(item.tone).pill}`}>

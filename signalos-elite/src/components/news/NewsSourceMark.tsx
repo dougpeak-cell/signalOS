@@ -33,6 +33,19 @@ function getSourceTheme(source?: string | null) {
     };
   }
 
+  if (lower.includes("u.s. news money") || lower.includes("us news money")) {
+    return {
+      label: "U.S. News Money",
+      monogram: "US",
+      border: "border-amber-300/25",
+      bg: "bg-[linear-gradient(135deg,rgba(251,191,36,0.18),rgba(249,115,22,0.14))]",
+      glow: "shadow-[0_0_18px_rgba(251,191,36,0.16)]",
+      badge: "bg-[linear-gradient(135deg,rgba(251,191,36,0.95),rgba(249,115,22,0.92))]",
+      text: "text-amber-100",
+      subtext: "text-amber-100/70",
+    };
+  }
+
   return {
     label: normalized || "SIGI News",
     monogram: String(normalized || "SN")
