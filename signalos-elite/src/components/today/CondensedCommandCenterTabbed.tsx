@@ -127,26 +127,24 @@ function sortByHighVolume(rows: MoverRow[]) {
     .filter((row) => {
       const price = row.price ?? 0;
       const volume = row.volume ?? 0;
-      const rvol = row.rvol ?? 0;
 
       return (
+        !isWarrant(row.name, row.ticker) &&
+        !isEtf(row.name) &&
         price > 2 &&
-        volume > 500_000 &&
-        (rvol >= 1.5 || volume >= 2_000_000)
+        volume > 0
       );
     })
     .sort((a, b) => {
-      const aScore =
-        (a.rvol ?? 0) * 100 +
-        Math.log10((a.volume ?? 0) + 1);
+      const volumeDiff = (b.volume ?? 0) - (a.volume ?? 0);
+      if (volumeDiff !== 0) return volumeDiff;
 
-      const bScore =
-        (b.rvol ?? 0) * 100 +
-        Math.log10((b.volume ?? 0) + 1);
+      const rvolDiff = (b.rvol ?? 0) - (a.rvol ?? 0);
+      if (rvolDiff !== 0) return rvolDiff;
 
-      return bScore - aScore;
+      return getAbsoluteMove(b) - getAbsoluteMove(a);
     })
-    .slice(0, 6);
+    .slice(0, 10);
 }
 
 function tabClass(active: boolean) {
@@ -468,7 +466,7 @@ export default function CondensedCommandCenterTabbed({
     tab === "etf" ? tabData.etfLosers : tabData.topLosers;
   const subtitle =
     tab === "highVol"
-      ? "Unusual volume and liquidity activity"
+      ? "Top 10 stocks by current volume"
       : "Fast leaders, laggards, earnings, and watchlist movers";
 
   return (
@@ -515,7 +513,7 @@ export default function CondensedCommandCenterTabbed({
       {tab === "highVol" ? (
         <div className="mt-3 rounded-2xl border border-white/10 bg-slate-950/40 p-5">
           <div className="mb-4 text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300">
-            High Volume Leaders
+            Top 10 Volume Stocks
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
