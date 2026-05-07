@@ -37,6 +37,15 @@ import { detectAbsorptionExhaustion } from "@/lib/engines/absorptionExhaustionEn
 
 import TradeBriefPanel from "@/components/stocks/TradeBriefPanel";
 import LiveSetupFeed from "@/components/stocks/LiveSetupFeed";
+import type { WorkspaceChartLineKey } from "@/lib/workspace/layoutPresets";
+import type {
+  WorkspaceCandleDensityMode,
+  WorkspaceChartConfig,
+  WorkspaceChartInterval,
+  WorkspaceChartRange,
+  WorkspacePriceScaleMode,
+  WorkspaceVwapAnchorMode,
+} from "@/lib/workspace/layoutPresets";
 
 import type { SelectedSignal } from "../../lib/stocks/selectedSignal";
 import type { ChartSignal } from "@/lib/chartSignals";
@@ -202,12 +211,12 @@ function buildTradeReadiness({
 }
 
 
-type VwapAnchorMode = "day-open" | "session-high" | "session-low" | "custom";
 type Timeframe = number;
-type ChartRange = "1D" | "5D" | "1M" | "6M" | "1Y" | "5Y";
-type ChartInterval = "1m" | "2m" | "3m" | "5m" | "10m" | "15m" | "1h" | "1d" | "1w";
-type CandleDensityMode = "more" | "standard" | "fewer";
-type PriceScaleMode = "compressed" | "standard" | "expanded";
+type ChartRange = WorkspaceChartRange;
+type ChartInterval = WorkspaceChartInterval;
+type CandleDensityMode = WorkspaceCandleDensityMode;
+type PriceScaleMode = WorkspacePriceScaleMode;
+type VwapAnchorMode = WorkspaceVwapAnchorMode;
 
 type BaseBar = {
   time: number;
@@ -428,6 +437,8 @@ type Props = {
   currentPrice?: number | null;
   enableLiveStream?: boolean;
   onPriceUpdate?: (price: number | null) => void;
+  workspaceChartState?: WorkspaceChartConfig;
+  onWorkspaceChartStateChange?: (state: WorkspaceChartConfig) => void;
 };
 
 const RANGE_OPTIONS: readonly ChartRange[] = ["1D", "5D", "1M", "6M", "1Y", "5Y"];
@@ -476,6 +487,37 @@ const PRICE_SCALE_LABELS: Record<PriceScaleMode, string> = {
   compressed: "Compress Scale",
   standard: "Standard Scale",
   expanded: "Expand Scale",
+};
+
+const CHART_LINE_META: Record<
+  WorkspaceChartLineKey,
+  { label: string; colorClassName: string; activeClassName: string }
+> = {
+  vwap: {
+    label: "VWAP",
+    colorClassName: "bg-teal-400",
+    activeClassName: "border-teal-400/40 bg-teal-400/10 text-teal-200",
+  },
+  ma5: {
+    label: "MA5",
+    colorClassName: "bg-neutral-200",
+    activeClassName: "border-neutral-200/40 bg-white/10 text-white",
+  },
+  ma10: {
+    label: "MA10",
+    colorClassName: "bg-blue-500",
+    activeClassName: "border-blue-400/40 bg-blue-400/10 text-blue-200",
+  },
+  ma20: {
+    label: "MA20",
+    colorClassName: "bg-violet-500",
+    activeClassName: "border-violet-400/40 bg-violet-400/10 text-violet-200",
+  },
+  ma30: {
+    label: "MA30",
+    colorClassName: "bg-orange-500",
+    activeClassName: "border-orange-400/40 bg-orange-400/10 text-orange-200",
+  },
 };
 
 function getBarSpacingForViewport(mode: CandleDensityMode) {
@@ -1186,6 +1228,8 @@ export default function LiveStockChart({
   currentPrice = null,
   enableLiveStream = true,
   onPriceUpdate,
+  workspaceChartState,
+  onWorkspaceChartStateChange,
 }: Props) {
     const formatLevel = (value?: number | null) =>
     typeof value === "number" && Number.isFinite(value)
@@ -1196,6 +1240,7 @@ export default function LiveStockChart({
 
   const activeSelectedSignal = selectedSignalProp ?? contextSelectedSignal ?? null;
   const symbol = String(ticker ?? "").toUpperCase().trim();
+  const usesWorkspaceChartState = workspaceChartState != null;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartWrapRef = useRef<HTMLDivElement | null>(null);
@@ -1237,15 +1282,36 @@ export default function LiveStockChart({
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
-  const [chartRange, setChartRange] = useState<ChartRange>("1D");
-  const [chartInterval, setChartInterval] = useState<ChartInterval>("1m");
+  const [chartRange, setChartRange] = useState<ChartRange>(workspaceChartState?.range ?? "1D");
+  const [chartInterval, setChartInterval] = useState<ChartInterval>(workspaceChartState?.interval ?? "1m");
   const [liveCandleEnabled, setLiveCandleEnabled] = useState(false);
-  const [autoFollowEnabled, setAutoFollowEnabled] = useState(false);
-  const [autoFollowLockOff, setAutoFollowLockOff] = useState(false);
-  const [candleDensityMode, setCandleDensityMode] = useState<CandleDensityMode>("standard");
-  const [priceScaleMode, setPriceScaleMode] = useState<PriceScaleMode>("standard");
-  const [vwapAnchorMode, setVwapAnchorMode] = useState<VwapAnchorMode>("day-open");
-  const [customAnchorTime, setCustomAnchorTime] = useState<number | null>(null);
+  const [autoFollowEnabled, setAutoFollowEnabled] = useState(
+    workspaceChartState?.autoFollowEnabled ?? false
+  );
+  const [autoFollowLockOff, setAutoFollowLockOff] = useState(
+    workspaceChartState?.autoFollowLockOff ?? false
+  );
+  const [candleDensityMode, setCandleDensityMode] = useState<CandleDensityMode>(
+    workspaceChartState?.candleDensityMode ?? "standard"
+  );
+  const [priceScaleMode, setPriceScaleMode] = useState<PriceScaleMode>(
+    workspaceChartState?.priceScaleMode ?? "standard"
+  );
+  const [vwapAnchorMode, setVwapAnchorMode] = useState<VwapAnchorMode>(
+    workspaceChartState?.vwapAnchorMode ?? "day-open"
+  );
+  const [customAnchorTime, setCustomAnchorTime] = useState<number | null>(
+    workspaceChartState?.customAnchorTime ?? null
+  );
+  const [lineVisibility, setLineVisibility] = useState(
+    workspaceChartState?.lineVisibility ?? {
+      vwap: true,
+      ma5: true,
+      ma10: true,
+      ma20: true,
+      ma30: true,
+    }
+  );
   const [focusMode, setFocusMode] = useState<boolean>(focusModeProp ?? expanded);
   const [showReturnToLive, setShowReturnToLive] = useState(false);
   const [isMobileControlSheetOpen, setIsMobileControlSheetOpen] = useState(false);
@@ -1340,10 +1406,82 @@ export default function LiveStockChart({
   }, []);
 
   useEffect(() => {
+    if (!workspaceChartState) return;
+
+    setChartRange((current) => (current === workspaceChartState.range ? current : workspaceChartState.range));
+    setChartInterval((current) =>
+      current === workspaceChartState.interval ? current : workspaceChartState.interval
+    );
+    setAutoFollowEnabled((current) =>
+      current === workspaceChartState.autoFollowEnabled ? current : workspaceChartState.autoFollowEnabled
+    );
+    setAutoFollowLockOff((current) =>
+      current === workspaceChartState.autoFollowLockOff ? current : workspaceChartState.autoFollowLockOff
+    );
+    setCandleDensityMode((current) =>
+      current === workspaceChartState.candleDensityMode ? current : workspaceChartState.candleDensityMode
+    );
+    setPriceScaleMode((current) =>
+      current === workspaceChartState.priceScaleMode ? current : workspaceChartState.priceScaleMode
+    );
+    setVwapAnchorMode((current) =>
+      current === workspaceChartState.vwapAnchorMode ? current : workspaceChartState.vwapAnchorMode
+    );
+    setCustomAnchorTime((current) =>
+      current === workspaceChartState.customAnchorTime ? current : workspaceChartState.customAnchorTime
+    );
+    setLineVisibility((current) => {
+      const next = workspaceChartState.lineVisibility;
+      return current.vwap === next.vwap &&
+        current.ma5 === next.ma5 &&
+        current.ma10 === next.ma10 &&
+        current.ma20 === next.ma20 &&
+        current.ma30 === next.ma30
+        ? current
+        : next;
+    });
+  }, [workspaceChartState]);
+
+  useEffect(() => {
+    if (!onWorkspaceChartStateChange) return;
+
+    onWorkspaceChartStateChange({
+      range: chartRange,
+      interval: chartInterval,
+      autoFollowEnabled,
+      autoFollowLockOff,
+      candleDensityMode,
+      priceScaleMode,
+      vwapAnchorMode,
+      customAnchorTime,
+      lineVisibility,
+    });
+  }, [
+    autoFollowEnabled,
+    autoFollowLockOff,
+    candleDensityMode,
+    chartInterval,
+    chartRange,
+    customAnchorTime,
+    lineVisibility,
+    onWorkspaceChartStateChange,
+    priceScaleMode,
+    vwapAnchorMode,
+  ]);
+
+  const toggleLineVisibility = useCallback((lineKey: WorkspaceChartLineKey) => {
+    setLineVisibility((current) => ({
+      ...current,
+      [lineKey]: !current[lineKey],
+    }));
+  }, []);
+
+  useEffect(() => {
     activeSymbolRef.current = symbol;
   }, [symbol]);
 
   useEffect(() => {
+    if (usesWorkspaceChartState) return;
     if (autoFollowPreferenceLoadedRef.current) return;
 
     autoFollowPreferenceLoadedRef.current = true;
@@ -1385,9 +1523,16 @@ export default function LiveStockChart({
       setCandleDensityMode("standard");
       setPriceScaleMode("standard");
     }
-  }, []);
+  }, [usesWorkspaceChartState]);
 
   useEffect(() => {
+    if (vwapAnchorMode !== "custom" && customAnchorTime != null) {
+      setCustomAnchorTime(null);
+    }
+  }, [customAnchorTime, vwapAnchorMode]);
+
+  useEffect(() => {
+    if (usesWorkspaceChartState) return;
     if (!autoFollowPreferenceLoadedRef.current) return;
 
     try {
@@ -1398,9 +1543,10 @@ export default function LiveStockChart({
     } catch {
       // ignore storage failures
     }
-  }, [autoFollowEnabled]);
+  }, [autoFollowEnabled, usesWorkspaceChartState]);
 
   useEffect(() => {
+    if (usesWorkspaceChartState) return;
     if (!autoFollowPreferenceLoadedRef.current) return;
 
     try {
@@ -1411,9 +1557,10 @@ export default function LiveStockChart({
     } catch {
       // ignore storage failures
     }
-  }, [autoFollowLockOff]);
+  }, [autoFollowLockOff, usesWorkspaceChartState]);
 
   useEffect(() => {
+    if (usesWorkspaceChartState) return;
     if (!autoFollowPreferenceLoadedRef.current) return;
 
     try {
@@ -1428,7 +1575,7 @@ export default function LiveStockChart({
     } catch {
       // ignore storage failures
     }
-  }, [candleDensityMode, priceScaleMode]);
+  }, [candleDensityMode, priceScaleMode, usesWorkspaceChartState]);
 
   useEffect(() => {
     if (autoFollowLockOff && autoFollowEnabled) {
@@ -3117,11 +3264,11 @@ useEffect(() => {
         low: Number(bar.low),
         close: Number(bar.close),
         volume: Number(bar.volume ?? 0),
-        vwap: findValueAtTime(vwap, time),
-        ma5: findValueAtTime(ma5, time),
-        ma10: findValueAtTime(ma10, time),
-        ma20: findValueAtTime(ma20, time),
-        ma30: findValueAtTime(ma30, time),
+        vwap: lineVisibility.vwap ? findValueAtTime(vwap, time) : null,
+        ma5: lineVisibility.ma5 ? findValueAtTime(ma5, time) : null,
+        ma10: lineVisibility.ma10 ? findValueAtTime(ma10, time) : null,
+        ma20: lineVisibility.ma20 ? findValueAtTime(ma20, time) : null,
+        ma30: lineVisibility.ma30 ? findValueAtTime(ma30, time) : null,
       };
 
       if (!tooltipEquals(tooltipRef.current, nextTooltip)) {
@@ -3143,7 +3290,7 @@ useEffect(() => {
         cancelAnimationFrame(tooltipFrameRef.current);
       }
     };
-  }, [displayBars, vwap, ma5, ma10, ma20, ma30]);
+  }, [displayBars, lineVisibility, vwap, ma5, ma10, ma20, ma30]);
 
   useEffect(() => {
     const chart = chartApiRef.current;
@@ -3173,6 +3320,12 @@ useEffect(() => {
     if (!chart || !candles || !volume || !vwapSeries || !ma5Series || !ma10Series || !ma20Series || !ma30Series) {
       return;
     }
+
+    vwapSeries.applyOptions({ visible: lineVisibility.vwap });
+    ma5Series.applyOptions({ visible: lineVisibility.ma5 });
+    ma10Series.applyOptions({ visible: lineVisibility.ma10 });
+    ma20Series.applyOptions({ visible: lineVisibility.ma20 });
+    ma30Series.applyOptions({ visible: lineVisibility.ma30 });
 
     if (loading || liveChartBars.length === 0) {
       return;
@@ -3224,7 +3377,7 @@ useEffect(() => {
     ? Number(candleData[candleData.length - 1].time)
     : null;
     
-  }, [loading, liveChartBars, ma10, ma20, ma30, ma5, selectedTimeframe, symbol, vwap]);
+  }, [lineVisibility, loading, liveChartBars, ma10, ma20, ma30, ma5, selectedTimeframe, symbol, vwap]);
 
   useEffect(() => {
     const candles = candleSeriesRef.current;
@@ -3607,6 +3760,9 @@ const gapFillLabel =
     [liveSignalDrivers]
   );
   const showAuxPanels = !floatingMode && !focusMode && !expanded && !hideStatsAndLegend;
+  const visibleLineEntries = (Object.entries(CHART_LINE_META) as Array<
+    [WorkspaceChartLineKey, (typeof CHART_LINE_META)[WorkspaceChartLineKey]]
+  >).filter(([lineKey]) => lineVisibility[lineKey]);
 
   return (
     <div className={focusMode ? "h-full min-h-0 w-full" : "space-y-6"}>
@@ -4021,7 +4177,24 @@ const gapFillLabel =
 
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
               <div className="text-xs uppercase tracking-wide text-white/45">Overlay Set</div>
-              <div className="mt-1 text-lg font-semibold text-white">VWAP + 5 / 10 / 20 / 30</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(Object.entries(CHART_LINE_META) as Array<
+                  [WorkspaceChartLineKey, (typeof CHART_LINE_META)[WorkspaceChartLineKey]]
+                >).map(([lineKey, meta]) => (
+                  <button
+                    key={lineKey}
+                    type="button"
+                    onClick={() => toggleLineVisibility(lineKey)}
+                    className={`min-h-10 rounded-xl border px-3 text-sm transition ${
+                      lineVisibility[lineKey]
+                        ? meta.activeClassName
+                        : "border-white/10 bg-white/5 text-white/45"
+                    }`}
+                  >
+                    {meta.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -4238,7 +4411,24 @@ const gapFillLabel =
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                 <div className="text-xs uppercase tracking-wide text-white/45">Overlay Set</div>
-                <div className="mt-1 text-base font-semibold text-white">VWAP + 5 / 10 / 20 / 30</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(Object.entries(CHART_LINE_META) as Array<
+                    [WorkspaceChartLineKey, (typeof CHART_LINE_META)[WorkspaceChartLineKey]]
+                  >).map(([lineKey, meta]) => (
+                    <button
+                      key={lineKey}
+                      type="button"
+                      onClick={() => toggleLineVisibility(lineKey)}
+                      className={`min-h-11 rounded-xl border px-4 text-sm transition ${
+                        lineVisibility[lineKey]
+                          ? meta.activeClassName
+                          : "border-white/10 bg-white/5 text-white/45"
+                      }`}
+                    >
+                      {meta.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -4326,26 +4516,12 @@ const gapFillLabel =
 
         {showAuxPanels ? (
           <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-white/60">
-            <div className="inline-flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-teal-400" />
-              VWAP
-            </div>
-            <div className="inline-flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-neutral-200" />
-              MA5
-            </div>
-            <div className="inline-flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-              MA10
-            </div>
-            <div className="inline-flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-violet-500" />
-              MA20
-            </div>
-            <div className="inline-flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
-              MA30
-            </div>
+            {visibleLineEntries.map(([lineKey, meta]) => (
+              <div key={lineKey} className="inline-flex items-center gap-2">
+                <span className={`h-2.5 w-2.5 rounded-full ${meta.colorClassName}`} />
+                {meta.label}
+              </div>
+            ))}
             <div className="inline-flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/80" />
               Volume
@@ -4534,20 +4710,40 @@ const gapFillLabel =
                       {formatCompactNumber(tooltip.volume)}
                     </div>
 
-                    <div className="text-teal-700">VWAP</div>
-                    <div className="text-right font-medium text-teal-700">{formatPrice(tooltip.vwap)}</div>
+                    {lineVisibility.vwap ? (
+                      <>
+                        <div className="text-teal-700">VWAP</div>
+                        <div className="text-right font-medium text-teal-700">{formatPrice(tooltip.vwap)}</div>
+                      </>
+                    ) : null}
 
-                    <div className="text-neutral-900">MA5</div>
-                    <div className="text-right font-medium text-neutral-900">{formatPrice(tooltip.ma5)}</div>
+                    {lineVisibility.ma5 ? (
+                      <>
+                        <div className="text-neutral-900">MA5</div>
+                        <div className="text-right font-medium text-neutral-900">{formatPrice(tooltip.ma5)}</div>
+                      </>
+                    ) : null}
 
-                    <div className="text-blue-600">MA10</div>
-                    <div className="text-right font-medium text-blue-600">{formatPrice(tooltip.ma10)}</div>
+                    {lineVisibility.ma10 ? (
+                      <>
+                        <div className="text-blue-600">MA10</div>
+                        <div className="text-right font-medium text-blue-600">{formatPrice(tooltip.ma10)}</div>
+                      </>
+                    ) : null}
 
-                    <div className="text-violet-600">MA20</div>
-                    <div className="text-right font-medium text-violet-600">{formatPrice(tooltip.ma20)}</div>
+                    {lineVisibility.ma20 ? (
+                      <>
+                        <div className="text-violet-600">MA20</div>
+                        <div className="text-right font-medium text-violet-600">{formatPrice(tooltip.ma20)}</div>
+                      </>
+                    ) : null}
 
-                    <div className="text-orange-600">MA30</div>
-                    <div className="text-right font-medium text-orange-600">{formatPrice(tooltip.ma30)}</div>
+                    {lineVisibility.ma30 ? (
+                      <>
+                        <div className="text-orange-600">MA30</div>
+                        <div className="text-right font-medium text-orange-600">{formatPrice(tooltip.ma30)}</div>
+                      </>
+                    ) : null}
                   </div>
                 </div>
               ) : null}

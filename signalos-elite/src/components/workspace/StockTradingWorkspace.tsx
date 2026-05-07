@@ -197,7 +197,20 @@ function workspaceConfigsEqual(left: WorkspaceConfig, right: WorkspaceConfig) {
     left.panels.sigi === right.panels.sigi &&
     left.panels.risk === right.panels.risk &&
     left.panels.catalysts === right.panels.catalysts &&
-    left.panels.trade === right.panels.trade
+    left.panels.trade === right.panels.trade &&
+    left.chart.range === right.chart.range &&
+    left.chart.interval === right.chart.interval &&
+    left.chart.autoFollowEnabled === right.chart.autoFollowEnabled &&
+    left.chart.autoFollowLockOff === right.chart.autoFollowLockOff &&
+    left.chart.candleDensityMode === right.chart.candleDensityMode &&
+    left.chart.priceScaleMode === right.chart.priceScaleMode &&
+    left.chart.vwapAnchorMode === right.chart.vwapAnchorMode &&
+    left.chart.customAnchorTime === right.chart.customAnchorTime &&
+    left.chart.lineVisibility.vwap === right.chart.lineVisibility.vwap &&
+    left.chart.lineVisibility.ma5 === right.chart.lineVisibility.ma5 &&
+    left.chart.lineVisibility.ma10 === right.chart.lineVisibility.ma10 &&
+    left.chart.lineVisibility.ma20 === right.chart.lineVisibility.ma20 &&
+    left.chart.lineVisibility.ma30 === right.chart.lineVisibility.ma30
   );
 }
 
@@ -373,7 +386,10 @@ export default function StockTradingWorkspace({ data }: Props) {
   }
 
   function applyWorkspaceMode(mode: WorkspaceMode) {
-    setWorkspaceConfig(buildWorkspaceConfig(mode));
+    setWorkspaceConfig((current) => ({
+      ...buildWorkspaceConfig(mode),
+      chart: current.chart,
+    }));
   }
 
   function refreshCustomPresets() {
@@ -985,6 +1001,10 @@ export default function StockTradingWorkspace({ data }: Props) {
                   showSignalRail={false}
                   signals={[]}
                   currentPrice={initialPrice}
+                  workspaceChartState={workspaceConfig.chart}
+                  onWorkspaceChartStateChange={(chart) =>
+                    setWorkspaceConfig((current) => ({ ...current, chart }))
+                  }
                 />
               </div>
             </div>

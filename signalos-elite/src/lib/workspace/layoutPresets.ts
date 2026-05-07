@@ -8,11 +8,51 @@ export type WorkspacePanels = Record<WorkspacePanelKey, boolean>;
 
 export type WorkspacePresetScope = "global" | "ticker";
 
+export type WorkspaceChartRange = "1D" | "5D" | "1M" | "6M" | "1Y" | "5Y";
+
+export type WorkspaceChartInterval =
+  | "1m"
+  | "2m"
+  | "3m"
+  | "5m"
+  | "10m"
+  | "15m"
+  | "1h"
+  | "1d"
+  | "1w";
+
+export type WorkspaceCandleDensityMode = "more" | "standard" | "fewer";
+
+export type WorkspacePriceScaleMode = "compressed" | "standard" | "expanded";
+
+export type WorkspaceVwapAnchorMode =
+  | "day-open"
+  | "session-high"
+  | "session-low"
+  | "custom";
+
+export type WorkspaceChartLineKey = "vwap" | "ma5" | "ma10" | "ma20" | "ma30";
+
+export type WorkspaceChartLineVisibility = Record<WorkspaceChartLineKey, boolean>;
+
+export type WorkspaceChartConfig = {
+  range: WorkspaceChartRange;
+  interval: WorkspaceChartInterval;
+  autoFollowEnabled: boolean;
+  autoFollowLockOff: boolean;
+  candleDensityMode: WorkspaceCandleDensityMode;
+  priceScaleMode: WorkspacePriceScaleMode;
+  vwapAnchorMode: WorkspaceVwapAnchorMode;
+  customAnchorTime: number | null;
+  lineVisibility: WorkspaceChartLineVisibility;
+};
+
 export type WorkspaceConfig = {
   mode: WorkspaceMode;
   layout: WorkspaceLayout;
   panelOrder: WorkspacePanelKey[];
   panels: WorkspacePanels;
+  chart: WorkspaceChartConfig;
 };
 
 export type WorkspaceCustomPreset = {
@@ -41,6 +81,23 @@ export const DEFAULT_WORKSPACE_CONFIG: WorkspaceConfig = {
     risk: true,
     catalysts: false,
     trade: true,
+  },
+  chart: {
+    range: "1D",
+    interval: "1m",
+    autoFollowEnabled: false,
+    autoFollowLockOff: false,
+    candleDensityMode: "standard",
+    priceScaleMode: "standard",
+    vwapAnchorMode: "day-open",
+    customAnchorTime: null,
+    lineVisibility: {
+      vwap: true,
+      ma5: true,
+      ma10: true,
+      ma20: true,
+      ma30: true,
+    },
   },
 };
 
@@ -71,7 +128,10 @@ export const WORKSPACE_MODE_META: Record<
   },
 };
 
-export const WORKSPACE_MODE_PRESETS: Record<WorkspaceMode, Omit<WorkspaceConfig, "mode">> = {
+export const WORKSPACE_MODE_PRESETS: Record<
+  WorkspaceMode,
+  Omit<WorkspaceConfig, "mode" | "chart">
+> = {
   focus: {
     layout: "chart-full",
     panelOrder: ["sigi", "risk", "catalysts", "trade"],
@@ -161,6 +221,71 @@ function isWorkspacePanels(value: unknown): value is WorkspacePanels {
   );
 }
 
+function isWorkspaceChartRange(value: unknown): value is WorkspaceChartRange {
+  return value === "1D" || value === "5D" || value === "1M" || value === "6M" || value === "1Y" || value === "5Y";
+}
+
+function isWorkspaceChartInterval(value: unknown): value is WorkspaceChartInterval {
+  return (
+    value === "1m" ||
+    value === "2m" ||
+    value === "3m" ||
+    value === "5m" ||
+    value === "10m" ||
+    value === "15m" ||
+    value === "1h" ||
+    value === "1d" ||
+    value === "1w"
+  );
+}
+
+function isWorkspaceCandleDensityMode(value: unknown): value is WorkspaceCandleDensityMode {
+  return value === "more" || value === "standard" || value === "fewer";
+}
+
+function isWorkspacePriceScaleMode(value: unknown): value is WorkspacePriceScaleMode {
+  return value === "compressed" || value === "standard" || value === "expanded";
+}
+
+function isWorkspaceVwapAnchorMode(value: unknown): value is WorkspaceVwapAnchorMode {
+  return (
+    value === "day-open" ||
+    value === "session-high" ||
+    value === "session-low" ||
+    value === "custom"
+  );
+}
+
+function isWorkspaceChartLineVisibility(value: unknown): value is WorkspaceChartLineVisibility {
+  if (!value || typeof value !== "object") return false;
+
+  const lines = value as Record<string, unknown>;
+  return (
+    typeof lines.vwap === "boolean" &&
+    typeof lines.ma5 === "boolean" &&
+    typeof lines.ma10 === "boolean" &&
+    typeof lines.ma20 === "boolean" &&
+    typeof lines.ma30 === "boolean"
+  );
+}
+
+function isWorkspaceChartConfig(value: unknown): value is WorkspaceChartConfig {
+  if (!value || typeof value !== "object") return false;
+
+  const chart = value as Record<string, unknown>;
+  return (
+    isWorkspaceChartRange(chart.range) &&
+    isWorkspaceChartInterval(chart.interval) &&
+    typeof chart.autoFollowEnabled === "boolean" &&
+    typeof chart.autoFollowLockOff === "boolean" &&
+    isWorkspaceCandleDensityMode(chart.candleDensityMode) &&
+    isWorkspacePriceScaleMode(chart.priceScaleMode) &&
+    isWorkspaceVwapAnchorMode(chart.vwapAnchorMode) &&
+    (chart.customAnchorTime == null || typeof chart.customAnchorTime === "number") &&
+    isWorkspaceChartLineVisibility(chart.lineVisibility)
+  );
+}
+
 function isWorkspacePanelKey(value: unknown): value is WorkspacePanelKey {
   return value === "sigi" || value === "risk" || value === "catalysts" || value === "trade";
 }
@@ -180,7 +305,8 @@ function isWorkspaceConfig(value: unknown): value is WorkspaceConfig {
     isWorkspaceMode(config.mode) &&
     isWorkspaceLayout(config.layout) &&
     isWorkspacePanelOrder(config.panelOrder) &&
-    isWorkspacePanels(config.panels)
+    isWorkspacePanels(config.panels) &&
+    isWorkspaceChartConfig(config.chart)
   );
 }
 
@@ -208,6 +334,7 @@ export function buildWorkspaceConfig(mode: WorkspaceMode): WorkspaceConfig {
     layout: preset.layout,
     panelOrder: [...preset.panelOrder],
     panels: { ...preset.panels },
+    chart: { ...DEFAULT_WORKSPACE_CONFIG.chart },
   };
 }
 
@@ -226,6 +353,7 @@ function cloneWorkspaceConfig(config: WorkspaceConfig): WorkspaceConfig {
     layout: config.layout,
     panelOrder: [...config.panelOrder],
     panels: { ...config.panels },
+    chart: { ...config.chart },
   };
 }
 
@@ -287,6 +415,7 @@ export function readWorkspaceConfig(ticker: string): WorkspaceConfig {
       layout?: unknown;
       panelOrder?: unknown;
       panels?: unknown;
+      chart?: unknown;
     };
 
     if (
@@ -294,7 +423,8 @@ export function readWorkspaceConfig(ticker: string): WorkspaceConfig {
       !isWorkspaceMode(parsed.mode) ||
       !isWorkspaceLayout(parsed.layout) ||
       !isWorkspacePanelOrder(parsed.panelOrder) ||
-      !isWorkspacePanels(parsed.panels)
+      !isWorkspacePanels(parsed.panels) ||
+      !isWorkspaceChartConfig(parsed.chart)
     ) {
       return DEFAULT_WORKSPACE_CONFIG;
     }
@@ -304,6 +434,7 @@ export function readWorkspaceConfig(ticker: string): WorkspaceConfig {
       layout: parsed.layout,
       panelOrder: [...parsed.panelOrder],
       panels: { ...parsed.panels },
+      chart: { ...parsed.chart },
     };
   } catch {
     return DEFAULT_WORKSPACE_CONFIG;
