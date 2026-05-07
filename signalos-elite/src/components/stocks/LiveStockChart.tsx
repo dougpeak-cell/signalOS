@@ -2982,6 +2982,17 @@ useEffect(() => {
     }
 
     const currentRange = chart.timeScale().getVisibleLogicalRange();
+    if (!autoFollowEnabled && userDetachedFromLiveRef.current) {
+      if (
+        currentRange &&
+        Number.isFinite(currentRange.from) &&
+        Number.isFinite(currentRange.to)
+      ) {
+        liveRangeSpanRef.current = Math.max(20, currentRange.to - currentRange.from);
+      }
+      return;
+    }
+
     const totalBars = displayBars.length;
     const latestIndex = Math.max(0, totalBars - 1);
     const nextSpan = Math.max(
@@ -3017,12 +3028,6 @@ useEffect(() => {
     const handleRangeChange = () => {
       if (isProgrammaticRangeChangeRef.current) return;
 
-      if (autoFollowEnabled) {
-        userDetachedFromLiveRef.current = false;
-        setShowReturnToLive(false);
-        return;
-      }
-
       const range = chart.timeScale().getVisibleLogicalRange();
       const totalBars = displayBars.length;
 
@@ -3030,16 +3035,17 @@ useEffect(() => {
         return;
       }
 
-      liveRangeSpanRef.current = Math.max(20, range.to - range.from);
+      const nextSpan = Math.max(20, range.to - range.from);
+      liveRangeSpanRef.current = nextSpan;
 
-      // Only count as "detached" if user has actually moved meaningfully away
-      const latestLogicalIndex = totalBars - 1;
-      const distanceFromLive = latestLogicalIndex - range.to;
+      if (autoFollowEnabled) {
+        userDetachedFromLiveRef.current = false;
+        setShowReturnToLive(false);
+        return;
+      }
 
-      const detached = distanceFromLive > 8;
-
-      userDetachedFromLiveRef.current = detached;
-      setShowReturnToLive(detached);
+      userDetachedFromLiveRef.current = true;
+      setShowReturnToLive(true);
     };
 
     chart.timeScale().subscribeVisibleLogicalRangeChange(handleRangeChange);
