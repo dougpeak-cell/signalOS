@@ -276,7 +276,10 @@ export async function GET(req: Request) {
       mode: "personal",
       watchlistTickers: WATCHLIST,
     });
-    const leadStory = rankedMarket.primary ?? null;
+    const leadStory =
+      rankedMarket.ranked.find((item) => Boolean(item.imageUrl || item.image)) ??
+      rankedMarket.primary ??
+      null;
     const liveStream = rankedMarket.ranked.slice(0, 8);
 
     return NextResponse.json({
