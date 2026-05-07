@@ -18,7 +18,18 @@ function catalystBadgeLabel(item: CatalystPanelItem) {
   if (pulseLabel) return pulseLabel;
 
   const fallbackLabel = String(item.catalystLabel ?? "").trim();
-  return fallbackLabel && fallbackLabel !== "Flow setup" ? fallbackLabel : null;
+  if (fallbackLabel && fallbackLabel !== "Flow setup") return fallbackLabel;
+
+  const structureLabel = String(item.structureLabel ?? "").trim();
+  if (structureLabel) return structureLabel;
+
+  const setupLabel = String(item.setupLabel ?? "").trim();
+  if (setupLabel && setupLabel !== "Flow setup") return setupLabel;
+
+  if (item.score >= 85) return "High-conviction setup";
+  if (item.score >= 72) return "Active setup";
+
+  return item.bias === "bearish" ? "Risk watch" : "Tape watch";
 }
 
 function catalystTone(label?: string | null) {
@@ -82,9 +93,20 @@ export default function TodayUpcomingCatalystsPanel({
             </Link>
           ))
         ) : (
-          <div className="rounded-2xl border border-dashed border-white/10 bg-white/3 px-3 py-5 text-sm text-white/50">
-            No near-term catalysts are in focus yet.
-          </div>
+          <Link
+            href="/screener/setups"
+            className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/3 px-3 py-4 transition hover:border-cyan-400/25 hover:bg-cyan-400/5"
+          >
+            <div>
+              <div className="text-sm font-semibold text-white">Scan active setups</div>
+              <div className="mt-1 text-xs text-white/50">
+                The board is selective right now. Open the setup grid for the freshest names.
+              </div>
+            </div>
+            <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-200">
+              Open grid
+            </div>
+          </Link>
         )}
       </div>
     </section>

@@ -190,6 +190,16 @@ const FALLBACK_GLOBAL_PULSE_ITEMS: GlobalPulseTickerItem[] = [
   },
 ];
 
+const FALLBACK_TRENDING_NEWS_ROWS: TodayCommandCenterNewsRow[] = FALLBACK_GLOBAL_PULSE_ITEMS.map(
+  (item) => ({
+    id: item.id,
+    headline: item.headline,
+    source: item.category,
+    href: item.href || "/news",
+    tickers: item.tickers,
+  })
+);
+
 const FALLBACK_FEATURED_MACRO: TodayFeaturedMacroItem = {
   eyebrow: "Global Market Pulse",
   headline: "World news is shaping today’s tape across rates, energy, AI policy, and growth expectations.",
@@ -745,6 +755,10 @@ async function fetchUpcomingEarnings(
 }
 
 function buildCommandCenterNews(items: NewsItem[]): TodayCommandCenterNewsRow[] {
+  if (items.length === 0) {
+    return FALLBACK_TRENDING_NEWS_ROWS;
+  }
+
   const filteredTrendingNews = items
     .filter(isUsefulTrendingNewsItem)
     .sort((left, right) => getNewsSourceScore(right) - getNewsSourceScore(left))
@@ -991,7 +1005,7 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     ),
     time(
       "marketNews",
-      withTimeout(fetchTopMarketNews({ limit: 8, lookbackHours: 24 }), [])
+      withTimeout(fetchTopMarketNews({ limit: 8, lookbackHours: 24 }), [], 3000)
     ),
     time("marketMovers", getMarketMovers()),
     time("storedMarketContext", getStoredMarketContext()),
