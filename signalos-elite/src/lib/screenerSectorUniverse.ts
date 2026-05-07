@@ -1,7 +1,7 @@
 export const SECTOR_STOCKS: Record<string, string[]> = {
   Technology: [
     "NVDA", "MSFT", "AAPL", "AVGO", "AMD", "ARM", "ORCL", "CRM", "ADBE", "NOW",
-    "IBM", "ACN", "QCOM", "CSCO", "INTU", "SHOP", "PANW", "CRWD", "ANET", "SNOW",
+    "IBM", "DELL", "ACN", "QCOM", "CSCO", "INTU", "SHOP", "PANW", "CRWD", "ANET", "SNOW",
   ],
   AI: [
     "NVDA", "AMD", "MSFT", "GOOGL", "META", "AMZN", "PLTR", "SNOW", "CRM", "ORCL",
@@ -109,6 +109,7 @@ export const COMPANY_NAMES: Record<string, string> = {
   ADBE: "Adobe",
   NOW: "ServiceNow",
   IBM: "IBM",
+  DELL: "Dell Technologies",
   ACN: "Accenture",
   QCOM: "Qualcomm",
   CSCO: "Cisco",
