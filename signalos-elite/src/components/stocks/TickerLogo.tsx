@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 const missingLogoTickers = new Set<string>();
+const availableLogoTickers = new Set(["AAPL", "AMD", "AMZN", "META", "MSFT", "NVDA", "TSLA"]);
 
 export default function TickerLogo({
   ticker,
@@ -16,12 +17,15 @@ export default function TickerLogo({
     () => String(ticker ?? "").toUpperCase().trim(),
     [ticker]
   );
+  const hasLocalLogo = availableLogoTickers.has(normalizedTicker);
 
-  const [failed, setFailed] = useState(() => missingLogoTickers.has(normalizedTicker));
+  const [failed, setFailed] = useState(
+    () => !hasLocalLogo || missingLogoTickers.has(normalizedTicker)
+  );
 
   useEffect(() => {
-    setFailed(missingLogoTickers.has(normalizedTicker));
-  }, [normalizedTicker]);
+    setFailed(!hasLocalLogo || missingLogoTickers.has(normalizedTicker));
+  }, [hasLocalLogo, normalizedTicker]);
 
   const src = `/logos/${normalizedTicker.toLowerCase()}.png`;
 

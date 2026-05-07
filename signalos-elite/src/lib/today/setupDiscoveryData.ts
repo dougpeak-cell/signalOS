@@ -24,6 +24,8 @@ import {
 type DiscoveryOptions = {
   signalLimit?: number;
   setupUniverseLimit?: number;
+  signalSeedLimit?: number;
+  fundamentalsTickerLimit?: number;
 };
 
 export type SetupDiscoveryData = {
@@ -123,7 +125,10 @@ export async function getSetupDiscoveryData(
 ): Promise<SetupDiscoveryData> {
   const signalLimit = options.signalLimit ?? 60;
   const setupUniverseLimit = options.setupUniverseLimit ?? 30;
-  const signalSeedLimit = Math.max(signalLimit * 2, 160);
+  const signalSeedLimit = Math.max(
+    signalLimit,
+    options.signalSeedLimit ?? Math.max(signalLimit * 2, 160)
+  );
 
   const [signalRows, marketSetupUniverse] = await Promise.all([
     // Seed discovery from a broader latest-signals pool so Top Setups does not collapse
@@ -139,7 +144,11 @@ export async function getSetupDiscoveryData(
     ])
   );
 
-  const fundamentalsTickerLimit = Math.max(signalLimit, setupUniverseLimit * 2, 80);
+  const fundamentalsTickerLimit = Math.max(
+    signalLimit,
+    setupUniverseLimit * 2,
+    options.fundamentalsTickerLimit ?? 80
+  );
   const fundamentalsTickers = Array.from(
     new Set([
       ...marketSetupUniverse.map((row) => normalizeTicker(row.ticker)),

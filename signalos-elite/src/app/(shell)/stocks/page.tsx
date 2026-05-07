@@ -1,7 +1,6 @@
 import StocksPageClient, {
   type StockIdea,
 } from "@/components/stocks/StocksPageClient";
-import { fetchServerQuoteMap } from "@/lib/market/serverQuote";
 import { fetchFreeTickerPulses } from "@/lib/news/fetchFreeTickerPulses";
 import type { TickerNewsPulse } from "@/lib/news/tickerNewsPulse";
 import { getSetupDiscoveryData } from "@/lib/today/setupDiscoveryData";
@@ -9,6 +8,32 @@ import type {
   RankedSetupItem,
 } from "@/lib/today/setupDiscovery";
 import { rankSetupCandidates } from "@/lib/today/setupDiscovery";
+
+const STOCKS_SIGNAL_LIMIT = 36;
+const STOCKS_SETUP_UNIVERSE_LIMIT = 18;
+const STOCKS_SIGNAL_SEED_LIMIT = 72;
+const STOCKS_FUNDAMENTALS_TICKER_LIMIT = 36;
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  fallback: T,
+  timeoutMs = 1500
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        timeoutId = setTimeout(() => resolve(fallback), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
 
 function normalizeTicker(value: string): string {
   return String(value ?? "").trim().toUpperCase();
@@ -46,11 +71,9 @@ function bucketBadge(bucket: StockIdea["bucket"], score: number): StockIdea["bad
 
 function toRankedIdea(
   item: RankedSetupItem,
-  quoteMap: Awaited<ReturnType<typeof fetchServerQuoteMap>>,
   pulseMap: Record<string, TickerNewsPulse>
 ): StockIdea {
   const ticker = normalizeTicker(item.ticker);
-  const quote = quoteMap[ticker];
   const score = Math.round(item.score);
 
   return {
@@ -58,8 +81,8 @@ function toRankedIdea(
     ticker,
     name: item.name || ticker,
     sector: item.sector?.trim() || "Market",
-    price: quote?.price ?? item.price ?? null,
-    changePercent: quote?.changePct ?? item.changePercent ?? null,
+    price: item.price ?? null,
+    changePercent: item.changePercent ?? null,
     conviction: score,
     thesis: item.whyThisSetup,
     bucket: item.bucket,
@@ -70,11 +93,9 @@ function toRankedIdea(
 
 function toWatchIdea(
   item: RankedSetupItem,
-  quoteMap: Awaited<ReturnType<typeof fetchServerQuoteMap>>,
   pulseMap: Record<string, TickerNewsPulse>
 ): StockIdea {
   const ticker = normalizeTicker(item.ticker);
-  const quote = quoteMap[ticker];
   const conviction = Math.round(item.score);
   const thesis = item.whyThisSetup;
 
@@ -83,8 +104,8 @@ function toWatchIdea(
     ticker,
     name: item.name?.trim() || ticker,
     sector: item.sector?.trim() || "Market",
-    price: quote?.price ?? item.price ?? null,
-    changePercent: quote?.changePct ?? item.changePercent ?? null,
+    price: item.price ?? null,
+    changePercent: item.changePercent ?? null,
     conviction,
     thesis,
     bucket: "watch",
@@ -95,8 +116,10 @@ function toWatchIdea(
 
 export default async function StocksPage() {
   const discovery = await getSetupDiscoveryData({
-    signalLimit: 80,
-    setupUniverseLimit: 40,
+    signalLimit: STOCKS_SIGNAL_LIMIT,
+    setupUniverseLimit: STOCKS_SETUP_UNIVERSE_LIMIT,
+    signalSeedLimit: STOCKS_SIGNAL_SEED_LIMIT,
+    fundamentalsTickerLimit: STOCKS_FUNDAMENTALS_TICKER_LIMIT,
   });
 
   const scannerTickers = new Set([
@@ -123,17 +146,18 @@ export default async function StocksPage() {
     ])
   );
 
-  const [quoteMap, pulseMap] = await Promise.all([
-    fetchServerQuoteMap(tickers),
+  const pulseMap = await withTimeout(
     fetchFreeTickerPulses(tickers, { maxAgeHours: 24 }),
-  ]);
+    {},
+    1200
+  );
 
   const ideas: StockIdea[] = [
-    ...discovery.top.slice(0, 3).map((item) => toRankedIdea(item, quoteMap, pulseMap)),
+    ...discovery.top.slice(0, 3).map((item) => toRankedIdea(item, pulseMap)),
     ...discovery.emerging
       .slice(0, 4)
-      .map((item) => toRankedIdea(item, quoteMap, pulseMap)),
-    ...watchCandidates.slice(0, 4).map((item) => toWatchIdea(item, quoteMap, pulseMap)),
+      .map((item) => toRankedIdea(item, pulseMap)),
+    ...watchCandidates.slice(0, 4).map((item) => toWatchIdea(item, pulseMap)),
   ];
 
   return <StocksPageClient ideas={ideas} />;
