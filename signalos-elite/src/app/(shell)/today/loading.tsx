@@ -1,39 +1,26 @@
-function SkeletonCard({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-3xl border border-white/10 bg-white/[0.04] ${className}`} />;
-}
+import SigiEyeLogo from "@/components/sigi/SigiEyeLogo";
 
 export default function TodayLoading() {
   return (
-    <div className="min-h-screen bg-black text-white">
-      <main className="mx-auto w-full max-w-400 px-3 pb-10 pt-3 sm:px-4 md:pt-4 lg:px-5 xl:px-6">
-        <div className="space-y-6 md:hidden">
-          <SkeletonCard className="h-28" />
-          <SkeletonCard className="h-72" />
-          <div className="grid grid-cols-1 gap-4">
-            <SkeletonCard className="h-44" />
-            <SkeletonCard className="h-44" />
-            <SkeletonCard className="h-44" />
+    <div className="relative min-h-screen overflow-hidden bg-black text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(8,145,178,0.18),transparent_42%),radial-gradient(circle_at_center,rgba(20,184,166,0.12),transparent_58%)]" />
+      <main className="relative flex min-h-screen items-center justify-center px-6 py-10">
+        <div className="flex w-full max-w-md flex-col items-center justify-center gap-6 text-center">
+          <div className="relative flex items-center justify-center">
+            <div className="absolute h-44 w-44 rounded-full bg-cyan-400/10 blur-3xl" />
+            <SigiEyeLogo className="relative w-36 max-w-full sm:w-44" />
           </div>
-        </div>
 
-        <div className="hidden space-y-6 md:block">
-          <div className="grid grid-cols-12 gap-5">
-            <SkeletonCard className="col-span-8 h-64" />
-            <SkeletonCard className="col-span-4 h-64" />
-          </div>
-          <SkeletonCard className="h-20" />
-          <div className="grid grid-cols-12 gap-5">
-            <SkeletonCard className="col-span-7 h-44" />
-            <SkeletonCard className="col-span-5 h-44" />
-          </div>
-          <div className="grid grid-cols-12 gap-5">
-            <SkeletonCard className="col-span-7 h-96" />
-            <SkeletonCard className="col-span-5 h-96" />
-          </div>
-          <SkeletonCard className="h-80" />
-          <div className="grid grid-cols-12 gap-5">
-            <SkeletonCard className="col-span-7 h-64" />
-            <SkeletonCard className="col-span-5 h-64" />
+          <div className="space-y-2">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.42em] text-cyan-300/78">
+              SIGI
+            </div>
+            <h1 className="text-xl font-semibold tracking-[0.08em] text-white/92 sm:text-2xl">
+              Loading Today
+            </h1>
+            <p className="text-sm text-white/46 sm:text-[15px]">
+              Sigi is scanning the market and building your Today view.
+            </p>
           </div>
         </div>
       </main>
