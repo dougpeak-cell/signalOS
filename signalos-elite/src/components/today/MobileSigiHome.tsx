@@ -264,7 +264,22 @@ export default function MobileSigiHome({
   const mobileHighVolumeRows = useMemo(
     () =>
       [...highVolumeRows]
-        .filter((row) => (row.volume ?? 0) > 0)
+        .filter((row) => {
+          if ((row.volume ?? 0) > 0) {
+            return true;
+          }
+
+          if (defaultSetupSession !== "pre") {
+            return false;
+          }
+
+          return (
+            typeof row.price === "number" &&
+            Number.isFinite(row.price) &&
+            typeof row.changePercent === "number" &&
+            Number.isFinite(row.changePercent)
+          );
+        })
         .sort((left, right) => {
           const volumeDiff = (right.volume ?? 0) - (left.volume ?? 0);
           if (volumeDiff !== 0) return volumeDiff;
@@ -275,7 +290,7 @@ export default function MobileSigiHome({
           return Math.abs(right.changePercent ?? 0) - Math.abs(left.changePercent ?? 0);
         })
         .slice(0, 5),
-    [highVolumeRows]
+    [defaultSetupSession, highVolumeRows]
   );
   const lastUpdatedLabel = useMemo(
     () => buildLastUpdatedLabel(lastRefreshedAt ?? lastUpdatedAt),
@@ -667,7 +682,9 @@ export default function MobileSigiHome({
               High Volume
             </div>
             <div className="mt-1 text-xs leading-5 text-white/56">
-              Most active stocks by current volume.
+              {defaultSetupSession === "pre"
+                ? "Pre-market movers ranked by early volume and flow."
+                : "Most active stocks by current volume."}
             </div>
           </div>
           <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/44">
@@ -708,7 +725,9 @@ export default function MobileSigiHome({
             ))
           ) : (
             <div className="rounded-2xl border border-white/10 bg-white/3 px-4 py-3 text-sm text-white/52">
-              Live volume leaders are loading.
+              {defaultSetupSession === "pre"
+                ? "Pre-market movers are loading."
+                : "Live volume leaders are loading."}
             </div>
           )}
         </div>
