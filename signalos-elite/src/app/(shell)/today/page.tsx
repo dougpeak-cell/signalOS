@@ -1,6 +1,9 @@
 import TodayPageShell from "@/components/today/TodayPageShell";
 import { getTodayPageData } from "@/lib/today/pageData";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function TodayPage({
   searchParams,
 }: {
