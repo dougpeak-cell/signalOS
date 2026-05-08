@@ -83,6 +83,7 @@ export default function TodayPageShell({
 			<main className={`mx-auto w-full max-w-400 px-3 pb-10 pt-3 sm:px-4 md:pt-4 lg:px-5 xl:px-6 ${todayPageStackClass}`}>
 				<TodayMobileHomeSlot
 					topSetups={topSetups}
+					preMarketTopSetups={preMarketTopSetups}
 					news={commandCenterNews}
 					opportunities={opportunities}
 					risks={risks}

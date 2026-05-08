@@ -36,6 +36,7 @@ import type {
 
 type MobileSigiHomeProps = {
   topSetups: TodaySetupItem[];
+  preMarketTopSetups: TodaySetupItem[];
   news: TodayCommandCenterNewsRow[];
   opportunities: TodayOpportunityItem[];
   risks: TodayRiskItem[];
@@ -110,6 +111,7 @@ function formatCompactNumber(value?: number | null) {
 
 export default function MobileSigiHome({
   topSetups,
+  preMarketTopSetups,
   news,
   opportunities,
   risks,
@@ -208,8 +210,10 @@ export default function MobileSigiHome({
     };
   }, []);
 
-  const leadSetup = topSetups[0] ?? null;
-  const leadOpportunity = opportunities[0] ?? leadSetup ?? null;
+  const activeTopSetups = defaultSetupSession === "pre" ? preMarketTopSetups : topSetups;
+  const leadSetup = activeTopSetups[0] ?? null;
+  const leadOpportunity =
+    defaultSetupSession === "pre" ? leadSetup : opportunities[0] ?? leadSetup ?? null;
   const leadRisk = risks[0] ?? null;
   const leadershipLead = leadershipWatch[0] ?? leadSetup ?? null;
   const watchlistLead = watchlistRows[0] ?? null;
@@ -238,7 +242,7 @@ export default function MobileSigiHome({
   const todaySnapshotTicker = leadOpportunity?.ticker ?? leadSetup?.ticker ?? null;
   const chartHref = todaySnapshotTicker
     ? `/stocks/${todaySnapshotTicker}/live?source=%2Ftoday&session=${defaultSetupSession}`
-    : "/today";
+    : `/screener/setups?session=${defaultSetupSession}`;
 
   function buildPreviewHref(href: string) {
     if (searchParams.get("mobilePreview") !== "1") {
@@ -256,7 +260,7 @@ export default function MobileSigiHome({
     const separator = href.includes("?") ? "&" : "?";
     return `${href}${separator}${nextQuery}`;
   }
-  const bestStocks = useMemo(() => topSetups.slice(0, 5), [topSetups]);
+  const bestStocks = useMemo(() => activeTopSetups.slice(0, 5), [activeTopSetups]);
   const mobileHighVolumeRows = useMemo(
     () =>
       [...highVolumeRows]
@@ -287,9 +291,10 @@ export default function MobileSigiHome({
       {
         href: buildPreviewHref(chartHref),
         label: "Today",
-        value: leadOpportunity?.ticker ?? `${topSetups.length} live setups`,
+        value: leadOpportunity?.ticker ?? `${activeTopSetups.length} live setups`,
         detail:
           leadOpportunity?.whyThisSetup ??
+          leadSetup?.whyThisSetup ??
           (defaultSetupSession === "pre" ? "Pre-market command view" : "Live market overview"),
         accent: "border-cyan-400/22 bg-cyan-400/8",
       },
@@ -335,7 +340,7 @@ export default function MobileSigiHome({
         accent: "border-rose-400/20 bg-rose-400/8",
       },
       {
-        href: buildPreviewHref("/screener/setups?view=top&session=pre"),
+        href: buildPreviewHref(`/screener/setups?view=top&session=${defaultSetupSession}`),
         label: "SIGI MARKET SETUPS",
         value: leadershipLead?.ticker ?? leadOpportunity?.ticker ?? "Top movers",
         detail: "Scan market movers with Sigi Intelligence",
@@ -352,7 +357,7 @@ export default function MobileSigiHome({
       leadSetup,
       news,
       chartHref,
-      topSetups.length,
+      activeTopSetups.length,
       watchlistLead,
       watchlistRows.length,
       effectiveWatchlistTickers.length,

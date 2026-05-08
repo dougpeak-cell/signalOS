@@ -22,6 +22,7 @@ type TodayMobileHomeSlotProps = {
   watchlistRows: TodayWatchlistMoverRow[];
   defaultSetupSession: TodaySetupSession;
   forceVisible?: boolean;
+  preMarketTopSetups: TodaySetupItem[];
 };
 
 export default function TodayMobileHomeSlot({
@@ -34,6 +35,7 @@ export default function TodayMobileHomeSlot({
   watchlistRows,
   defaultSetupSession,
   forceVisible = false,
+  preMarketTopSetups,
 }: TodayMobileHomeSlotProps): ReactElement | null {
   const [shouldRender, setShouldRender] = useState(forceVisible);
 
@@ -63,6 +65,7 @@ export default function TodayMobileHomeSlot({
   return (
     <MobileSigiHome
       topSetups={topSetups}
+      preMarketTopSetups={preMarketTopSetups}
       news={news}
       opportunities={opportunities}
       risks={risks}
