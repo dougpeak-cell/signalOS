@@ -340,7 +340,7 @@ Want the full trade setup for ${best}?`;
         : "worth watching";
 
   if (direction === "down") {
-    return `${name}, here are the stocks showing the most weakness today.
+    return `${name}, here are the stocks showing downside buy potential.
 
 ${buildRankedTickerList(ranked)}
 

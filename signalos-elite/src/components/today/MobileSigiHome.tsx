@@ -390,11 +390,11 @@ export default function MobileSigiHome({
           : "Sigi is scanning for the top setup now.",
       },
       {
-        label: "What is weak?",
-        prompt: "What is weak right now?",
+        label: "Downside Setups",
+        prompt: "What dip should I buy?",
         preview: leadRisk
-          ? "Tap for the weakest names and the clearest downside setups right now."
-          : "Weak names are limited right now.",
+          ? "Clearest downside setups right now."
+          : "Downside buy setups are limited right now.",
       },
       {
         label: "Market news",

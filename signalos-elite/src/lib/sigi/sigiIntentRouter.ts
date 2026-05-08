@@ -129,6 +129,8 @@ const WATCHLIST_PATTERNS = [
   /\bwhat stocks are weak\b/i,
   /\bwhat is weak\b/i,
   /\bwhat's weak\b/i,
+  /\bwhat dip should i buy\b/i,
+  /\bwhich dip should i buy\b/i,
   /\bwhat stock is underperforming\b/i,
   /\bwhat stocks are underperforming\b/i,
   /\bwhat is the worst stock today\b/i,
@@ -150,6 +152,8 @@ const BEARISH_MARKET_PATTERNS = [
   /\bwhat stocks are weak\b/i,
   /\bwhat is weak\b/i,
   /\bwhat's weak\b/i,
+  /\bwhat dip should i buy\b/i,
+  /\bwhich dip should i buy\b/i,
   /\bwhat stock is underperforming\b/i,
   /\bwhat stocks are underperforming\b/i,
   /\bwhat is the worst stock today\b/i,
@@ -243,6 +247,7 @@ function detectDirection(message: string): "up" | "down" | null {
     lower.includes("down") ||
     lower.includes("bearish") ||
     lower.includes("weak") ||
+    lower.includes("dip") ||
     lower.includes("falling") ||
     lower.includes("underperforming") ||
     lower.includes("avoid") ||
