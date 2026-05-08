@@ -3137,7 +3137,7 @@ useEffect(() => {
     }
 
     const currentRange = chart.timeScale().getVisibleLogicalRange();
-    if (!autoFollowEnabled && userDetachedFromLiveRef.current) {
+    if (!autoFollowEnabled) {
       if (
         currentRange &&
         Number.isFinite(currentRange.from) &&
