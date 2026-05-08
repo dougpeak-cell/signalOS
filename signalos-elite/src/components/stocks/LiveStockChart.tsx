@@ -438,6 +438,7 @@ type Props = {
   enableLiveStream?: boolean;
   onPriceUpdate?: (price: number | null) => void;
   workspaceChartState?: WorkspaceChartConfig;
+  workspaceChartSyncKey?: number;
   onWorkspaceChartStateChange?: (state: WorkspaceChartConfig) => void;
 };
 
@@ -1229,6 +1230,7 @@ export default function LiveStockChart({
   enableLiveStream = true,
   onPriceUpdate,
   workspaceChartState,
+  workspaceChartSyncKey,
   onWorkspaceChartStateChange,
 }: Props) {
     const formatLevel = (value?: number | null) =>
@@ -1446,7 +1448,7 @@ export default function LiveStockChart({
         ? current
         : next;
     });
-  }, [workspaceChartState]);
+  }, [workspaceChartSyncKey]);
 
   useEffect(() => {
     if (!onWorkspaceChartStateChange) return;
@@ -3671,8 +3673,7 @@ useEffect(() => {
     displayBars.length,
     timeframe,
     usesWorkspaceChartState,
-    visibleRangeSpan,
-    workspaceChartState?.visibleRangeSpan,
+    workspaceChartSyncKey,
   ]);
 
   const livePrice = snapshot?.lastPrice ?? currentPrice ?? null;

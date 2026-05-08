@@ -238,6 +238,7 @@ export default function StockTradingWorkspace({ data }: Props) {
   const [workspaceConfig, setWorkspaceConfig] = useState<WorkspaceConfig>(
     DEFAULT_WORKSPACE_CONFIG
   );
+  const [workspaceChartSyncKey, setWorkspaceChartSyncKey] = useState(0);
   const [customPresets, setCustomPresets] = useState<WorkspaceCustomPreset[]>([]);
   const [presetName, setPresetName] = useState("");
 
@@ -280,6 +281,7 @@ export default function StockTradingWorkspace({ data }: Props) {
   useEffect(() => {
     setWorkspaceConfig(readWorkspaceConfig(resolvedTicker));
     setCustomPresets(readWorkspaceCustomPresets(resolvedTicker));
+    setWorkspaceChartSyncKey((current) => current + 1);
   }, [resolvedTicker]);
 
   useEffect(() => {
@@ -453,6 +455,7 @@ export default function StockTradingWorkspace({ data }: Props) {
 
   function handleApplyCustomPreset(preset: WorkspaceCustomPreset) {
     setWorkspaceConfig(preset.config);
+    setWorkspaceChartSyncKey((current) => current + 1);
   }
 
   function handleDeleteCustomPreset(preset: WorkspaceCustomPreset) {
@@ -913,6 +916,7 @@ export default function StockTradingWorkspace({ data }: Props) {
                   signals={[]}
                   currentPrice={initialPrice}
                   workspaceChartState={workspaceConfig.chart}
+                  workspaceChartSyncKey={workspaceChartSyncKey}
                   onWorkspaceChartStateChange={(chart) =>
                     setWorkspaceConfig((current) =>
                       workspaceChartConfigsEqual(current.chart, chart)
