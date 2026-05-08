@@ -1087,11 +1087,11 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     ),
     time(
       "marketNews",
-      withTimeout(fetchTopMarketNews({ limit: 8, lookbackHours: 24 }), [], 3000)
+      withTimeout(fetchTopMarketNews({ limit: 8, lookbackHours: 24 }), [], 1200)
     ),
     time(
       "marketMovers",
-      withTimeout(getMarketMovers(), { gainers: [], losers: [] }, 2500)
+      withTimeout(getMarketMovers(), { gainers: [], losers: [] }, 1200)
     ),
     time("storedMarketContext", getStoredMarketContext()),
   ]);
@@ -1237,7 +1237,7 @@ export async function getTodayPageData(): Promise<TodayPageData> {
           )
         ),
         [],
-        3000
+        1200
       )
     ),
     time(
