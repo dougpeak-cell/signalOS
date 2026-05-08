@@ -160,6 +160,43 @@ async function time<T>(label: string, promise: Promise<T>): Promise<T> {
   }
 }
 
+type CachedAsyncValue<T> = {
+  expiresAt: number;
+  value: Promise<T>;
+};
+
+const TODAY_PUBLIC_CACHE_TTL_MS = 60_000;
+const marketNewsCache = new Map<string, CachedAsyncValue<NewsItem[]>>();
+const marketMoversCache = new Map<string, CachedAsyncValue<{ gainers: MarketMoverRow[]; losers: MarketMoverRow[] }>>();
+const tickerPulseCache = new Map<string, CachedAsyncValue<Record<string, TickerNewsPulse>>>();
+
+function getCachedAsyncValue<T>(
+  cache: Map<string, CachedAsyncValue<T>>,
+  key: string,
+  load: () => Promise<T>,
+  ttlMs = TODAY_PUBLIC_CACHE_TTL_MS
+): Promise<T> {
+  const cached = cache.get(key);
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
+
+  const nextValue = load();
+  cache.set(key, {
+    expiresAt: Date.now() + ttlMs,
+    value: nextValue,
+  });
+
+  return nextValue.catch((error) => {
+    const current = cache.get(key);
+    if (current?.value === nextValue) {
+      cache.delete(key);
+    }
+    throw error;
+  });
+}
+
 const FALLBACK_GLOBAL_PULSE_ITEMS: GlobalPulseTickerItem[] = [
   {
     id: "fed-break",
@@ -1087,11 +1124,21 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     ),
     time(
       "marketNews",
-      withTimeout(fetchTopMarketNews({ limit: 8, lookbackHours: 24 }), [], 1200)
+      withTimeout(
+        getCachedAsyncValue(marketNewsCache, "market-news:8:24", () =>
+          fetchTopMarketNews({ limit: 8, lookbackHours: 24 })
+        ),
+        [],
+        700
+      )
     ),
     time(
       "marketMovers",
-      withTimeout(getMarketMovers(), { gainers: [], losers: [] }, 1200)
+      withTimeout(
+        getCachedAsyncValue(marketMoversCache, "market-movers", () => getMarketMovers()),
+        { gainers: [], losers: [] },
+        700
+      )
     ),
     time("storedMarketContext", getStoredMarketContext()),
   ]);
@@ -1206,10 +1253,16 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     time(
       "tickerPulses",
       withTimeout(
-        fetchFreeTickerPulses(pulseTickers, {
-          maxAgeHours: 12,
-        }),
-        {}
+        getCachedAsyncValue(
+          tickerPulseCache,
+          `ticker-pulses:${pulseTickers.slice().sort().join(",")}`,
+          () =>
+            fetchFreeTickerPulses(pulseTickers, {
+              maxAgeHours: 12,
+            })
+        ),
+        {},
+        350
       )
     ),
     time(
@@ -1237,7 +1290,7 @@ export async function getTodayPageData(): Promise<TodayPageData> {
           )
         ),
         [],
-        1200
+        800
       )
     ),
     time(

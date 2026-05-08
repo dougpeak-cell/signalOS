@@ -28,6 +28,14 @@ type DiscoveryOptions = {
   fundamentalsTickerLimit?: number;
 };
 
+type SetupDiscoveryCacheEntry = {
+  expiresAt: number;
+  value: Promise<SetupDiscoveryData>;
+};
+
+const SETUP_DISCOVERY_CACHE_TTL_MS = 60_000;
+const setupDiscoveryCache = new Map<string, SetupDiscoveryCacheEntry>();
+
 export type SetupDiscoveryData = {
   top: RankedSetupItem[];
   emerging: RankedSetupItem[];
@@ -123,175 +131,205 @@ function inferRecentHistoryFromSignal(row: SignalDetailRow): boolean {
 export async function getSetupDiscoveryData(
   options: DiscoveryOptions = {}
 ): Promise<SetupDiscoveryData> {
-  const signalLimit = options.signalLimit ?? 60;
-  const setupUniverseLimit = options.setupUniverseLimit ?? 30;
-  const signalSeedLimit = Math.max(
-    signalLimit,
-    options.signalSeedLimit ?? Math.max(signalLimit * 2, 160)
-  );
+  const cacheKey = JSON.stringify({
+    signalLimit: options.signalLimit ?? null,
+    setupUniverseLimit: options.setupUniverseLimit ?? null,
+    signalSeedLimit: options.signalSeedLimit ?? null,
+    fundamentalsTickerLimit: options.fundamentalsTickerLimit ?? null,
+  });
+  const cached = setupDiscoveryCache.get(cacheKey);
 
-  const [signalRows, marketSetupUniverse] = await Promise.all([
-    // Seed discovery from a broader latest-signals pool so Top Setups does not collapse
-    // to only the current mover snapshot when regular-session flow is thin after hours.
-    time("setupDiscovery.supabaseFetch", fetchLatestSignalRows(signalSeedLimit)),
-    time("setupDiscovery.setupUniverseBuild", getMarketSetupUniverse(setupUniverseLimit)),
-  ]);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
 
-  const allTickers = Array.from(
-    new Set([
-      ...signalRows.map((row) => normalizeTicker(row.ticker)),
-      ...marketSetupUniverse.map((row) => normalizeTicker(row.ticker)),
-    ])
-  );
+  const nextValue = (async (): Promise<SetupDiscoveryData> => {
+    const signalLimit = options.signalLimit ?? 60;
+    const setupUniverseLimit = options.setupUniverseLimit ?? 30;
+    const signalSeedLimit = Math.max(
+      signalLimit,
+      options.signalSeedLimit ?? Math.max(signalLimit * 2, 160)
+    );
 
-  const fundamentalsTickerLimit = Math.max(
-    signalLimit,
-    setupUniverseLimit * 2,
-    options.fundamentalsTickerLimit ?? 80
-  );
-  const fundamentalsTickers = Array.from(
-    new Set([
-      ...marketSetupUniverse.map((row) => normalizeTicker(row.ticker)),
-      ...signalRows.slice(0, fundamentalsTickerLimit).map((row) => normalizeTicker(row.ticker)),
-    ])
-  );
+    const [signalRows, marketSetupUniverse] = await Promise.all([
+      time("setupDiscovery.supabaseFetch", fetchLatestSignalRows(signalSeedLimit)),
+      time("setupDiscovery.setupUniverseBuild", getMarketSetupUniverse(setupUniverseLimit)),
+    ]);
 
-  const [marketSetupSignalRows, fundamentalsEntries] = await Promise.all([
-    time(
-      "setupDiscovery.marketSetupSignals",
-      fetchSignalsForTickers(marketSetupUniverse.map((item) => item.ticker))
-    ),
-    time(
-      "setupDiscovery.fundamentals",
-      Promise.all(
-        fundamentalsTickers.map(async (ticker) => [
+    const fundamentalsTickerLimit = Math.max(
+      signalLimit,
+      setupUniverseLimit * 2,
+      options.fundamentalsTickerLimit ?? 80
+    );
+    const fundamentalsTickers = Array.from(
+      new Set([
+        ...marketSetupUniverse.map((row) => normalizeTicker(row.ticker)),
+        ...signalRows.slice(0, fundamentalsTickerLimit).map((row) => normalizeTicker(row.ticker)),
+      ])
+    );
+
+    const [marketSetupSignalRows, fundamentalsEntries] = await Promise.all([
+      time(
+        "setupDiscovery.marketSetupSignals",
+        fetchSignalsForTickers(marketSetupUniverse.map((item) => item.ticker))
+      ),
+      time(
+        "setupDiscovery.fundamentals",
+        Promise.all(
+          fundamentalsTickers.map(async (ticker) => [
+            ticker,
+            await getMassiveFundamentals(ticker, { profile: "discovery" }),
+          ] as const)
+        )
+      ),
+    ]);
+
+    const marketSetupSignalMap = new Map(
+      marketSetupSignalRows.map((row) => [normalizeTicker(row.ticker), row])
+    );
+    const fundamentalsMap = new Map(fundamentalsEntries);
+
+    const mergedCandidates = await time(
+      "setupDiscovery.candidateMerge",
+      Promise.resolve().then(() => new Map<string, SetupDiscoveryCandidate>())
+    );
+
+    for (const row of signalRows) {
+      const ticker = normalizeTicker(row.ticker);
+      if (!ticker) continue;
+
+      const indexFlags = getIndexFlags(ticker);
+      const fundamentals = fundamentalsMap.get(ticker);
+      const livePrice = getQuotePrice(ticker) ?? row.price ?? null;
+      const tone = signalToneFromRow(row, livePrice);
+      const signal = tone === "bullish" ? "Bullish" : tone === "bearish" ? "Bearish" : "Neutral";
+      const catalystFlags = inferCatalystFlags(row);
+      const volume = fundamentals?.volume ?? null;
+      const avgVolume = fundamentals?.avgVolume ?? null;
+      const rvol = volume != null && avgVolume != null && avgVolume > 0 ? volume / avgVolume : null;
+
+      mergedCandidates.set(
+        ticker,
+        mergeCandidate(mergedCandidates.get(ticker), {
           ticker,
-          await getMassiveFundamentals(ticker, { profile: "discovery" }),
-        ] as const)
-      )
-    ),
-  ]);
+          name: row.company_name ?? fundamentals?.name ?? ticker,
+          sector: row.sector ?? null,
+          price: livePrice,
+          changePercent: null,
+          volume,
+          avgVolume,
+          rvol,
+          marketCap: fundamentals?.marketCap ?? null,
+          signal,
+          conviction: convictionToPct(row.conviction),
+          score: convictionToPct(row.conviction),
+          technicalScore: convictionToPct(row.conviction),
+          hasNews: catalystFlags.hasNews,
+          hasEarnings: catalystFlags.hasEarnings,
+          hasAnalystAction: catalystFlags.hasAnalystAction,
+          hasSectorTailwind: catalystFlags.hasSectorTailwind,
+          setupLabel: signalSetupLabel(row.thesis, row.sector, row.tier),
+          reason: row.thesis ?? null,
+          summary: row.thesis ?? null,
+          ...indexFlags,
+          majorIndexMember: isMajorIndexMember(indexFlags),
+          hasValidQuote: livePrice != null && livePrice > 0,
+          hasRecentHistory: inferRecentHistoryFromSignal(row),
+        })
+      );
+    }
 
-  const marketSetupSignalMap = new Map(
-    marketSetupSignalRows.map((row) => [normalizeTicker(row.ticker), row])
-  );
+    for (const item of marketSetupUniverse) {
+      const ticker = normalizeTicker(item.ticker);
+      if (!ticker) continue;
 
-  const fundamentalsMap = new Map(fundamentalsEntries);
+      const indexFlags = getIndexFlags(ticker);
+      const signalRow = marketSetupSignalMap.get(ticker);
+      const fundamentals = fundamentalsMap.get(ticker);
+      const livePrice = item.price ?? getQuotePrice(ticker) ?? signalRow?.price ?? null;
+      const changePercent = item.changePct ?? null;
+      const isPreMarketSession = item.session === "pre-market";
+      const tone = signalRow
+        ? signalToneFromRow(signalRow, livePrice)
+        : changePercent != null && changePercent > 0
+          ? "bullish"
+          : changePercent != null && changePercent < 0
+            ? "bearish"
+            : "neutral";
+      const signal = tone === "bullish" ? "Bullish" : tone === "bearish" ? "Bearish" : "Neutral";
+      const catalystFlags = signalRow
+        ? inferCatalystFlags(signalRow)
+        : { hasNews: false, hasEarnings: false, hasAnalystAction: false, hasSectorTailwind: false };
+      const volume = item.volume ?? fundamentals?.volume ?? null;
+      const avgVolume = fundamentals?.avgVolume ?? null;
+      const rvol =
+        isPreMarketSession && volume != null && avgVolume != null && avgVolume > 0
+          ? volume / avgVolume
+          : item.rvol ?? (volume != null && avgVolume != null && avgVolume > 0 ? volume / avgVolume : null);
 
-  const mergedCandidates = await time(
-    "setupDiscovery.candidateMerge",
-    Promise.resolve().then(() => new Map<string, SetupDiscoveryCandidate>())
-  );
-
-  for (const row of signalRows) {
-    const ticker = normalizeTicker(row.ticker);
-    if (!ticker) continue;
-
-    const indexFlags = getIndexFlags(ticker);
-    const fundamentals = fundamentalsMap.get(ticker);
-    const livePrice = getQuotePrice(ticker) ?? row.price ?? null;
-    const tone = signalToneFromRow(row, livePrice);
-    const signal = tone === "bullish" ? "Bullish" : tone === "bearish" ? "Bearish" : "Neutral";
-    const catalystFlags = inferCatalystFlags(row);
-    const volume = fundamentals?.volume ?? null;
-    const avgVolume = fundamentals?.avgVolume ?? null;
-    const rvol = volume != null && avgVolume != null && avgVolume > 0 ? volume / avgVolume : null;
-
-    mergedCandidates.set(
-      ticker,
-      mergeCandidate(mergedCandidates.get(ticker), {
+      mergedCandidates.set(
         ticker,
-        name: row.company_name ?? fundamentals?.name ?? ticker,
-        sector: row.sector ?? null,
-        price: livePrice,
-        changePercent: null,
-        volume,
-        avgVolume,
-        rvol,
-        marketCap: fundamentals?.marketCap ?? null,
-        signal,
-        conviction: convictionToPct(row.conviction),
-        score: convictionToPct(row.conviction),
-        technicalScore: convictionToPct(row.conviction),
-        hasNews: catalystFlags.hasNews,
-        hasEarnings: catalystFlags.hasEarnings,
-        hasAnalystAction: catalystFlags.hasAnalystAction,
-        hasSectorTailwind: catalystFlags.hasSectorTailwind,
-        setupLabel: signalSetupLabel(row.thesis, row.sector, row.tier),
-        reason: row.thesis ?? null,
-        summary: row.thesis ?? null,
-        ...indexFlags,
-        majorIndexMember: isMajorIndexMember(indexFlags),
-        hasValidQuote: livePrice != null && livePrice > 0,
-        hasRecentHistory: inferRecentHistoryFromSignal(row),
-      })
+        mergeCandidate(mergedCandidates.get(ticker), {
+          ticker,
+          name: item.name ?? signalRow?.company_name ?? fundamentals?.name ?? ticker,
+          sector: signalRow?.sector ?? item.sector ?? null,
+          session: item.session ?? null,
+          price: livePrice,
+          changePercent,
+          volume,
+          avgVolume,
+          rvol,
+          marketCap: fundamentals?.marketCap ?? null,
+          signal,
+          conviction: signalRow ? convictionToPct(signalRow.conviction) : null,
+          score:
+            signalRow
+              ? convictionToPct(signalRow.conviction)
+              : Math.min(100, Math.max(35, Math.round(Math.abs(changePercent ?? 0) * 10))),
+          technicalScore: signalRow ? convictionToPct(signalRow.conviction) : 50,
+          hasNews: catalystFlags.hasNews,
+          hasEarnings: catalystFlags.hasEarnings,
+          hasAnalystAction: catalystFlags.hasAnalystAction,
+          hasSectorTailwind: catalystFlags.hasSectorTailwind,
+          setupLabel: signalRow ? signalSetupLabel(signalRow.thesis, signalRow.sector, signalRow.tier) : null,
+          reason: signalRow?.thesis ?? null,
+          summary: signalRow?.thesis ?? null,
+          ...indexFlags,
+          majorIndexMember: isMajorIndexMember(indexFlags),
+          hasValidQuote: livePrice != null && livePrice > 0,
+          hasRecentHistory: changePercent != null || isMajorIndexMember(indexFlags),
+        })
+      );
+    }
+
+    const candidates = await time(
+      "setupDiscovery.candidateList",
+      Promise.resolve().then(() => [...mergedCandidates.values()])
     );
-  }
-
-  for (const item of marketSetupUniverse) {
-    const ticker = normalizeTicker(item.ticker);
-    if (!ticker) continue;
-
-    const indexFlags = getIndexFlags(ticker);
-    const signalRow = marketSetupSignalMap.get(ticker);
-    const fundamentals = fundamentalsMap.get(ticker);
-    const livePrice = item.price ?? getQuotePrice(ticker) ?? signalRow?.price ?? null;
-    const changePercent = item.changePct ?? null;
-    const isPreMarketSession = item.session === "pre-market";
-    const tone = signalRow ? signalToneFromRow(signalRow, livePrice) : changePercent != null && changePercent > 0 ? "bullish" : changePercent != null && changePercent < 0 ? "bearish" : "neutral";
-    const signal = tone === "bullish" ? "Bullish" : tone === "bearish" ? "Bearish" : "Neutral";
-    const catalystFlags = signalRow ? inferCatalystFlags(signalRow) : { hasNews: false, hasEarnings: false, hasAnalystAction: false, hasSectorTailwind: false };
-    const volume = item.volume ?? fundamentals?.volume ?? null;
-    const avgVolume = fundamentals?.avgVolume ?? null;
-    const rvol =
-      isPreMarketSession && volume != null && avgVolume != null && avgVolume > 0
-        ? volume / avgVolume
-        : item.rvol ?? (volume != null && avgVolume != null && avgVolume > 0 ? volume / avgVolume : null);
-
-    mergedCandidates.set(
-      ticker,
-      mergeCandidate(mergedCandidates.get(ticker), {
-        ticker,
-        name: item.name ?? signalRow?.company_name ?? fundamentals?.name ?? ticker,
-        sector: signalRow?.sector ?? item.sector ?? null,
-        session: item.session ?? null,
-        price: livePrice,
-        changePercent,
-        volume,
-        avgVolume,
-        rvol,
-        marketCap: fundamentals?.marketCap ?? null,
-        signal,
-        conviction: signalRow ? convictionToPct(signalRow.conviction) : null,
-        score: signalRow ? convictionToPct(signalRow.conviction) : Math.min(100, Math.max(35, Math.round(Math.abs(changePercent ?? 0) * 10))),
-        technicalScore: signalRow ? convictionToPct(signalRow.conviction) : 50,
-        hasNews: catalystFlags.hasNews,
-        hasEarnings: catalystFlags.hasEarnings,
-        hasAnalystAction: catalystFlags.hasAnalystAction,
-        hasSectorTailwind: catalystFlags.hasSectorTailwind,
-        setupLabel: signalRow ? signalSetupLabel(signalRow.thesis, signalRow.sector, signalRow.tier) : null,
-        reason: signalRow?.thesis ?? null,
-        summary: signalRow?.thesis ?? null,
-        ...indexFlags,
-        majorIndexMember: isMajorIndexMember(indexFlags),
-        hasValidQuote: livePrice != null && livePrice > 0,
-        hasRecentHistory: changePercent != null || isMajorIndexMember(indexFlags),
-      })
+    const buckets = await time(
+      "setupDiscovery.ranking",
+      Promise.resolve().then(() => discoverSetupBuckets(candidates))
     );
+
+    return {
+      top: buckets.top,
+      emerging: buckets.emerging,
+      candidates,
+    };
+  })();
+
+  setupDiscoveryCache.set(cacheKey, {
+    expiresAt: Date.now() + SETUP_DISCOVERY_CACHE_TTL_MS,
+    value: nextValue,
+  });
+
+  try {
+    return await nextValue;
+  } catch (error) {
+    const current = setupDiscoveryCache.get(cacheKey);
+    if (current?.value === nextValue) {
+      setupDiscoveryCache.delete(cacheKey);
+    }
+    throw error;
   }
-
-  const candidates = await time(
-    "setupDiscovery.candidateList",
-    Promise.resolve().then(() => [...mergedCandidates.values()])
-  );
-  const buckets = await time(
-    "setupDiscovery.ranking",
-    Promise.resolve().then(() => discoverSetupBuckets(candidates))
-  );
-
-  return {
-    top: buckets.top,
-    emerging: buckets.emerging,
-    candidates,
-  };
 }
