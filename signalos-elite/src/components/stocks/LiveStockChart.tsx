@@ -3593,9 +3593,13 @@ useEffect(() => {
       candleDensityMode
     );
     const timeframeChanged = previousTimeframeRef.current !== timeframe;
+    const hasPersistedWorkspaceRange =
+      usesWorkspaceChartState &&
+      workspaceChartState?.visibleRangeSpan != null &&
+      !autoFollowEnabled;
     const shouldApplyLiveRange =
       (!autoFollowLockOff && (autoFollowEnabled || timeframeChanged)) ||
-      !initialLiveRangeAppliedRef.current;
+      (!initialLiveRangeAppliedRef.current && !hasPersistedWorkspaceRange);
 
     if (shouldApplyLiveRange) {
       const nextSpan = timeframeChanged
@@ -3627,7 +3631,15 @@ useEffect(() => {
         setShowReturnToLive(false);
       }
     }
-  }, [autoFollowEnabled, autoFollowLockOff, candleDensityMode, displayBars.length, timeframe]);
+  }, [
+    autoFollowEnabled,
+    autoFollowLockOff,
+    candleDensityMode,
+    displayBars.length,
+    timeframe,
+    usesWorkspaceChartState,
+    workspaceChartState?.visibleRangeSpan,
+  ]);
 
   useEffect(() => {
     const chart = chartApiRef.current;
