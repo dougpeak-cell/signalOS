@@ -44,6 +44,7 @@ export type WorkspaceChartConfig = {
   priceScaleMode: WorkspacePriceScaleMode;
   vwapAnchorMode: WorkspaceVwapAnchorMode;
   customAnchorTime: number | null;
+  visibleRangeSpan: number | null;
   lineVisibility: WorkspaceChartLineVisibility;
 };
 
@@ -91,6 +92,7 @@ export const DEFAULT_WORKSPACE_CONFIG: WorkspaceConfig = {
     priceScaleMode: "standard",
     vwapAnchorMode: "day-open",
     customAnchorTime: null,
+    visibleRangeSpan: null,
     lineVisibility: {
       vwap: true,
       ma5: true,
@@ -282,6 +284,7 @@ function isWorkspaceChartConfig(value: unknown): value is WorkspaceChartConfig {
     isWorkspacePriceScaleMode(chart.priceScaleMode) &&
     isWorkspaceVwapAnchorMode(chart.vwapAnchorMode) &&
     (chart.customAnchorTime == null || typeof chart.customAnchorTime === "number") &&
+    (chart.visibleRangeSpan == null || typeof chart.visibleRangeSpan === "number") &&
     isWorkspaceChartLineVisibility(chart.lineVisibility)
   );
 }
@@ -353,7 +356,10 @@ function cloneWorkspaceConfig(config: WorkspaceConfig): WorkspaceConfig {
     layout: config.layout,
     panelOrder: [...config.panelOrder],
     panels: { ...config.panels },
-    chart: { ...config.chart },
+    chart: {
+      ...config.chart,
+      lineVisibility: { ...config.chart.lineVisibility },
+    },
   };
 }
 
@@ -434,7 +440,10 @@ export function readWorkspaceConfig(ticker: string): WorkspaceConfig {
       layout: parsed.layout,
       panelOrder: [...parsed.panelOrder],
       panels: { ...parsed.panels },
-      chart: { ...parsed.chart },
+      chart: {
+        ...parsed.chart,
+        lineVisibility: { ...parsed.chart.lineVisibility },
+      },
     };
   } catch {
     return DEFAULT_WORKSPACE_CONFIG;

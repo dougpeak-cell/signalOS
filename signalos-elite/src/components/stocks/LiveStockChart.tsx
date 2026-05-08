@@ -1303,6 +1303,9 @@ export default function LiveStockChart({
   const [customAnchorTime, setCustomAnchorTime] = useState<number | null>(
     workspaceChartState?.customAnchorTime ?? null
   );
+  const [visibleRangeSpan, setVisibleRangeSpan] = useState<number | null>(
+    workspaceChartState?.visibleRangeSpan ?? null
+  );
   const [lineVisibility, setLineVisibility] = useState(
     workspaceChartState?.lineVisibility ?? {
       vwap: true,
@@ -1430,6 +1433,9 @@ export default function LiveStockChart({
     setCustomAnchorTime((current) =>
       current === workspaceChartState.customAnchorTime ? current : workspaceChartState.customAnchorTime
     );
+    setVisibleRangeSpan((current) =>
+      current === workspaceChartState.visibleRangeSpan ? current : workspaceChartState.visibleRangeSpan
+    );
     setLineVisibility((current) => {
       const next = workspaceChartState.lineVisibility;
       return current.vwap === next.vwap &&
@@ -1454,6 +1460,7 @@ export default function LiveStockChart({
       priceScaleMode,
       vwapAnchorMode,
       customAnchorTime,
+      visibleRangeSpan,
       lineVisibility,
     });
   }, [
@@ -1466,6 +1473,7 @@ export default function LiveStockChart({
     lineVisibility,
     onWorkspaceChartStateChange,
     priceScaleMode,
+    visibleRangeSpan,
     vwapAnchorMode,
   ]);
 
@@ -3184,6 +3192,7 @@ useEffect(() => {
 
       const nextSpan = Math.max(20, range.to - range.from);
       liveRangeSpanRef.current = nextSpan;
+      setVisibleRangeSpan((current) => (current === nextSpan ? current : nextSpan));
 
       if (autoFollowEnabled) {
         userDetachedFromLiveRef.current = false;
@@ -3608,6 +3617,10 @@ useEffect(() => {
       initialLiveRangeAppliedRef.current = true;
       previousTimeframeRef.current = timeframe;
       liveRangeSpanRef.current = Math.max(20, to - from);
+      setVisibleRangeSpan((current) => {
+        const next = Math.max(20, to - from);
+        return current === next ? current : next;
+      });
 
       if ((!autoFollowLockOff && timeframeChanged) || autoFollowEnabled) {
         userDetachedFromLiveRef.current = false;
@@ -3615,6 +3628,36 @@ useEffect(() => {
       }
     }
   }, [autoFollowEnabled, autoFollowLockOff, candleDensityMode, displayBars.length, timeframe]);
+
+  useEffect(() => {
+    const chart = chartApiRef.current;
+    if (!chart || !usesWorkspaceChartState || displayBars.length === 0) return;
+    if (workspaceChartState?.visibleRangeSpan == null) return;
+    if (autoFollowEnabled && !autoFollowLockOff) return;
+
+    const totalBars = displayBars.length;
+    const to = Math.max(0, totalBars - 1);
+    const nextSpan = Math.max(20, workspaceChartState.visibleRangeSpan);
+    const from = Math.max(0, to - nextSpan);
+
+    isProgrammaticRangeChangeRef.current = true;
+    chart.timeScale().setVisibleLogicalRange({ from, to });
+
+    requestAnimationFrame(() => {
+      isProgrammaticRangeChangeRef.current = false;
+    });
+
+    liveRangeSpanRef.current = Math.max(20, to - from);
+    userDetachedFromLiveRef.current = true;
+    setShowReturnToLive(true);
+  }, [
+    autoFollowEnabled,
+    autoFollowLockOff,
+    displayBars.length,
+    timeframe,
+    usesWorkspaceChartState,
+    workspaceChartState?.visibleRangeSpan,
+  ]);
 
   const livePrice = snapshot?.lastPrice ?? currentPrice ?? null;
   const liveOpen = snapshot?.open ?? null;

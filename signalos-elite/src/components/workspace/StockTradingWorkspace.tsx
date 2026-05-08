@@ -206,6 +206,7 @@ function workspaceConfigsEqual(left: WorkspaceConfig, right: WorkspaceConfig) {
     left.chart.priceScaleMode === right.chart.priceScaleMode &&
     left.chart.vwapAnchorMode === right.chart.vwapAnchorMode &&
     left.chart.customAnchorTime === right.chart.customAnchorTime &&
+    left.chart.visibleRangeSpan === right.chart.visibleRangeSpan &&
     left.chart.lineVisibility.vwap === right.chart.lineVisibility.vwap &&
     left.chart.lineVisibility.ma5 === right.chart.lineVisibility.ma5 &&
     left.chart.lineVisibility.ma10 === right.chart.lineVisibility.ma10 &&
@@ -224,6 +225,7 @@ function workspaceChartConfigsEqual(left: WorkspaceConfig["chart"], right: Works
     left.priceScaleMode === right.priceScaleMode &&
     left.vwapAnchorMode === right.vwapAnchorMode &&
     left.customAnchorTime === right.customAnchorTime &&
+    left.visibleRangeSpan === right.visibleRangeSpan &&
     left.lineVisibility.vwap === right.lineVisibility.vwap &&
     left.lineVisibility.ma5 === right.lineVisibility.ma5 &&
     left.lineVisibility.ma10 === right.lineVisibility.ma10 &&
