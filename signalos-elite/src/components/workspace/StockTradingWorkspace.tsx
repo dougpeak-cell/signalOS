@@ -214,6 +214,24 @@ function workspaceConfigsEqual(left: WorkspaceConfig, right: WorkspaceConfig) {
   );
 }
 
+function workspaceChartConfigsEqual(left: WorkspaceConfig["chart"], right: WorkspaceConfig["chart"]) {
+  return (
+    left.range === right.range &&
+    left.interval === right.interval &&
+    left.autoFollowEnabled === right.autoFollowEnabled &&
+    left.autoFollowLockOff === right.autoFollowLockOff &&
+    left.candleDensityMode === right.candleDensityMode &&
+    left.priceScaleMode === right.priceScaleMode &&
+    left.vwapAnchorMode === right.vwapAnchorMode &&
+    left.customAnchorTime === right.customAnchorTime &&
+    left.lineVisibility.vwap === right.lineVisibility.vwap &&
+    left.lineVisibility.ma5 === right.lineVisibility.ma5 &&
+    left.lineVisibility.ma10 === right.lineVisibility.ma10 &&
+    left.lineVisibility.ma20 === right.lineVisibility.ma20 &&
+    left.lineVisibility.ma30 === right.lineVisibility.ma30
+  );
+}
+
 export default function StockTradingWorkspace({ data }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1003,7 +1021,11 @@ export default function StockTradingWorkspace({ data }: Props) {
                   currentPrice={initialPrice}
                   workspaceChartState={workspaceConfig.chart}
                   onWorkspaceChartStateChange={(chart) =>
-                    setWorkspaceConfig((current) => ({ ...current, chart }))
+                    setWorkspaceConfig((current) =>
+                      workspaceChartConfigsEqual(current.chart, chart)
+                        ? current
+                        : { ...current, chart }
+                    )
                   }
                 />
               </div>
