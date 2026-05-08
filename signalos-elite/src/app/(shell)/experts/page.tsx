@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import ActiveExpertSignals from "@/components/experts/ActiveExpertSignals";
 
@@ -107,7 +107,7 @@ const convictionLeaders: ExpertConviction[] = [
   },
 ];
 
-const modelRows: ExpertModelRow[] = [
+const fallbackModelRows: ExpertModelRow[] = [
   {
     name: "Technology Growth Desk",
     source: "SIGI Composite",
@@ -145,6 +145,149 @@ const modelRows: ExpertModelRow[] = [
     tickers: ["NVDA", "AAPL", "META"],
   },
 ];
+
+const AI_THEME_TICKERS = new Set([
+  "NVDA",
+  "AMD",
+  "MSFT",
+  "AMZN",
+  "GOOGL",
+  "META",
+  "AVGO",
+  "ORCL",
+  "CRM",
+]);
+
+const MEGA_CAP_CONSENSUS_TICKERS = new Set([
+  "NVDA",
+  "AAPL",
+  "MSFT",
+  "META",
+  "AMZN",
+  "GOOGL",
+  "AVGO",
+]);
+
+const GROWTH_SECTORS = new Set(["Technology", "Communication Services"]);
+
+function average(values: number[]) {
+  if (values.length === 0) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function selectLiveBasketRows(
+  rows: FmpExpertRow[],
+  count: number,
+  preferredTickers?: Set<string>
+) {
+  const seen = new Set<string>();
+
+  return [...rows]
+    .sort((left, right) => {
+      const preferredDelta =
+        Number(Boolean(preferredTickers?.has(right.symbol))) -
+        Number(Boolean(preferredTickers?.has(left.symbol)));
+      if (preferredDelta !== 0) return preferredDelta;
+      if (right.score !== left.score) return right.score - left.score;
+      const upsideDelta = (right.upsidePercent ?? -999) - (left.upsidePercent ?? -999);
+      if (upsideDelta !== 0) return upsideDelta;
+      return getPublishedDateValue(right.publishedDate) - getPublishedDateValue(left.publishedDate);
+    })
+    .filter((row) => {
+      if (!row.symbol || seen.has(row.symbol)) return false;
+      seen.add(row.symbol);
+      return true;
+    })
+    .slice(0, count);
+}
+
+function buildLiveModelRow(options: {
+  name: string;
+  source: string;
+  style: string;
+  rows: FmpExpertRow[];
+}): ExpertModelRow | null {
+  if (options.rows.length === 0) return null;
+
+  const avgUpside = average(
+    options.rows.map((row) => row.upsidePercent ?? 0).filter((value) => Number.isFinite(value))
+  );
+  const avgScore = average(options.rows.map((row) => row.score));
+  const hit30 = Math.max(45, Math.min(78, Math.round(avgScore + 18)));
+  const avg90 = Number(Math.max(1.5, avgUpside).toFixed(1));
+  const alignment: ExpertModelRow["alignment"] =
+    avgUpside >= 6 ? "Bullish" : avgUpside >= 1 ? "Mixed" : "Bearish";
+
+  return {
+    name: options.name,
+    source: options.source,
+    style: options.style,
+    hit30,
+    avg90,
+    alignment,
+    tickers: options.rows.map((row) => row.symbol),
+  };
+}
+
+function buildModelRows(
+  rows: FmpExpertRow[],
+  sectorRows: Record<string, FmpExpertRow[]>
+): ExpertModelRow[] {
+  if (rows.length === 0) {
+    return fallbackModelRows;
+  }
+
+  const techDeskRows = selectLiveBasketRows(
+    sectorRows.Technology ?? rows.filter((row) => GROWTH_SECTORS.has(row.sector)),
+    3
+  );
+  const aiBasketRows = selectLiveBasketRows(
+    rows.filter(
+      (row) => AI_THEME_TICKERS.has(row.symbol) || GROWTH_SECTORS.has(row.sector)
+    ),
+    3,
+    AI_THEME_TICKERS
+  );
+  const recentMomentumRows = selectLiveBasketRows(
+    rows.filter((row) => row.recencyBucket === "today" || row.recencyBucket === "week"),
+    3
+  );
+  const institutionalRows = selectLiveBasketRows(
+    rows.filter(
+      (row) =>
+        MEGA_CAP_CONSENSUS_TICKERS.has(row.symbol) || GROWTH_SECTORS.has(row.sector)
+    ),
+    3,
+    MEGA_CAP_CONSENSUS_TICKERS
+  );
+
+  return [
+    buildLiveModelRow({
+      name: "Technology Growth Desk",
+      source: "Live analyst basket",
+      style: "Technology leaders",
+      rows: techDeskRows,
+    }),
+    buildLiveModelRow({
+      name: "Large Cap AI Basket",
+      source: "Cross-expert basket",
+      style: "AI / software",
+      rows: aiBasketRows,
+    }),
+    buildLiveModelRow({
+      name: "Insider Accumulation Tracker",
+      source: "Fresh signal basket",
+      style: "Recent upgrades",
+      rows: recentMomentumRows,
+    }),
+    buildLiveModelRow({
+      name: "Institutional Conviction Basket",
+      source: "Mega-cap consensus",
+      style: "Mega-cap tech",
+      rows: institutionalRows,
+    }),
+  ].filter((row): row is ExpertModelRow => row != null);
+}
 
 function money(value: number | null) {
   if (value === null || Number.isNaN(value)) return "—";
@@ -357,12 +500,22 @@ export default function ExpertsPage() {
   const [selectedExpertSector, setSelectedExpertSector] = useState("All");
 
   const expertSectorTabs = ["All", ...Object.keys(fmpSectorRows)];
+  const modelRows = useMemo(
+    () => buildModelRows(fmpRows, fmpSectorRows),
+    [fmpRows, fmpSectorRows]
+  );
 
   useEffect(() => {
     if (selectedExpertSector !== "All" && !(selectedExpertSector in fmpSectorRows)) {
       setSelectedExpertSector("All");
     }
   }, [fmpSectorRows, selectedExpertSector]);
+
+  useEffect(() => {
+    if (selectedModel && !modelRows.some((model) => model.name === selectedModel)) {
+      setSelectedModel(null);
+    }
+  }, [modelRows, selectedModel]);
 
   useEffect(() => {
     let alive = true;
