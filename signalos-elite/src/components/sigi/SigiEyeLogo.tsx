@@ -137,24 +137,28 @@ export default function SigiEyeLogo({
       />
 
       <g className={`sigi-logo-scan-${iconId}`}>
-        <rect
-          x="121"
-          y="36"
-          width="18"
-          height="78"
-          rx="9"
+        <path
+          d="M123 36 L137 36 L141 75 L137 114 L123 114 L119 75 Z"
           fill="#4ade80"
           opacity="0.28"
           filter={`url(#${glowFilterId})`}
         />
-        <rect
-          x="127"
-          y="33"
-          width="6"
-          height="84"
-          rx="3"
+        <path
+          d="M119.35 35 L121.15 35 L122.65 75 L121.15 115 L119.35 115 L117.85 75 Z"
+          fill="#38bdf8"
+          opacity="0.82"
+          filter={`url(#${glowFilterId})`}
+        />
+        <path
+          d="M128 33 L132 33 L136 75 L132 117 L128 117 L124 75 Z"
           fill="#dcfce7"
           opacity="0.95"
+          filter={`url(#${glowFilterId})`}
+        />
+        <path
+          d="M138.85 35 L140.65 35 L142.15 75 L140.65 115 L138.85 115 L137.35 75 Z"
+          fill="#38bdf8"
+          opacity="0.82"
           filter={`url(#${glowFilterId})`}
         />
       </g>
