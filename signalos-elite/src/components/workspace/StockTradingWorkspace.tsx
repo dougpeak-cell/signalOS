@@ -467,6 +467,18 @@ export default function StockTradingWorkspace({ data }: Props) {
     refreshCustomPresets();
   }
 
+  function handleWorkspaceAutoFollowChange(enabled: boolean) {
+    setWorkspaceConfig((current) => ({
+      ...current,
+      chart: {
+        ...current.chart,
+        autoFollowEnabled: enabled,
+        autoFollowLockOff: false,
+      },
+    }));
+    setWorkspaceChartSyncKey((current) => current + 1);
+  }
+
   function handleApplyCustomPreset(preset: WorkspaceCustomPreset) {
     setWorkspaceConfig(preset.config);
     setWorkspaceChartSyncKey((current) => current + 1);
@@ -620,6 +632,21 @@ export default function StockTradingWorkspace({ data }: Props) {
           Save the current chart view, layout, and visible panels for {resolvedTicker}. Give it a title, then switch between saved screens with Apply.
         </div>
 
+        <div className="flex flex-wrap gap-2">
+          <ToggleChip
+            active={workspaceConfig.chart.autoFollowEnabled}
+            label="Auto-follow On"
+            onClick={() => handleWorkspaceAutoFollowChange(true)}
+            activeClassName="border-cyan-400/25 bg-cyan-400/10 text-cyan-200"
+          />
+          <ToggleChip
+            active={!workspaceConfig.chart.autoFollowEnabled}
+            label="Auto-follow Off"
+            onClick={() => handleWorkspaceAutoFollowChange(false)}
+            activeClassName="border-white/20 bg-white/10 text-white"
+          />
+        </div>
+
         {customPresets.length > 0 ? (
           <div className="space-y-2">
             {customPresets.map((preset) => {
@@ -649,6 +676,9 @@ export default function StockTradingWorkspace({ data }: Props) {
                       </div>
                       <div className="mt-2 text-xs leading-5 text-white/45">
                         {WORKSPACE_MODE_META[preset.config.mode].label} • {WORKSPACE_LAYOUT_META[preset.config.layout].label} • {preset.config.panelOrder.join(" / ")}
+                      </div>
+                      <div className="mt-1 text-xs leading-5 text-white/45">
+                        Auto-follow {preset.config.chart.autoFollowEnabled ? "On" : "Off"}
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
