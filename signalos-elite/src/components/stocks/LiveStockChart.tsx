@@ -3367,11 +3367,11 @@ useEffect(() => {
 
     candles.setData(candleData);
     volume.setData(volumeData);
-    vwapSeries.setData(vwap);
-    ma5Series.setData(ma5);
-    ma10Series.setData(ma10);
-    ma20Series.setData(ma20);
-    ma30Series.setData(ma30); 
+    vwapSeries.setData(lineVisibility.vwap ? vwap : []);
+    ma5Series.setData(lineVisibility.ma5 ? ma5 : []);
+    ma10Series.setData(lineVisibility.ma10 ? ma10 : []);
+    ma20Series.setData(lineVisibility.ma20 ? ma20 : []);
+    ma30Series.setData(lineVisibility.ma30 ? ma30 : []);
     lastPushedBarTimeRef.current =
     candleData.length > 0
     ? Number(candleData[candleData.length - 1].time)
