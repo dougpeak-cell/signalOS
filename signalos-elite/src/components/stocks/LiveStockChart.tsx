@@ -3638,7 +3638,7 @@ useEffect(() => {
     const totalBars = displayBars.length;
     const to = Math.max(0, totalBars - 1);
     const nextSpan = Math.max(20, workspaceChartState.visibleRangeSpan);
-    if (liveRangeSpanRef.current != null && Math.abs(liveRangeSpanRef.current - nextSpan) < 1) {
+    if (visibleRangeSpan != null && Math.abs(visibleRangeSpan - nextSpan) < 1) {
       return;
     }
     const from = Math.max(0, to - nextSpan);
@@ -3659,6 +3659,7 @@ useEffect(() => {
     displayBars.length,
     timeframe,
     usesWorkspaceChartState,
+    visibleRangeSpan,
     workspaceChartState?.visibleRangeSpan,
   ]);
 
