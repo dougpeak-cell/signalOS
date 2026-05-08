@@ -29,7 +29,6 @@ import {
   readWorkspaceConfig,
   readWorkspaceCustomPresets,
   saveWorkspaceCustomPreset,
-  updateWorkspaceCustomPreset,
   WORKSPACE_LAYOUT_META,
   WORKSPACE_MODE_META,
   WORKSPACE_PANEL_META,
@@ -39,20 +38,12 @@ import {
   type WorkspaceLayout,
   type WorkspaceMode,
   type WorkspacePanelKey,
-  type WorkspacePresetScope,
 } from "@/lib/workspace/layoutPresets";
 import type { StockWorkspaceData } from "@/lib/workspace/stockWorkspaceData";
 
 type Props = {
   data: StockWorkspaceData;
 };
-
-const PRESET_NAME_SUGGESTIONS = [
-  "My Day Trading Layout",
-  "Earnings Setup",
-  "Risk Review",
-  "Clean Chart Mode",
-];
 
 function money(value: number | null | undefined) {
   if (value == null || Number.isNaN(value)) return "—";
@@ -249,9 +240,6 @@ export default function StockTradingWorkspace({ data }: Props) {
   );
   const [customPresets, setCustomPresets] = useState<WorkspaceCustomPreset[]>([]);
   const [presetName, setPresetName] = useState("");
-  const [presetScope, setPresetScope] = useState<WorkspacePresetScope>("ticker");
-  const [renamingPresetId, setRenamingPresetId] = useState<string | null>(null);
-  const [renameDraft, setRenameDraft] = useState("");
 
   function buildPreviewHref(href: string) {
     if (!isMobilePreview) {
@@ -456,7 +444,7 @@ export default function StockTradingWorkspace({ data }: Props) {
 
     saveWorkspaceCustomPreset(resolvedTicker, {
       name: trimmedName,
-      scope: presetScope,
+      scope: "ticker",
       config: workspaceConfig,
     });
     setPresetName("");
@@ -467,39 +455,8 @@ export default function StockTradingWorkspace({ data }: Props) {
     setWorkspaceConfig(preset.config);
   }
 
-  function handleOverwriteCustomPreset(preset: WorkspaceCustomPreset) {
-    updateWorkspaceCustomPreset(resolvedTicker, preset.id, preset.scope, {
-      config: workspaceConfig,
-    });
-    refreshCustomPresets();
-  }
-
-  function startRenamePreset(preset: WorkspaceCustomPreset) {
-    setRenamingPresetId(preset.id);
-    setRenameDraft(preset.name);
-  }
-
-  function cancelRenamePreset() {
-    setRenamingPresetId(null);
-    setRenameDraft("");
-  }
-
-  function handleRenameCustomPreset(preset: WorkspaceCustomPreset) {
-    const trimmedName = renameDraft.trim();
-    if (!trimmedName) return;
-
-    updateWorkspaceCustomPreset(resolvedTicker, preset.id, preset.scope, {
-      name: trimmedName,
-    });
-    cancelRenamePreset();
-    refreshCustomPresets();
-  }
-
   function handleDeleteCustomPreset(preset: WorkspaceCustomPreset) {
     deleteWorkspaceCustomPreset(resolvedTicker, preset.id, preset.scope);
-    if (renamingPresetId === preset.id) {
-      cancelRenamePreset();
-    }
     refreshCustomPresets();
   }
 
@@ -618,14 +575,14 @@ export default function StockTradingWorkspace({ data }: Props) {
   );
 
   const customPresetCard = (
-    <WorkspacePanel key="workspace-custom-presets" title="Custom Presets">
+    <WorkspacePanel key="workspace-custom-presets" title="Custom Screen Save">
       <div className="space-y-3">
         <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
           <input
             type="text"
             value={presetName}
             onChange={(event) => setPresetName(event.target.value)}
-            placeholder="Save current cockpit"
+            placeholder="Type custom title"
             className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-cyan-400/30 focus:bg-white/8"
           />
           <button
@@ -634,36 +591,12 @@ export default function StockTradingWorkspace({ data }: Props) {
             disabled={!presetName.trim()}
             className="inline-flex items-center justify-center rounded-2xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Save as New
+            Save Screen
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <ToggleChip
-            active={presetScope === "ticker"}
-            label="Ticker Scope"
-            onClick={() => setPresetScope("ticker")}
-            activeClassName="border-emerald-400/25 bg-emerald-400/10 text-emerald-200"
-          />
-          <ToggleChip
-            active={presetScope === "global"}
-            label="Global Scope"
-            onClick={() => setPresetScope("global")}
-            activeClassName="border-cyan-400/25 bg-cyan-400/10 text-cyan-200"
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {PRESET_NAME_SUGGESTIONS.map((suggestion) => (
-            <button
-              key={suggestion}
-              type="button"
-              onClick={() => setPresetName(suggestion)}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/65 transition hover:border-white/20 hover:bg-white/8 hover:text-white"
-            >
-              {suggestion}
-            </button>
-          ))}
+        <div className="rounded-2xl border border-white/10 bg-white/4 px-3 py-3 text-sm leading-6 text-white/55">
+          Save the current chart view, layout, and visible panels for {resolvedTicker}. Give it a title, then switch between saved screens with Apply.
         </div>
 
         {customPresets.length > 0 ? (
@@ -672,43 +605,16 @@ export default function StockTradingWorkspace({ data }: Props) {
               const isActivePreset = activeCustomPreset?.id === preset.id;
 
               return (
-              <div
-                key={preset.id}
-                className={`rounded-2xl border px-3 py-3 ${
-                  isActivePreset
-                    ? "border-emerald-400/25 bg-emerald-400/10"
-                    : "border-white/10 bg-white/4"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    {renamingPresetId === preset.id ? (
-                      <div className="flex max-w-[320px] flex-col gap-2">
-                        <input
-                          type="text"
-                          value={renameDraft}
-                          onChange={(event) => setRenameDraft(event.target.value)}
-                          className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-cyan-400/30 focus:bg-white/8"
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleRenameCustomPreset(preset)}
-                            disabled={!renameDraft.trim()}
-                            className="inline-flex items-center justify-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            Save Name
-                          </button>
-                          <button
-                            type="button"
-                            onClick={cancelRenamePreset}
-                            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/65 transition hover:border-white/20 hover:bg-white/8 hover:text-white"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
+                <div
+                  key={preset.id}
+                  className={`rounded-2xl border px-3 py-3 ${
+                    isActivePreset
+                      ? "border-emerald-400/25 bg-emerald-400/10"
+                      : "border-white/10 bg-white/4"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="text-sm font-semibold text-white/82">{preset.name}</div>
                         {isActivePreset ? (
@@ -717,53 +623,38 @@ export default function StockTradingWorkspace({ data }: Props) {
                           </div>
                         ) : null}
                       </div>
-                    )}
-                    <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/40">
-                      {preset.scope === "global" ? "Global" : resolvedTicker}
+                      <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/40">
+                        {resolvedTicker}
+                      </div>
+                      <div className="mt-2 text-xs leading-5 text-white/45">
+                        {WORKSPACE_MODE_META[preset.config.mode].label} • {WORKSPACE_LAYOUT_META[preset.config.layout].label} • {preset.config.panelOrder.join(" / ")}
+                      </div>
                     </div>
-                    <div className="mt-2 text-xs leading-5 text-white/45">
-                      {WORKSPACE_MODE_META[preset.config.mode].label} • {WORKSPACE_LAYOUT_META[preset.config.layout].label} • {preset.config.panelOrder.join(" / ")}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleApplyCustomPreset(preset)}
+                        disabled={isActivePreset}
+                        className="inline-flex items-center justify-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Apply
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCustomPreset(preset)}
+                        className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/65 transition hover:border-rose-300/30 hover:bg-rose-400/10 hover:text-rose-200"
+                      >
+                        Delete
+                      </button>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleApplyCustomPreset(preset)}
-                      disabled={isActivePreset}
-                      className="inline-flex items-center justify-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      Apply
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleOverwriteCustomPreset(preset)}
-                      className="inline-flex items-center justify-center rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-200 transition hover:border-emerald-300/40 hover:bg-emerald-400/15 hover:text-white"
-                    >
-                      Overwrite
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => startRenamePreset(preset)}
-                      className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/65 transition hover:border-white/20 hover:bg-white/8 hover:text-white"
-                    >
-                      Rename
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteCustomPreset(preset)}
-                      className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/65 transition hover:border-rose-300/30 hover:bg-rose-400/10 hover:text-rose-200"
-                    >
-                      Delete
-                    </button>
                   </div>
                 </div>
-              </div>
               );
             })}
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/3 px-3 py-4 text-sm text-white/45">
-            No custom presets saved yet. Save the current layout, panel order, and visibility as a reusable cockpit.
+            No saved screens yet. Type a title above to save the current workspace view for this ticker.
           </div>
         )}
       </div>
