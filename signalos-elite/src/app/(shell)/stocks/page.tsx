@@ -13,6 +13,14 @@ const STOCKS_SIGNAL_LIMIT = 36;
 const STOCKS_SETUP_UNIVERSE_LIMIT = 18;
 const STOCKS_SIGNAL_SEED_LIMIT = 72;
 const STOCKS_FUNDAMENTALS_TICKER_LIMIT = 36;
+const STOCKS_PUBLIC_CACHE_TTL_MS = 60_000;
+
+type CachedAsyncValue<T> = {
+  expiresAt: number;
+  value: Promise<T>;
+};
+
+const stocksPulseCache = new Map<string, CachedAsyncValue<Record<string, TickerNewsPulse>>>();
 
 async function withTimeout<T>(
   promise: Promise<T>,
@@ -33,6 +41,33 @@ async function withTimeout<T>(
       clearTimeout(timeoutId);
     }
   }
+}
+
+function getCachedAsyncValue<T>(
+  cache: Map<string, CachedAsyncValue<T>>,
+  key: string,
+  load: () => Promise<T>,
+  ttlMs = STOCKS_PUBLIC_CACHE_TTL_MS
+): Promise<T> {
+  const cached = cache.get(key);
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
+
+  const nextValue = load();
+  cache.set(key, {
+    expiresAt: Date.now() + ttlMs,
+    value: nextValue,
+  });
+
+  return nextValue.catch((error) => {
+    const current = cache.get(key);
+    if (current?.value === nextValue) {
+      cache.delete(key);
+    }
+    throw error;
+  });
 }
 
 function normalizeTicker(value: string): string {
@@ -147,9 +182,13 @@ export default async function StocksPage() {
   );
 
   const pulseMap = await withTimeout(
-    fetchFreeTickerPulses(tickers, { maxAgeHours: 24 }),
+    getCachedAsyncValue(
+      stocksPulseCache,
+      `stocks-pulses:${tickers.slice().sort().join(",")}`,
+      () => fetchFreeTickerPulses(tickers, { maxAgeHours: 24 })
+    ),
     {},
-    1200
+    700
   );
 
   const ideas: StockIdea[] = [
