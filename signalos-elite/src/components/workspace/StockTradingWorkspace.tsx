@@ -424,36 +424,6 @@ export default function StockTradingWorkspace({ data }: Props) {
     setWorkspaceConfig((current) => ({ ...current, layout }));
   }
 
-  function toggleWorkspacePanel(panel: keyof WorkspaceConfig["panels"]) {
-    setWorkspaceConfig((current) => ({
-      ...current,
-      panels: {
-        ...current.panels,
-        [panel]: !current.panels[panel],
-      },
-    }));
-  }
-
-  function moveWorkspacePanel(panel: WorkspacePanelKey, direction: -1 | 1) {
-    setWorkspaceConfig((current) => {
-      const fromIndex = current.panelOrder.indexOf(panel);
-      const toIndex = fromIndex + direction;
-
-      if (fromIndex === -1 || toIndex < 0 || toIndex >= current.panelOrder.length) {
-        return current;
-      }
-
-      const nextPanelOrder = [...current.panelOrder];
-      const [movedPanel] = nextPanelOrder.splice(fromIndex, 1);
-      nextPanelOrder.splice(toIndex, 0, movedPanel);
-
-      return {
-        ...current,
-        panelOrder: nextPanelOrder,
-      };
-    });
-  }
-
   function handleSaveCustomPreset() {
     const trimmedName = presetName.trim();
     if (!trimmedName) return;
@@ -545,64 +515,6 @@ export default function StockTradingWorkspace({ data }: Props) {
             </button>
           );
         })}
-      </div>
-    </WorkspacePanel>
-  );
-
-  const panelToggleCard = (
-    <WorkspacePanel key="workspace-panels" title="Panels">
-      <div className="space-y-2">
-        {workspaceConfig.panelOrder.map((panelKey, index) => {
-          const active = workspaceConfig.panels[panelKey];
-          const accentClassName =
-            panelKey === "sigi"
-              ? "border-cyan-400/25 bg-cyan-400/10 text-cyan-200"
-              : panelKey === "risk"
-                ? "border-amber-400/25 bg-amber-400/10 text-amber-200"
-                : panelKey === "catalysts"
-                  ? "border-fuchsia-400/25 bg-fuchsia-400/10 text-fuchsia-200"
-                  : "border-emerald-400/25 bg-emerald-400/10 text-emerald-200";
-
-          return (
-            <div
-              key={panelKey}
-              className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/4 px-3 py-3"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-semibold text-white/80">
-                  {WORKSPACE_PANEL_META[panelKey].label}
-                </div>
-                <ToggleChip
-                  active={active}
-                  label={active ? "On" : "Off"}
-                  onClick={() => toggleWorkspacePanel(panelKey)}
-                  activeClassName={accentClassName}
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => moveWorkspacePanel(panelKey, -1)}
-                  disabled={index === 0}
-                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/65 transition hover:border-white/20 hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-                >
-                  Move Up
-                </button>
-                <button
-                  type="button"
-                  onClick={() => moveWorkspacePanel(panelKey, 1)}
-                  disabled={index === workspaceConfig.panelOrder.length - 1}
-                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/65 transition hover:border-white/20 hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-                >
-                  Move Down
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-3 text-xs leading-5 text-white/45">
-        Mode switches reset layout and panel visibility to the saved preset. You can then override any surface here.
       </div>
     </WorkspacePanel>
   );
@@ -770,7 +682,7 @@ export default function StockTradingWorkspace({ data }: Props) {
 
   const rightRailCards = isMobilePreview
     ? [executionLevelsCard, ...orderedPanels]
-    : [workspaceModeCard, layoutCard, panelToggleCard, customPresetCard, ...orderedPanels];
+    : [workspaceModeCard, layoutCard, customPresetCard, ...orderedPanels];
 
   const secondaryIntelligenceCards =
     workspaceMode === "analysis"
