@@ -241,6 +241,7 @@ export default function StockTradingWorkspace({ data }: Props) {
   const [workspaceChartSyncKey, setWorkspaceChartSyncKey] = useState(0);
   const [customPresets, setCustomPresets] = useState<WorkspaceCustomPreset[]>([]);
   const [presetName, setPresetName] = useState("");
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
 
   function buildPreviewHref(href: string) {
     if (!isMobilePreview) {
@@ -282,6 +283,7 @@ export default function StockTradingWorkspace({ data }: Props) {
     setWorkspaceConfig(readWorkspaceConfig(resolvedTicker));
     setCustomPresets(readWorkspaceCustomPresets(resolvedTicker));
     setWorkspaceChartSyncKey((current) => current + 1);
+    setSelectedPresetId(null);
   }, [resolvedTicker]);
 
   useEffect(() => {
@@ -346,11 +348,23 @@ export default function StockTradingWorkspace({ data }: Props) {
     [portfolioTickers, resolvedTicker]
   );
   const activeCustomPreset = useMemo(
-    () =>
-      customPresets.find((preset) => workspaceConfigsEqual(preset.config, workspaceConfig)) ??
-      null,
-    [customPresets, workspaceConfig]
+    () => customPresets.find((preset) => preset.id === selectedPresetId) ?? null,
+    [customPresets, selectedPresetId]
   );
+
+  useEffect(() => {
+    if (!selectedPresetId) return;
+
+    const selectedPreset = customPresets.find((preset) => preset.id === selectedPresetId);
+    if (!selectedPreset) {
+      setSelectedPresetId(null);
+      return;
+    }
+
+    if (!workspaceConfigsEqual(selectedPreset.config, workspaceConfig)) {
+      setSelectedPresetId(null);
+    }
+  }, [customPresets, selectedPresetId, workspaceConfig]);
 
   const rewardRisk =
     initialPrice != null &&
@@ -456,10 +470,14 @@ export default function StockTradingWorkspace({ data }: Props) {
   function handleApplyCustomPreset(preset: WorkspaceCustomPreset) {
     setWorkspaceConfig(preset.config);
     setWorkspaceChartSyncKey((current) => current + 1);
+    setSelectedPresetId(preset.id);
   }
 
   function handleDeleteCustomPreset(preset: WorkspaceCustomPreset) {
     deleteWorkspaceCustomPreset(resolvedTicker, preset.id, preset.scope);
+    if (selectedPresetId === preset.id) {
+      setSelectedPresetId(null);
+    }
     refreshCustomPresets();
   }
 
