@@ -412,7 +412,7 @@ function EarningsColumn({
                   <div className="whitespace-nowrap text-sm font-medium text-white/78">
                     {item.dateLabel}
                   </div>
-                  <div className="max-w-[6.5rem] whitespace-normal text-[11px] uppercase tracking-[0.14em] text-white/38">
+                  <div className="max-w-26 whitespace-normal text-[11px] uppercase tracking-[0.14em] text-white/38">
                     {item.timing}
                   </div>
                 </div>
