@@ -5,7 +5,7 @@ import SetupsSessionAutoSync from "@/components/screener/SetupsSessionAutoSync";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import { getSetupDiscoveryData } from "@/lib/today/setupDiscoveryData";
 import {
-  buildPreMarketEmergingSetups,
+  buildRenderablePreMarketEmergingSetups,
   countPreMarketQualifiedCandidates,
   type TodaySetupSession,
 } from "@/lib/today/pageData";
@@ -163,7 +163,7 @@ export default async function SetupsPage({
 
   const sourceRows =
     session === "pre"
-      ? buildPreMarketEmergingSetups(setupDiscovery)
+      ? buildRenderablePreMarketEmergingSetups(setupDiscovery)
       : setupDiscovery.emerging;
   const preMarketRawCandidateCount = countPreMarketQualifiedCandidates(setupDiscovery);
   const preMarketFilteredCount = Math.max(0, preMarketRawCandidateCount - sourceRows.length);

@@ -985,6 +985,24 @@ export function buildPreMarketEmergingSetups(
   ).slice(0, 6);
 }
 
+export function buildRenderablePreMarketEmergingSetups(
+  setupDiscovery: SetupDiscoveryData
+): RankedSetupItem[] {
+  const computedPreMarketTopSetups = buildPreMarketTopSetups(setupDiscovery);
+  const computedPreMarketEmergingSetups = buildPreMarketEmergingSetups(setupDiscovery);
+  const preMarketRows = buildPreMarketRows(setupDiscovery.candidates);
+  const fallbackPreMarketEmergingSetups = buildPreMarketFallbackRankedItems(
+    preMarketRows,
+    setupDiscovery.candidates,
+    "emerging",
+    new Set(computedPreMarketTopSetups.map((item) => item.ticker))
+  );
+
+  return computedPreMarketEmergingSetups.length > 0
+    ? computedPreMarketEmergingSetups
+    : fallbackPreMarketEmergingSetups;
+}
+
 function buildOpportunities(setupDiscovery: SetupDiscoveryData): TodayOpportunityItem[] {
   return [...setupDiscovery.top, ...setupDiscovery.emerging]
     .filter((item) => item.bias !== "bearish")
