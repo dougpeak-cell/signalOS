@@ -1277,6 +1277,7 @@ export default function LiveStockChart({
   const isProgrammaticRangeChangeRef = useRef(false);
   const initialFocusAppliedRef = useRef(false);
   const initialLiveRangeAppliedRef = useRef(false);
+  const appliedWorkspaceChartSyncKeyRef = useRef<number | null>(null);
   const autoFollowPreferenceLoadedRef = useRef(false);
   const liveRangeSpanRef = useRef<number | null>(null);
   const candleDensityModeRef = useRef<CandleDensityMode>("standard");
@@ -3646,13 +3647,22 @@ useEffect(() => {
   useEffect(() => {
     const chart = chartApiRef.current;
     if (!chart || !usesWorkspaceChartState || displayBars.length === 0) return;
-    if (workspaceChartState?.visibleRangeSpan == null) return;
-    if (autoFollowEnabled && !autoFollowLockOff) return;
+    if (workspaceChartSyncKey == null) return;
+    if (appliedWorkspaceChartSyncKeyRef.current === workspaceChartSyncKey) return;
+    if (workspaceChartState?.visibleRangeSpan == null) {
+      appliedWorkspaceChartSyncKeyRef.current = workspaceChartSyncKey;
+      return;
+    }
+    if (autoFollowEnabled && !autoFollowLockOff) {
+      appliedWorkspaceChartSyncKeyRef.current = workspaceChartSyncKey;
+      return;
+    }
 
     const totalBars = displayBars.length;
     const to = Math.max(0, totalBars - 1);
     const nextSpan = Math.max(20, workspaceChartState.visibleRangeSpan);
     if (visibleRangeSpan != null && Math.abs(visibleRangeSpan - nextSpan) < 1) {
+      appliedWorkspaceChartSyncKeyRef.current = workspaceChartSyncKey;
       return;
     }
     const from = Math.max(0, to - nextSpan);
@@ -3665,6 +3675,7 @@ useEffect(() => {
     });
 
     liveRangeSpanRef.current = Math.max(20, to - from);
+    appliedWorkspaceChartSyncKeyRef.current = workspaceChartSyncKey;
     userDetachedFromLiveRef.current = true;
     setShowReturnToLive(true);
   }, [
@@ -3674,6 +3685,7 @@ useEffect(() => {
     timeframe,
     usesWorkspaceChartState,
     workspaceChartSyncKey,
+    visibleRangeSpan,
   ]);
 
   const livePrice = snapshot?.lastPrice ?? currentPrice ?? null;
