@@ -221,6 +221,26 @@ const baseEntries: Entry[] = [
     signalosUse: "YTD helps users understand broader performance.",
   },
   {
+    term: "Short Setup",
+    category: "Signal Terms",
+    definition:
+      "A short setup is a specific set of technical or fundamental conditions indicating that a stock's price is likely to fall, prompting traders to prepare to sell borrowed shares to profit from the decline.",
+    example:
+      "A trader spots a breakdown, sets an entry below support, places a stop-loss above resistance, and maps profit targets lower.",
+    signalosUse:
+      "SigiOS uses short setups as the bearish blueprint for when to enter, where to place the stop, and where to plan profit-taking if downside pressure continues.",
+  },
+  {
+    term: "Long Setup",
+    category: "Signal Terms",
+    definition:
+      "A long setup is a technical or fundamental trading opportunity where an investor identifies a stock likely to rise in price, planning to buy and hold it for profit.",
+    example:
+      "A trader buys near support or on a breakout, sets a stop below invalidation, and plans to sell higher into target levels.",
+    signalosUse:
+      "SigiOS uses long setups as the bullish blueprint for buying at favorable levels, defining risk, and planning where to take profits on the way up.",
+  },
+  {
     term: "Bullish",
     category: "Signal Terms",
     definition: "A positive market view suggesting price may move higher.",
