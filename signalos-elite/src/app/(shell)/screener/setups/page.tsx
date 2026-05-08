@@ -142,6 +142,173 @@ function filterPillClass(isActive: boolean): string {
     : "inline-flex items-center rounded-full border border-white/10 bg-black/20 px-3.5 py-1.5 text-xs font-medium text-white/60 transition hover:border-cyan-400/20 hover:text-cyan-100";
 }
 
+function renderFilterControls({
+  session,
+  direction,
+  minPrice,
+  minVolume,
+  catalystOnly,
+  highRvol,
+  isMobilePreview,
+  filterCardClass,
+  filterPillRowClass,
+}: {
+  session: TodaySetupSession;
+  direction: "both" | "bullish" | "bearish";
+  minPrice: number | null;
+  minVolume: number | null;
+  catalystOnly: boolean;
+  highRvol: boolean;
+  isMobilePreview: boolean;
+  filterCardClass: string;
+  filterPillRowClass: string;
+}) {
+  return (
+    <div className={`grid ${isMobilePreview ? "grid-cols-2 gap-3.5" : "gap-3 md:grid-cols-5"}`}>
+      <fieldset className={filterCardClass}>
+        <legend className="px-1 text-[10px] uppercase tracking-[0.18em] text-white/35">
+          Direction
+        </legend>
+        <div className={filterPillRowClass}>
+          {DIRECTION_PRESETS.map((preset) => {
+            const isChecked = direction === preset.value;
+
+            return (
+              <Link
+                key={preset.value}
+                href={filterLink({
+                  session,
+                  direction: preset.value,
+                  minPrice,
+                  minVolume,
+                  catalystOnly,
+                  highRvol,
+                  mobilePreview: isMobilePreview,
+                })}
+                className={filterPillClass(isChecked)}
+              >
+                {preset.label}
+              </Link>
+            );
+          })}
+        </div>
+      </fieldset>
+      <fieldset className={`${filterCardClass} ${isMobilePreview ? "col-span-2" : ""}`}>
+        <legend className="px-1 text-[10px] uppercase tracking-[0.18em] text-white/35">
+          Min Price
+        </legend>
+        <div className={filterPillRowClass}>
+          {MIN_PRICE_PRESETS.map((preset) => {
+            const isChecked = preset.value === minPrice;
+
+            return (
+              <Link
+                key={preset.label}
+                href={filterLink({
+                  session,
+                  direction,
+                  minPrice: preset.value,
+                  minVolume,
+                  catalystOnly,
+                  highRvol,
+                  mobilePreview: isMobilePreview,
+                })}
+                className={filterPillClass(isChecked)}
+              >
+                {preset.label}
+              </Link>
+            );
+          })}
+        </div>
+      </fieldset>
+      <fieldset className={`${filterCardClass} ${isMobilePreview ? "col-span-2" : ""}`}>
+        <legend className="px-1 text-[10px] uppercase tracking-[0.18em] text-white/35">
+          Min Volume
+        </legend>
+        <div className={filterPillRowClass}>
+          {MIN_VOLUME_PRESETS.map((preset) => {
+            const isChecked = preset.value === minVolume;
+
+            return (
+              <Link
+                key={preset.label}
+                href={filterLink({
+                  session,
+                  direction,
+                  minPrice,
+                  minVolume: preset.value,
+                  catalystOnly,
+                  highRvol,
+                  mobilePreview: isMobilePreview,
+                })}
+                className={filterPillClass(isChecked)}
+              >
+                {preset.label}
+              </Link>
+            );
+          })}
+        </div>
+      </fieldset>
+      <fieldset className={filterCardClass}>
+        <legend className="px-1 text-[10px] uppercase tracking-[0.18em] text-white/35">
+          Catalyst
+        </legend>
+        <div className={filterPillRowClass}>
+          {CATALYST_PRESETS.map((preset) => {
+            const isChecked = catalystOnly ? preset.value === "1" : preset.value === "0";
+
+            return (
+              <Link
+                key={preset.value}
+                href={filterLink({
+                  session,
+                  direction,
+                  minPrice,
+                  minVolume,
+                  catalystOnly: preset.value === "1",
+                  highRvol,
+                  mobilePreview: isMobilePreview,
+                })}
+                className={filterPillClass(isChecked)}
+              >
+                {preset.label}
+              </Link>
+            );
+          })}
+        </div>
+      </fieldset>
+      <fieldset className={filterCardClass}>
+        <legend className="px-1 text-[10px] uppercase tracking-[0.18em] text-white/35">
+          RVOL
+        </legend>
+        <div className={filterPillRowClass}>
+          {RVOL_PRESETS.map((preset) => {
+            const isChecked = highRvol ? preset.value === "1" : preset.value === "0";
+
+            return (
+              <Link
+                key={preset.value}
+                href={filterLink({
+                  session,
+                  direction,
+                  minPrice,
+                  minVolume,
+                  catalystOnly,
+                  highRvol: preset.value === "1",
+                  mobilePreview: isMobilePreview,
+                })}
+                className={filterPillClass(isChecked)}
+              >
+                {preset.label}
+              </Link>
+            );
+          })}
+        </div>
+      </fieldset>
+    </div>
+  );
+}
+
 export default async function SetupsPage({
   searchParams,
 }: SetupsPageProps): Promise<ReactElement> {
@@ -234,148 +401,43 @@ export default async function SetupsPage({
           </Link>
         </div>
 
-        <div className={`mt-4 grid ${isMobilePreview ? "grid-cols-2 gap-3.5" : "gap-3 md:grid-cols-5"}`}>
-          <fieldset className={filterCardClass}>
-            <legend className="px-1 text-[10px] uppercase tracking-[0.18em] text-white/35">
-              Direction
-            </legend>
-            <div className={filterPillRowClass}>
-              {DIRECTION_PRESETS.map((preset) => {
-                const isChecked = direction === preset.value;
-
-                return (
-                  <Link
-                    key={preset.value}
-                    href={filterLink({
-                      session,
-                      direction: preset.value,
-                      minPrice,
-                      minVolume,
-                      catalystOnly,
-                      highRvol,
-                      mobilePreview: isMobilePreview,
-                    })}
-                    className={filterPillClass(isChecked)}
-                  >
-                    {preset.label}
-                  </Link>
-                );
+        {isMobilePreview ? (
+          <details className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3 text-white/80">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-cyan-100 marker:hidden">
+              <span>Filters</span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-white/50">
+                {filteredRows.length} visible
+              </span>
+            </summary>
+            <div className="mt-3">
+              {renderFilterControls({
+                session,
+                direction,
+                minPrice,
+                minVolume,
+                catalystOnly,
+                highRvol,
+                isMobilePreview,
+                filterCardClass,
+                filterPillRowClass,
               })}
             </div>
-          </fieldset>
-          <fieldset className={`${filterCardClass} ${isMobilePreview ? "col-span-2" : ""}`}>
-            <legend className="px-1 text-[10px] uppercase tracking-[0.18em] text-white/35">
-              Min Price
-            </legend>
-            <div className={filterPillRowClass}>
-              {MIN_PRICE_PRESETS.map((preset) => {
-                const isChecked = preset.value === minPrice;
-
-                return (
-                  <Link
-                    key={preset.label}
-                    href={filterLink({
-                      session,
-                      direction,
-                      minPrice: preset.value,
-                      minVolume,
-                      catalystOnly,
-                      highRvol,
-                      mobilePreview: isMobilePreview,
-                    })}
-                    className={filterPillClass(isChecked)}
-                  >
-                    {preset.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </fieldset>
-          <fieldset className={`${filterCardClass} ${isMobilePreview ? "col-span-2" : ""}`}>
-            <legend className="px-1 text-[10px] uppercase tracking-[0.18em] text-white/35">
-              Min Volume
-            </legend>
-            <div className={filterPillRowClass}>
-              {MIN_VOLUME_PRESETS.map((preset) => {
-                const isChecked = preset.value === minVolume;
-
-                return (
-                  <Link
-                    key={preset.label}
-                    href={filterLink({
-                      session,
-                      direction,
-                      minPrice,
-                      minVolume: preset.value,
-                      catalystOnly,
-                      highRvol,
-                      mobilePreview: isMobilePreview,
-                    })}
-                    className={filterPillClass(isChecked)}
-                  >
-                    {preset.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </fieldset>
-          <fieldset className={filterCardClass}>
-            <legend className="px-1 text-[10px] uppercase tracking-[0.18em] text-white/35">
-              Catalyst
-            </legend>
-            <div className={filterPillRowClass}>
-              {CATALYST_PRESETS.map((preset) => {
-                const isChecked = catalystOnly ? preset.value === "1" : preset.value === "0";
-
-                return (
-                  <Link
-                    key={preset.value}
-                    href={filterLink({
-                      session,
-                      direction,
-                      minPrice,
-                      minVolume,
-                      catalystOnly: preset.value === "1",
-                      highRvol,
-                      mobilePreview: isMobilePreview,
-                    })}
-                    className={filterPillClass(isChecked)}
-                  >
-                    {preset.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </fieldset>
-          <fieldset className={filterCardClass}>
-            <legend className="px-1 text-[10px] uppercase tracking-[0.18em] text-white/35">
-              RVOL
-            </legend>
-            <div className={filterPillRowClass}>
-              {RVOL_PRESETS.map((preset) => {
-                const isChecked = highRvol ? preset.value === "1" : preset.value === "0";
-
-                return (
-                  <Link
-                    key={preset.value}
-                    href={filterLink({
-                      session,
-                      direction,
-                      minPrice,
-                      minVolume,
-                      catalystOnly,
-                      highRvol: preset.value === "1",
-                      mobilePreview: isMobilePreview,
-                    })}
-                    className={filterPillClass(isChecked)}
-                  >
-                    {preset.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </fieldset>
-        </div>
+          </details>
+        ) : (
+          <div className="mt-4">
+            {renderFilterControls({
+              session,
+              direction,
+              minPrice,
+              minVolume,
+              catalystOnly,
+              highRvol,
+              isMobilePreview,
+              filterCardClass,
+              filterPillRowClass,
+            })}
+          </div>
+        )}
 
         {session === "pre" ? (
           <div className="mt-4 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.16em] text-white/40">
@@ -391,7 +453,7 @@ export default async function SetupsPage({
           </div>
         ) : null}
 
-        <div className="mt-5 overflow-hidden rounded-3xl border border-white/8 bg-black/20">
+        <div className={`overflow-hidden rounded-3xl border border-white/8 bg-black/20 ${isMobilePreview ? "mt-4" : "mt-5"}`}>
           {isMobilePreview ? (
             <div className="divide-y divide-white/6">
               {filteredRows.map((row, index) => (
