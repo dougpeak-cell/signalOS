@@ -9,39 +9,14 @@ export default function TodayAutoRefresh() {
   const router = useRouter();
 
   useEffect(() => {
-    let refreshTimer: number | null = null;
-
-    const refresh = () => {
-      router.refresh();
-    };
-
-    const onFocus = () => {
+    const refreshTimer = window.setInterval(() => {
       if (document.visibilityState === "visible") {
-        refresh();
-      }
-    };
-
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") {
-        refresh();
-      }
-    };
-
-    refreshTimer = window.setInterval(() => {
-      if (document.visibilityState === "visible") {
-        refresh();
+        router.refresh();
       }
     }, TODAY_AUTO_REFRESH_INTERVAL_MS);
 
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVisibility);
-
     return () => {
-      if (refreshTimer != null) {
-        window.clearInterval(refreshTimer);
-      }
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVisibility);
+      window.clearInterval(refreshTimer);
     };
   }, [router]);
 
