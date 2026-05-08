@@ -169,6 +169,17 @@ const TODAY_PUBLIC_CACHE_TTL_MS = 60_000;
 const marketNewsCache = new Map<string, CachedAsyncValue<NewsItem[]>>();
 const marketMoversCache = new Map<string, CachedAsyncValue<{ gainers: MarketMoverRow[]; losers: MarketMoverRow[] }>>();
 const tickerPulseCache = new Map<string, CachedAsyncValue<Record<string, TickerNewsPulse>>>();
+const earningsCalendarCache = new Map<
+  string,
+  CachedAsyncValue<Array<TodayCommandCenterEarningsRow & { sortDate: string }>>
+>();
+
+const EMPTY_STORED_MARKET_CONTEXT: Awaited<ReturnType<typeof getStoredMarketContext>> = {
+  userId: null,
+  watchlist: [],
+  portfolio: [],
+  updatedAt: null,
+};
 
 function getCachedAsyncValue<T>(
   cache: Map<string, CachedAsyncValue<T>>,
@@ -750,39 +761,45 @@ async function fetchUpcomingEarnings(
     `https://financialmodelingprep.com/api/v3/earning_calendar?from=${fromDate}&to=${toDate}&apikey=${apiKey}`,
   ];
 
-  let calendarRows: unknown[] = [];
+  const normalizedRows = await getCachedAsyncValue(
+    earningsCalendarCache,
+    `earnings:${fromDate}:${toDate}`,
+    async () => {
+      let calendarRows: unknown[] = [];
 
-  for (const url of urls) {
-    try {
-      const response = await fetch(url, { cache: "no-store" });
-      if (!response.ok) continue;
+      for (const url of urls) {
+        try {
+          const response = await fetch(url, { cache: "no-store" });
+          if (!response.ok) continue;
 
-      const payload = await response.json();
-      if (Array.isArray(payload) && payload.length > 0) {
-        calendarRows = payload;
-        break;
-      }
-    } catch {
-      // Try the next known endpoint shape.
-    }
-  }
-
-  if (!calendarRows.length) return [];
-
-  const normalizedRows = Array.from(
-    new Map(
-      calendarRows
-        .map((row) => normalizeEarningsCalendarRow(row))
-        .filter((row): row is TodayCommandCenterEarningsRow & { sortDate: string } => row != null)
-        .filter((row) => row.sortDate >= fromDate)
-        .sort((left, right) => {
-          if (left.sortDate !== right.sortDate) {
-            return left.sortDate.localeCompare(right.sortDate);
+          const payload = await response.json();
+          if (Array.isArray(payload) && payload.length > 0) {
+            calendarRows = payload;
+            break;
           }
-          return left.ticker.localeCompare(right.ticker);
-        })
-        .map((row) => [row.ticker, row])
-    ).values()
+        } catch {
+          // Try the next known endpoint shape.
+        }
+      }
+
+      if (!calendarRows.length) return [];
+
+      return Array.from(
+        new Map(
+          calendarRows
+            .map((row) => normalizeEarningsCalendarRow(row))
+            .filter((row): row is TodayCommandCenterEarningsRow & { sortDate: string } => row != null)
+            .filter((row) => row.sortDate >= fromDate)
+            .sort((left, right) => {
+              if (left.sortDate !== right.sortDate) {
+                return left.sortDate.localeCompare(right.sortDate);
+              }
+              return left.ticker.localeCompare(right.ticker);
+            })
+            .map((row) => [row.ticker, row])
+        ).values()
+      );
+    }
   );
 
   const prioritizedRows = normalizedRows.filter((row) => prioritizedTickers.has(row.ticker));
@@ -1140,7 +1157,10 @@ export async function getTodayPageData(): Promise<TodayPageData> {
         700
       )
     ),
-    time("storedMarketContext", getStoredMarketContext()),
+    time(
+      "storedMarketContext",
+      withTimeout(getStoredMarketContext(), EMPTY_STORED_MARKET_CONTEXT, 500)
+    ),
   ]);
 
   const defaultSetupSession: TodaySetupSession = isPreMarketNow() ? "pre" : "regular";
