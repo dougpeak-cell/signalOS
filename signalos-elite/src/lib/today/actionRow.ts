@@ -140,32 +140,34 @@ function buildBreadthText(bullish: number, bearish: number, neutral: number) {
   const spread = bullishCount - bearishCount;
   const breadthState = describeBreadthState(spread, activeSignals, total);
   const phaseLabel = formatPhaseLabel();
+  const neutralSummary = neutralCount > 0 ? ` with ${neutralCount} neutral setup${neutralCount === 1 ? "" : "s"} parked on the side` : "";
+  const participationSummary = `${activeSignals} active setup${activeSignals === 1 ? "" : "s"} out of ${total}`;
 
   if (total === 0) {
     return "No confirmed setup edge is currently detected from the active scan.";
   }
 
   if (spread >= 4) {
-    return `Bullish setups lead ${bullishCount}-${bearishCount} in the ${phaseLabel}, with breadth ${breadthState} beyond the first tier.`;
+    return `Bullish setups lead ${bullishCount}-${bearishCount} in the ${phaseLabel}. Breadth is ${breadthState} with ${participationSummary}${neutralSummary}.`;
   }
 
   if (spread >= 1) {
-    return `Bullish setups are leading ${bullishCount}-${bearishCount}, but breadth is still ${breadthState}.`;
+    return `Bullish setups are leading ${bullishCount}-${bearishCount} in the ${phaseLabel}. Breadth is still ${breadthState} with ${participationSummary}${neutralSummary}.`;
   }
 
   if (spread <= -4) {
-    return `Bearish setups lead ${bearishCount}-${bullishCount} in the ${phaseLabel}, and breadth is turning ${breadthState}.`;
+    return `Bearish setups lead ${bearishCount}-${bullishCount} in the ${phaseLabel}. Breadth is turning ${breadthState} with ${participationSummary}${neutralSummary}.`;
   }
 
   if (spread <= -1) {
-    return `Bearish setups are leading ${bearishCount}-${bullishCount}, suggesting a more ${breadthState} tape.`;
+    return `Bearish setups are leading ${bearishCount}-${bullishCount} in the ${phaseLabel}, suggesting a more ${breadthState} tape with ${participationSummary}${neutralSummary}.`;
   }
 
   if (activeSignals >= 8) {
-    return `Bullish and bearish setups are balanced at ${bullishCount}-${bearishCount}, creating a ${breadthState} tape with more crosscurrents than follow-through.`;
+    return `Bullish and bearish setups are balanced at ${bullishCount}-${bearishCount} in the ${phaseLabel}. Breadth is ${breadthState} with ${participationSummary}${neutralSummary}, creating more crosscurrents than follow-through.`;
   }
 
-  return `Bullish and bearish setups are balanced at ${bullishCount}-${bearishCount}, with breadth still ${breadthState}.`;
+  return `Bullish and bearish setups are balanced at ${bullishCount}-${bearishCount} in the ${phaseLabel}. Breadth is still ${breadthState} with ${participationSummary}${neutralSummary}.`;
 }
 
 function buildLeadershipText(leader: SectorSummary | null, laggard: SectorSummary | null) {
