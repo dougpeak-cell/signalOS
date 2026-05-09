@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { openMobileSigiSheet } from "@/components/shell/mobileSigiSheetEvents";
 import { renderTickerParagraphs } from "@/components/sigi/renderTickerText";
 import { buildMetricContextAnswer } from "@/lib/sigi/sigiMetricContext";
 import { getSigiProfile } from "@/lib/sigi/sigiProfile";
@@ -63,6 +64,26 @@ export default function StockFundamentalsGrid({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobileViewport(mediaQuery.matches);
+
+    sync();
+    mediaQuery.addEventListener("change", sync);
+
+    return () => {
+      mediaQuery.removeEventListener("change", sync);
+    };
+  }, []);
+
+  function openMetricInMobileSigi(prompt: string) {
+    openMobileSigiSheet({
+      prompt: `${prompt} Focus on ${ticker}.`,
+      autoSubmit: true,
+    });
+  }
 
   async function handleAskSigi(prompt: string) {
     setLoading(true);
@@ -129,6 +150,12 @@ export default function StockFundamentalsGrid({
 
   function handleMetricClick(term: string, value?: string | number | null) {
     const educationPrompt = EDUCATION_PROMPTS[term.trim().toLowerCase()];
+    const shouldOpenMobileSheet = isMobilePreview || isMobileViewport;
+
+    if (shouldOpenMobileSheet) {
+      openMetricInMobileSigi(educationPrompt ?? `What does ${term} mean for ${ticker}?`);
+      return;
+    }
 
     if (educationPrompt) {
       setFollowUps([]);
