@@ -8,6 +8,7 @@ import MiniSparkline from "@/components/stocks/MiniSparkline";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import ReturnToContextButton from "@/components/shared/ReturnToContextButton";
 import TickerHover from "@/components/sigi/TickerHover";
+import { buildTargetEngine } from "@/lib/engines/targetEngine";
 import {
   isOpportunitiesView,
   normalizeQueryValue,
@@ -52,6 +53,14 @@ type WatchlistRowLike = {
   conviction?: number | null;
   score?: number | null;
   compositeScore?: number | null;
+  analystTarget?: number | null;
+};
+
+type WatchlistTargetRow = {
+  key: "signal" | "analyst" | "engine";
+  label: "Signal Target" | "Analyst Target" | "Engine Target";
+  value: number;
+  isPrimary: boolean;
 };
 
 function getNumericValue(value: unknown): number | null {
@@ -68,12 +77,83 @@ function getDistanceToTarget(row: WatchlistRowLike): number | null {
     getNumericValue(row.currentPrice) ??
     getNumericValue(row.price);
 
-  const target =
-    getNumericValue(row.targetPrice) ??
-    getNumericValue(row.target);
+  const target = getPrimaryTargetValue(row, price);
 
   if (price == null || target == null || price <= 0 || target <= 0) return null;
   return ((target - price) / price) * 100;
+}
+
+function getEngineTargetValue(row: WatchlistRowLike, livePrice?: number | null): number | null {
+  const price = livePrice ?? getNumericValue(row.currentPrice) ?? getNumericValue(row.price);
+  const conviction = getNumericValue(row.conviction);
+
+  const tier =
+    conviction != null && conviction >= 85
+      ? "Elite"
+      : conviction != null && conviction >= 70
+        ? "Strong"
+        : "Risk";
+
+  return buildTargetEngine({
+    livePrice: price,
+    conviction,
+    tier,
+  }).target;
+}
+
+function getPrimaryTargetValue(row: WatchlistRowLike, livePrice?: number | null): number | null {
+  return (
+    getNumericValue(row.targetPrice) ??
+    getNumericValue(row.target) ??
+    getNumericValue(row.analystTarget) ??
+    getEngineTargetValue(row, livePrice)
+  );
+}
+
+function getTargetHierarchy(row: WatchlistRowLike, livePrice?: number | null): WatchlistTargetRow[] {
+  const signalTarget = getNumericValue(row.targetPrice) ?? getNumericValue(row.target);
+  const analystTarget = getNumericValue(row.analystTarget);
+  const engineTarget = getEngineTargetValue(row, livePrice);
+
+  const hierarchy: Array<Omit<WatchlistTargetRow, "isPrimary">> = [];
+
+  if (signalTarget != null && signalTarget > 0) {
+    hierarchy.push({
+      key: "signal",
+      label: "Signal Target",
+      value: signalTarget,
+    });
+  }
+
+  if (analystTarget != null && analystTarget > 0) {
+    hierarchy.push({
+      key: "analyst",
+      label: "Analyst Target",
+      value: analystTarget,
+    });
+  }
+
+  if (engineTarget != null && engineTarget > 0) {
+    hierarchy.push({
+      key: "engine",
+      label: "Engine Target",
+      value: engineTarget,
+    });
+  }
+
+  return hierarchy.map((entry, index) => ({
+    ...entry,
+    isPrimary: index === 0,
+  }));
+}
+
+function formatMoney(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value) || value <= 0) return "—";
+
+  return `$${value.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 }
 
 function getWatchlistStrength(row: WatchlistRowLike): number {
@@ -214,6 +294,9 @@ function WatchlistStockCard({
           ? "text-rose-300"
           : "text-white/55";
 
+          const targetHierarchy = getTargetHierarchy(stock, displayPrice);
+          const primaryTarget = targetHierarchy[0] ?? null;
+
   const targetDistance = getDistanceToTarget(stock);
   const isNearTarget =
     opportunitiesMode &&
@@ -290,23 +373,32 @@ function WatchlistStockCard({
 
       <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
         <div className="col-span-2">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
                 Price
               </div>
               <div className="mt-2 whitespace-nowrap text-[20px] font-semibold tracking-tight text-white">
-                {displayPrice != null
-                  ? `$${displayPrice.toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}`
-                  : "Awaiting quote"}
+                {displayPrice != null ? formatMoney(displayPrice) : "Awaiting quote"}
               </div>
               <div className={`mt-1 whitespace-nowrap text-sm font-semibold ${displayChangeClass}`}>
                 {displayChange != null
                   ? `${displayChange > 0 ? "+" : ""}${displayChange.toFixed(2)}%`
                   : "—"}
+              </div>
+            </div>
+
+            <div className="min-w-0 text-center">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                {primaryTarget?.label ?? "Primary Target"}
+              </div>
+              <div className="mt-2 whitespace-nowrap text-[20px] font-semibold tracking-tight text-cyan-100">
+                {formatMoney(primaryTarget?.value ?? null)}
+              </div>
+              <div className="mt-1 whitespace-nowrap text-xs text-white/50">
+                {primaryTarget
+                  ? `${primaryTarget.key === "signal" ? "Signal" : primaryTarget.key === "analyst" ? "Analyst" : "Engine"} priority`
+                  : "No target"}
               </div>
             </div>
 
@@ -348,6 +440,34 @@ function WatchlistStockCard({
           <p className="mt-4 line-clamp-3 text-sm leading-6 text-white/68">
             {stock.thesis}
           </p>
+
+          <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-3">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-white/45">
+              Target Hierarchy
+            </div>
+            <div className="mt-3 space-y-2">
+              {targetHierarchy.length > 0 ? (
+                targetHierarchy.map((item) => (
+                  <div
+                    key={item.key}
+                    className={[
+                      "flex items-center justify-between rounded-xl border px-3 py-2 text-sm",
+                      item.isPrimary
+                        ? "border-cyan-400/25 bg-cyan-400/10 text-cyan-100"
+                        : "border-white/8 bg-white/4 text-white/75",
+                    ].join(" ")}
+                  >
+                    <span className="font-medium">{item.label}</span>
+                    <span className="font-semibold">{formatMoney(item.value)}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-xl border border-white/8 bg-white/4 px-3 py-2 text-sm text-white/50">
+                  No target levels available yet.
+                </div>
+              )}
+            </div>
+          </div>
 
           {pulse ? (
             <div
