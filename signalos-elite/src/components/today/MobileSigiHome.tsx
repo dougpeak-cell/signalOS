@@ -640,7 +640,7 @@ export default function MobileSigiHome({
                   handleAnalyze();
                 }
               }}
-              placeholder="Ask Sigi anything..."
+              placeholder="Type stock ticker or company"
               className="min-h-12 flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none placeholder:text-white/34 focus:border-cyan-300/40"
             />
             <button

@@ -229,7 +229,11 @@ export default function MobileSigiSheet({
   const shouldShowReadCard = Boolean(
     mobileSigiAnswer && mobileSigiAnswer.question === mobileSigiQuestion
   );
-  const extractedInputTicker = extractTickerFromQuestion(mobileSigiInput.trim());
+  const extractedInputTicker = resolveSigiTicker({
+    explicitTicker: buildSigiPromptLabel(mobileSigiInput.trim()).ticker,
+    message: mobileSigiInput.trim(),
+    source: "type",
+  });
   const effectiveSheetContext = useMemo<SigiTodayContext | null>(() => {
     if (!sheetContext && effectiveWatchlistTickers.length === 0 && accountPortfolioTickers.length === 0) {
       return null;
@@ -379,8 +383,12 @@ export default function MobileSigiSheet({
       return;
     }
 
-    const ticker = extractTickerFromQuestion(question)
-      ?? (looksLikeTicker(question) ? normalizeTickerInput(question) : null);
+    const parsedQuestion = buildSigiPromptLabel(question);
+    const ticker = resolveSigiTicker({
+      explicitTicker: parsedQuestion.ticker,
+      message: question,
+      source: "type",
+    }) ?? (looksLikeTicker(question) ? normalizeTickerInput(question) : null);
 
     if (ticker) {
       setMobileSigiAnswer(null);
@@ -692,7 +700,7 @@ export default function MobileSigiSheet({
                 void handleMobileSigiSubmit();
               }
             }}
-            placeholder="Ask Sigi anything..."
+            placeholder="Type stock ticker or company"
             className="h-12 min-w-0 flex-1 rounded-2xl border border-cyan-300/25 bg-black/50 px-4 text-sm text-white outline-none placeholder:text-white/35 transition focus:border-cyan-400/38"
             disabled={isMobileSigiAnalyzing}
           />
@@ -729,7 +737,7 @@ export default function MobileSigiSheet({
 
         {!mobileSigiAnswer && mobileSigiInput.trim().length > 0 && !extractedInputTicker ? (
           <div className="rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-rose-100">
-            Want a stock analysis? Try NVDA or TSLA. Or ask what stock is strongest today.
+            Type a stock ticker or company like NVDA or Nvidia. You can also ask what stock is strongest today.
           </div>
         ) : null}
 
