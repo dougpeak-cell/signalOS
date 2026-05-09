@@ -776,15 +776,15 @@ export default function SigiDecisionPanel({
               void handleAnalyze();
             }
           }}
-          placeholder="Type a ticker or ask a question, like “Is INTC a good buy?”"
-          className="h-12 flex-1 rounded-full border border-white/10 bg-black/40 px-5 text-sm text-white placeholder:text-white/35 outline-none transition focus:border-cyan-400/40"
+          placeholder="Type stock ticker or company"
+          className="h-12 min-w-0 flex-1 rounded-full border border-white/10 bg-black/40 px-5 text-sm text-white placeholder:text-white/35 outline-none transition focus:border-cyan-400/40"
         />
         <button
           type="button"
           onClick={() => void handleAnalyze()}
           disabled={loading || isAnalyzing || !sigiInput.trim()}
           className={[
-            "relative h-12 rounded-2xl px-5 text-sm font-bold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50",
+            "relative h-12 shrink-0 rounded-2xl px-5 text-sm font-bold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50",
             isAnalyzing
               ? "bg-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.6)] animate-pulse"
               : "border border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20 hover:shadow-[0_0_12px_rgba(34,211,238,0.4)]",
