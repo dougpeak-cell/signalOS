@@ -12,11 +12,13 @@ import { useMarketData } from "@/components/providers/MarketDataProvider";
 type DayChartClientProps = {
   ticker: string;
   companyName?: string | null;
+  website?: string | null;
 };
 
 export default function DayChartClient({
   ticker,
   companyName,
+  website,
 }: DayChartClientProps): ReactElement {
   const [focusMode] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -66,6 +68,7 @@ export default function DayChartClient({
   }
 
   const displayName = useMemo(() => companyName ?? ticker, [companyName, ticker]);
+  const websiteLabel = `Visit ${displayName}`;
 
   return (
     <>
@@ -98,6 +101,16 @@ export default function DayChartClient({
           </div>
 
           <div className="absolute right-4 top-4 z-30 flex items-center gap-2">
+            {website ? (
+              <a
+                href={website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-medium text-cyan-200 backdrop-blur transition hover:border-cyan-300/40 hover:bg-cyan-400/15 hover:text-white"
+              >
+                {websiteLabel}
+              </a>
+            ) : null}
             <Link
               href="/"
               className="inline-flex items-center rounded-full border border-white/10 bg-black/55 px-3 py-1.5 text-xs font-medium text-white/70 backdrop-blur transition hover:border-cyan-400/30 hover:bg-cyan-400/10 hover:text-white"

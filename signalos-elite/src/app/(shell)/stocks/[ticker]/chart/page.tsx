@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { fetchSignalByTicker } from "@/lib/queries/signals";
+import { getFinnhubCompanyProfile } from "@/lib/stocks/finnhubCompanyProfile";
 import StockChartClient from "./StockChartClient";
 
 export default async function StockChartPage({
@@ -39,7 +40,11 @@ export default async function StockChartPage({
   const stock = {
     ticker: row.ticker,
     name: row.company_name ?? "Company",
+    website: null as string | null,
   };
+
+  const companyProfile = await getFinnhubCompanyProfile(symbol);
+  stock.website = companyProfile?.weburl ?? null;
 
   return <StockChartClient stock={stock} />;
 }

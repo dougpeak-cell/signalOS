@@ -10,6 +10,7 @@ type StockChartClientProps = {
   stock: {
     ticker: string;
     name: string | null;
+    website: string | null;
   };
 };
 
@@ -145,6 +146,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
     ],
     [confluenceState]
   );
+  const websiteLabel = `Visit ${stock.name ?? stock.ticker}`;
 
   return (
     <main className="bg-black text-white">
@@ -166,6 +168,19 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
                 {stock.name ?? "Day Chart Focus"}
               </div>
             </div>
+
+            {stock.website ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <a
+                  href={stock.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/15 hover:text-white"
+                >
+                  {websiteLabel}
+                </a>
+              </div>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-2">

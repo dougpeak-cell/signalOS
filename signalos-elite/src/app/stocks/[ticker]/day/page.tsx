@@ -3,6 +3,7 @@ import SigiMiniPanel from "@/components/sigi/SigiMiniPanel";
 import { SigiPanelProvider } from "@/components/sigi/SigiPanelContext";
 import DayChartClient from "@/components/stocks/DayChartClient";
 import { fetchSignalByTicker } from "@/lib/queries/signals";
+import { getFinnhubCompanyProfile } from "@/lib/stocks/finnhubCompanyProfile";
 import type { JSX } from "react";
 
 export default async function StockDayPage({
@@ -13,6 +14,7 @@ export default async function StockDayPage({
   const { ticker } = await params;
   const symbol: string = String(ticker ?? "").toUpperCase().trim();
   const row = await fetchSignalByTicker(symbol);
+  const companyProfile = await getFinnhubCompanyProfile(symbol);
 
   return (
     <main className="min-h-screen bg-black text-white">
@@ -20,6 +22,7 @@ export default async function StockDayPage({
         <DayChartClient
           ticker={row?.ticker ?? symbol}
           companyName={row?.company_name ?? null}
+          website={companyProfile?.weburl ?? null}
         />
         <SigiMiniPanel />
       </SigiPanelProvider>

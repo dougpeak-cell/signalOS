@@ -11,6 +11,7 @@ import {
   fetchSignalByTicker,
   type SignalDetailRow,
 } from "@/lib/queries/signals";
+import { getFinnhubCompanyProfile } from "@/lib/stocks/finnhubCompanyProfile";
 
 type WorkspaceFundamentals = {
   pe: number | null;
@@ -25,9 +26,16 @@ type WorkspaceFundamentals = {
   dividendYield: number | null;
 };
 
+type WorkspaceCompanyProfile = {
+  name: string | null;
+  logo: string | null;
+  weburl: string | null;
+};
+
 export type StockWorkspaceData = {
   row: SignalDetailRow;
   liveTicker: string;
+  companyProfile: WorkspaceCompanyProfile | null;
   technicals: ComputedTechnicals;
   fundamentals: WorkspaceFundamentals;
   fundamentalCompositeScore: number;
@@ -83,10 +91,11 @@ export async function getStockWorkspaceData(
   const row = dbRow ?? buildFallbackRow(ticker);
   const liveTicker = row.ticker.toUpperCase();
 
-  const [priceHistory, quoteState, massiveFundamentals] = await Promise.all([
+  const [priceHistory, quoteState, massiveFundamentals, companyProfile] = await Promise.all([
     getPriceHistory(liveTicker),
     fetchServerQuoteState(liveTicker),
     getMassiveFundamentals(liveTicker),
+    getFinnhubCompanyProfile(liveTicker),
   ]);
 
   const technicals = computeTechnicalsFromHistory(priceHistory);
@@ -154,6 +163,13 @@ export async function getStockWorkspaceData(
   return {
     row,
     liveTicker,
+    companyProfile: companyProfile
+      ? {
+          name: companyProfile.name,
+          logo: companyProfile.logo,
+          weburl: companyProfile.weburl,
+        }
+      : null,
     technicals,
     fundamentals,
     fundamentalCompositeScore: fundamentalScore.composite,
