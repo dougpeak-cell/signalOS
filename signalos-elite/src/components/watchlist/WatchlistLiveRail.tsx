@@ -95,12 +95,20 @@ export default function WatchlistLiveRail({
 
     window.addEventListener("storage", onStorage);
     window.addEventListener(
+      "signalos:watchlist-updated",
+      onCustomUpdate as EventListener
+    );
+    window.addEventListener(
       "signalos-watchlist-updated",
       onCustomUpdate as EventListener
     );
 
     return () => {
       window.removeEventListener("storage", onStorage);
+      window.removeEventListener(
+        "signalos:watchlist-updated",
+        onCustomUpdate as EventListener
+      );
       window.removeEventListener(
         "signalos-watchlist-updated",
         onCustomUpdate as EventListener
