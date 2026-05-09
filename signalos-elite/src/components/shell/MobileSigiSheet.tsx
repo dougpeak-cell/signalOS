@@ -229,6 +229,8 @@ export default function MobileSigiSheet({
   const shouldShowReadCard = Boolean(
     mobileSigiAnswer && mobileSigiAnswer.question === mobileSigiQuestion
   );
+  const shouldShowReadIntro =
+    !showReadFirst || (!shouldShowReadCard && !isMobileSigiAnalyzing && !error);
   const extractedInputTicker = resolveSigiTicker({
     explicitTicker: buildSigiPromptLabel(mobileSigiInput.trim()).ticker,
     message: mobileSigiInput.trim(),
@@ -556,6 +558,7 @@ export default function MobileSigiSheet({
           </div>
         ) : null}
 
+        {shouldShowReadIntro ? (
         <div className="mb-3 rounded-3xl border border-cyan-300/25 bg-cyan-400/10 p-4 shadow-[0_0_35px_rgba(34,211,238,0.18)]">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl border border-cyan-300/30 bg-cyan-400/15 text-xl text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,0.25)] sm:h-16 sm:w-16 sm:text-2xl">
@@ -583,6 +586,7 @@ export default function MobileSigiSheet({
             </div>
           </div>
         </div>
+        ) : null}
 
         {shouldShowReadCard ? (
           <SigiResponseCard
@@ -603,7 +607,7 @@ export default function MobileSigiSheet({
           />
         ) : null}
 
-        {sigiProfile ? (
+        {sigiProfile && !showReadFirst ? (
           <div className="-mt-1 flex items-center justify-end gap-3">
             <button
               type="button"
@@ -630,7 +634,7 @@ export default function MobileSigiSheet({
           </div>
         ) : null}
 
-        {shouldShowProfileSetup ? (
+        {shouldShowProfileSetup && !showReadFirst ? (
           <div className="mt-4">
             <SigiOnboarding
               initialProfile={sigiProfile}
@@ -644,6 +648,7 @@ export default function MobileSigiSheet({
           </div>
         ) : null}
 
+        {!showReadFirst ? (
         <div className="grid grid-cols-2 gap-3">
           {QUICK_PROMPTS.map((prompt) => (
             <button
@@ -666,8 +671,9 @@ export default function MobileSigiSheet({
             </button>
           ))}
         </div>
+        ) : null}
 
-        {shouldShowReadCard && followUps.length ? (
+        {shouldShowReadCard && followUps.length && !showReadFirst ? (
           <div className="flex flex-wrap gap-2">
             {followUps.map((item) => (
               <button
@@ -683,12 +689,13 @@ export default function MobileSigiSheet({
           </div>
         ) : null}
 
-        {focusedTicker ? (
+        {focusedTicker && !showReadFirst ? (
           <div className="rounded-2xl border border-cyan-400/18 bg-cyan-400/9 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100">
             Focused ticker: {focusedTicker}
           </div>
         ) : null}
 
+        {!showReadFirst ? (
         <div className="absolute inset-x-0 bottom-0 flex gap-2 bg-linear-to-t from-slate-950/98 via-slate-950/92 to-transparent pt-5">
           <input
             ref={inputRef}
@@ -714,8 +721,9 @@ export default function MobileSigiSheet({
             {isMobileSigiAnalyzing ? "Analyzing..." : "Analyze"}
           </button>
         </div>
+        ) : null}
 
-        {suggestions.length > 0 ? (
+        {suggestions.length > 0 && !showReadFirst ? (
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/70">
             {suggestions.map((item) => (
               <button
@@ -735,7 +743,7 @@ export default function MobileSigiSheet({
           </div>
         ) : null}
 
-        {!mobileSigiAnswer && mobileSigiInput.trim().length > 0 && !extractedInputTicker ? (
+        {!mobileSigiAnswer && mobileSigiInput.trim().length > 0 && !extractedInputTicker && !showReadFirst ? (
           <div className="rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-rose-100">
             Type a stock ticker or company like NVDA or Nvidia. You can also ask what stock is strongest today.
           </div>

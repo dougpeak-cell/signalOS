@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode, RefObject } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useResponsiveMobilePreviewWidth } from "@/components/shell/useResponsiveMobilePreview";
@@ -33,6 +33,7 @@ export default function MobileSignalSheet({
   const forceDesktopPreview = forceVisible || searchParams.get("mobilePreview") === "1";
   const mobilePreviewWidth = useResponsiveMobilePreviewWidth(forceDesktopPreview);
   const [mounted, setMounted] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -62,6 +63,12 @@ export default function MobileSignalSheet({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [initialFocusRef, onClose, open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: "auto" });
+  }, [open, title, subtitle]);
 
   if (!open || !mounted) return null;
 
@@ -116,7 +123,7 @@ export default function MobileSignalSheet({
           </button>
         </div>
 
-        <div className="signalos-thin-scrollbar max-h-[76vh] overflow-y-auto px-5 py-4">{children}</div>
+        <div ref={scrollContainerRef} className="signalos-thin-scrollbar max-h-[76vh] overflow-y-auto px-5 py-4">{children}</div>
 
         {footer ? <div className="border-t border-white/8 px-5 py-4">{footer}</div> : null}
       </div>
