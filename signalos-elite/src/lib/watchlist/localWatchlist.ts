@@ -1,3 +1,5 @@
+import { resolveStockTickerAlias } from "@/lib/stocks/symbolAliases";
+
 export const WATCHLIST_STORAGE_KEY = "signalos:watchlist";
 const WATCHLIST_CANONICAL_KEY = "signalos.watchlist.v1";
 const WATCHLIST_HIDDEN_KEY = "signalos.watchlist.hidden.v1";
@@ -35,7 +37,7 @@ type WatchlistEntryInput = Omit<WatchlistStoredEntry, "ticker"> & {
 };
 
 function normalizeTicker(value: unknown): string {
-  return typeof value === "string" ? value.toUpperCase().trim() : "";
+  return resolveStockTickerAlias(value);
 }
 
 function getNumber(value: unknown): number | null {

@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  resolveStockTickerAlias,
+  shouldSuppressSearchTicker,
+} from "@/lib/stocks/symbolAliases";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type SearchRow = {
@@ -25,7 +29,7 @@ type MassiveTickerDetail = {
 };
 
 function normalizeTicker(ticker: string) {
-  return ticker.trim().toUpperCase();
+  return resolveStockTickerAlias(ticker);
 }
 
 function buildSearchScore(result: SearchResult, rawQuery: string, hasSignalCoverage: boolean) {
@@ -91,11 +95,13 @@ export async function GET(request: Request) {
 
   const merged = new Map<string, { result: SearchResult; hasSignalCoverage: boolean }>();
 
+  const exactLookupTicker = resolveStockTickerAlias(normalizedTickerQuery);
+
   if (/^[A-Z.\-]{1,5}$/.test(normalizedTickerQuery) && massiveApiKey) {
     try {
       const exactResponse = await fetch(
         `https://api.massive.com/v3/reference/tickers/${encodeURIComponent(
-          normalizedTickerQuery
+          exactLookupTicker
         )}?apiKey=${massiveApiKey}`,
         {
           cache: "no-store",
@@ -152,6 +158,10 @@ export async function GET(request: Request) {
   }
 
   const results = Array.from(merged.values())
+    .filter(
+      (entry) =>
+        !shouldSuppressSearchTicker(q, entry.result.ticker, entry.result.name)
+    )
     .sort((a, b) => {
       const scoreDiff =
         buildSearchScore(b.result, q, b.hasSignalCoverage) -

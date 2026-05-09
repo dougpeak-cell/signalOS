@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  resolveStockTickerAlias,
+  shouldSuppressSearchTicker,
+} from "@/lib/stocks/symbolAliases";
 import { useSyncedWatchlist } from "@/hooks/useSyncedWatchlist";
 
 type StockOption = {
@@ -18,7 +22,7 @@ type DisplayStockOption = StockOption & {
 };
 
 function normalizeTicker(value: string) {
-  return value.trim().toUpperCase().replace(/[^A-Z.\-]/g, "");
+  return resolveStockTickerAlias(value);
 }
 
 function buildLocalMatchScore(stock: StockOption, rawQuery: string) {
@@ -155,7 +159,13 @@ export default function AddStockModal({
 
     return merged.filter((stock) => {
       const ticker = normalizeTicker(stock.ticker);
-      if (!ticker || seen.has(ticker)) return false;
+      if (
+        !ticker ||
+        seen.has(ticker) ||
+        shouldSuppressSearchTicker(query, ticker, stock.company)
+      ) {
+        return false;
+      }
       seen.add(ticker);
       return true;
     });
