@@ -26,6 +26,7 @@ import { buildSigiPromptLabel } from "@/lib/sigi/sigiInput";
 import { buildSigiSectorLeadersReply, getSigiFollowUps } from "@/lib/sigi/sigiGuidance";
 import { getSigiMarketCondition } from "@/lib/sigi/sigiMarketCondition";
 import { matchSigiIntentWithContext } from "@/lib/sigi/sigiIntentRouter";
+import { buildSigiTodayResponse } from "@/lib/sigi/todayAssistant";
 import {
   clearSigiProfile,
   getSigiProfile,
@@ -85,6 +86,11 @@ function extractTickerFromQuestion(input: string) {
     text.match(/\b([A-Z]{1,5})\b/);
 
   return match?.[1] ?? null;
+}
+
+function formatTodayResponseSummary(summary: string, bullets: string[]) {
+  const sections = [summary.trim(), ...bullets.map((bullet) => bullet.trim())].filter(Boolean);
+  return sections.join("\n\n");
 }
 
 const QUICK_PROMPTS = [
@@ -401,6 +407,21 @@ export default function MobileSigiSheet({
       setFollowUps([]);
 
       try {
+        if (effectiveSheetContext?.pathname === "/today" && !parsedQuestion.isNaturalLanguage) {
+          const todayResponse = buildSigiTodayResponse(question, effectiveSheetContext);
+
+          setMobileSigiAnswer({
+            question,
+            title: todayResponse.title,
+            summary: formatTodayResponseSummary(todayResponse.summary, todayResponse.bullets),
+            ticker,
+            actionLabel: "Open Live Chart",
+          });
+          setFollowUps(todayResponse.followUps);
+          setMobileSigiInput("");
+          return;
+        }
+
         const response = await fetch("/api/sigi", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
