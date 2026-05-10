@@ -42,7 +42,7 @@ export default function HealthyWealthButton() {
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-50 mt-3 w-90 rounded-3xl border border-emerald-400/25 bg-slate-950/95 p-5 shadow-2xl backdrop-blur">
+        <div className="absolute left-0 z-50 mt-3 w-90 max-w-[calc(100vw-2rem)] rounded-3xl border border-emerald-400/25 bg-slate-950/95 p-5 shadow-2xl backdrop-blur">
           <div className="mb-2 text-xs uppercase tracking-[0.24em] text-emerald-300/80">
             Daily Scripture
           </div>
