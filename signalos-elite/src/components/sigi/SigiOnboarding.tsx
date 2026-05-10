@@ -6,7 +6,6 @@ import {
   getSigiProfile,
   saveSigiProfile,
   SIGI_INTEREST_OPTIONS,
-  updateSigiInterests,
   type SigiProfile,
 } from "@/lib/sigi/sigiProfile";
 
@@ -77,7 +76,18 @@ export default function SigiOnboarding({
     const trimmedName = name.trim();
 
     const nextProfile = isInterestEditor
-      ? updateSigiInterests(interests)
+      ? (() => {
+          const currentProfile = initialProfile ?? getSigiProfile();
+          const next: SigiProfile = {
+            name: currentProfile?.name?.trim() || trimmedName,
+            interests,
+          };
+
+          if (!next.name) return null;
+
+          saveSigiProfile(next);
+          return next;
+        })()
       : trimmedName
         ? (() => {
             const profile = saveNameProfile();
