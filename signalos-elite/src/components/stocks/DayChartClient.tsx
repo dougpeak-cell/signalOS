@@ -21,7 +21,6 @@ export default function DayChartClient({
   website,
 }: DayChartClientProps): ReactElement {
   const [focusMode] = useState<boolean>(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const { getQuote, registerTickers, unregisterTickers } = useMarketData();
   const { activeTicker, setActiveTicker } = useSelectedTicker();
   const liveQuote = getQuote(ticker);
@@ -41,31 +40,6 @@ export default function DayChartClient({
       setActiveTicker(ticker);
     }
   }, [activeTicker, ticker, setActiveTicker]);
-
-  useEffect(() => {
-    const onFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-
-    document.addEventListener("fullscreenchange", onFullscreenChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", onFullscreenChange);
-    };
-  }, []);
-
-  async function toggleFullscreen() {
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
-        setIsFullscreen(true);
-      } else {
-        await document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    } catch {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    }
-  }
 
   const displayName = useMemo(() => companyName ?? ticker, [companyName, ticker]);
   const websiteLabel = `Visit ${displayName}`;
@@ -117,14 +91,6 @@ export default function DayChartClient({
             >
               Today
             </Link>
-
-            <button
-              type="button"
-              onClick={toggleFullscreen}
-              className="inline-flex items-center rounded-xl border border-orange-500/30 bg-orange-500/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-orange-300 transition-all duration-200 hover:border-orange-400 hover:bg-orange-500/25 hover:text-orange-200"
-            >
-              {isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-            </button>
           </div>
 
           <div className="absolute right-4 top-20 z-30 hidden w-90 xl:block">
