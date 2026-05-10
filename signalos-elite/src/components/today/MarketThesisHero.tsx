@@ -74,10 +74,10 @@ export default function MarketThesisHero(): ReactElement {
           titleHref={href}
           titleClassName="text-2xl font-semibold leading-tight text-white"
           subtitle="The clearest story on the tape, first."
-          layoutClassName="mb-4 flex flex-col gap-3 2xl:flex-row 2xl:items-start 2xl:justify-between"
-          actionClassName="2xl:shrink-0 2xl:self-start"
+          layoutClassName="mb-4 flex flex-col gap-3"
+          actionClassName="w-full"
           action={
-            <div className="flex flex-wrap items-center gap-2 2xl:justify-end">
+            <div className="flex flex-wrap items-center gap-2">
               <HealthyWealthButton />
               <Link
                 href="#top-setups"
