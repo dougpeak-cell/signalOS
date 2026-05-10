@@ -141,6 +141,7 @@ const COMPANY_NAME_ALIASES: Record<string, string> = {
   META: "META",
   MICROSOFT: "MSFT",
   NVIDIA: "NVDA",
+  NIVIDIA: "NVDA",
   TESLA: "TSLA",
 };
 

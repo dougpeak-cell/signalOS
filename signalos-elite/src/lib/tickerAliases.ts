@@ -18,6 +18,7 @@ const TICKER_ALIASES: Record<string, string> = {
   MU: "MU",
   NETFLIX: "NFLX",
   NVIDIA: "NVDA",
+  NIVIDIA: "NVDA",
   PALANTIR: "PLTR",
   QUALCOMM: "QCOM",
   SQUARE: "SQ",

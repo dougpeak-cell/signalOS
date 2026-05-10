@@ -3,6 +3,7 @@ import { cleanTicker } from "@/lib/sigi/tickerActions";
 const COMPANY_TO_TICKER: Record<string, string> = {
   tesla: "TSLA",
   nvidia: "NVDA",
+  nividia: "NVDA",
   nvda: "NVDA",
   apple: "AAPL",
   microsoft: "MSFT",
