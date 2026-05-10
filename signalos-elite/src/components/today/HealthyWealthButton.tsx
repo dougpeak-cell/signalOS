@@ -139,34 +139,42 @@ export function MobileHealthyWealthButton() {
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-50 mt-3 w-[min(22rem,calc(100vw-1.5rem))] rounded-3xl border border-emerald-400/25 bg-slate-950/95 p-5 shadow-2xl backdrop-blur">
-          <div className="mb-2 text-xs uppercase tracking-[0.24em] text-emerald-300/80">
-            Daily Scripture
-          </div>
-          <div className="text-lg font-bold text-white">{daily.reference}</div>
-          <p className="mt-3 text-sm leading-6 text-slate-200">&ldquo;{daily.verse}&rdquo;</p>
-          <div className="mt-4 rounded-2xl border border-blue-400/20 bg-blue-500/6 p-4">
-            <div className="text-xs uppercase tracking-[0.18em] text-blue-300">
-              Today&apos;s Principle
-            </div>
-
-            <p className="mt-2 text-sm text-slate-200">{daily.principle}</p>
-          </div>
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/4 p-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-              Investor Character
-            </div>
-            <p className="mt-2 text-sm leading-6 text-slate-200">{daily.message}</p>
-          </div>
-          <Link
-            href="/about"
+        <>
+          <button
+            type="button"
+            aria-label="Close Healthy Wealth panel"
             onClick={() => setOpen(false)}
-            className="mt-5 inline-flex w-full items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/20"
-          >
-            Our Mission
-          </Link>
-          <div className="mt-4 text-xs text-slate-500">Refreshes daily at 5:00 AM.</div>
-        </div>
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[1px]"
+          />
+          <div className="fixed inset-x-3 top-14 z-60 max-h-[calc(100vh-4.5rem)] overflow-y-auto rounded-3xl border border-emerald-400/25 bg-slate-950/95 p-5 shadow-2xl backdrop-blur">
+            <div className="mb-2 text-xs uppercase tracking-[0.24em] text-emerald-300/80">
+              Daily Scripture
+            </div>
+            <div className="text-lg font-bold text-white">{daily.reference}</div>
+            <p className="mt-3 text-sm leading-6 text-slate-200">&ldquo;{daily.verse}&rdquo;</p>
+            <div className="mt-4 rounded-2xl border border-blue-400/20 bg-blue-500/6 p-4">
+              <div className="text-xs uppercase tracking-[0.18em] text-blue-300">
+                Today&apos;s Principle
+              </div>
+
+              <p className="mt-2 text-sm text-slate-200">{daily.principle}</p>
+            </div>
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/4 p-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Investor Character
+              </div>
+              <p className="mt-2 text-sm leading-6 text-slate-200">{daily.message}</p>
+            </div>
+            <Link
+              href="/about"
+              onClick={() => setOpen(false)}
+              className="mt-5 inline-flex w-full items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/20"
+            >
+              Our Mission
+            </Link>
+            <div className="mt-4 text-xs text-slate-500">Refreshes daily at 5:00 AM.</div>
+          </div>
+        </>
       ) : null}
     </div>
   );
