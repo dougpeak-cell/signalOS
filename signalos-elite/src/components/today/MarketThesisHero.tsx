@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import Link from "next/link";
 import NewsImage from "@/components/news/NewsImage";
 import { renderTickerParagraphs } from "@/components/sigi/renderTickerText";
+import HealthyWealthButton from "@/components/today/HealthyWealthButton";
 import { SectionHeader } from "@/components/today/SectionHeader";
 import { getSigiBackgroundStyle } from "@/lib/sigiBackgrounds";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
@@ -75,6 +76,7 @@ export default function MarketThesisHero(): ReactElement {
           subtitle="The clearest story on the tape, first."
           action={
             <div className="flex items-center gap-2">
+              <HealthyWealthButton />
               <Link
                 href="#top-setups"
                 className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-medium text-cyan-200"
