@@ -10,6 +10,13 @@ const DAILY_SCRIPTURES = [
     message:
       "Wise investing is stewardship. Small faithful decisions today can grow into greater responsibility tomorrow.",
   },
+  {
+    reference: "Matthew 28:20",
+    verse:
+      "And surely I am with you always, to the very end of the age.",
+    message:
+      "Character is most important. Great investors understand patience, discipline, and staying steady through uncertainty.",
+  },
 ];
 
 function getDailyHealthyWealth() {
