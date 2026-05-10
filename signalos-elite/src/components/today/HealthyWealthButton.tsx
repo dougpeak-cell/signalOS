@@ -31,6 +31,13 @@ const DAILY_SCRIPTURES = [
     message:
       "True wealth begins with priorities. Investors with strong character focus on wisdom, patience, and purpose before profit.",
   },
+  {
+    reference: "Isaiah 41:10",
+    verse:
+      "Fear not, for I am with you; be not dismayed, for I am your God.",
+    message:
+      "Markets can create fear and uncertainty. Strong investors remain calm, patient, and grounded through difficult seasons.",
+  },
 ];
 
 function getDailyHealthyWealth() {
