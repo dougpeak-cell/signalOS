@@ -144,13 +144,31 @@ export default function SigiEyeLogo({
           filter={`url(#${glowFilterId})`}
         />
         <path
+          d="M103 67 L157 67 L161 75 L157 83 L103 83 L99 75 Z"
+          fill="#4ade80"
+          opacity="0.2"
+          filter={`url(#${glowFilterId})`}
+        />
+        <path
           d="M119.35 35 L121.15 35 L122.65 75 L121.15 115 L119.35 115 L117.85 75 Z"
           fill="#38bdf8"
           opacity="0.82"
           filter={`url(#${glowFilterId})`}
         />
         <path
+          d="M100 72.4 L160 72.4 L160 77.6 L100 77.6 Z"
+          fill="#38bdf8"
+          opacity="0.78"
+          filter={`url(#${glowFilterId})`}
+        />
+        <path
           d="M128 33 L132 33 L136 75 L132 117 L128 117 L124 75 Z"
+          fill="#dcfce7"
+          opacity="0.95"
+          filter={`url(#${glowFilterId})`}
+        />
+        <path
+          d="M109 73.8 L151 73.8 L151 76.2 L109 76.2 Z"
           fill="#dcfce7"
           opacity="0.95"
           filter={`url(#${glowFilterId})`}
