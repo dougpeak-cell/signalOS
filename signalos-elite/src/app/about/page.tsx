@@ -63,6 +63,22 @@ export default function AboutPage() {
               This platform exists to encourage confidence, wisdom, and healthy
               wealth for everyday people.
             </p>
+
+            <div className="mt-12 border-t border-white/10 pt-8">
+              <p className="text-sm uppercase tracking-[0.24em] text-emerald-300/70">
+                Founder Vision
+              </p>
+
+              <p className="mt-4 max-w-2xl text-base leading-8 text-slate-300 italic">
+                &ldquo;Healthy wealth is built through patience, wisdom, discipline,
+                and faith during uncertainty.&rdquo;
+              </p>
+
+              <div className="mt-6">
+                <p className="font-semibold text-white">DC Peak</p>
+                <p className="text-sm text-slate-500">Creator of SigiOS</p>
+              </div>
+            </div>
           </div>
         </div>
 
