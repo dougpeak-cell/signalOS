@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { MobileHealthyWealthButton } from "@/components/today/HealthyWealthButton";
 
 const MOBILE_PREVIEW_STORAGE_KEY = "signalos-dev-mobile-preview-today";
 
@@ -25,6 +26,7 @@ export default function TopNav({
   const router = useRouter();
   const searchParams = useSearchParams();
   const isCryptoMode = pathname.startsWith("/crypto");
+  const showMobileHealthyWealth = !forceMobilePreview && pathname === "/today";
   const showDevToggle = process.env.NODE_ENV !== "production" && !isCryptoMode;
   const isMobilePreviewEnabled = searchParams.get("mobilePreview") === "1";
   const activeLabel =
@@ -148,8 +150,12 @@ export default function TopNav({
 
           {!forceMobilePreview ? (
             <div className="sm:hidden">
-              <div className="inline-flex min-h-9 items-center rounded-full border border-white/10 bg-white/4 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
-                {activeLabel}
+              <div className="flex items-center gap-2">
+                {showMobileHealthyWealth ? <MobileHealthyWealthButton /> : null}
+
+                <div className="inline-flex min-h-9 items-center rounded-full border border-white/10 bg-white/4 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
+                  {activeLabel}
+                </div>
               </div>
             </div>
           ) : null}
