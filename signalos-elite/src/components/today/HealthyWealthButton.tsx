@@ -38,6 +38,13 @@ const DAILY_SCRIPTURES = [
     message:
       "Markets can create fear and uncertainty. Strong investors remain calm, patient, and grounded through difficult seasons.",
   },
+  {
+    reference: "2 Corinthians 9:8",
+    verse:
+      "And God is able to bless you abundantly, so that in all things at all times, having all that you need, you will abound in every good work.",
+    message:
+      "Healthy wealth is not only about growth - it is about being prepared, generous, and able to create positive impact for others.",
+  },
 ];
 
 function getDailyHealthyWealth() {
