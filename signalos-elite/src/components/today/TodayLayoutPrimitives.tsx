@@ -28,6 +28,8 @@ type SectionHeaderProps = {
   action?: ReactNode;
   titleHref?: string | null;
   titleClassName?: string;
+  layoutClassName?: string;
+  actionClassName?: string;
 };
 
 export function SectionHeader({
@@ -37,9 +39,16 @@ export function SectionHeader({
   action,
   titleHref,
   titleClassName,
+  layoutClassName,
+  actionClassName,
 }: SectionHeaderProps): ReactElement {
   return (
-    <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+    <div
+      className={
+        layoutClassName ??
+        "mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"
+      }
+    >
       <div className="min-w-0 flex-1">
         <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
           {eyebrow}
@@ -65,7 +74,9 @@ export function SectionHeader({
         ) : null}
       </div>
 
-      {action ? <div className="shrink-0 lg:self-start">{action}</div> : null}
+      {action ? (
+        <div className={actionClassName ?? "shrink-0 lg:self-start"}>{action}</div>
+      ) : null}
     </div>
   );
 }
