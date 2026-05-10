@@ -1,0 +1,75 @@
+export default function AboutPage() {
+  return (
+    <main className="min-h-screen bg-[#06111f] px-6 py-16 text-white">
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-6 inline-flex rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-1 text-xs uppercase tracking-[0.24em] text-emerald-300">
+          About SigiOS
+        </div>
+
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          Why SigiOS Exists
+        </h1>
+
+        <div className="mt-10 rounded-3xl border border-white/10 bg-white/3 p-8 backdrop-blur">
+          <p className="text-lg leading-8 text-slate-200">
+            As the creator of SigiOS, I was inspired to help others because I
+            was once the person who believed:
+          </p>
+
+          <div className="mt-8 rounded-2xl border border-emerald-400/20 bg-emerald-500/6 p-6">
+            <p className="text-2xl font-semibold italic text-emerald-100">
+              &ldquo;I&apos;m not good with money.&rdquo;
+            </p>
+          </div>
+
+          <div className="mt-8 space-y-6 text-base leading-8 text-slate-300">
+            <p>
+              I feared investing because I lacked education about the stock
+              market. I believed financial knowledge was reserved for people
+              born into the right families or circumstances.
+            </p>
+
+            <p>
+              Over time, I learned that successful investing is not about being
+              lucky, connected, or perfect.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-4 sm:grid-cols-2">
+            {[
+              "Patience over emotion",
+              "Stewardship over greed",
+              "Education over noise",
+              "Faith during uncertainty",
+              "Disciplined long-term thinking",
+              "Helping others build responsibly",
+            ].map((item) => (
+              <div
+                key={item}
+                className="rounded-2xl border border-white/10 bg-[#0b1728] p-4 text-sm text-slate-200 shadow-lg"
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 border-t border-white/10 pt-8">
+            <p className="text-lg leading-8 text-slate-200">
+              SigiOS was built to help people think clearly, grow responsibly,
+              and take control of their future through knowledge and character.
+            </p>
+
+            <p className="mt-6 text-base leading-8 text-slate-300">
+              This platform exists to encourage confidence, wisdom, and healthy
+              wealth for everyday people.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-10 text-sm text-slate-500">
+          Built with purpose for everyday investors.
+        </div>
+      </div>
+    </main>
+  );
+}

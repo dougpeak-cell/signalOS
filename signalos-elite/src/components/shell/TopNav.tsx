@@ -116,6 +116,13 @@ export default function TopNav({
             >
               Crypto
             </Link>
+
+            <Link
+              href={buildNavHref("/about")}
+              className="text-sm text-slate-300 transition hover:text-white"
+            >
+              About SigiOS
+            </Link>
           </nav>
         </div>
 
