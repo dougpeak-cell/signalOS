@@ -2,6 +2,7 @@ import { OpenAI } from "openai";
 import { COMPANY_PROFILES } from "@/lib/companyProfiles";
 import { fundamentalsPack } from "@/lib/education/fundamentalsPack";
 import { resolveSigiTicker } from "@/lib/sigi/resolveTicker";
+import { cleanTicker } from "@/lib/sigi/tickerActions";
 import { buildSigiTodayResponse } from "@/lib/sigi/todayAssistant";
 import {
   getResolvedSigiModelConfigForCurrentUser,
@@ -853,6 +854,7 @@ export async function POST(req: Request) {
       article?.tickers?.[0] ??
       null;
     const explicitTicker = String(body?.ticker ?? articleTicker ?? "").trim();
+    const requestSource = String(body?.source ?? "").trim().toLowerCase();
     const intent = String(body?.intent ?? "general_market_question").trim() || "general_market_question";
     const answerStyle = normalizeAnswerStyle(String(body?.answerStyle ?? "balanced").trim());
     const profilePrompt = String(body?.profilePrompt ?? "").trim();
@@ -896,12 +898,19 @@ export async function POST(req: Request) {
     }
 
     const shouldResolveTicker = Boolean(explicitTicker || stock?.ticker) || intent !== "general_market_question";
+    const tickerSource =
+      requestSource === "mobile_today"
+        ? "type"
+        : explicitTicker || stock?.ticker
+          ? "trusted"
+          : undefined;
 
     const ticker = shouldResolveTicker
       ? resolveSigiTicker({
-          explicitTicker: explicitTicker || stock?.ticker,
+          explicitTicker: cleanTicker(explicitTicker || stock?.ticker || ""),
           message,
           fallbackTicker: null,
+          source: tickerSource,
         })
       : null;
 
