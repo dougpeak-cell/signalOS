@@ -1,7 +1,16 @@
+import Link from "next/link";
+
 export default function AboutPage() {
   return (
     <main className="min-h-screen bg-[#06111f] px-6 py-16 text-white">
       <div className="mx-auto max-w-4xl">
+        <Link
+          href="/today"
+          className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/4 px-4 py-2 text-sm text-slate-300 transition hover:text-white"
+        >
+          Back
+        </Link>
+
         <div className="mb-6 inline-flex rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-1 text-xs uppercase tracking-[0.24em] text-emerald-300">
           About SigiOS
         </div>
