@@ -151,6 +151,7 @@ export default function MobileSigiHome({
   const { watchlistTickers } = useStoredWatchlistTickers();
   const [prompt, setPrompt] = useState("");
   const [sigiProfile, setSigiProfile] = useState<SigiProfile | null>(null);
+  const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [isResettingSigi, setIsResettingSigi] = useState(false);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<number | null>(null);
   const [pendingSignupPrompt, setPendingSignupPrompt] = useState<string | null>(null);
@@ -522,6 +523,7 @@ export default function MobileSigiHome({
       clearSigiProfile();
       clearSigiSessionContext();
       setSigiProfile(null);
+      setShowProfileEditor(false);
       setPrompt("");
       router.refresh();
     } finally {
@@ -547,15 +549,25 @@ export default function MobileSigiHome({
                 Mobile Sigi Command Center
               </div>
               {sigiName ? (
-                <button
-                  type="button"
-                  onClick={() => void resetSigiProfile()}
-                  disabled={isResettingSigi}
-                  className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-white/10 bg-black/55 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 shadow-[0_0_16px_rgba(34,211,238,0.18)] transition hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
-                  aria-label="Reset Sigi profile"
-                >
-                  {isResettingSigi ? "Resetting..." : "Reset SIGI profile"}
-                </button>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowProfileEditor((current) => !current)}
+                    className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100 shadow-[0_0_16px_rgba(34,211,238,0.14)] transition hover:border-cyan-300/40 hover:bg-cyan-400/14 active:scale-95"
+                    aria-label="Update Sigi sectors"
+                  >
+                    {showProfileEditor ? "Hide sectors" : "Update sectors"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void resetSigiProfile()}
+                    disabled={isResettingSigi}
+                    className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-white/10 bg-black/55 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 shadow-[0_0_16px_rgba(34,211,238,0.18)] transition hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+                    aria-label="Reset Sigi profile"
+                  >
+                    {isResettingSigi ? "Resetting..." : "Reset SIGI profile"}
+                  </button>
+                </div>
               ) : null}
             </div>
             {process.env.NODE_ENV !== "production" ? (
@@ -605,6 +617,17 @@ export default function MobileSigiHome({
               });
               setPendingSignupPrompt(null);
             }
+          }}
+        />
+      ) : null}
+
+      {sigiName && showProfileEditor ? (
+        <SigiOnboarding
+          initialProfile={sigiProfile}
+          mode="interests"
+          onComplete={(profile) => {
+            setSigiProfile(profile);
+            setShowProfileEditor(false);
           }}
         />
       ) : null}
