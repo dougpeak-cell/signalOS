@@ -39,8 +39,8 @@ export function SectionHeader({
   titleClassName,
 }: SectionHeaderProps): ReactElement {
   return (
-    <div className="mb-4 flex items-start justify-between gap-3">
-      <div>
+    <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0 flex-1">
         <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
           {eyebrow}
         </div>
@@ -49,7 +49,7 @@ export function SectionHeader({
             href={titleHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="block transition hover:text-cyan-200"
+            className="block min-w-0 transition hover:text-cyan-200"
           >
             <h2 className={titleClassName ?? "text-xl font-semibold tracking-tight text-white"}>
               {title}
@@ -65,7 +65,7 @@ export function SectionHeader({
         ) : null}
       </div>
 
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? <div className="shrink-0 lg:self-start">{action}</div> : null}
     </div>
   );
 }
