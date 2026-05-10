@@ -17,6 +17,13 @@ const DAILY_SCRIPTURES = [
     message:
       "Character is most important. Great investors understand patience, discipline, and staying steady through uncertainty.",
   },
+  {
+    reference: "Philippians 4:13",
+    verse:
+      "I can do all things through Christ who strengthens me.",
+    message:
+      "Confidence is built through preparation, discipline, and faith. Strong investors remain focused during both success and adversity.",
+  },
 ];
 
 function getDailyHealthyWealth() {
