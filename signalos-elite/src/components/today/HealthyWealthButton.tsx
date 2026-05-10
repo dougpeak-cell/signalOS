@@ -24,6 +24,13 @@ const DAILY_SCRIPTURES = [
     message:
       "Confidence is built through preparation, discipline, and faith. Strong investors remain focused during both success and adversity.",
   },
+  {
+    reference: "Matthew 6:33",
+    verse:
+      "But seek first His kingdom and His righteousness, and all these things will be given to you as well.",
+    message:
+      "True wealth begins with priorities. Investors with strong character focus on wisdom, patience, and purpose before profit.",
+  },
 ];
 
 function getDailyHealthyWealth() {
