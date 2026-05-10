@@ -45,6 +45,13 @@ const DAILY_SCRIPTURES = [
     message:
       "Healthy wealth is not only about growth - it is about being prepared, generous, and able to create positive impact for others.",
   },
+  {
+    reference: "1 Corinthians 16:13",
+    verse:
+      "Be on your guard; stand firm in the faith; be courageous; be strong.",
+    message:
+      "Great investors stay alert, disciplined, and emotionally steady. Strength and patience are critical during volatile markets.",
+  },
 ];
 
 function getDailyHealthyWealth() {
