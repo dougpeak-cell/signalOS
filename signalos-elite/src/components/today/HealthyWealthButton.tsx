@@ -50,7 +50,7 @@ export default function HealthyWealthButton() {
           <p className="mt-3 text-sm leading-6 text-slate-200">&ldquo;{daily.verse}&rdquo;</p>
           <div className="mt-4 rounded-2xl border border-white/10 bg-white/4 p-4">
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-              Healthy Wealth Thought
+              Investor Character
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-200">{daily.message}</p>
           </div>
