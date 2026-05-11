@@ -60,6 +60,15 @@ const DAILY_SCRIPTURES = [
     message:
       "Great investors stay alert, disciplined, and emotionally steady. Strength and patience are critical during volatile markets.",
   },
+  {
+    reference: "Proverbs 11:25",
+    verse:
+      "A generous person will prosper; whoever refreshes others will be refreshed.",
+    message:
+      "Healthy wealth is not built only for ourselves. True prosperity grows through generosity, encouragement, and helping others succeed.",
+    principle:
+      "Long-term wealth has greater purpose when it positively impacts others.",
+  },
 ];
 
 function getDailyHealthyWealth() {
