@@ -178,12 +178,14 @@ export default function TopNav({
                   />
                   <a
                     href={mailtoHref}
+                    onClick={() => setContactOpen(false)}
                     className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl border border-cyan-400/40 bg-cyan-400/15 text-sm font-bold text-cyan-100 transition hover:bg-cyan-400/25"
                   >
                     Email Support
                   </a>
                   <a
-                    href={`mailto:${supportEmail}`}
+                    href={mailtoHref}
+                    onClick={() => setContactOpen(false)}
                     className="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm font-medium text-slate-300 transition hover:border-white/16 hover:text-white"
                   >
                     {supportEmail}
