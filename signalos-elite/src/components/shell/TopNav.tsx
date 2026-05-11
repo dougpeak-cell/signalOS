@@ -24,7 +24,7 @@ export default function TopNav({
   forceMobilePreview?: boolean;
 }) {
   const [contactOpen, setContactOpen] = useState(false);
-  const [contactMessage, setContactMessage] = useState("");
+  const [supportMessage, setSupportMessage] = useState("");
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -49,17 +49,12 @@ export default function TopNav({
     setContactOpen(false);
   }, [pathname, searchParams]);
 
-  const contactRoute = buildCurrentRoute();
-  const trimmedContactMessage = contactMessage.trim();
-  const contactMailtoHref = `mailto:support@sigios.com?subject=${encodeURIComponent("SignalOS Support Request")}&body=${encodeURIComponent(
-    [
-      "SignalOS Support Request",
-      "",
-      trimmedContactMessage || "Please describe your question or issue.",
-      "",
-      `Page: ${contactRoute}`,
-    ].join("\n")
-  )}`;
+  const supportEmail = "support@sigios.com";
+  const subject = encodeURIComponent("SigiOS Support Request");
+  const body = encodeURIComponent(
+    `Question:\n${supportMessage}\n\nPage:\n${typeof window !== "undefined" ? window.location.href : ""}\n\nSent from SigiOS`
+  );
+  const mailtoHref = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
 
   function buildCurrentRoute() {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -175,27 +170,23 @@ export default function TopNav({
                     Your Question
                   </label>
                   <textarea
-                    value={contactMessage}
-                    onChange={(event) => setContactMessage(event.target.value)}
+                    value={supportMessage}
+                    onChange={(e) => setSupportMessage(e.target.value)}
                     rows={5}
-                    placeholder="Describe your question, issue, or request."
-                    className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/24 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/28 focus:border-cyan-400/30 focus:bg-cyan-400/6"
+                    placeholder="Tell us what you need help with..."
+                    className="min-h-40 w-full rounded-2xl border border-white/10 bg-black/30 p-4 text-white outline-none"
                   />
                   <a
-                    href={contactMailtoHref}
-                    className={`mt-4 inline-flex w-full items-center justify-center rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                      trimmedContactMessage
-                        ? "border-cyan-400/22 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/16"
-                        : "border-white/10 bg-white/4 text-white/52 hover:border-cyan-400/20 hover:text-cyan-100"
-                    }`}
+                    href={mailtoHref}
+                    className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl border border-cyan-400/40 bg-cyan-400/15 text-sm font-bold text-cyan-100 transition hover:bg-cyan-400/25"
                   >
                     Email Support
                   </a>
                   <a
-                    href="mailto:support@sigios.com"
+                    href={`mailto:${supportEmail}`}
                     className="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm font-medium text-slate-300 transition hover:border-white/16 hover:text-white"
                   >
-                    support@sigios.com
+                    {supportEmail}
                   </a>
                   <div className="mt-3 text-xs text-slate-500">
                     Institutional support channel for SignalOS clients. Your current page is included automatically when you send.
