@@ -25,8 +25,8 @@ export default function TopNav({
 }) {
   const [contactOpen, setContactOpen] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
-  const [isSendingSupport, setIsSendingSupport] = useState(false);
-  const [supportStatus, setSupportStatus] = useState<string | null>(null);
+  const [sendingSupport, setSendingSupport] = useState(false);
+  const [supportStatus, setSupportStatus] = useState("");
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -96,41 +96,42 @@ export default function TopNav({
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
   }
 
-  async function handleSupportSubmit() {
+  async function sendSupportMessage() {
     const message = supportMessage.trim();
-    if (!message || isSendingSupport) {
+    if (!message) {
+      setSupportStatus("Please enter a message first.");
       return;
     }
 
-    setIsSendingSupport(true);
-    setSupportStatus(null);
+    if (sendingSupport) {
+      return;
+    }
+
+    setSendingSupport(true);
+    setSupportStatus("");
 
     try {
-      const response = await fetch("/api/support", {
+      const res = await fetch("/api/support", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message,
+          message: supportMessage,
           page: typeof window !== "undefined" ? window.location.href : buildCurrentRoute(),
         }),
       });
 
-      const json = (await response.json()) as { error?: string; ok?: boolean };
-
-      if (!response.ok) {
-        throw new Error(json.error || "Unable to send support message.");
+      if (!res.ok) {
+        throw new Error("Failed to send support message.");
       }
 
       setSupportMessage("");
       setSupportStatus("Support message sent.");
-    } catch (error) {
-      setSupportStatus(
-        error instanceof Error ? error.message : "Unable to send support message."
-      );
+    } catch {
+      setSupportStatus("Could not send message. Please try again.");
     } finally {
-      setIsSendingSupport(false);
+      setSendingSupport(false);
     }
   }
 
@@ -206,23 +207,18 @@ export default function TopNav({
                   </label>
                   <textarea
                     value={supportMessage}
-                    onChange={(e) => {
-                      setSupportMessage(e.target.value);
-                      if (supportStatus) {
-                        setSupportStatus(null);
-                      }
-                    }}
+                    onChange={(e) => setSupportMessage(e.target.value)}
                     rows={5}
                     placeholder="Tell us what you need help with..."
                     className="min-h-40 w-full rounded-2xl border border-white/10 bg-black/30 p-4 text-white outline-none"
                   />
                   <button
                     type="button"
-                    onClick={handleSupportSubmit}
-                    disabled={!supportMessage.trim() || isSendingSupport}
-                    className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl border border-cyan-400/40 bg-cyan-400/15 text-sm font-bold text-cyan-100 transition hover:bg-cyan-400/25 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/4 disabled:text-white/40"
+                    onClick={sendSupportMessage}
+                    disabled={sendingSupport}
+                    className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl border border-cyan-400/40 bg-cyan-400/15 text-sm font-bold text-cyan-100 transition hover:bg-cyan-400/25 disabled:opacity-50"
                   >
-                    {isSendingSupport ? "Sending..." : "Email Support"}
+                    {sendingSupport ? "Sending..." : "Email Support"}
                   </button>
                   <a
                     href={`mailto:${supportEmail}`}
@@ -231,9 +227,9 @@ export default function TopNav({
                     {supportEmail}
                   </a>
                   {supportStatus ? (
-                    <div className="mt-3 text-xs text-cyan-200/82">
+                    <p className="mt-3 text-sm text-white/60">
                       {supportStatus}
-                    </div>
+                    </p>
                   ) : null}
                   <div className="mt-3 text-xs text-slate-500">
                     Institutional support channel for SignalOS clients. Your current page is included automatically when you send.
