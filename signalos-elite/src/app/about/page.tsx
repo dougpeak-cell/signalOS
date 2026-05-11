@@ -27,7 +27,7 @@ export default function AboutPage() {
 
           <div className="mt-8 rounded-2xl border border-emerald-400/20 bg-emerald-500/6 p-6">
             <p className="text-2xl font-semibold italic text-emerald-100">
-              &ldquo;I&apos;m not good with money.&rdquo;
+              &ldquo;I&apos;m not good with money. I&apos;m not worthy of financial security.&rdquo;
             </p>
           </div>
 
