@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 
     const resend = new Resend(resendApiKey);
 
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: "SigiOS Support <support@sigios.com>",
       to: "support@sigios.com",
       subject: "New SigiOS Support Message",
@@ -44,6 +44,15 @@ Message:
 ${message}
       `.trim(),
     });
+
+    if (result.error) {
+      console.error("Support email provider error:", result.error);
+
+      return NextResponse.json(
+        { error: "Support provider rejected the message." },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
