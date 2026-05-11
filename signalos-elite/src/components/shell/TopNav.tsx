@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MobileHealthyWealthButton } from "@/components/today/HealthyWealthButton";
 
@@ -22,6 +23,7 @@ export default function TopNav({
 }: {
   forceMobilePreview?: boolean;
 }) {
+  const [contactOpen, setContactOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,6 +43,10 @@ export default function TopNav({
 
   const cryptoActive =
     "rounded-full bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-200 ring-1 ring-cyan-400/30 shadow-[0_0_24px_rgba(34,211,238,0.18)] transition";
+
+  useEffect(() => {
+    setContactOpen(false);
+  }, [pathname, searchParams]);
 
   function buildCurrentRoute() {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -129,6 +135,43 @@ export default function TopNav({
         </div>
 
         <div className="flex items-center gap-2">
+          {!forceMobilePreview ? (
+            <div className="relative hidden sm:block">
+              <button
+                type="button"
+                aria-expanded={contactOpen}
+                aria-haspopup="dialog"
+                onClick={() => setContactOpen((value) => !value)}
+                className="inline-flex min-h-9 items-center rounded-full border border-cyan-400/20 bg-cyan-400/8 px-4 text-sm font-semibold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.1)] transition hover:border-cyan-400/35 hover:bg-cyan-400/14"
+              >
+                Contact Us
+              </button>
+
+              {contactOpen ? (
+                <div className="absolute right-0 top-full z-50 mt-3 w-82 rounded-3xl border border-cyan-400/16 bg-slate-950/96 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/78">
+                    Client Support
+                  </div>
+                  <div className="mt-2 text-xl font-semibold text-white">
+                    Contact SigiOS
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-slate-300">
+                    For platform support, account questions, or product feedback, reach the team directly.
+                  </p>
+                  <a
+                    href="mailto:support@sigios.com"
+                    className="mt-5 inline-flex w-full items-center justify-center rounded-2xl border border-cyan-400/22 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/16"
+                  >
+                    support@sigios.com
+                  </a>
+                  <div className="mt-3 text-xs text-slate-500">
+                    Institutional support channel for SignalOS clients.
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           {showDevToggle ? (
             <button
               type="button"
