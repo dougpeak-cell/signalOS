@@ -25,6 +25,7 @@ export default function TopNav({
 }) {
   const [contactOpen, setContactOpen] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
+  const [supportUserEmail, setSupportUserEmail] = useState("");
   const [sendingSupport, setSendingSupport] = useState(false);
   const [supportStatus, setSupportStatus] = useState("");
   const pathname = usePathname();
@@ -119,6 +120,7 @@ export default function TopNav({
         body: JSON.stringify({
           message: supportMessage,
           page: typeof window !== "undefined" ? window.location.href : buildCurrentRoute(),
+          email: supportUserEmail.trim(),
         }),
       });
 
@@ -127,6 +129,7 @@ export default function TopNav({
       }
 
       setSupportMessage("");
+      setSupportUserEmail("");
       setSupportStatus("Support message sent.");
     } catch {
       setSupportStatus("Could not send message. Please try again.");
@@ -202,6 +205,16 @@ export default function TopNav({
                   <p className="mt-3 text-sm leading-6 text-slate-300">
                     For platform support, account questions, or product feedback, send the team a direct support note.
                   </p>
+                  <label className="mt-4 block text-[11px] font-semibold uppercase tracking-[0.18em] text-white/48">
+                    Reply Email (optional)
+                  </label>
+                  <input
+                    type="email"
+                    value={supportUserEmail}
+                    onChange={(e) => setSupportUserEmail(e.target.value)}
+                    placeholder="Add your email if you want a response"
+                    className="mt-2 h-12 w-full rounded-2xl border border-white/10 bg-black/30 px-4 text-white outline-none"
+                  />
                   <label className="mt-4 block text-[11px] font-semibold uppercase tracking-[0.18em] text-white/48">
                     Your Question
                   </label>

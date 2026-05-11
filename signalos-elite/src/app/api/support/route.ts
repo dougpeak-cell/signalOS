@@ -30,6 +30,7 @@ export async function POST(req: Request) {
     const result = await resend.emails.send({
       from: "SigiOS Support <support@sigios.com>",
       to: "support@sigios.com",
+      replyTo: email !== "No user email provided" ? email : undefined,
       subject: "New SigiOS Support Message",
       text: `
 New SigiOS support message
@@ -53,6 +54,8 @@ ${message}
         { status: 502 }
       );
     }
+
+    console.log("Support email sent:", result.data?.id ?? "no-id-returned");
 
     return NextResponse.json({ ok: true });
   } catch (error) {
