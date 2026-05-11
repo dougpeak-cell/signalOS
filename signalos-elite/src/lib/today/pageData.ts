@@ -1310,7 +1310,7 @@ export async function getTodayPageData(): Promise<TodayPageData> {
           )
         ),
         [],
-        800
+        2500
       )
     ),
     time(
