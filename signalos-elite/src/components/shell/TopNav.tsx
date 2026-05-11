@@ -25,6 +25,8 @@ export default function TopNav({
 }) {
   const [contactOpen, setContactOpen] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
+  const [isSendingSupport, setIsSendingSupport] = useState(false);
+  const [supportStatus, setSupportStatus] = useState<string | null>(null);
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -50,11 +52,6 @@ export default function TopNav({
   }, [pathname, searchParams]);
 
   const supportEmail = "support@sigios.com";
-  const subject = encodeURIComponent("SigiOS Support Request");
-  const body = encodeURIComponent(
-    `Question:\n${supportMessage}\n\nPage:\n${typeof window !== "undefined" ? window.location.href : ""}\n\nSent from SigiOS`
-  );
-  const mailtoHref = `mailto:${supportEmail}?subject=${subject}&body=${body}`;
 
   function buildCurrentRoute() {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -97,6 +94,44 @@ export default function TopNav({
 
     const nextQuery = nextParams.toString();
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+  }
+
+  async function handleSupportSubmit() {
+    const message = supportMessage.trim();
+    if (!message || isSendingSupport) {
+      return;
+    }
+
+    setIsSendingSupport(true);
+    setSupportStatus(null);
+
+    try {
+      const response = await fetch("/api/support", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message,
+          page: typeof window !== "undefined" ? window.location.href : buildCurrentRoute(),
+        }),
+      });
+
+      const json = (await response.json()) as { error?: string; ok?: boolean };
+
+      if (!response.ok) {
+        throw new Error(json.error || "Unable to send support message.");
+      }
+
+      setSupportMessage("");
+      setSupportStatus("Support message sent.");
+    } catch (error) {
+      setSupportStatus(
+        error instanceof Error ? error.message : "Unable to send support message."
+      );
+    } finally {
+      setIsSendingSupport(false);
+    }
   }
 
   return (
@@ -171,25 +206,35 @@ export default function TopNav({
                   </label>
                   <textarea
                     value={supportMessage}
-                    onChange={(e) => setSupportMessage(e.target.value)}
+                    onChange={(e) => {
+                      setSupportMessage(e.target.value);
+                      if (supportStatus) {
+                        setSupportStatus(null);
+                      }
+                    }}
                     rows={5}
                     placeholder="Tell us what you need help with..."
                     className="min-h-40 w-full rounded-2xl border border-white/10 bg-black/30 p-4 text-white outline-none"
                   />
-                  <a
-                    href={mailtoHref}
-                    onClick={() => setContactOpen(false)}
-                    className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl border border-cyan-400/40 bg-cyan-400/15 text-sm font-bold text-cyan-100 transition hover:bg-cyan-400/25"
+                  <button
+                    type="button"
+                    onClick={handleSupportSubmit}
+                    disabled={!supportMessage.trim() || isSendingSupport}
+                    className="mt-4 flex h-14 w-full items-center justify-center rounded-2xl border border-cyan-400/40 bg-cyan-400/15 text-sm font-bold text-cyan-100 transition hover:bg-cyan-400/25 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/4 disabled:text-white/40"
                   >
-                    Email Support
-                  </a>
+                    {isSendingSupport ? "Sending..." : "Email Support"}
+                  </button>
                   <a
-                    href={mailtoHref}
-                    onClick={() => setContactOpen(false)}
+                    href={`mailto:${supportEmail}`}
                     className="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm font-medium text-slate-300 transition hover:border-white/16 hover:text-white"
                   >
                     {supportEmail}
                   </a>
+                  {supportStatus ? (
+                    <div className="mt-3 text-xs text-cyan-200/82">
+                      {supportStatus}
+                    </div>
+                  ) : null}
                   <div className="mt-3 text-xs text-slate-500">
                     Institutional support channel for SignalOS clients. Your current page is included automatically when you send.
                   </div>
