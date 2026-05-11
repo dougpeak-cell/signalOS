@@ -69,6 +69,15 @@ const DAILY_SCRIPTURES = [
     principle:
       "Long-term wealth has greater purpose when it positively impacts others.",
   },
+  {
+    reference: "Proverbs 13:11",
+    verse:
+      "Dishonest money dwindles away, but whoever gathers money little by little makes it grow.",
+    message:
+      "Healthy wealth is built patiently over time. Consistency, discipline, and long-term thinking are stronger than chasing quick gains.",
+    principle:
+      "Compounding rewards patience more than emotion.",
+  },
 ];
 
 function getDailyHealthyWealth() {
