@@ -204,6 +204,23 @@ export function passesTopSetupFilters(row: SetupDiscoveryCandidate): boolean {
   );
 }
 
+function passesTopFallbackFilters(row: SetupDiscoveryCandidate): boolean {
+  const flags = resolveFlags(row);
+
+  return (
+    isMajorIndexMember(row) &&
+    (toNumber(row.price) ?? 0) >= 2 &&
+    (toNumber(row.marketCap) ?? 0) >= 300_000_000 &&
+    resolveHasValidQuote(row) &&
+    resolveHasRecentHistory(row) &&
+    !flags.isEtf &&
+    !flags.isWarrant &&
+    !flags.isPreferred &&
+    !flags.isRights &&
+    !flags.isUnit
+  );
+}
+
 export function passesEmergingFilters(row: SetupDiscoveryCandidate): boolean {
   const flags = resolveFlags(row);
 
@@ -594,7 +611,11 @@ function dedupeRankedItems(items: RankedSetupItem[]): RankedSetupItem[] {
 export function discoverSetupBuckets(
   candidates: SetupDiscoveryCandidate[]
 ): DiscoveryBuckets {
-  const top = rankSetupCandidates(candidates.filter(passesTopSetupFilters), "top");
+  const topCandidates = candidates.filter(passesTopSetupFilters);
+  const top =
+    topCandidates.length > 0
+      ? rankSetupCandidates(topCandidates, "top")
+      : rankSetupCandidates(candidates.filter(passesTopFallbackFilters), "top");
 
   const emerging = rankSetupCandidates(
     candidates.filter(passesEmergingFilters),
