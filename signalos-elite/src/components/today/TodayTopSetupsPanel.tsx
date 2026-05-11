@@ -95,32 +95,39 @@ export default function TodayTopSetupsPanel({
   );
 
   const preMarketActive = isPreMarketNow();
-  const preMarketRows = preMarketActive && preMarketItems.length ? preMarketItems : [];
+  const hasPreMarketItems = preMarketItems.length > 0;
+  const preMarketRows = hasPreMarketItems ? preMarketItems : [];
   const preMarketMessage = preMarketActive
     ? preMarketSourceRowCount === 0
       ? "Pre-market is active, but the source feed has not returned rows yet."
       : "Pre-market is active. No qualified setups are passing filters yet."
-    : "Pre-market opens at 4:00 AM ET.";
+    : hasPreMarketItems
+      ? "Latest pre-market setups are available below."
+      : "Pre-market opens at 4:00 AM ET.";
   const preMarketFilteredCount = Math.max(
     0,
     preMarketRawCandidateCount - preMarketItems.length
   );
   const preMarketHealthLabel =
-    preMarketSourceRowCount === 0
-      ? "Source empty"
-      : preMarketFallbackUsed
-        ? "Fallback movers"
-        : preMarketRawCandidateCount === 0
-          ? "Filtered"
-          : "Live feed";
+    preMarketFallbackUsed
+      ? "Fallback movers"
+      : hasPreMarketItems
+        ? "Qualified"
+        : preMarketSourceRowCount === 0
+          ? "Source empty"
+          : preMarketRawCandidateCount === 0
+            ? "Filtered"
+            : "Live feed";
   const preMarketHealthTone =
-    preMarketSourceRowCount === 0
-      ? "border-rose-400/20 bg-rose-400/10 text-rose-200"
-      : preMarketFallbackUsed
-        ? "border-amber-400/20 bg-amber-400/10 text-amber-200"
-        : preMarketRawCandidateCount === 0
-          ? "border-white/10 bg-white/5 text-white/70"
-          : "border-emerald-400/20 bg-emerald-400/10 text-emerald-200";
+    preMarketFallbackUsed
+      ? "border-amber-400/20 bg-amber-400/10 text-amber-200"
+      : hasPreMarketItems
+        ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
+        : preMarketSourceRowCount === 0
+          ? "border-rose-400/20 bg-rose-400/10 text-rose-200"
+          : preMarketRawCandidateCount === 0
+            ? "border-white/10 bg-white/5 text-white/70"
+            : "border-emerald-400/20 bg-emerald-400/10 text-emerald-200";
 
   const activeSetups = useMemo(
     () => (sessionView === "pre" ? preMarketRows : items).slice(0, 4),
@@ -187,13 +194,15 @@ export default function TodayTopSetupsPanel({
           </span>
         </div>
         <div className="mt-2 text-xs text-white/45">
-          {preMarketSourceRowCount === 0
-            ? "No pre-market rows have reached Today from the mover source yet."
-            : preMarketFallbackUsed
-              ? "Using direct pre-market mover rows because setup qualification returned zero names."
-              : preMarketRawCandidateCount === 0
-                ? "Source rows are present, but they were filtered out before rendering."
-                : "Pre-market source rows are flowing and qualifying normally."}
+          {preMarketFallbackUsed
+            ? "Using direct pre-market mover rows because setup qualification returned zero names."
+            : hasPreMarketItems
+              ? "Pre-market names are available and ready to inspect below."
+              : preMarketSourceRowCount === 0
+                ? "No pre-market rows have reached Today from the mover source yet."
+                : preMarketRawCandidateCount === 0
+                  ? "Source rows are present, but they were filtered out before rendering."
+                  : "Pre-market source rows are flowing and qualifying normally."}
         </div>
         </>
       ) : null}
