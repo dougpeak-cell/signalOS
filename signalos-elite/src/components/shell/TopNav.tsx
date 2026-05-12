@@ -212,7 +212,7 @@ export default function TopNav({
                     type="email"
                     value={supportUserEmail}
                     onChange={(e) => setSupportUserEmail(e.target.value)}
-                    placeholder="Add your email if you want a response"
+                    placeholder="Add email if you want a response"
                     className="mt-2 h-12 w-full rounded-2xl border border-white/10 bg-black/30 px-4 text-white outline-none"
                   />
                   <label className="mt-4 block text-[11px] font-semibold uppercase tracking-[0.18em] text-white/48">
