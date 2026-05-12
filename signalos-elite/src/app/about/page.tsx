@@ -71,7 +71,7 @@ export default function AboutPage() {
               </p>
 
               <div className="mt-6">
-                <p className="font-semibold text-white">DC Peak</p>
+                <p className="font-semibold text-white">DCP</p>
                 <p className="text-sm text-slate-500">Creator of SigiOS</p>
               </div>
             </div>
