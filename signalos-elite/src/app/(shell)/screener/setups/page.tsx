@@ -361,7 +361,6 @@ export default async function SetupsPage({
       ? buildRenderablePreMarketEmergingSetups(setupDiscovery)
       : setupDiscovery.emerging;
   const preMarketRawCandidateCount = countPreMarketEmergingCandidates(setupDiscovery);
-  const preMarketFilteredCount = Math.max(0, preMarketRawCandidateCount - sourceRows.length);
   const filteredRows = filterRows(sourceRows, {
     direction,
     minPrice,
@@ -369,6 +368,7 @@ export default async function SetupsPage({
     catalystOnly,
     highRvol,
   });
+  const preMarketFilteredCount = Math.max(0, sourceRows.length - filteredRows.length);
 
   return (
     <div className="space-y-6">
@@ -473,7 +473,7 @@ export default async function SetupsPage({
               Raw: {preMarketRawCandidateCount}
             </span>
             <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
-              Displayed: {sourceRows.length}
+              Displayed: {filteredRows.length}
             </span>
             <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
               Filtered Out: {preMarketFilteredCount}
