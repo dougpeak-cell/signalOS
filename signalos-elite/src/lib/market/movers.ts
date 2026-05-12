@@ -1,5 +1,15 @@
 import { isPreMarketNow } from "@/lib/today/marketPhase";
 
+const PREMARKET_REFRESH_BUCKET_MINUTES = 15;
+
+type PreMarketSetupUniverseSnapshot = {
+  etDate: string;
+  bucketKey: string;
+  rows: MarketMoverRow[];
+};
+
+let preMarketSetupUniverseSnapshot: PreMarketSetupUniverseSnapshot | null = null;
+
 type RawMoverRow = {
   ticker?: string;
   T?: string;
@@ -40,6 +50,42 @@ export type MarketMoverRow = {
   session?: "regular" | "pre-market";
   sector?: string | null;
 };
+
+function getEasternClockParts(now = new Date()) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    weekday: "short",
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(now);
+  const year = parts.find((part) => part.type === "year")?.value ?? "0000";
+  const month = parts.find((part) => part.type === "month")?.value ?? "00";
+  const day = parts.find((part) => part.type === "day")?.value ?? "00";
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+  const weekday = parts.find((part) => part.type === "weekday")?.value ?? "";
+  const totalMinutes = hour * 60 + minute;
+  const etDate = `${year}-${month}-${day}`;
+  const isWeekend = weekday === "Sat" || weekday === "Sun";
+  const isActivePreMarket = !isWeekend && totalMinutes >= 240 && totalMinutes < 570;
+  const preMarketBucketIndex = isActivePreMarket
+    ? Math.floor((totalMinutes - 240) / PREMARKET_REFRESH_BUCKET_MINUTES)
+    : null;
+
+  return {
+    etDate,
+    isWeekend,
+    isActivePreMarket,
+    preMarketBucketKey:
+      preMarketBucketIndex == null ? null : `${etDate}:${preMarketBucketIndex}`,
+  };
+}
 
 function toNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -213,6 +259,30 @@ async function fetchPreMarketUniverse(apiKey: string) {
   return results.map(toPreMarketMoverRow).filter(Boolean) as MarketMoverRow[];
 }
 
+async function fetchRankedPreMarketSetupUniverse(
+  limitPerSide: number,
+  referenceApiKey: string,
+  fmpApiKey: string
+) {
+  const preMarketRows = await fetchPreMarketUniverse(fmpApiKey);
+  const sorted = [...preMarketRows].sort(
+    (left, right) => Math.abs(right.changePct ?? 0) - Math.abs(left.changePct ?? 0)
+  );
+  const enriched = await enrichReferenceData(
+    finalizeMoverRows(sorted, limitPerSide * 2),
+    referenceApiKey || fmpApiKey
+  );
+
+  const deduped = new Map<string, MarketMoverRow>();
+
+  for (const row of enriched) {
+    if (!row.ticker) continue;
+    deduped.set(row.ticker, row);
+  }
+
+  return [...deduped.values()].slice(0, limitPerSide * 2);
+}
+
 export async function getMarketMovers(): Promise<{
   gainers: MarketMoverRow[];
   losers: MarketMoverRow[];
@@ -330,6 +400,65 @@ export async function getMarketSetupUniverse(limitPerSide = 12): Promise<MarketM
 
     return [...deduped.values()];
   } catch {
+    return [];
+  }
+}
+
+export async function getPreMarketSetupUniverse(
+  limitPerSide = 12
+): Promise<MarketMoverRow[]> {
+  const fmpApiKey = process.env.FMP_API_KEY ?? "";
+  const referenceApiKey =
+    process.env.POLYGON_API_KEY ??
+    process.env.MASSIVE_API_KEY ??
+    process.env.NEXT_PUBLIC_MASSIVE_API_KEY ??
+    "";
+
+  if (!fmpApiKey) {
+    return [];
+  }
+
+  const easternClock = getEasternClockParts();
+
+  if (easternClock.isWeekend) {
+    return [];
+  }
+
+  if (
+    easternClock.preMarketBucketKey &&
+    preMarketSetupUniverseSnapshot?.etDate === easternClock.etDate &&
+    preMarketSetupUniverseSnapshot.bucketKey === easternClock.preMarketBucketKey
+  ) {
+    return preMarketSetupUniverseSnapshot.rows.slice(0, limitPerSide * 2);
+  }
+
+  if (!easternClock.isActivePreMarket) {
+    if (preMarketSetupUniverseSnapshot?.etDate === easternClock.etDate) {
+      return preMarketSetupUniverseSnapshot.rows.slice(0, limitPerSide * 2);
+    }
+
+    return [];
+  }
+
+  try {
+    const rows = await fetchRankedPreMarketSetupUniverse(
+      limitPerSide,
+      referenceApiKey,
+      fmpApiKey
+    );
+
+    preMarketSetupUniverseSnapshot = {
+      etDate: easternClock.etDate,
+      bucketKey: easternClock.preMarketBucketKey ?? `${easternClock.etDate}:latest`,
+      rows,
+    };
+
+    return rows;
+  } catch {
+    if (preMarketSetupUniverseSnapshot?.etDate === easternClock.etDate) {
+      return preMarketSetupUniverseSnapshot.rows.slice(0, limitPerSide * 2);
+    }
+
     return [];
   }
 }

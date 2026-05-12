@@ -8,7 +8,7 @@ import {
   getIndexFlags,
   isMajorIndexMember,
 } from "@/lib/market/indexMembership";
-import { getMarketSetupUniverse } from "@/lib/market/movers";
+import { getMarketSetupUniverse, getPreMarketSetupUniverse } from "@/lib/market/movers";
 import { getMassiveFundamentals } from "@/lib/market/massiveFundamentals";
 import {
   convictionToPct,
@@ -151,10 +151,13 @@ export async function getSetupDiscoveryData(
       options.signalSeedLimit ?? Math.max(signalLimit * 2, 160)
     );
 
-    const [signalRows, marketSetupUniverse] = await Promise.all([
+    const [signalRows, marketSetupUniverse, preMarketSetupUniverse] = await Promise.all([
       time("setupDiscovery.supabaseFetch", fetchLatestSignalRows(signalSeedLimit)),
       time("setupDiscovery.setupUniverseBuild", getMarketSetupUniverse(setupUniverseLimit)),
+      time("setupDiscovery.preMarketUniverseBuild", getPreMarketSetupUniverse(setupUniverseLimit)),
     ]);
+
+    const combinedSetupUniverse = [...marketSetupUniverse, ...preMarketSetupUniverse];
 
     const fundamentalsTickerLimit = Math.max(
       signalLimit,
@@ -164,6 +167,7 @@ export async function getSetupDiscoveryData(
     const fundamentalsTickers = Array.from(
       new Set([
         ...marketSetupUniverse.map((row) => normalizeTicker(row.ticker)),
+        ...preMarketSetupUniverse.map((row) => normalizeTicker(row.ticker)),
         ...signalRows.slice(0, fundamentalsTickerLimit).map((row) => normalizeTicker(row.ticker)),
       ])
     );
@@ -171,7 +175,7 @@ export async function getSetupDiscoveryData(
     const [marketSetupSignalRows, fundamentalsEntries] = await Promise.all([
       time(
         "setupDiscovery.marketSetupSignals",
-        fetchSignalsForTickers(marketSetupUniverse.map((item) => item.ticker))
+        fetchSignalsForTickers(combinedSetupUniverse.map((item) => item.ticker))
       ),
       time(
         "setupDiscovery.fundamentals",
@@ -239,7 +243,7 @@ export async function getSetupDiscoveryData(
       );
     }
 
-    for (const item of marketSetupUniverse) {
+    for (const item of combinedSetupUniverse) {
       const ticker = normalizeTicker(item.ticker);
       if (!ticker) continue;
 
