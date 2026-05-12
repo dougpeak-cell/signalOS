@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+
+const DAILY_SCRIPTURE_RESET_HOUR = 4;
 
 const DAILY_SCRIPTURES = [
   {
@@ -83,9 +85,9 @@ const DAILY_SCRIPTURES = [
 function getDailyHealthyWealth() {
   const now = new Date();
 
-  // Daily reset at 5:00 AM local time.
+  // Daily reset at 4:00 AM local time.
   const resetDate = new Date(now);
-  if (now.getHours() < 5) {
+  if (now.getHours() < DAILY_SCRIPTURE_RESET_HOUR) {
     resetDate.setDate(resetDate.getDate() - 1);
   }
 
@@ -95,9 +97,41 @@ function getDailyHealthyWealth() {
   return DAILY_SCRIPTURES[index];
 }
 
+function getNextDailyResetTime() {
+  const now = new Date();
+  const nextReset = new Date(now);
+
+  nextReset.setHours(DAILY_SCRIPTURE_RESET_HOUR, 0, 0, 0);
+
+  if (now.getHours() >= DAILY_SCRIPTURE_RESET_HOUR) {
+    nextReset.setDate(nextReset.getDate() + 1);
+  }
+
+  return nextReset;
+}
+
+function useDailyHealthyWealth() {
+  const [daily, setDaily] = useState(() => getDailyHealthyWealth());
+
+  useEffect(() => {
+    setDaily(getDailyHealthyWealth());
+
+    const nextReset = getNextDailyResetTime();
+    const timeoutMs = Math.max(nextReset.getTime() - Date.now(), 1000);
+
+    const timeoutId = window.setTimeout(() => {
+      setDaily(getDailyHealthyWealth());
+    }, timeoutMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [daily.reference]);
+
+  return daily;
+}
+
 export default function HealthyWealthButton() {
   const [open, setOpen] = useState(false);
-  const daily = useMemo(() => getDailyHealthyWealth(), []);
+  const daily = useDailyHealthyWealth();
 
   return (
     <div className="relative hidden md:block">
@@ -135,7 +169,7 @@ export default function HealthyWealthButton() {
           >
             Our Mission
           </Link>
-          <div className="mt-4 text-xs text-slate-500">Refreshes daily at 5:00 AM.</div>
+          <div className="mt-4 text-xs text-slate-500">Refreshes daily at 4:00 AM.</div>
         </div>
       ) : null}
     </div>
@@ -144,7 +178,7 @@ export default function HealthyWealthButton() {
 
 export function MobileHealthyWealthButton() {
   const [open, setOpen] = useState(false);
-  const daily = useMemo(() => getDailyHealthyWealth(), []);
+  const daily = useDailyHealthyWealth();
 
   return (
     <div className="relative md:hidden">
@@ -190,7 +224,7 @@ export function MobileHealthyWealthButton() {
             >
               Our Mission
             </Link>
-            <div className="mt-4 text-xs text-slate-500">Refreshes daily at 5:00 AM.</div>
+            <div className="mt-4 text-xs text-slate-500">Refreshes daily at 4:00 AM.</div>
           </div>
         </>
       ) : null}
