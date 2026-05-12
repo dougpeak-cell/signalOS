@@ -188,6 +188,12 @@ function selectLiveBasketRows(
         Number(Boolean(preferredTickers?.has(right.symbol))) -
         Number(Boolean(preferredTickers?.has(left.symbol)));
       if (preferredDelta !== 0) return preferredDelta;
+      const recencyDelta =
+        Number(right.recencyBucket === "today") - Number(left.recencyBucket === "today");
+      if (recencyDelta !== 0) return recencyDelta;
+      const weekDelta =
+        Number(right.recencyBucket === "week") - Number(left.recencyBucket === "week");
+      if (weekDelta !== 0) return weekDelta;
       if (right.score !== left.score) return right.score - left.score;
       const upsideDelta = (right.upsidePercent ?? -999) - (left.upsidePercent ?? -999);
       if (upsideDelta !== 0) return upsideDelta;
@@ -316,15 +322,19 @@ function getPublishedDateValue(value: string | null) {
 function getRecencyChip(row: FmpExpertRow) {
   if (row.recencyBucket === "today") {
     return {
-      label: "Today",
-      className: "border-emerald-400/25 bg-emerald-400/10 text-emerald-200",
+      label: "Fresh",
+      className:
+        "border-emerald-300/45 bg-emerald-400/16 text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.28)]",
+      dateClassName: "text-emerald-200 drop-shadow-[0_0_10px_rgba(16,185,129,0.28)]",
     };
   }
 
   if (row.recencyBucket === "week") {
     return {
       label: "7D",
-      className: "border-cyan-400/25 bg-cyan-400/10 text-cyan-200",
+      className:
+        "border-cyan-400/30 bg-cyan-400/10 text-cyan-200 shadow-[0_0_14px_rgba(34,211,238,0.18)]",
+      dateClassName: "text-cyan-200/85",
     };
   }
 
@@ -332,6 +342,7 @@ function getRecencyChip(row: FmpExpertRow) {
     return {
       label: "14D",
       className: "border-amber-400/25 bg-amber-400/10 text-amber-200",
+      dateClassName: "text-amber-200/75",
     };
   }
 
@@ -836,7 +847,7 @@ export default function ExpertsPage() {
                   Analyst Top Picks Across the Market
                 </div>
                 <p className="mt-1 text-[14px] leading-6 text-white/48">
-                  Diversified analyst signals from today, the last 7 days, and the last 14 days ranked by upside, rating quality, recency, and sector balance. Use sector tabs to drill into the top 10 analyst-ranked names inside each group.
+                  Diversified analyst signals from today, yesterday, the last 7 days, and the last 14 days ranked with fresh calls weighted highest, then upside, rating quality, recency, and sector balance. Use sector tabs to drill into the top 10 analyst-ranked names inside each group.
                 </p>
               </div>
               <div className="relative inline-flex items-center rounded-full border border-emerald-400/40 bg-emerald-400/10 px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200 shadow-[0_0_20px_rgba(16,185,129,0.25)]">
@@ -943,7 +954,7 @@ export default function ExpertsPage() {
                         {row.publishedDate ? (
                           <>
                             <span className="text-white/20">|</span>
-                            <span>{row.publishedDate}</span>
+                            <span className={recencyChip?.dateClassName ?? ""}>{row.publishedDate}</span>
                           </>
                         ) : null}
                       </div>

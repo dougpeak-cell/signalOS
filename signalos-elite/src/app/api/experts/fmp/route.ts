@@ -85,7 +85,7 @@ function getAgeInDays(date: string | null) {
 function getRecencyBucket(date: string | null) {
   const days = getAgeInDays(date);
   if (days == null) return null;
-  if (days <= 1) return "today";
+  if (days <= 2) return "today";
   if (days <= 7) return "week";
   if (days <= 14) return "twoWeeks";
   return null;
@@ -99,10 +99,23 @@ function getPublishedDateValue(value: unknown): number {
 }
 
 function recencyBucketScore(bucket: "today" | "week" | "twoWeeks" | null) {
-  if (bucket === "today") return 60;
-  if (bucket === "week") return 18;
-  if (bucket === "twoWeeks") return 8;
+  if (bucket === "today") return 140;
+  if (bucket === "week") return 28;
+  if (bucket === "twoWeeks") return 10;
   return 0;
+}
+
+function compareRankedRows(left: PickRow, right: PickRow) {
+  const recencyDelta =
+    recencyBucketScore(right.recencyBucket) - recencyBucketScore(left.recencyBucket);
+  if (recencyDelta !== 0) return recencyDelta;
+
+  if (right.score !== left.score) return right.score - left.score;
+
+  const upsideDelta = (right.upsidePercent ?? -999) - (left.upsidePercent ?? -999);
+  if (upsideDelta !== 0) return upsideDelta;
+
+  return getPublishedDateValue(right.publishedDate) - getPublishedDateValue(left.publishedDate);
 }
 
 function pickBestRecentGrade(grades: GradeRow[]) {
@@ -448,7 +461,7 @@ export async function GET() {
     const sectorRows = Object.fromEntries(
       SECTOR_BUCKETS.map((sector) => [
         sector,
-        [...(bySector.get(sector) ?? [])].sort((a, b) => b.score - a.score).slice(0, 10),
+        [...(bySector.get(sector) ?? [])].sort(compareRankedRows).slice(0, 10),
       ])
     );
 
@@ -457,7 +470,7 @@ export async function GET() {
 
     for (const sector of SECTOR_BUCKETS) {
       const picks = (bySector.get(sector) ?? [])
-        .sort((a, b) => b.score - a.score)
+        .sort(compareRankedRows)
         .slice(0, 1);
 
       diversified.push(...picks);
@@ -466,7 +479,7 @@ export async function GET() {
 
     const remaining = enriched
       .filter((row) => !selectedSymbols.has(row.symbol))
-      .sort((a, b) => b.score - a.score);
+      .sort(compareRankedRows);
 
     for (const row of remaining) {
       if (diversified.length >= 12) break;
@@ -474,16 +487,12 @@ export async function GET() {
     }
 
     const strictRows = diversified
-      .sort((a, b) => b.score - a.score)
+      .sort(compareRankedRows)
       .slice(0, 12);
 
     const fallbackRows = [...enriched]
       .filter((row) => Boolean(row.publishedDate))
-      .sort((a, b) => {
-        const publishedDelta = getPublishedDateValue(b.publishedDate) - getPublishedDateValue(a.publishedDate);
-        if (publishedDelta !== 0) return publishedDelta;
-        return b.score - a.score;
-      })
+      .sort(compareRankedRows)
       .slice(0, 10);
 
     const rows = strictRows.length > 0 ? strictRows : fallbackRows;
