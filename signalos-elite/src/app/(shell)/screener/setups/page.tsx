@@ -25,6 +25,8 @@ type SetupsPageProps = {
   }>;
 };
 
+type PriceRangeKey = "2-5" | "5-10" | "10-25" | "25-100" | "100+";
+
 const MIN_VOLUME_PRESETS = [
   { label: "Any", value: null },
   { label: "500K+", value: 500_000 },
@@ -34,10 +36,11 @@ const MIN_VOLUME_PRESETS = [
 
 const MIN_PRICE_PRESETS = [
   { label: "Any", value: null },
-  { label: "$2+", value: 2 },
-  { label: "$5+", value: 5 },
-  { label: "$10+", value: 10 },
-  { label: "$25+", value: 25 },
+  { label: "$2-$5", value: "2-5" },
+  { label: "$5-$10", value: "5-10" },
+  { label: "$10-$25", value: "10-25" },
+  { label: "$25-$100", value: "25-100" },
+  { label: "$100+", value: "100+" },
 ] as const;
 
 const DIRECTION_PRESETS = [
@@ -55,6 +58,18 @@ const CATALYST_PRESETS = [
   { label: "Any", value: "0" },
   { label: "Catalyst Only", value: "1" },
 ] as const;
+
+function normalizePriceRange(value?: string): PriceRangeKey | null {
+  if (!value) return null;
+
+  if (value === "2" || value === "2-5") return "2-5";
+  if (value === "5" || value === "5-10") return "5-10";
+  if (value === "10" || value === "10-25") return "10-25";
+  if (value === "25" || value === "25-100") return "25-100";
+  if (value === "100" || value === "100+") return "100+";
+
+  return null;
+}
 
 function toNumber(value?: string): number | null {
   if (!value) return null;
@@ -88,6 +103,19 @@ function formatPercent(value?: number | null): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
+function matchesPriceRange(price: number | null | undefined, priceRange: PriceRangeKey | null) {
+  if (priceRange == null) return true;
+
+  const value = Number(price ?? 0);
+  if (!Number.isFinite(value) || value <= 0) return false;
+
+  if (priceRange === "2-5") return value >= 2 && value < 5;
+  if (priceRange === "5-10") return value >= 5 && value < 10;
+  if (priceRange === "10-25") return value >= 10 && value < 25;
+  if (priceRange === "25-100") return value >= 25 && value < 100;
+  return value >= 100;
+}
+
 function filterRows(
   rows: RankedSetupItem[],
   {
@@ -98,7 +126,7 @@ function filterRows(
     highRvol,
   }: {
     direction: "both" | "bullish" | "bearish";
-    minPrice: number | null;
+    minPrice: PriceRangeKey | null;
     minVolume: number | null;
     catalystOnly: boolean;
     highRvol: boolean;
@@ -106,7 +134,7 @@ function filterRows(
 ) {
   return rows.filter((row) => {
     if (direction !== "both" && row.bias !== direction) return false;
-    if (minPrice != null && (row.price ?? 0) < minPrice) return false;
+    if (!matchesPriceRange(row.price, minPrice)) return false;
     if (minVolume != null && (row.volume ?? 0) < minVolume) return false;
     if (catalystOnly && !(row.hasMajorNews || row.hasEarnings || row.hasAnalystAction)) {
       return false;
@@ -119,7 +147,7 @@ function filterRows(
 function filterLink(params: {
   session: TodaySetupSession;
   direction: "both" | "bullish" | "bearish";
-  minPrice: number | null;
+  minPrice: PriceRangeKey | null;
   minVolume: number | null;
   catalystOnly: boolean;
   highRvol: boolean;
@@ -155,7 +183,7 @@ function renderFilterControls({
 }: {
   session: TodaySetupSession;
   direction: "both" | "bullish" | "bearish";
-  minPrice: number | null;
+  minPrice: PriceRangeKey | null;
   minVolume: number | null;
   catalystOnly: boolean;
   highRvol: boolean;
@@ -315,7 +343,7 @@ export default async function SetupsPage({
   const params = (await searchParams) ?? {};
   const session = normalizeSession(params.session);
   const direction = normalizeDirection(params.direction);
-  const minPrice = toNumber(params.minPrice);
+  const minPrice = normalizePriceRange(params.minPrice);
   const minVolume = toNumber(params.minVolume);
   const catalystOnly = params.catalyst === "1";
   const highRvol = params.rvol === "1";
