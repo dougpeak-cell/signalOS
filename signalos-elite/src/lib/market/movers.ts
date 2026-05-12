@@ -426,7 +426,7 @@ export async function getMarketMovers(): Promise<{
     process.env.NEXT_PUBLIC_MASSIVE_API_KEY ??
     "";
 
-  if (usePreMarketSource && fmpApiKey) {
+  if (usePreMarketSource && (fmpApiKey || apiKey)) {
     try {
       const preMarketRows = await fetchPreMarketMoverFeed(fmpApiKey, apiKey || fmpApiKey);
       const gainers = preMarketRows
@@ -483,7 +483,7 @@ export async function getMarketSetupUniverse(limitPerSide = 12): Promise<MarketM
     process.env.NEXT_PUBLIC_MASSIVE_API_KEY ??
     "";
 
-  if (usePreMarketSource && fmpApiKey) {
+  if (usePreMarketSource && (fmpApiKey || apiKey)) {
     try {
       const preMarketRows = await fetchPreMarketMoverFeed(fmpApiKey, apiKey || fmpApiKey);
       const sorted = [...preMarketRows].sort(
@@ -545,7 +545,7 @@ export async function getPreMarketSetupUniverse(
     process.env.NEXT_PUBLIC_MASSIVE_API_KEY ??
     "";
 
-  if (!fmpApiKey) {
+  if (!fmpApiKey && !referenceApiKey) {
     return [];
   }
 
