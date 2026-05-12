@@ -129,6 +129,8 @@ export type TodayPageData = {
   risks: TodayRiskItem[];
 };
 
+const PREMARKET_EMERGING_SOURCE_LIMIT = 10;
+
 async function withTimeout<T>(
   promise: Promise<T>,
   fallback: T,
@@ -518,7 +520,7 @@ function countPreMarketSourceRows(setupDiscovery: SetupDiscoveryData): number {
   return setupDiscovery.candidates.filter((candidate) => isPreMarketSourceCandidate(candidate)).length;
 }
 
-function countPreMarketEmergingCandidates(setupDiscovery: SetupDiscoveryData): number {
+export function countPreMarketEmergingCandidates(setupDiscovery: SetupDiscoveryData): number {
   const topTickers = new Set(buildPreMarketTopSetups(setupDiscovery).map((item) => item.ticker));
 
   return setupDiscovery.candidates.filter((candidate) => {
@@ -1036,7 +1038,7 @@ export function buildPreMarketEmergingSetups(
       return isPreMarketEmergingCandidate(candidate) && !topTickers.has(candidate.ticker);
     }),
     "emerging"
-  ).slice(0, 6);
+  ).slice(0, PREMARKET_EMERGING_SOURCE_LIMIT);
 }
 
 export function buildRenderablePreMarketEmergingSetups(
@@ -1050,7 +1052,7 @@ export function buildRenderablePreMarketEmergingSetups(
     setupDiscovery.candidates,
     "emerging",
     new Set(computedPreMarketTopSetups.map((item) => item.ticker))
-  );
+  ).slice(0, PREMARKET_EMERGING_SOURCE_LIMIT);
 
   return computedPreMarketEmergingSetups.length > 0
     ? computedPreMarketEmergingSetups

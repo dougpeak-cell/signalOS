@@ -6,7 +6,7 @@ import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import { getSetupDiscoveryData } from "@/lib/today/setupDiscoveryData";
 import {
   buildRenderablePreMarketEmergingSetups,
-  countPreMarketQualifiedCandidates,
+  countPreMarketEmergingCandidates,
   type TodaySetupSession,
 } from "@/lib/today/pageData";
 import { isPreMarketNow } from "@/lib/today/marketPhase";
@@ -332,7 +332,7 @@ export default async function SetupsPage({
     session === "pre"
       ? buildRenderablePreMarketEmergingSetups(setupDiscovery)
       : setupDiscovery.emerging;
-  const preMarketRawCandidateCount = countPreMarketQualifiedCandidates(setupDiscovery);
+  const preMarketRawCandidateCount = countPreMarketEmergingCandidates(setupDiscovery);
   const preMarketFilteredCount = Math.max(0, preMarketRawCandidateCount - sourceRows.length);
   const filteredRows = filterRows(sourceRows, {
     direction,
