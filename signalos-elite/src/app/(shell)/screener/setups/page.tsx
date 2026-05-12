@@ -279,7 +279,7 @@ function renderFilterControls({
       </fieldset>
       <fieldset className={filterCardClass}>
         <legend className="px-1 text-[10px] uppercase tracking-[0.18em] text-white/35">
-          Catalyst
+          Catalyst (Sigi Intelligence: News, Earnings, Analyst)
         </legend>
         <div className={filterPillRowClass}>
           {CATALYST_PRESETS.map((preset) => {
