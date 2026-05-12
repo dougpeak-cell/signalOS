@@ -1,5 +1,4 @@
 import type { ReactElement } from "react";
-import CondensedCommandCenterLive from "@/components/today/CondensedCommandCenterLive";
 import TodayActionRow from "@/components/today/TodayActionRow";
 import TodayBottomIntelRail from "@/components/today/TodayBottomIntelRail";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
@@ -127,24 +126,6 @@ export default function TodayPageShell({
 							preMarketQualifiedCount={preMarketEmergingCandidateCount}
 							preMarketFallbackUsed={preMarketEmergingFallbackUsed}
 							defaultSession={defaultSetupSession}
-						/>
-					</section>
-
-					<section>
-						<div className="mb-3 px-1">
-							<div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/72">
-								Command Center
-							</div>
-							<div className="mt-1 text-sm text-white/50">
-								Fast leaders, laggards, earnings, and watchlist movers.
-							</div>
-						</div>
-						<CondensedCommandCenterLive
-							gainers={commandCenterGainers}
-							losers={commandCenterLosers}
-							highVolumeRows={defaultSetupSession === "pre" ? preMarketRows : regularMostTradedRows}
-							earnings={commandCenterEarnings}
-							news={commandCenterNews}
 						/>
 					</section>
 
