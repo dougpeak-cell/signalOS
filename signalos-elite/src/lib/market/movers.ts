@@ -2,6 +2,13 @@ import { isPreMarketNow } from "@/lib/today/marketPhase";
 import { fetchLatestSignalRows } from "@/lib/queries/signals";
 
 const PREMARKET_REFRESH_BUCKET_MINUTES = 15;
+const PREMARKET_SNAPSHOT_RANGES = [
+  { start: "A", end: "F" },
+  { start: "F", end: "M" },
+  { start: "M", end: "T" },
+  { start: "T", end: "ZZZZZ" },
+] as const;
+const PREMARKET_SNAPSHOT_RANGE_LIMIT = 250;
 
 type PreMarketSetupUniverseSnapshot = {
   etDate: string;
@@ -317,21 +324,14 @@ function chunkArray<T>(items: T[], size: number): T[][] {
 }
 
 async function fetchMassiveSnapshotPreMarketUniverse(apiKey: string) {
-  const signalRows = await fetchLatestSignalRows(180);
-  const tickers = Array.from(
-    new Set(signalRows.map((row) => normalizeTicker(row.ticker)).filter(Boolean))
-  );
-
-  if (tickers.length === 0) {
-    return [];
-  }
-
   const snapshotRows = await Promise.all(
-    chunkArray(tickers, 40).map(async (group) => {
+    PREMARKET_SNAPSHOT_RANGES.map(async (range) => {
       const url =
         `https://api.massive.com/v3/snapshot?` +
-        `ticker.any_of=${encodeURIComponent(group.join(","))}` +
-        `&limit=${group.length}` +
+        `market_status=early_trading` +
+        `&ticker.gte=${encodeURIComponent(range.start)}` +
+        `&ticker.lt=${encodeURIComponent(range.end)}` +
+        `&limit=${PREMARKET_SNAPSHOT_RANGE_LIMIT}` +
         `&apiKey=${apiKey}`;
 
       const response = await fetch(url, {
@@ -361,7 +361,12 @@ async function fetchMassiveSnapshotPreMarketUniverse(apiKey: string) {
     deduped.set(row.ticker, row);
   }
 
-  return [...deduped.values()];
+  return [...deduped.values()].sort((left, right) => {
+    const changeDelta = Math.abs(right.changePct ?? 0) - Math.abs(left.changePct ?? 0);
+    if (changeDelta !== 0) return changeDelta;
+
+    return (right.volume ?? 0) - (left.volume ?? 0);
+  });
 }
 
 async function fetchPreMarketMoverFeed(
