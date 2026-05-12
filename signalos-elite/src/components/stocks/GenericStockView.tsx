@@ -546,9 +546,9 @@ export default async function GenericStockView({
 
   const initialAnalysisPrice =
     (quoteState.source === "api" ? quoteState.price : null) ??
-    quoteState.price ??
     row.price ??
     technicals.lastClose ??
+    quoteState.price ??
     null;
 
   const initialAnalysisChangePct =
