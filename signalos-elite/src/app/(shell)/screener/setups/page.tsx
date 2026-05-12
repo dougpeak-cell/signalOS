@@ -358,7 +358,7 @@ export default async function SetupsPage({
 
   const sourceRows =
     session === "pre"
-      ? buildRenderablePreMarketEmergingSetups(setupDiscovery)
+      ? buildRenderablePreMarketEmergingSetups(setupDiscovery, { limit: undefined })
       : setupDiscovery.emerging;
   const preMarketRawCandidateCount = countPreMarketEmergingCandidates(setupDiscovery);
   const filteredRows = filterRows(sourceRows, {

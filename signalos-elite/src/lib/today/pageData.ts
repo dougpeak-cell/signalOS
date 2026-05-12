@@ -1029,34 +1029,49 @@ export function buildPreMarketTopSetups(setupDiscovery: SetupDiscoveryData): Ran
 }
 
 export function buildPreMarketEmergingSetups(
-  setupDiscovery: SetupDiscoveryData
+  setupDiscovery: SetupDiscoveryData,
+  options?: { limit?: number }
 ): RankedSetupItem[] {
   const topTickers = new Set(buildPreMarketTopSetups(setupDiscovery).map((item) => item.ticker));
-
-  return rankSetupCandidates(
+  const rankedItems = rankSetupCandidates(
     setupDiscovery.candidates.filter((candidate) => {
       return isPreMarketEmergingCandidate(candidate) && !topTickers.has(candidate.ticker);
     }),
     "emerging"
-  ).slice(0, PREMARKET_EMERGING_SOURCE_LIMIT);
+  );
+
+  return typeof options?.limit === "number"
+    ? rankedItems.slice(0, options.limit)
+    : rankedItems;
 }
 
 export function buildRenderablePreMarketEmergingSetups(
-  setupDiscovery: SetupDiscoveryData
+  setupDiscovery: SetupDiscoveryData,
+  options?: { limit?: number }
 ): RankedSetupItem[] {
   const computedPreMarketTopSetups = buildPreMarketTopSetups(setupDiscovery);
-  const computedPreMarketEmergingSetups = buildPreMarketEmergingSetups(setupDiscovery);
+  const computedPreMarketEmergingSetups = buildPreMarketEmergingSetups(setupDiscovery, options);
   const preMarketRows = buildPreMarketRows(setupDiscovery.candidates);
   const fallbackPreMarketEmergingSetups = buildPreMarketFallbackRankedItems(
     preMarketRows,
     setupDiscovery.candidates,
     "emerging",
     new Set(computedPreMarketTopSetups.map((item) => item.ticker))
-  ).slice(0, PREMARKET_EMERGING_SOURCE_LIMIT);
+  );
 
-  return computedPreMarketEmergingSetups.length > 0
-    ? computedPreMarketEmergingSetups
-    : fallbackPreMarketEmergingSetups;
+  const limit = options?.limit;
+  const limitedComputedPreMarketEmergingSetups =
+    typeof limit === "number"
+      ? computedPreMarketEmergingSetups.slice(0, limit)
+      : computedPreMarketEmergingSetups;
+  const limitedFallbackPreMarketEmergingSetups =
+    typeof limit === "number"
+      ? fallbackPreMarketEmergingSetups.slice(0, limit)
+      : fallbackPreMarketEmergingSetups;
+
+  return limitedComputedPreMarketEmergingSetups.length > 0
+    ? limitedComputedPreMarketEmergingSetups
+    : limitedFallbackPreMarketEmergingSetups;
 }
 
 function buildOpportunities(setupDiscovery: SetupDiscoveryData): TodayOpportunityItem[] {
