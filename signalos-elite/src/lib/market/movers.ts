@@ -1,4 +1,5 @@
 import { isPreMarketNow } from "@/lib/today/marketPhase";
+import { fetchLatestSignalRows } from "@/lib/queries/signals";
 
 const PREMARKET_REFRESH_BUCKET_MINUTES = 15;
 
@@ -38,6 +39,21 @@ type RawPreMarketMoverRow = {
   change_percent?: number | string | null;
   volume?: number | string | null;
   preMarketVolume?: number | string | null;
+};
+
+type RawMassiveSnapshotRow = {
+  ticker?: string;
+  name?: string | null;
+  market_status?: string | null;
+  session?: {
+    price?: number | string | null;
+    volume?: number | string | null;
+    change_percent?: number | string | null;
+    early_trading_change_percent?: number | string | null;
+  } | null;
+  last_trade?: {
+    price?: number | string | null;
+  } | null;
 };
 
 export type MarketMoverRow = {
@@ -151,6 +167,37 @@ function toPreMarketMoverRow(row: RawPreMarketMoverRow | null | undefined): Mark
   };
 }
 
+function normalizeTicker(value: unknown): string {
+  return typeof value === "string" ? value.trim().toUpperCase() : "";
+}
+
+function toMassiveSnapshotMoverRow(
+  row: RawMassiveSnapshotRow | null | undefined
+): MarketMoverRow | null {
+  const ticker = normalizeTicker(row?.ticker);
+
+  if (!ticker) return null;
+
+  const marketStatus = String(row?.market_status ?? "").trim().toLowerCase();
+  const changePct =
+    toPercentNumber(row?.session?.early_trading_change_percent) ??
+    toPercentNumber(row?.session?.change_percent);
+
+  if (marketStatus !== "early_trading" && changePct == null) {
+    return null;
+  }
+
+  return {
+    ticker,
+    name: String(row?.name ?? ticker).trim() || ticker,
+    price: toNumber(row?.session?.price) ?? toNumber(row?.last_trade?.price),
+    changePct,
+    volume: toNumber(row?.session?.volume),
+    rvol: 0.5,
+    session: "pre-market",
+  };
+}
+
 function isPreferredMover(row: MarketMoverRow): boolean {
   const ticker = row.ticker;
   const price = row.price ?? 0;
@@ -259,6 +306,90 @@ async function fetchPreMarketUniverse(apiKey: string) {
   return results.map(toPreMarketMoverRow).filter(Boolean) as MarketMoverRow[];
 }
 
+function chunkArray<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+async function fetchMassiveSnapshotPreMarketUniverse(apiKey: string) {
+  const signalRows = await fetchLatestSignalRows(180);
+  const tickers = Array.from(
+    new Set(signalRows.map((row) => normalizeTicker(row.ticker)).filter(Boolean))
+  );
+
+  if (tickers.length === 0) {
+    return [];
+  }
+
+  const snapshotRows = await Promise.all(
+    chunkArray(tickers, 40).map(async (group) => {
+      const url =
+        `https://api.massive.com/v3/snapshot?` +
+        `ticker.any_of=${encodeURIComponent(group.join(","))}` +
+        `&limit=${group.length}` +
+        `&apiKey=${apiKey}`;
+
+      const response = await fetch(url, {
+        headers: { accept: "application/json" },
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Massive pre-market snapshot failed: ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const results = Array.isArray(payload?.results)
+        ? (payload.results as RawMassiveSnapshotRow[])
+        : [];
+
+      return results
+        .map(toMassiveSnapshotMoverRow)
+        .filter((row): row is MarketMoverRow => row != null);
+    })
+  );
+
+  const deduped = new Map<string, MarketMoverRow>();
+
+  for (const row of snapshotRows.flat()) {
+    if (!row.ticker) continue;
+    deduped.set(row.ticker, row);
+  }
+
+  return [...deduped.values()];
+}
+
+async function fetchPreMarketMoverFeed(
+  fmpApiKey: string,
+  fallbackApiKey: string
+): Promise<MarketMoverRow[]> {
+  try {
+    if (fmpApiKey) {
+      const fmpRows = await fetchPreMarketUniverse(fmpApiKey);
+      if (fmpRows.length > 0) {
+        return fmpRows;
+      }
+    }
+  } catch {
+    // Try a snapshot-based fallback when the dedicated FMP pre-market feed is unavailable.
+  }
+
+  if (!fallbackApiKey) {
+    return [];
+  }
+
+  try {
+    return await fetchMassiveSnapshotPreMarketUniverse(fallbackApiKey);
+  } catch {
+    return [];
+  }
+}
+
 async function fetchRankedPreMarketSetupUniverse(
   limitPerSide: number,
   referenceApiKey: string,
@@ -297,7 +428,7 @@ export async function getMarketMovers(): Promise<{
 
   if (usePreMarketSource && fmpApiKey) {
     try {
-      const preMarketRows = await fetchPreMarketUniverse(fmpApiKey);
+      const preMarketRows = await fetchPreMarketMoverFeed(fmpApiKey, apiKey || fmpApiKey);
       const gainers = preMarketRows
         .filter((row) => (row.changePct ?? 0) >= 0)
         .sort((left, right) => (right.changePct ?? 0) - (left.changePct ?? 0));
@@ -354,7 +485,7 @@ export async function getMarketSetupUniverse(limitPerSide = 12): Promise<MarketM
 
   if (usePreMarketSource && fmpApiKey) {
     try {
-      const preMarketRows = await fetchPreMarketUniverse(fmpApiKey);
+      const preMarketRows = await fetchPreMarketMoverFeed(fmpApiKey, apiKey || fmpApiKey);
       const sorted = [...preMarketRows].sort(
         (left, right) => Math.abs(right.changePct ?? 0) - Math.abs(left.changePct ?? 0)
       );
@@ -441,10 +572,22 @@ export async function getPreMarketSetupUniverse(
   }
 
   try {
-    const rows = await fetchRankedPreMarketSetupUniverse(
-      limitPerSide,
-      referenceApiKey,
-      fmpApiKey
+    const feedRows = await fetchPreMarketMoverFeed(fmpApiKey, referenceApiKey || fmpApiKey);
+
+    if (feedRows.length === 0) {
+      if (preMarketSetupUniverseSnapshot?.etDate === easternClock.etDate) {
+        return preMarketSetupUniverseSnapshot.rows.slice(0, limitPerSide * 2);
+      }
+
+      return [];
+    }
+
+    const sorted = [...feedRows].sort(
+      (left, right) => Math.abs(right.changePct ?? 0) - Math.abs(left.changePct ?? 0)
+    );
+    const rows = await enrichReferenceData(
+      finalizeMoverRows(sorted, limitPerSide * 2),
+      referenceApiKey || fmpApiKey
     );
 
     preMarketSetupUniverseSnapshot = {
