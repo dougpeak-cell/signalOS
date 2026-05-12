@@ -248,25 +248,31 @@ function normalizeSignalRow(data: Record<string, unknown>): SignalRow {
 }
 
 async function getSignalByTicker(rawTicker: string): Promise<SignalRow | null> {
-  const supabase = await createSupabaseServerClient();
-  const ticker = rawTicker.toUpperCase();
+  try {
+    const supabase = await createSupabaseServerClient();
+    const ticker = rawTicker.toUpperCase();
 
-  const { data, error } = await supabase
-    .from("signals")
-    .select("*")
-    .ilike("ticker", ticker)
-    .order("as_of_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    const { data, error } = await supabase
+      .from("signals")
+      .select("*")
+      .ilike("ticker", ticker)
+      .order("as_of_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  if (error) {
-    console.error("Stock detail query failed:", error.message);
+    if (error) {
+      console.warn("Stock detail signal lookup unavailable:", error.message);
+      return null;
+    }
+
+    if (!data) return null;
+    return normalizeSignalRow(data as Record<string, unknown>);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn("Stock detail signal lookup failed:", message);
     return null;
   }
-
-  if (!data) return null;
-  return normalizeSignalRow(data as Record<string, unknown>);
 }
 
 async function getPriceHistory(ticker: string) {
