@@ -39,6 +39,19 @@ function normalizeConviction(value: number | null | undefined) {
   return value <= 1 ? value * 100 : value;
 }
 
+function normalizeTicker(value?: string | null) {
+  return String(value ?? "").trim().toUpperCase();
+}
+
+function inferUniverseTone(changePct?: number | null) {
+  const value = Number(changePct ?? 0);
+
+  if (!Number.isFinite(value)) return "neutral" as const;
+  if (value > 0) return "bullish" as const;
+  if (value < 0) return "bearish" as const;
+  return "neutral" as const;
+}
+
 function formatPhaseLabel() {
   const phase = getCurrentMarketPhase();
 
@@ -221,9 +234,24 @@ export function buildTodayActionRowMetrics(
   rows: SignalRows,
   setupUniverse: SetupUniverseRows
 ): TodayActionRowMetrics {
-  const counts = rows.reduce(
+  const signalMap = new Map(rows.map((row) => [normalizeTicker(row.ticker), row]));
+  const countableRows =
+    setupUniverse.length > 0
+      ? setupUniverse.map((item) => {
+          const linkedSignal = signalMap.get(normalizeTicker(item.ticker));
+          const tone = linkedSignal
+            ? signalToneFromRow(linkedSignal, item.price ?? linkedSignal.price)
+            : inferUniverseTone(item.changePct);
+
+          return { tone };
+        })
+      : rows.map((row) => ({
+          tone: signalToneFromRow(row, row.price),
+        }));
+
+  const counts = countableRows.reduce(
     (accumulator, row) => {
-      const tone = signalToneFromRow(row, row.price);
+      const tone = row.tone;
 
       if (tone === "bullish") accumulator.bullish += 1;
       else if (tone === "bearish") accumulator.bearish += 1;
