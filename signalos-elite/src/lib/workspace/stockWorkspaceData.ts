@@ -138,9 +138,9 @@ export async function getStockWorkspaceData(
   };
 
   const initialPrice =
+    (quoteState.source === "api" ? quoteState.price : null) ??
     row.price ??
     technicals.lastClose ??
-    (quoteState.source === "api" ? quoteState.price : null) ??
     quoteState.price ??
     null;
 
