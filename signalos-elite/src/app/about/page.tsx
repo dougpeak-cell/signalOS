@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SigiWisdomGrid from "@/components/shared/SigiWisdomGrid";
 
 export default function AboutPage() {
   return (
@@ -44,22 +45,8 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-2">
-            {[
-              "Patience over emotion",
-              "Stewardship over greed",
-              "Education over noise",
-              "Faith during uncertainty",
-              "Disciplined long-term thinking",
-              "Helping others build responsibly",
-            ].map((item) => (
-              <div
-                key={item}
-                className="rounded-2xl border border-white/10 bg-[#0b1728] p-4 text-sm text-slate-200 shadow-lg"
-              >
-                {item}
-              </div>
-            ))}
+          <div className="mt-10">
+            <SigiWisdomGrid />
           </div>
 
           <div className="mt-10 border-t border-white/10 pt-8">
