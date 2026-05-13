@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { LiveMarketProvider } from "@/components/market/LiveMarketProvider";
 import MarketContextSyncBridge from "@/components/providers/MarketContextSyncBridge";
 import AppQuoteBootstrap from "@/components/providers/AppQuoteBootstrap";
+import AuthSplashReset from "@/components/providers/AuthSplashReset";
 import { MarketDataProvider } from "@/components/providers/MarketDataProvider";
 import { GlobalTickerProvider } from "@/components/sigi/GlobalTickerContext";
 import { SelectedTickerProvider } from "@/components/sigi/SelectedTickerContext";
@@ -36,6 +37,7 @@ export default function RootLayout({
                 <GlobalTickerProvider>
                   <MarketContextSyncBridge />
                   <AppQuoteBootstrap />
+                  <AuthSplashReset />
                   {children}
                 </GlobalTickerProvider>
               </SelectedTickerProvider>

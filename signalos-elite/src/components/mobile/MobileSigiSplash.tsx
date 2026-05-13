@@ -2,10 +2,22 @@
 
 import { useEffect, useState } from "react";
 
+export const MOBILE_SIGI_SPLASH_STORAGE_KEY = "signalos-mobile-sigi-splash-seen";
+
 export default function MobileSigiSplash() {
-  const [show, setShow] = useState(true);
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
+    const hasSeenSplash = window.localStorage.getItem(MOBILE_SIGI_SPLASH_STORAGE_KEY) === "1";
+
+    if (hasSeenSplash) {
+      setShow(false);
+      return;
+    }
+
+    setShow(true);
+    window.localStorage.setItem(MOBILE_SIGI_SPLASH_STORAGE_KEY, "1");
+
     const timer = setTimeout(() => setShow(false), 6500);
     return () => clearTimeout(timer);
   }, []);
