@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-const UPGRADE_HREF = "/settings/sigi";
+const PRO_DASHBOARD_HREF = "/experts/pro";
 
 export default function ExpertsPage() {
   return (
@@ -89,7 +89,7 @@ export default function ExpertsPage() {
               "Momentum context and chart access",
             ]}
             cta="Upgrade to Smart"
-            href={UPGRADE_HREF}
+            href="/settings/sigi"
           />
 
           <PlanCard
@@ -106,7 +106,7 @@ export default function ExpertsPage() {
               "Institutional ownership trends",
             ]}
             cta="Reserve Pro Access"
-            href={UPGRADE_HREF}
+            href={PRO_DASHBOARD_HREF}
           />
         </section>
 
@@ -202,10 +202,10 @@ export default function ExpertsPage() {
           </p>
 
           <Link
-            href={UPGRADE_HREF}
+            href={PRO_DASHBOARD_HREF}
             className="mt-6 inline-flex rounded-2xl border border-amber-300/30 bg-amber-400/10 px-5 py-3 text-sm font-bold text-amber-200 transition hover:bg-amber-400/20"
           >
-            Upgrade to Pro
+            Open Pro Desk
           </Link>
         </section>
       </div>
