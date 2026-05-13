@@ -205,6 +205,7 @@ function ShellLayoutContent({
   const isStockChartPage = /^\/stocks\/[^/]+\/chart(?:\/.*)?$/i.test(pathname);
   const isCryptoMode = pathname.startsWith("/crypto");
   const isScreenerRoute = pathname.startsWith("/screener");
+  const isTodayShellRoute = pathname === "/" || pathname === "/today";
   const shouldShowMobileBottomNav = !shouldUseCompactShell || !isStockChartPage;
 
   const hideShellRightRail = isWorkspaceStockPage || isScreenerRoute || shouldUseCompactShell;
@@ -232,9 +233,19 @@ function ShellLayoutContent({
                 : "",
             ].join(" ")}
           >
-            <TopNav forceMobilePreview={shouldUseCompactShell} />
-            {!shouldUseCompactShell ? <MarketPulseStrip /> : null}
-            {!shouldUseCompactShell ? <BreakingNewsTicker mode="market" /> : null}
+            <div className={isTodayShellRoute ? "hidden md:block" : "block"}>
+              <TopNav forceMobilePreview={shouldUseCompactShell} />
+            </div>
+            {!shouldUseCompactShell ? (
+              <div className={isTodayShellRoute ? "hidden md:block" : "block"}>
+                <MarketPulseStrip />
+              </div>
+            ) : null}
+            {!shouldUseCompactShell ? (
+              <div className={isTodayShellRoute ? "hidden md:block" : "block"}>
+                <BreakingNewsTicker mode="market" />
+              </div>
+            ) : null}
             {isCryptoMode ? (
               <div className="border-b border-cyan-400/20 bg-cyan-400/[0.035] px-6 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200">
                 Crypto Mode · 24/7 market intelligence
