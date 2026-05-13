@@ -42,7 +42,7 @@ export default async function ExpertsProPage() {
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            href="/settings/sigi"
+            href="/experts"
             className="inline-flex rounded-2xl border border-amber-300/30 bg-amber-400/10 px-5 py-3 text-sm font-bold text-amber-200 transition hover:bg-amber-400/20"
           >
             Upgrade to Pro
@@ -50,7 +50,7 @@ export default async function ExpertsProPage() {
 
           <Link
             href="/experts"
-            className="inline-flex rounded-2xl border border-white/12 bg-white/5 px-5 py-3 text-sm font-semibold text-white/80 transition hover:bg-white/8 hover:text-white"
+            className="inline-flex rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/15"
           >
             Back to Experts Overview
           </Link>
