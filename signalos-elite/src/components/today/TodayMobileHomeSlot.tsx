@@ -39,7 +39,6 @@ export default function TodayMobileHomeSlot({
   preMarketTopSetups,
 }: TodayMobileHomeSlotProps): ReactElement | null {
   const [shouldRender, setShouldRender] = useState(forceVisible);
-  const [showPinnedLoading, setShowPinnedLoading] = useState(true);
 
   useEffect(() => {
     if (forceVisible) {
@@ -60,34 +59,22 @@ export default function TodayMobileHomeSlot({
     };
   }, [forceVisible]);
 
-  useEffect(() => {
-    setShowPinnedLoading(true);
-  }, [forceVisible, shouldRender]);
-
   if (!shouldRender) {
     return <TodayLoadingScreen className="md:hidden" fullHeight={false} />;
   }
 
   return (
-    <div className="relative md:hidden">
-      <MobileSigiHome
-        topSetups={topSetups}
-        preMarketTopSetups={preMarketTopSetups}
-        news={news}
-        opportunities={opportunities}
-        risks={risks}
-        leadershipWatch={leadershipWatch}
-        highVolumeRows={highVolumeRows}
-        watchlistRows={watchlistRows}
-        defaultSetupSession={defaultSetupSession}
-        forceVisible={forceVisible}
-        onFirstPaint={() => setShowPinnedLoading(false)}
-      />
-      {showPinnedLoading ? (
-        <div className="absolute inset-0 z-20 bg-black">
-          <TodayLoadingScreen fullHeight={false} />
-        </div>
-      ) : null}
-    </div>
+    <MobileSigiHome
+      topSetups={topSetups}
+      preMarketTopSetups={preMarketTopSetups}
+      news={news}
+      opportunities={opportunities}
+      risks={risks}
+      leadershipWatch={leadershipWatch}
+      highVolumeRows={highVolumeRows}
+      watchlistRows={watchlistRows}
+      defaultSetupSession={defaultSetupSession}
+      forceVisible={forceVisible}
+    />
   );
 }

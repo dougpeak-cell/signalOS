@@ -45,7 +45,6 @@ type MobileSigiHomeProps = {
   watchlistRows: TodayWatchlistMoverRow[];
   defaultSetupSession: TodaySetupSession;
   forceVisible?: boolean;
-  onFirstPaint?: () => void;
 };
 
 const MOBILE_PULSE_TICKERS = ["SPY", "QQQ", "^VIX"] as const;
@@ -121,7 +120,6 @@ export default function MobileSigiHome({
   watchlistRows,
   defaultSetupSession,
   forceVisible = false,
-  onFirstPaint,
 }: MobileSigiHomeProps): ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -161,26 +159,6 @@ export default function MobileSigiHome({
   const [localPortfolioLeadTicker, setLocalPortfolioLeadTicker] = useState<string | null>(null);
   const [localPortfolioLeadHolding, setLocalPortfolioLeadHolding] =
     useState<LocalPortfolioHolding | null>(null);
-
-  useEffect(() => {
-    if (!onFirstPaint) {
-      return;
-    }
-
-    let frameId = 0;
-    let nestedFrameId = 0;
-
-    frameId = window.requestAnimationFrame(() => {
-      nestedFrameId = window.requestAnimationFrame(() => {
-        onFirstPaint();
-      });
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.cancelAnimationFrame(nestedFrameId);
-    };
-  }, [onFirstPaint]);
 
   useEffect(() => {
     ensureQuotes([...MOBILE_PULSE_TICKERS]);
