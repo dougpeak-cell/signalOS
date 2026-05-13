@@ -18,6 +18,11 @@ type ProfileBillingRow = {
   stripe_customer_id?: string | null;
 };
 
+type CheckoutSessionResult = {
+  url: string;
+  plan: "smart" | "pro";
+};
+
 async function persistStripeCustomerId(userId: string, customerId: string) {
   const supabase = await createSupabaseServerClient();
   await supabase.from("profiles").update({ stripe_customer_id: customerId }).eq("id", userId);
@@ -52,80 +57,110 @@ async function getOrCreateStripeCustomerId(args: {
   return customer.id;
 }
 
-export async function POST(request: Request) {
-  try {
-    const body = (await request.json()) as CheckoutRequestBody;
-    const plan = body.plan ?? body.tier;
-    const tier = coercePaidSigiTier(plan);
-    if (!tier) {
-      return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
-    }
+async function createCheckoutSessionForPlan(planValue: string | undefined): Promise<CheckoutSessionResult> {
+  const tier = coercePaidSigiTier(planValue);
+  if (!tier) {
+    throw new Error("Invalid plan");
+  }
 
-    const priceId = SIGI_PRICING[tier].priceId?.trim();
-    if (!priceId) {
-      return NextResponse.json({ error: "Stripe price is not configured for this plan." }, { status: 500 });
-    }
+  const priceId = SIGI_PRICING[tier].priceId?.trim();
+  if (!priceId) {
+    throw new Error("Stripe price is not configured for this plan.");
+  }
 
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: "You must be signed in to upgrade." }, { status: 401 });
-    }
+  if (!user) {
+    throw new Error("You must be signed in to upgrade.");
+  }
 
-    if (!user.email) {
-      return NextResponse.json(
-        { error: "Your account needs an email address before billing can be started." },
-        { status: 400 }
-      );
-    }
+  if (!user.email) {
+    throw new Error("Your account needs an email address before billing can be started.");
+  }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id, stripe_customer_id")
-      .eq("id", user.id)
-      .maybeSingle();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, stripe_customer_id")
+    .eq("id", user.id)
+    .maybeSingle();
 
-    const customerId = await getOrCreateStripeCustomerId({
-      userId: user.id,
-      email: user.email,
-      existingCustomerId: (profile as ProfileBillingRow | null)?.stripe_customer_id ?? null,
-    });
+  const customerId = await getOrCreateStripeCustomerId({
+    userId: user.id,
+    email: user.email,
+    existingCustomerId: (profile as ProfileBillingRow | null)?.stripe_customer_id ?? null,
+  });
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      customer: customerId,
-      client_reference_id: user.id,
-      line_items: [{ price: priceId, quantity: 1 }],
-      allow_promotion_codes: true,
-      success_url: getStripeCheckoutSuccessUrl(),
-      cancel_url: getStripeCheckoutCancelUrl(),
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    customer: customerId,
+    client_reference_id: user.id,
+    line_items: [{ price: priceId, quantity: 1 }],
+    allow_promotion_codes: true,
+    success_url: getStripeCheckoutSuccessUrl(),
+    cancel_url: getStripeCheckoutCancelUrl(),
+    metadata: {
+      supabase_user_id: user.id,
+      sigi_plan: tier,
+    },
+    subscription_data: {
       metadata: {
         supabase_user_id: user.id,
         sigi_plan: tier,
       },
-      subscription_data: {
-        metadata: {
-          supabase_user_id: user.id,
-          sigi_plan: tier,
-        },
-      },
-    });
+    },
+  });
 
-    if (!session.url) {
-      throw new Error("Stripe checkout session did not return a URL.");
-    }
+  if (!session.url) {
+    throw new Error("Stripe checkout session did not return a URL.");
+  }
 
-    return NextResponse.json({ url: session.url, plan: tier });
+  return { url: session.url, plan: tier };
+}
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const plan = searchParams.get("plan") ?? searchParams.get("tier") ?? undefined;
+    const session = await createCheckoutSessionForPlan(plan);
+    return NextResponse.redirect(session.url);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to create checkout session";
+    const status =
+      message === "Invalid plan"
+        ? 400
+        : message === "You must be signed in to upgrade."
+          ? 401
+          : message === "Your account needs an email address before billing can be started."
+            ? 400
+            : 500;
+
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = (await request.json()) as CheckoutRequestBody;
+    const session = await createCheckoutSessionForPlan(body.plan ?? body.tier);
+    return NextResponse.json(session);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to create checkout session";
+    const status =
+      message === "Invalid plan"
+        ? 400
+        : message === "You must be signed in to upgrade."
+          ? 401
+          : message === "Your account needs an email address before billing can be started."
+            ? 400
+            : 500;
+
     console.error("stripe checkout error", error);
     return NextResponse.json(
-      {
-        error: "Unable to create checkout session",
-      },
-      { status: 500 }
+      { error: message },
+      { status }
     );
   }
 }

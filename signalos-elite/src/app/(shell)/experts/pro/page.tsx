@@ -40,13 +40,13 @@ export default async function ExpertsProPage() {
           ))}
         </div>
 
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            href="/experts"
-            className="inline-flex rounded-2xl border border-amber-300/30 bg-amber-400/10 px-5 py-3 text-sm font-bold text-amber-200 transition hover:bg-amber-400/20"
+        <div className="mt-8 flex flex-wrap gap-4">
+          <a
+            href="/api/stripe/checkout?plan=pro"
+            className="rounded-2xl border border-amber-300/30 bg-amber-400/10 px-5 py-3 text-sm font-bold text-amber-200 transition hover:bg-amber-400/20"
           >
             Upgrade to Pro
-          </Link>
+          </a>
 
           <Link
             href="/experts"
