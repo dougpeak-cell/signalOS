@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import AccountMenu from "@/components/navigation/AccountMenu";
 import { MobileHealthyWealthButton } from "@/components/today/HealthyWealthButton";
 
 const MOBILE_PREVIEW_STORAGE_KEY = "signalos-dev-mobile-preview-today";
@@ -20,8 +21,10 @@ const navItems = [
 
 export default function TopNav({
   forceMobilePreview = false,
+  hasAccountSession = false,
 }: {
   forceMobilePreview?: boolean;
+  hasAccountSession?: boolean;
 }) {
   const [contactOpen, setContactOpen] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
@@ -266,6 +269,8 @@ export default function TopNav({
               {isMobilePreviewEnabled ? "Desktop Preview" : "Mobile Preview"}
             </button>
           ) : null}
+
+          <AccountMenu hasAccountSession={hasAccountSession} />
 
           <div className={forceMobilePreview ? "inline-flex min-h-9 items-center rounded-full border border-white/10 bg-white/4 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70" : "hidden sm:hidden"}>
             {activeLabel}

@@ -204,7 +204,7 @@ export default function SigiSettingsForm({ settings }: Props) {
 
   return (
     <div className="grid gap-4">
-      <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(9,14,24,0.98),rgba(5,9,17,0.98))] p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.04),0_18px_42px_rgba(0,0,0,0.24)]">
+      <div id="settings" className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(9,14,24,0.98),rgba(5,9,17,0.98))] p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.04),0_18px_42px_rgba(0,0,0,0.24)]">
         <div className="flex flex-wrap items-center gap-2">
           <div className="rounded-full border border-cyan-400/16 bg-cyan-400/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/88">
             {settings.hostedAiStatus}
@@ -245,7 +245,7 @@ export default function SigiSettingsForm({ settings }: Props) {
         </div>
       </div>
 
-      <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(9,14,24,0.98),rgba(5,9,17,0.98))] p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.04),0_18px_42px_rgba(0,0,0,0.24)]">
+      <div id="billing" className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(9,14,24,0.98),rgba(5,9,17,0.98))] p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.04),0_18px_42px_rgba(0,0,0,0.24)]">
         <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/75">
           Billing
         </div>

@@ -15,7 +15,7 @@ export default async function SigiSettingsPage() {
   const comparisonRows = getSigiComparisonRows();
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-16 pt-2 md:px-6 xl:px-8">
+    <main id="profile" className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-16 pt-2 md:px-6 xl:px-8">
       <PageHeaderBlock
         eyebrow="SigiOS Settings"
         title="Meet the full power of Sigi"

@@ -234,7 +234,7 @@ function ShellLayoutContent({
             ].join(" ")}
           >
             <div className={isTodayShellRoute ? "hidden md:block" : "block"}>
-              <TopNav forceMobilePreview={shouldUseCompactShell} />
+              <TopNav forceMobilePreview={shouldUseCompactShell} hasAccountSession={hasAccountSession} />
             </div>
             {!shouldUseCompactShell ? (
               <div className={isTodayShellRoute ? "hidden md:block" : "block"}>
