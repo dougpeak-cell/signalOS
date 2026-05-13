@@ -97,6 +97,7 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
   const pathname = usePathname();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const { tier, setPlanSummary } = useSigiTier();
+  const [hasClientSession, setHasClientSession] = useState(hasAccountSession);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<"billing" | "logout" | null>(null);
   const [billingError, setBillingError] = useState<string | null>(null);
@@ -110,7 +111,40 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
   }, [pathname]);
 
   useEffect(() => {
-    if (!hasAccountSession) {
+    let cancelled = false;
+
+    const syncSession = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!cancelled) {
+          setHasClientSession(Boolean(session));
+        }
+      } catch {
+        if (!cancelled) {
+          setHasClientSession(hasAccountSession);
+        }
+      }
+    };
+
+    void syncSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setHasClientSession(Boolean(session));
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [hasAccountSession, supabase]);
+
+  useEffect(() => {
+    if (!hasClientSession) {
       setUserState({ userName: "Member", email: null });
       return;
     }
@@ -162,7 +196,7 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
       cancelled = true;
       window.removeEventListener(SIGI_PROFILE_CHANGED_EVENT, syncProfile);
     };
-  }, [hasAccountSession, supabase]);
+  }, [hasClientSession, supabase]);
 
   useEffect(() => {
     if (!open) return;
@@ -188,7 +222,7 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
     };
   }, [open]);
 
-  if (!hasAccountSession) {
+  if (!hasClientSession) {
     return null;
   }
 
