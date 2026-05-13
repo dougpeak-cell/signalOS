@@ -79,14 +79,15 @@ export default function TodayPageShell({
 }: TodayPageShellProps): ReactElement {
 	const catalystItems = [...topSetups, ...emergingSetups];
 	const sigiMovers = [...commandCenterGainers, ...commandCenterLosers];
-	const shouldForceMobileToday = isDevMobilePreview || isLikelyMobileDevice;
+	const shouldUseMobileTodayHome = isDevMobilePreview;
+	const shouldRenderDesktopTodayLayout = !isDevMobilePreview;
 
 	return (
 		<div className="min-h-screen bg-black text-white">
 			<TodayAutoRefresh />
 			<TodayPageQueryTickerSync />
 			<main className={`mx-auto w-full max-w-400 px-3 pb-10 pt-3 sm:px-4 md:pt-4 lg:px-5 xl:px-6 ${todayPageStackClass}`}>
-				<Suspense fallback={<TodayLoadingScreen className={shouldForceMobileToday ? "" : "md:hidden"} fullHeight={false} />}>
+				<Suspense fallback={<TodayLoadingScreen className={shouldUseMobileTodayHome ? "" : "md:hidden"} fullHeight={false} />}>
 					<TodayMobileHomeSlot
 						topSetups={topSetups}
 						preMarketTopSetups={preMarketTopSetups}
@@ -97,11 +98,11 @@ export default function TodayPageShell({
 						highVolumeRows={defaultSetupSession === "pre" ? preMarketRows : regularMostTradedRows}
 						watchlistRows={watchlistMovers}
 						defaultSetupSession={defaultSetupSession}
-						forceVisible={shouldForceMobileToday}
+						forceVisible={shouldUseMobileTodayHome}
 					/>
 				</Suspense>
 
-				<div className={`${shouldForceMobileToday ? "hidden" : "hidden md:block"} space-y-6`}>
+				<div className={`${shouldRenderDesktopTodayLayout ? "space-y-6" : "hidden"}`}>
 					<TodayHeroRow
 						topSetups={topSetups}
 						movers={sigiMovers}
