@@ -86,7 +86,7 @@ export default function TodayPageShell({
 			<TodayAutoRefresh />
 			<TodayPageQueryTickerSync />
 			<main className={`mx-auto w-full max-w-400 px-3 pb-10 pt-3 sm:px-4 md:pt-4 lg:px-5 xl:px-6 ${todayPageStackClass}`}>
-				<Suspense fallback={<TodayLoadingScreen className="md:hidden" fullHeight={false} />}>
+				<Suspense fallback={<TodayLoadingScreen className={shouldForceMobileToday ? "" : "md:hidden"} fullHeight={false} />}>
 					<TodayMobileHomeSlot
 						topSetups={topSetups}
 						preMarketTopSetups={preMarketTopSetups}

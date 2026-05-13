@@ -60,7 +60,7 @@ export default function TodayMobileHomeSlot({
   }, [forceVisible]);
 
   if (!shouldRender) {
-    return <TodayLoadingScreen className="md:hidden" fullHeight={false} />;
+    return <TodayLoadingScreen className={forceVisible ? "" : "md:hidden"} fullHeight={false} />;
   }
 
   return (
