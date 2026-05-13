@@ -1,3 +1,4 @@
+import MobileSigiSplash from "@/components/mobile/MobileSigiSplash";
 import TodayPageShell from "@/components/today/TodayPageShell";
 import { headers } from "next/headers";
 import { getTodayPageData } from "@/lib/today/pageData";
@@ -31,33 +32,36 @@ export default async function TodayPage({
         mobilePreviewValue.some((value) => value === "1" || value === "true")));
 
   return (
-    <TodayPageShell
-      isLikelyMobileDevice={isLikelyMobileDevice}
-      isDevMobilePreview={isDevMobilePreview}
-      defaultSetupSession={todayPageData.defaultSetupSession}
-      topSetups={todayPageData.topSetups}
-      preMarketTopSetups={todayPageData.preMarketTopSetups}
-      preMarketSourceRowCount={todayPageData.preMarketSourceRowCount}
-      preMarketRawCandidateCount={todayPageData.preMarketRawCandidateCount}
-      emergingSetups={todayPageData.emergingSetups}
-      preMarketEmergingSetups={todayPageData.preMarketEmergingSetups}
-      preMarketEmergingCandidateCount={todayPageData.preMarketEmergingCandidateCount}
-      preMarketTopFallbackUsed={todayPageData.preMarketTopFallbackUsed}
-      preMarketEmergingFallbackUsed={todayPageData.preMarketEmergingFallbackUsed}
-      commandCenterGainers={todayPageData.commandCenterGainers}
-      commandCenterLosers={todayPageData.commandCenterLosers}
-      commandCenterEarnings={todayPageData.commandCenterEarnings}
-      commandCenterNews={todayPageData.commandCenterNews}
-      trendingNews={todayPageData.trendingNews}
-      watchlistMovers={todayPageData.watchlistMovers}
-      regularMostTradedRows={todayPageData.regularMostTradedRows}
-      preMarketRows={todayPageData.preMarketRows}
-      sectorHeatmapItems={todayPageData.sectorHeatmapItems}
-      opportunities={todayPageData.opportunities}
-      risks={todayPageData.risks}
-      globalPulseItems={todayPageData.globalPulseItems}
-      featuredMacro={todayPageData.featuredMacro}
-      leadershipWatch={todayPageData.leadershipWatch}
-    />
+    <>
+      <MobileSigiSplash />
+      <TodayPageShell
+        isLikelyMobileDevice={isLikelyMobileDevice}
+        isDevMobilePreview={isDevMobilePreview}
+        defaultSetupSession={todayPageData.defaultSetupSession}
+        topSetups={todayPageData.topSetups}
+        preMarketTopSetups={todayPageData.preMarketTopSetups}
+        preMarketSourceRowCount={todayPageData.preMarketSourceRowCount}
+        preMarketRawCandidateCount={todayPageData.preMarketRawCandidateCount}
+        emergingSetups={todayPageData.emergingSetups}
+        preMarketEmergingSetups={todayPageData.preMarketEmergingSetups}
+        preMarketEmergingCandidateCount={todayPageData.preMarketEmergingCandidateCount}
+        preMarketTopFallbackUsed={todayPageData.preMarketTopFallbackUsed}
+        preMarketEmergingFallbackUsed={todayPageData.preMarketEmergingFallbackUsed}
+        commandCenterGainers={todayPageData.commandCenterGainers}
+        commandCenterLosers={todayPageData.commandCenterLosers}
+        commandCenterEarnings={todayPageData.commandCenterEarnings}
+        commandCenterNews={todayPageData.commandCenterNews}
+        trendingNews={todayPageData.trendingNews}
+        watchlistMovers={todayPageData.watchlistMovers}
+        regularMostTradedRows={todayPageData.regularMostTradedRows}
+        preMarketRows={todayPageData.preMarketRows}
+        sectorHeatmapItems={todayPageData.sectorHeatmapItems}
+        opportunities={todayPageData.opportunities}
+        risks={todayPageData.risks}
+        globalPulseItems={todayPageData.globalPulseItems}
+        featuredMacro={todayPageData.featuredMacro}
+        leadershipWatch={todayPageData.leadershipWatch}
+      />
+    </>
   );
 }
