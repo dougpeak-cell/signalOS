@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SelectedSignalProvider } from "@/components/chart/SelectedSignalContext";
 import MarketPulseStrip from "@/components/market/MarketPulseStrip";
@@ -11,12 +11,41 @@ import MobileBottomNav from "@/components/shell/MobileBottomNav";
 import { ShellMarketContextProvider } from "@/components/shell/ShellMarketContext";
 import MobileSigiSheet from "@/components/shell/MobileSigiSheet";
 import TopNav from "@/components/shell/TopNav";
+import SigiEyeLogo from "@/components/sigi/SigiEyeLogo";
 import SigiMiniPanel from "@/components/sigi/SigiMiniPanel";
 import { SigiPanelProvider } from "@/components/sigi/SigiPanelContext";
 import SigiUpgradeAnalyticsBridge from "@/components/sigi/SigiUpgradeAnalyticsBridge";
 import { useResponsiveMobilePreviewWidth } from "@/components/shell/useResponsiveMobilePreview";
 
 const MOBILE_PREVIEW_STORAGE_KEY = "signalos-dev-mobile-preview-today";
+
+function ShellLoadingFallback() {
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-black text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(8,145,178,0.18),transparent_42%),radial-gradient(circle_at_center,rgba(20,184,166,0.12),transparent_58%)]" />
+      <main className="relative flex min-h-screen items-center justify-center px-6 py-10">
+        <div className="flex w-full max-w-md flex-col items-center justify-center gap-6 text-center">
+          <div className="relative flex items-center justify-center">
+            <div className="absolute h-44 w-44 rounded-full bg-cyan-400/10 blur-3xl" />
+            <SigiEyeLogo className="relative w-36 max-w-full sm:w-44" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.42em] text-cyan-300/78">
+              SIGI
+            </div>
+            <h1 className="text-xl font-semibold tracking-[0.08em] text-white/92 sm:text-2xl">
+              Loading Today
+            </h1>
+            <p className="text-sm text-white/46 sm:text-[15px]">
+              Sigi is scanning the market and building your Today view.
+            </p>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
 
 function ShellLayoutContent({
   children,
@@ -33,6 +62,7 @@ function ShellLayoutContent({
   const router = useRouter();
   const searchParams = useSearchParams();
   const hasSyncedMobilePreviewRef = useRef(false);
+  const [hasCompactMobileShell, setHasCompactMobileShell] = useState(false);
   const hasMobilePreviewParam = searchParams.get("mobilePreview") === "1";
   const isDevMobilePreview =
     process.env.NODE_ENV !== "production" && hasMobilePreviewParam;
@@ -41,6 +71,26 @@ function ShellLayoutContent({
     isDevMobilePreview,
     isDensePreviewRoute ? "dense" : "standard"
   );
+
+  useEffect(() => {
+    const widthQuery = window.matchMedia("(max-width: 767px)");
+    const coarseQuery = window.matchMedia("(hover: none) and (pointer: coarse)");
+
+    const sync = () => {
+      setHasCompactMobileShell(widthQuery.matches || coarseQuery.matches);
+    };
+
+    sync();
+    widthQuery.addEventListener("change", sync);
+    coarseQuery.addEventListener("change", sync);
+
+    return () => {
+      widthQuery.removeEventListener("change", sync);
+      coarseQuery.removeEventListener("change", sync);
+    };
+  }, []);
+
+  const shouldUseCompactShell = isDevMobilePreview || hasCompactMobileShell;
 
   useEffect(() => {
     if (process.env.NODE_ENV === "production") {
@@ -155,9 +205,9 @@ function ShellLayoutContent({
   const isStockChartPage = /^\/stocks\/[^/]+\/chart(?:\/.*)?$/i.test(pathname);
   const isCryptoMode = pathname.startsWith("/crypto");
   const isScreenerRoute = pathname.startsWith("/screener");
-  const shouldShowMobileBottomNav = !isDevMobilePreview || !isStockChartPage;
+  const shouldShowMobileBottomNav = !shouldUseCompactShell || !isStockChartPage;
 
-  const hideShellRightRail = isWorkspaceStockPage || isScreenerRoute;
+  const hideShellRightRail = isWorkspaceStockPage || isScreenerRoute || shouldUseCompactShell;
   const shellMarketContextValue = useMemo(
     () => ({
       hasAccountSession,
@@ -182,9 +232,9 @@ function ShellLayoutContent({
                 : "",
             ].join(" ")}
           >
-            <TopNav forceMobilePreview={isDevMobilePreview} />
-            <MarketPulseStrip />
-            <BreakingNewsTicker mode="market" />
+            <TopNav forceMobilePreview={shouldUseCompactShell} />
+            {!shouldUseCompactShell ? <MarketPulseStrip /> : null}
+            {!shouldUseCompactShell ? <BreakingNewsTicker mode="market" /> : null}
             {isCryptoMode ? (
               <div className="border-b border-cyan-400/20 bg-cyan-400/[0.035] px-6 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200">
                 Crypto Mode · 24/7 market intelligence
@@ -195,25 +245,25 @@ function ShellLayoutContent({
                 <div
                   className={[
                     "flex w-full",
-                    !isDevMobilePreview && !hideShellRightRail ? "md:pr-4 xl:pr-6 2xl:pr-8" : "",
+                    !shouldUseCompactShell && !hideShellRightRail ? "md:pr-4 xl:pr-6 2xl:pr-8" : "",
                   ].join(" ")}
                 >
                   <div className="min-w-0 flex-1">{children}</div>
-                  {!hideShellRightRail && !isDevMobilePreview ? <div className="hidden md:block"><ContextAwareRightRail /></div> : null}
+                  {!hideShellRightRail && !shouldUseCompactShell ? <div className="hidden md:block"><ContextAwareRightRail /></div> : null}
                 </div>
               </div>
             </div>
           </div>
 
-          {process.env.NODE_ENV !== "production" && !isDevMobilePreview ? (
+          {process.env.NODE_ENV !== "production" && !shouldUseCompactShell ? (
             <div className="hidden md:block">
               <MarketDataDebugOverlay />
             </div>
           ) : null}
 
-          {!isDevMobilePreview ? <SigiMiniPanel /> : null}
-          <MobileSigiSheet forceDesktopPreview={isDevMobilePreview} />
-          {shouldShowMobileBottomNav ? <MobileBottomNav forceVisible={isDevMobilePreview} /> : null}
+          {!shouldUseCompactShell ? <SigiMiniPanel /> : null}
+          <MobileSigiSheet forceDesktopPreview={shouldUseCompactShell} />
+          {shouldShowMobileBottomNav ? <MobileBottomNav forceVisible={shouldUseCompactShell} /> : null}
         </ShellMarketContextProvider>
       </SigiPanelProvider>
     </SelectedSignalProvider>
@@ -232,7 +282,7 @@ export default function ShellLayoutClient({
   portfolioTickers: string[];
 }) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<ShellLoadingFallback />}>
       <ShellLayoutContent
         hasAccountSession={hasAccountSession}
         watchlistTickers={watchlistTickers}
