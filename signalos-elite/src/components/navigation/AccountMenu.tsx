@@ -62,6 +62,11 @@ function resolveTierLabel(tier: string): string {
   return "Standard Member";
 }
 
+function getHeaderName(hasClientSession: boolean, userName: string): string {
+  if (!hasClientSession) return "Account";
+  return userName;
+}
+
 function MenuLinkItem({
   href,
   icon,
@@ -222,13 +227,10 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
     };
   }, [open]);
 
-  if (!hasClientSession) {
-    return null;
-  }
-
   const userName = userState.userName.trim() || "Member";
+  const headerName = getHeaderName(hasClientSession, userName);
   const email = userState.email;
-  const initials = getInitials(userName);
+  const initials = getInitials(headerName);
   const tierLabel = resolveTierLabel(tier);
   const isPremium = tier === "smart" || tier === "pro";
 
@@ -301,9 +303,11 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
 
         <div className="hidden text-left md:block">
           <div className="text-sm font-semibold leading-none text-white">
-            {userName}
+            {headerName}
           </div>
-          <div className="mt-1 text-[11px] text-cyan-300/70">{tierLabel}</div>
+          <div className="mt-1 text-[11px] text-cyan-300/70">
+            {hasClientSession ? tierLabel : "Profile, Settings, Billing"}
+          </div>
         </div>
 
         <ChevronDown
@@ -322,17 +326,25 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
 
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-white">
-                  {userName}
+                  {hasClientSession ? userName : "SignalOS Account"}
                 </div>
 
                 {email ? (
                   <div className="mt-1 truncate text-xs text-cyan-200/60">
                     {email}
                   </div>
+                ) : !hasClientSession ? (
+                  <div className="mt-1 truncate text-xs text-cyan-200/60">
+                    Secure access to profile, settings, and billing.
+                  </div>
                 ) : null}
 
                 <div className="mt-2 inline-flex rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-300">
-                  {isPremium ? tierLabel.replace(" Member", "") : "Standard"}
+                  {hasClientSession
+                    ? isPremium
+                      ? tierLabel.replace(" Member", "")
+                      : "Standard"
+                    : "Account"}
                 </div>
               </div>
             </div>
@@ -388,11 +400,17 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
               </div>
 
               <div>
-                <div className="text-sm font-semibold text-red-200">Logout</div>
+                <div className="text-sm font-semibold text-red-200">
+                  {hasClientSession ? "Logout" : "Reset Session"}
+                </div>
                 <div className="mt-1 text-xs text-red-200/60">
                   {busy === "logout"
-                    ? "Signing out securely"
-                    : "Securely sign out of SignalOS"}
+                    ? hasClientSession
+                      ? "Signing out securely"
+                      : "Resetting account state"
+                    : hasClientSession
+                      ? "Securely sign out of SignalOS"
+                      : "Clear local account state and refresh"}
                 </div>
               </div>
             </button>
