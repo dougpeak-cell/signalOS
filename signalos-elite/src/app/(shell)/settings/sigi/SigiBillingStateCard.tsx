@@ -125,14 +125,12 @@ export default function SigiBillingStateCard({ settings }: Props) {
 
           <div className="flex flex-wrap gap-2">
             {settings.currentTier === "free" ? (
-              <button
-                type="button"
-                onClick={() => void startUpgrade("smart")}
-                disabled={!settings.isSignedIn || busyAction !== null}
-                className="rounded-2xl border border-cyan-400/18 bg-cyan-400/8 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/28 hover:bg-cyan-400/12 disabled:cursor-not-allowed disabled:opacity-50"
+              <a
+                href="/api/stripe/checkout?plan=smart"
+                className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-5 py-3 text-sm font-bold text-cyan-200 transition hover:bg-cyan-400/20"
               >
-                {busyAction === "smart" ? "Starting checkout" : primaryUpgradeLabel}
-              </button>
+                {primaryUpgradeLabel}
+              </a>
             ) : null}
 
             {showManageBilling ? (

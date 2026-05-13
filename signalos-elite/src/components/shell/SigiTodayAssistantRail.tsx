@@ -328,7 +328,7 @@ function buildBehavioralUpgradeMoment(args: {
       headline: `You are asking Sigi to make ${focusTicker} actionable`,
       body: `This is the point where a helpful answer should become more personal and more actionable. Sigi Smart adds memory, stronger reasoning, and better context so ${focusTicker} feels less generic and more usable.`,
       badge: "Smart only",
-      primaryHref: "/settings/sigi#smart",
+        primaryHref: SMART_CHECKOUT_HREF,
       primaryLabel: "Become a Smart user",
     };
   }
@@ -549,12 +549,21 @@ function UpgradeCard(props: { title: string; description: string; cta: string; h
       <div className="mt-1 text-xs text-white/56">Most active users upgrade to Smart</div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          href={props.href}
-          className="inline-flex rounded-2xl border border-cyan-400/18 bg-cyan-400/8 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/28 hover:bg-cyan-400/12"
-        >
-          Become a Smart user
-        </Link>
+          {props.href.startsWith("/api/") ? (
+            <a
+              href={props.href}
+              className="inline-flex rounded-2xl border border-cyan-400/18 bg-cyan-400/8 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/28 hover:bg-cyan-400/12"
+            >
+              {props.cta}
+            </a>
+          ) : (
+            <Link
+              href={props.href}
+              className="inline-flex rounded-2xl border border-cyan-400/18 bg-cyan-400/8 px-4 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/28 hover:bg-cyan-400/12"
+            >
+              {props.cta}
+            </Link>
+          )}
 
         <Link
           href="/settings/sigi"
@@ -601,16 +610,25 @@ function InlineUpgradeCard(props: InlineUpgradeCardProps) {
       <div className="mt-3 flex items-center justify-between gap-3">
         <div className="text-sm font-medium text-cyan-300">${plan.priceMonthly}/mo</div>
 
-        <Link
-          href={props.tier === "smart" ? "/settings/sigi#smart" : "/settings/sigi#pro"}
-          onClick={(event) => {
-            event.preventDefault();
-            props.onUpgrade();
-          }}
-          className="rounded-lg bg-cyan-500/20 px-3 py-1 text-xs text-cyan-100 transition hover:bg-cyan-500/30"
-        >
-          {getUpgradeIdentityLabel(props.tier)}
-        </Link>
+          {props.tier === "smart" ? (
+            <a
+              href={SMART_CHECKOUT_HREF}
+              className="rounded-lg bg-cyan-500/20 px-3 py-1 text-xs text-cyan-100 transition hover:bg-cyan-500/30"
+            >
+              {getUpgradeIdentityLabel(props.tier)}
+            </a>
+          ) : (
+            <Link
+              href="/settings/sigi#pro"
+              onClick={(event) => {
+                event.preventDefault();
+                props.onUpgrade();
+              }}
+              className="rounded-lg bg-cyan-500/20 px-3 py-1 text-xs text-cyan-100 transition hover:bg-cyan-500/30"
+            >
+              {getUpgradeIdentityLabel(props.tier)}
+            </Link>
+          )}
       </div>
 
       <div className="mt-2 text-xs text-white/54">Cancel anytime. No commitment.</div>
@@ -827,6 +845,7 @@ const railMutedButtonClass =
 const railAccentButtonClass =
   "rounded-xl border border-cyan-400/16 bg-cyan-400/6 px-3 py-2 text-[11px] font-medium text-cyan-100/88 transition hover:border-cyan-300/28 hover:bg-cyan-400/10 hover:text-cyan-100 disabled:cursor-not-allowed disabled:opacity-45";
 
+const SMART_CHECKOUT_HREF = "/api/stripe/checkout?plan=smart";
 const COMPACT_RAIL_WIDTH = 360;
 const UPGRADE_PROMPT_STATE_KEY = "signalos.sigi.upgrade-prompts.v1";
 const UPGRADE_COOLDOWN_MS = 10 * 60 * 1000;
@@ -1466,7 +1485,7 @@ export default function SigiTodayAssistantRail() {
   const railUpgrade = getRailUpgradeCopy(currentTier);
   const railUpgradeHref =
     !hasSmart(currentTier)
-      ? "/settings/sigi#smart"
+      ? SMART_CHECKOUT_HREF
       : !hasPro(currentTier)
         ? "/settings/sigi#pro"
         : "/settings/sigi#plans";

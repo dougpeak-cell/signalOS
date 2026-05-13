@@ -130,6 +130,13 @@ export default function SigiPlanCards({ cards, currentTier }: Props) {
                   <span className="inline-flex rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/78">
                     Current plan
                   </span>
+                ) : isPaidTier && paidTier === "smart" ? (
+                  <a
+                    href="/api/stripe/checkout?plan=smart"
+                    className="inline-flex w-full justify-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-5 py-3 text-sm font-bold text-cyan-200 transition hover:bg-cyan-400/20"
+                  >
+                    {paidTierIdentityCta}
+                  </a>
                 ) : isPaidTier ? (
                   <button
                     type="button"
