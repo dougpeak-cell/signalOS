@@ -45,6 +45,7 @@ type TodayPageShellProps = Pick<
 	| "leadershipWatch"
 > & {
 	isDevMobilePreview?: boolean;
+	isLikelyMobileDevice?: boolean;
 };
 
 export default function TodayPageShell({
@@ -73,9 +74,11 @@ export default function TodayPageShell({
 	featuredMacro,
 	leadershipWatch,
 	isDevMobilePreview = false,
+	isLikelyMobileDevice = false,
 }: TodayPageShellProps): ReactElement {
 	const catalystItems = [...topSetups, ...emergingSetups];
 	const sigiMovers = [...commandCenterGainers, ...commandCenterLosers];
+	const shouldForceMobileToday = isDevMobilePreview || isLikelyMobileDevice;
 
 	return (
 		<div className="min-h-screen bg-black text-white">
@@ -92,10 +95,10 @@ export default function TodayPageShell({
 					highVolumeRows={defaultSetupSession === "pre" ? preMarketRows : regularMostTradedRows}
 					watchlistRows={watchlistMovers}
 					defaultSetupSession={defaultSetupSession}
-					forceVisible={isDevMobilePreview}
+					forceVisible={shouldForceMobileToday}
 				/>
 
-				<div className={`${isDevMobilePreview ? "hidden" : "hidden md:block"} space-y-6`}>
+				<div className={`${shouldForceMobileToday ? "hidden" : "hidden md:block"} space-y-6`}>
 					<TodayHeroRow
 						topSetups={topSetups}
 						movers={sigiMovers}
