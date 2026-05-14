@@ -1,7 +1,7 @@
 import MobileSigiSplash from "@/components/mobile/MobileSigiSplash";
 import TodayPageShell from "@/components/today/TodayPageShell";
 import { headers } from "next/headers";
-import { getSigiSettingsViewForCurrentUser } from "@/lib/sigi/settings";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTodayPageData } from "@/lib/today/pageData";
 
 export const dynamic = "force-dynamic";
@@ -19,10 +19,27 @@ export default async function TodayPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const todayPageData = await getTodayPageData();
-  const settings = await getSigiSettingsViewForCurrentUser();
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const requestHeaders = await headers();
   const query = (await searchParams) ?? {};
   const mobilePreviewValue = query.mobilePreview;
+  let profile: { subscription_tier: string | null; plan: string | null } | null = null;
+
+  if (user?.id) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("subscription_tier, plan")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    profile = data;
+  }
+
+  const plan = profile?.subscription_tier || profile?.plan || "free";
+  const canUseSigiCommand = plan === "smart" || plan === "pro";
   const isLikelyMobileDevice = isLikelyMobileUserAgent(
     requestHeaders.get("user-agent") ?? ""
   );
@@ -37,7 +54,7 @@ export default async function TodayPage({
     <>
       <MobileSigiSplash />
       <TodayPageShell
-        hasSigiSmart={settings.hasSmartFeatures || settings.hasProFeatures}
+        hasSigiSmart={canUseSigiCommand}
         isLikelyMobileDevice={isLikelyMobileDevice}
         isDevMobilePreview={isDevMobilePreview}
         defaultSetupSession={todayPageData.defaultSetupSession}
