@@ -3,6 +3,7 @@ import StockTradingWorkspace from "@/components/workspace/StockTradingWorkspace"
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
+import { getDevPreviewTier } from "@/lib/sigi/devPreview";
 import { getStockWorkspaceData } from "@/lib/workspace/stockWorkspaceData";
 
 async function createSupabaseServerClient() {
@@ -30,6 +31,7 @@ export default async function StockWorkspacePage({
 }) {
   const { ticker } = await params;
   const supabase = await createSupabaseServerClient();
+  const previewTier = await getDevPreviewTier();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -49,7 +51,8 @@ export default async function StockWorkspacePage({
       "free";
   }
 
-  const canUseTradingWorkspace = plan === "pro";
+  const effectivePlan = previewTier || plan;
+  const canUseTradingWorkspace = effectivePlan === "pro";
 
   if (!canUseTradingWorkspace) {
     redirect("/auth/upgrade?plan=pro&feature=trading-workspace");

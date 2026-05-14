@@ -27,6 +27,12 @@ export default async function ExpertsProPage() {
           institutional ownership context, and the original live Experts workflow.
         </p>
 
+        {process.env.NODE_ENV !== "production" ? (
+          <p className="mt-3 text-sm text-white/50">
+            Local preview: add <span className="font-semibold text-white">?previewPlan=pro</span> to any app URL to edit Pro pages without changing production gating. Use <span className="font-semibold text-white">?previewPlan=off</span> to clear it.
+          </p>
+        ) : null}
+
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {[
             ["Analyst Signals", "Live-ranked calls, target revisions, and sector-weighted conviction."],

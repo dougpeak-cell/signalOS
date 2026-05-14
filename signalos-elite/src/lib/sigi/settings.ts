@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { gate, hasPro, hasSmart, normalizeSigiTier, type SigiTier } from "@/lib/sigi/gates";
 import { decrypt, encrypt, isEncryptionReady } from "@/lib/security/encryption";
+import { getDevPreviewTier } from "@/lib/sigi/devPreview";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getNextSigiTier,
@@ -255,11 +256,12 @@ function getBillingUI(profile: StoredProfileRow | null): BillingUI | null {
 function toViewModel(
   row: StoredSigiSettingsRow | null,
   profile: StoredProfileRow | null,
-  userId: string | null
+  userId: string | null,
+  currentTierOverride?: SigiTier | null
 ): SigiUserSettingsView {
   const encryptionReady = isEncryptionReady();
   const isSignedIn = Boolean(userId);
-  const currentTier = resolveCurrentTier(profile, row);
+  const currentTier = currentTierOverride ?? resolveCurrentTier(profile, row);
   const paidAccessEnabled = hasSmart(currentTier);
   const hostedConfig = buildEnvConfig();
   const hostedAiAvailable = hostedConfig != null;
@@ -318,25 +320,29 @@ function toViewModel(
 
 export async function getSigiSettingsViewForCurrentUser(): Promise<SigiUserSettingsView> {
   const auth = await getAuthContext();
+  const previewTier = await getDevPreviewTier();
+
   if (!auth.userId) {
-    return toViewModel(null, null, null);
+    return toViewModel(null, null, null, previewTier);
   }
 
   const [row, profile] = await Promise.all([
     getUserSettingsRow(auth.userId),
     getUserProfileRowCached(auth.userId),
   ]);
-  return toViewModel(row, profile, auth.userId);
+  return toViewModel(row, profile, auth.userId, previewTier);
 }
 
 export async function getResolvedSigiModelConfigForCurrentUser(): Promise<SigiResolvedModelConfig | null> {
   const auth = await getAuthContext();
+  const previewTier = await getDevPreviewTier();
+
   if (auth.userId) {
     const [row, profile] = await Promise.all([
       getUserSettingsRow(auth.userId),
       getUserProfileRowCached(auth.userId),
     ]);
-    const currentTier = resolveCurrentTier(profile, row);
+    const currentTier = previewTier ?? resolveCurrentTier(profile, row);
     const useBYOK = shouldUseCustomProvider(currentTier, row, profile);
     const encryptedApiKey = profile?.sigi_provider_api_key_encrypted ?? row?.encrypted_api_key;
     if (useBYOK && encryptedApiKey) {

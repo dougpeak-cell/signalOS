@@ -1,6 +1,7 @@
 import MobileSigiSplash from "@/components/mobile/MobileSigiSplash";
 import TodayPageShell from "@/components/today/TodayPageShell";
 import { headers } from "next/headers";
+import { getDevPreviewTier } from "@/lib/sigi/devPreview";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTodayPageData } from "@/lib/today/pageData";
 
@@ -26,6 +27,7 @@ export default async function TodayPage({
   const requestHeaders = await headers();
   const query = (await searchParams) ?? {};
   const mobilePreviewValue = query.mobilePreview;
+  const previewTier = await getDevPreviewTier();
   let profile: { subscription_tier: string | null; plan: string | null } | null = null;
 
   if (user?.id) {
@@ -38,7 +40,7 @@ export default async function TodayPage({
     profile = data;
   }
 
-  const plan = profile?.subscription_tier || profile?.plan || "free";
+  const plan = previewTier || profile?.subscription_tier || profile?.plan || "free";
   const canUseSigiCommand = plan === "smart" || plan === "pro";
   const isLikelyMobileDevice = isLikelyMobileUserAgent(
     requestHeaders.get("user-agent") ?? ""

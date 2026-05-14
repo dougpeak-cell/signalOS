@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import ScreenerFilterBar from "@/components/screener/ScreenerFilterBar";
 import ScreenerResultsClient from "@/components/screener/ScreenerResultsClient";
 import LockedScreenerExperience from "@/components/upgrade/LockedScreenerExperience";
+import { getDevPreviewTier } from "@/lib/sigi/devPreview";
 import { buildMasterScoreRow } from "@/lib/analysis/buildMasterScoreRow";
 import { buildExecutionModel } from "@/lib/engines/executionModel";
 import { buildTargetEngine } from "@/lib/engines/targetEngine";
@@ -606,6 +607,7 @@ export default async function ScreenerPage({
   searchParams,
 }: ScreenerPageProps) {
   const supabase = await createSupabaseServerClient();
+  const previewTier = await getDevPreviewTier();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -621,9 +623,8 @@ export default async function ScreenerPage({
     profile = (data as ScreenerProfile | null) ?? null;
   }
 
-  const isPro =
-    profile?.subscription_tier === "pro" ||
-    profile?.plan === "pro";
+  const effectivePlan = previewTier || profile?.subscription_tier || profile?.plan || "free";
+  const isPro = effectivePlan === "pro";
 
   const params = (await searchParams) ?? {};
   const rawQ = (params.q ?? "").trim();
