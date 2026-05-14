@@ -1,25 +1,53 @@
 import Stripe from "stripe";
 
-function requireEnv(name: string): string {
-  const value = process.env[name]?.trim();
-  if (!value) {
-    throw new Error(`${name} is not configured.`);
+function requireEnv(...names: string[]): string {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) {
+      return value;
+    }
   }
 
-  return value;
+  throw new Error(`${names.join(" or ")} is not configured.`);
 }
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim() || "sk_test_placeholder";
+function getSiteUrl(): string {
+  const explicitUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (explicitUrl) {
+    return explicitUrl.replace(/\/$/, "");
+  }
 
-export const stripe = new Stripe(stripeSecretKey, {
-  // Keep this pinned to the version your Stripe account/sdk expects.
-  appInfo: {
-    name: "SignalOS Elite",
-  },
-});
+  const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (productionHost) {
+    return `https://${productionHost.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+  }
+
+  const deploymentHost = process.env.VERCEL_URL?.trim();
+  if (deploymentHost) {
+    return `https://${deploymentHost.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+  }
+
+  return "http://localhost:3000";
+}
+
+function buildAppUrl(path: string): string {
+  return new URL(path, `${getSiteUrl()}/`).toString();
+}
+
+let stripeServer: Stripe | null = null;
 
 export function getStripeServer(): Stripe {
-  return stripe;
+  if (stripeServer) {
+    return stripeServer;
+  }
+
+  stripeServer = new Stripe(requireEnv("STRIPE_SECRET_KEY"), {
+    appInfo: {
+      name: "SignalOS Elite",
+    },
+  });
+
+  return stripeServer;
 }
 
 export function getStripeWebhookSecret(): string {
@@ -27,13 +55,13 @@ export function getStripeWebhookSecret(): string {
 }
 
 export function getStripePortalReturnUrl(): string {
-  return requireEnv("STRIPE_PORTAL_RETURN_URL");
+  return process.env.STRIPE_PORTAL_RETURN_URL?.trim() || buildAppUrl("/settings/sigi");
 }
 
 export function getStripeCheckoutSuccessUrl(): string {
-  return requireEnv("STRIPE_CHECKOUT_SUCCESS_URL");
+  return process.env.STRIPE_CHECKOUT_SUCCESS_URL?.trim() || buildAppUrl("/settings/sigi?checkout=success");
 }
 
 export function getStripeCheckoutCancelUrl(): string {
-  return requireEnv("STRIPE_CHECKOUT_CANCEL_URL");
+  return process.env.STRIPE_CHECKOUT_CANCEL_URL?.trim() || buildAppUrl("/settings/sigi?checkout=cancelled");
 }

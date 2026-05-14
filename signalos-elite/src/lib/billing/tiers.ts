@@ -24,8 +24,8 @@ export function getStripePriceIdForTier(tier: PaidSigiTier): string {
   if (!priceId?.trim()) {
     throw new Error(
       tier === "pro"
-        ? "NEXT_PUBLIC_STRIPE_PRO_PRICE_ID is not configured."
-        : "NEXT_PUBLIC_STRIPE_SMART_PRICE_ID is not configured."
+        ? "STRIPE_PRO_PRICE_ID or NEXT_PUBLIC_STRIPE_PRO_PRICE_ID is not configured."
+        : "STRIPE_SMART_PRICE_ID or NEXT_PUBLIC_STRIPE_SMART_PRICE_ID is not configured."
     );
   }
 

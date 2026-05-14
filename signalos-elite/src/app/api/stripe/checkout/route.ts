@@ -4,7 +4,7 @@ import { coercePaidSigiTier } from "@/lib/billing/tiers";
 import {
   getStripeCheckoutCancelUrl,
   getStripeCheckoutSuccessUrl,
-  stripe,
+  getStripeServer,
 } from "@/lib/stripe/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -29,6 +29,7 @@ async function persistStripeCustomerId(userId: string, customerId: string) {
 }
 
 async function findStripeCustomerIdByEmail(email: string): Promise<string | null> {
+  const stripe = getStripeServer();
   const customers = await stripe.customers.list({ email, limit: 10 });
   const match = customers.data.find((customer) => customer.email?.toLowerCase() === email.toLowerCase());
   return match?.id ?? null;
@@ -48,6 +49,7 @@ async function getOrCreateStripeCustomerId(args: {
     return existingByEmail;
   }
 
+  const stripe = getStripeServer();
   const customer = await stripe.customers.create({
     email,
     metadata: { supabase_user_id: userId },
@@ -58,6 +60,7 @@ async function getOrCreateStripeCustomerId(args: {
 }
 
 async function createCheckoutSessionForPlan(planValue: string | undefined): Promise<CheckoutSessionResult> {
+  const stripe = getStripeServer();
   const tier = coercePaidSigiTier(planValue);
   if (!tier) {
     throw new Error("Invalid plan");

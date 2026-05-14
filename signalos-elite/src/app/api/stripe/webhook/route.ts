@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { priceIdToTier } from "@/lib/billing/tiers";
-import { stripe, getStripeWebhookSecret } from "@/lib/stripe/server";
+import { getStripeServer, getStripeWebhookSecret } from "@/lib/stripe/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -114,6 +114,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 }
 
 export async function POST(request: Request) {
+  const stripe = getStripeServer();
   const signature = request.headers.get("stripe-signature");
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
