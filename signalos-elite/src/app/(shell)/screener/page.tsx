@@ -33,6 +33,9 @@ type ScreenerPageProps = {
     view?: string;
     source?: string;
     sort?: string;
+    mobilePreview?: string;
+    previewPlan?: string;
+    preview?: string;
   }>;
 };
 
@@ -216,6 +219,30 @@ function cleanSort(value: string | undefined): SortKey {
 
 function normalizeSearchValue(value?: string | null) {
   return (value ?? "").trim().toLowerCase();
+}
+
+function buildScreenerPreviewHref(
+  params: Awaited<ScreenerPageProps["searchParams"]>,
+  nextPreview: "locked" | "live"
+) {
+  const nextParams = new URLSearchParams();
+
+  for (const [key, rawValue] of Object.entries(params ?? {})) {
+    if (key === "preview") {
+      continue;
+    }
+
+    if (typeof rawValue === "string" && rawValue.trim()) {
+      nextParams.set(key, rawValue);
+    }
+  }
+
+  if (nextPreview === "locked") {
+    nextParams.set("preview", "locked");
+  }
+
+  const query = nextParams.toString();
+  return query ? `/screener?${query}` : "/screener";
 }
 
 function rowMatchesSearch(row: SignalRow, rawQuery: string) {
@@ -608,6 +635,10 @@ export default async function ScreenerPage({
 }: ScreenerPageProps) {
   const supabase = await createSupabaseServerClient();
   const previewTier = await getDevPreviewTier();
+  const params = (await searchParams) ?? {};
+  const previewMode = (params.preview ?? "").trim().toLowerCase();
+  const shouldForceLockedPreview =
+    process.env.NODE_ENV !== "production" && previewMode === "locked";
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -624,14 +655,15 @@ export default async function ScreenerPage({
   }
 
   const effectivePlan = previewTier || profile?.subscription_tier || profile?.plan || "free";
-  const isPro = effectivePlan === "pro";
+  const isPro = effectivePlan === "pro" && !shouldForceLockedPreview;
 
-  const params = (await searchParams) ?? {};
   const rawQ = (params.q ?? "").trim();
   const q = rawQ.toLowerCase();
   const effectiveSectorParam = (params.sector ?? params.theme ?? "").trim();
   const sector = effectiveSectorParam.toLowerCase();
   const sort = cleanSort(params.sort);
+  const lockedPreviewHref = buildScreenerPreviewHref(params, "locked");
+  const livePreviewHref = buildScreenerPreviewHref(params, "live");
 
   const hasActiveQuery = Boolean(q);
   const hasActiveSector = Boolean(sector && sector !== "all");
@@ -1022,6 +1054,34 @@ export default async function ScreenerPage({
                   Portfolio
                 </Link>
               </div>
+
+              {process.env.NODE_ENV !== "production" ? (
+                <div className="mt-4 inline-flex flex-wrap items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/8 px-2 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/85">
+                  <span className="px-2 text-emerald-200/70">Screener Preview</span>
+                  <Link
+                    href={livePreviewHref}
+                    className={[
+                      "rounded-full border px-3 py-1.5 transition",
+                      !shouldForceLockedPreview
+                        ? "border-emerald-300/45 bg-emerald-400/18 text-white"
+                        : "border-white/10 bg-white/5 text-white/70 hover:border-emerald-300/35 hover:bg-emerald-400/12 hover:text-white",
+                    ].join(" ")}
+                  >
+                    Live
+                  </Link>
+                  <Link
+                    href={lockedPreviewHref}
+                    className={[
+                      "rounded-full border px-3 py-1.5 transition",
+                      shouldForceLockedPreview
+                        ? "border-emerald-300/45 bg-emerald-400/18 text-white"
+                        : "border-white/10 bg-white/5 text-white/70 hover:border-emerald-300/35 hover:bg-emerald-400/12 hover:text-white",
+                    ].join(" ")}
+                  >
+                    Locked
+                  </Link>
+                </div>
+              ) : null}
             </div>
           </div>
 
