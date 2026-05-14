@@ -32,15 +32,9 @@ export default function SigiSettingsForm({ settings }: Props) {
   const [isPending, setIsPending] = useState(false);
   const [isDisabling, setIsDisabling] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
-  const [isOpeningBilling, setIsOpeningBilling] = useState(false);
   const [isStartingProUpgrade, setIsStartingProUpgrade] = useState(false);
   const disabled = !settings.canManage || isPending;
   const byokPlanEligible = settings.hasSmartFeatures;
-  const currentTierLabel =
-    settings.currentTier.charAt(0).toUpperCase() + settings.currentTier.slice(1);
-  const providerStatusLabel = enabled
-    ? `Using your provider: ${model}`
-    : `Using Sigi AI (${currentTierLabel})`;
 
   useEffect(() => {
     setTestResult(null);
@@ -178,110 +172,14 @@ export default function SigiSettingsForm({ settings }: Props) {
     }
   }
 
-  async function openBillingPortal() {
-    setIsOpeningBilling(true);
-    setBillingError(null);
-
-    try {
-      const res = await fetch("/api/stripe/portal", {
-        method: "POST",
-      });
-
-      const data = (await res.json()) as { error?: string; url?: string };
-
-      if (!res.ok) {
-        throw new Error(data.error || "Unable to open billing portal");
-      }
-
-      if (!data.url) {
-        throw new Error("Unable to open billing portal");
-      }
-
-      window.location.href = data.url;
-    } catch (error) {
-      setBillingError(error instanceof Error ? error.message : "Unable to open billing portal");
-    } finally {
-      setIsOpeningBilling(false);
-    }
-  }
-
   return (
     <div className="grid gap-4">
-      <div id="settings" className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(9,14,24,0.98),rgba(5,9,17,0.98))] p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.04),0_18px_42px_rgba(0,0,0,0.24)]">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="rounded-full border border-cyan-400/16 bg-cyan-400/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/88">
-            {settings.hostedAiStatus}
-          </div>
-          <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/65">
-            {providerStatusLabel}
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <div className="rounded-3xl border border-white/8 bg-black/20 p-4">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/75">
-              AI status
-            </div>
-            <div className="mt-2 text-2xl font-semibold text-white">
-              {settings.hostedAiStatus}
-            </div>
-            <p className="mt-2 text-sm leading-6 text-white/62">
-              {settings.hostedAiSubtext}
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-white/8 bg-black/20 p-4">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/75">
-              Advanced Settings
-            </div>
-            <div className="mt-3 grid gap-2 text-sm text-white/68">
-              <div>
-                {byokPlanEligible
-                  ? "Use your own provider (optional)."
-                  : "Custom provider access is available on Smart and Pro."}
-              </div>
-              <div>Server timeout stays capped at 15 seconds.</div>
-              <div>Allowed models: {settings.allowedModels.join(", ")}.</div>
-              <div>Per-user request cap: {settings.requestLimitPerMinute} per minute.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="billing" className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(9,14,24,0.98),rgba(5,9,17,0.98))] p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.04),0_18px_42px_rgba(0,0,0,0.24)]">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/75">
-          Billing
-        </div>
-        <div className="mt-2 text-2xl font-semibold text-white">Manage your Sigi plan</div>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-white/68">
-          Upgrade, downgrade, or manage your subscription securely through our billing partner.
-          You can update your payment method, view invoices, or cancel anytime.
-        </p>
-
-        <div className="mt-5 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => void openBillingPortal()}
-            disabled={!settings.isSignedIn || isOpeningBilling}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/82 transition hover:border-white/18 hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isOpeningBilling ? "Opening billing" : "Manage billing"}
-          </button>
-        </div>
-
-        <div className="mt-3 text-xs text-white/50">Powered by Stripe. Secure and encrypted.</div>
-        <div className="mt-1 text-sm text-white/62">Changes take effect immediately. No hidden fees.</div>
-      </div>
+      <div id="settings" className="hidden" />
+      <div id="billing" className="hidden" />
 
       {billingError ? (
         <div className="rounded-3xl border border-rose-400/18 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
           {billingError}
-        </div>
-      ) : null}
-
-      {settings.message ? (
-        <div className="rounded-3xl border border-amber-300/18 bg-amber-300/8 px-4 py-3 text-sm text-amber-50/88">
-          {settings.message}
         </div>
       ) : null}
 
