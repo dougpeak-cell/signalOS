@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type NewsImageProps = {
   src?: string | null;
@@ -11,6 +11,8 @@ type NewsImageProps = {
   className?: string;
   fallbackClassName?: string;
   unavailableBehavior?: "fallback" | "collapse";
+  onImageLoad?: (event: React.SyntheticEvent<HTMLImageElement>) => void;
+  onImageError?: () => void;
 };
 
 function NewsImageFallback({
@@ -91,8 +93,14 @@ export default function NewsImage({
   className = "",
   fallbackClassName = "",
   unavailableBehavior = "fallback",
+  onImageLoad,
+  onImageError,
 }: NewsImageProps) {
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
 
   const imageTitle = title ?? alt ?? "Market news image";
   const heightClass = variant === "banner" ? "h-[130px] md:h-[180px]" : "h-[90px]";
@@ -114,7 +122,11 @@ export default function NewsImage({
         src={src}
         alt={imageTitle}
         loading="lazy"
-        onError={() => setFailed(true)}
+        onLoad={onImageLoad}
+        onError={() => {
+          setFailed(true);
+          onImageError?.();
+        }}
         className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
       />
       <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/25 to-transparent" />

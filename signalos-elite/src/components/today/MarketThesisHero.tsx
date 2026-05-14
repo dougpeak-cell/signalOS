@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactElement } from "react";
+import { useEffect, useMemo, useState, type ReactElement, type SyntheticEvent } from "react";
 import Link from "next/link";
 import NewsImage from "@/components/news/NewsImage";
 import { renderTickerParagraphs } from "@/components/sigi/renderTickerText";
@@ -8,6 +8,17 @@ import HealthyWealthButton from "@/components/today/HealthyWealthButton";
 import { SectionHeader } from "@/components/today/SectionHeader";
 import { getSigiBackgroundStyle } from "@/lib/sigiBackgrounds";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
+
+type HeroCandidate = {
+  headline: string;
+  url: string | null;
+  image: string | null;
+  summary: string | null;
+  whyItMatters: string | null;
+  ticker: string | null;
+};
+
+const MIN_BANNER_IMAGE_ASPECT_RATIO = 1.2;
 
 function toTitleCase(value?: string | null) {
   const normalized = String(value ?? "").trim();
@@ -22,20 +33,82 @@ function toTitleCase(value?: string | null) {
 
 export default function MarketThesisHero(): ReactElement {
   const { effectiveTicker, heroStory, stockContext } = useTodayHeroContext();
-  const displayTicker = effectiveTicker ?? heroStory?.ticker?.trim() ?? null;
+
+  const heroCandidates = useMemo<HeroCandidate[]>(() => {
+    const items = heroStory?.items ?? [];
+    const primaryHeadline = heroStory?.headline?.trim() ?? "";
+    const matchingItem = items.find((item) => item.headline?.trim() === primaryHeadline) ?? null;
+    const dedupe = new Set<string>();
+    const candidates: HeroCandidate[] = [];
+
+    const pushCandidate = (candidate: HeroCandidate | null) => {
+      if (!candidate?.headline || !candidate.image) {
+        return;
+      }
+
+      const key = [candidate.headline, candidate.url ?? "", candidate.image].join("|");
+      if (dedupe.has(key)) {
+        return;
+      }
+
+      dedupe.add(key);
+      candidates.push(candidate);
+    };
+
+    pushCandidate(
+      heroStory
+        ? {
+            headline: primaryHeadline,
+            url: matchingItem?.url?.trim() || items[0]?.url?.trim() || null,
+            image: heroStory.image?.trim() || matchingItem?.imageUrl?.trim() || null,
+            summary: heroStory.summary?.trim() || matchingItem?.summary?.trim() || null,
+            whyItMatters: heroStory.whyItMatters?.trim() || matchingItem?.whyItMatters?.trim() || null,
+            ticker: heroStory.ticker?.trim() || matchingItem?.tickers?.[0]?.trim() || null,
+          }
+        : null
+    );
+
+    items.forEach((item) => {
+      pushCandidate({
+        headline: item.headline?.trim() || "",
+        url: item.url?.trim() || null,
+        image: item.imageUrl?.trim() || null,
+        summary: item.summary?.trim() || null,
+        whyItMatters: item.whyItMatters?.trim() || null,
+        ticker: item.tickers?.[0]?.trim() || null,
+      });
+    });
+
+    return candidates;
+  }, [heroStory]);
+
+  const [heroCandidateIndex, setHeroCandidateIndex] = useState(0);
+
+  useEffect(() => {
+    setHeroCandidateIndex(0);
+  }, [heroCandidates]);
+
+  const selectedCandidate = heroCandidates[heroCandidateIndex] ?? null;
+  const hasAnotherCandidate = heroCandidateIndex < heroCandidates.length - 1;
+
+  const displayTicker =
+    effectiveTicker ??
+    selectedCandidate?.ticker?.trim() ??
+    heroStory?.ticker?.trim() ??
+    null;
 
   const title =
+    selectedCandidate?.headline ||
     heroStory?.headline?.trim() ||
     (displayTicker
       ? `Stock Market Today: ${displayTicker} leads the active tape`
       : "Stock Market Today: Active tape overview");
-  const href =
-    heroStory?.items
-      ?.find((item) => item.headline?.trim() === title)
-      ?.url?.trim() || heroStory?.items?.[0]?.url?.trim() || null;
-  const heroImage = heroStory?.image?.trim() || null;
+  const href = selectedCandidate?.url || null;
+  const heroImage = selectedCandidate?.image || heroStory?.image?.trim() || null;
 
   const narrative =
+    selectedCandidate?.whyItMatters ||
+    selectedCandidate?.summary ||
     heroStory?.whyItMatters?.trim() ||
     heroStory?.summary?.trim() ||
     stockContext?.notes?.trim() ||
@@ -59,6 +132,32 @@ export default function MarketThesisHero(): ReactElement {
     stockContext?.catalyst?.trim() ||
     heroStory?.stage?.replace(/-/g, " ") ||
     "Active tape";
+
+  const advanceHeroCandidate = () => {
+    if (!hasAnotherCandidate) {
+      return;
+    }
+
+    setHeroCandidateIndex((current) =>
+      current < heroCandidates.length - 1 ? current + 1 : current
+    );
+  };
+
+  const handleHeroImageLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+    if (!hasAnotherCandidate) {
+      return;
+    }
+
+    const image = event.currentTarget;
+    if (!image.naturalWidth || !image.naturalHeight) {
+      return;
+    }
+
+    const aspectRatio = image.naturalWidth / image.naturalHeight;
+    if (aspectRatio < MIN_BANNER_IMAGE_ASPECT_RATIO) {
+      advanceHeroCandidate();
+    }
+  };
 
   return (
     <section
@@ -127,6 +226,8 @@ export default function MarketThesisHero(): ReactElement {
           title={title}
           variant="banner"
           unavailableBehavior="collapse"
+          onImageLoad={handleHeroImageLoad}
+          onImageError={advanceHeroCandidate}
           className="mt-6 aspect-video h-full overflow-hidden rounded-3xl border border-white/10 bg-black/25"
         />
       </div>
