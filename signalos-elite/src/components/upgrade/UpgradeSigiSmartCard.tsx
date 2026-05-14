@@ -40,6 +40,10 @@ export default function UpgradeSigiSmartCard() {
 				Upgrade to Smart
 			</Link>
 
+			<p className="mt-3 text-center text-xs text-slate-400">
+				Cancel subscription anytime.
+			</p>
+
 			<p className="mt-4 text-center text-xs text-slate-500">
 				Free users can still view Today market highlights.
 			</p>

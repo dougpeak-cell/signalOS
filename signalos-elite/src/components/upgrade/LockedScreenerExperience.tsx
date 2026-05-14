@@ -115,6 +115,10 @@ export default function LockedScreenerExperience() {
             >
               Upgrade to Pro
             </Link>
+
+            <p className="mt-3 text-xs text-slate-400">
+              Cancel subscription anytime.
+            </p>
           </div>
         </div>
       </div>

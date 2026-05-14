@@ -68,6 +68,10 @@ export default function LockedLiveChart({ ticker }: { ticker: string }) {
           >
             Upgrade to Smart
           </Link>
+
+          <p className="mt-3 text-xs text-slate-400">
+            Cancel subscription anytime.
+          </p>
         </div>
       </div>
 
