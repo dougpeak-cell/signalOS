@@ -53,7 +53,7 @@ export default async function ExpertsSmartPage() {
             </Link>
           ) : (
             <a
-              href="/api/stripe/checkout?plan=smart"
+              href="/auth/upgrade?plan=smart"
               className="rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-5 py-3 text-sm font-bold text-cyan-200 transition hover:bg-cyan-400/20"
             >
               Upgrade to Smart

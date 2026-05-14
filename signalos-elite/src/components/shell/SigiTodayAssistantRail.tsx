@@ -845,7 +845,7 @@ const railMutedButtonClass =
 const railAccentButtonClass =
   "rounded-xl border border-cyan-400/16 bg-cyan-400/6 px-3 py-2 text-[11px] font-medium text-cyan-100/88 transition hover:border-cyan-300/28 hover:bg-cyan-400/10 hover:text-cyan-100 disabled:cursor-not-allowed disabled:opacity-45";
 
-const SMART_CHECKOUT_HREF = "/api/stripe/checkout?plan=smart";
+const SMART_CHECKOUT_HREF = "/auth/upgrade?plan=smart";
 const COMPACT_RAIL_WIDTH = 360;
 const UPGRADE_PROMPT_STATE_KEY = "signalos.sigi.upgrade-prompts.v1";
 const UPGRADE_COOLDOWN_MS = 10 * 60 * 1000;

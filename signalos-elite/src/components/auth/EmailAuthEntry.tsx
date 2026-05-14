@@ -18,6 +18,7 @@ type EmailAuthEntryProps = {
 };
 
 type EmailAuthShellProps = EmailAuthEntryProps & {
+  callbackError: string | null;
   email: string;
   error: string | null;
   isCheckingSession: boolean;
@@ -26,6 +27,16 @@ type EmailAuthShellProps = EmailAuthEntryProps & {
   onEmailChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 };
+
+type UpgradePlan = "smart" | "pro";
+
+function getSafePlan(value: string | null): UpgradePlan | null {
+  return value === "smart" || value === "pro" ? value : null;
+}
+
+function getCheckoutPathForPlan(plan: UpgradePlan): string {
+  return `/api/stripe/checkout?plan=${plan}`;
+}
 
 function getSafeNextPath(value: string | null, fallbackPath: string): string {
   if (!value || !value.startsWith("/")) {
@@ -39,7 +50,12 @@ function EmailAuthContent(props: EmailAuthEntryProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const nextPath = getSafeNextPath(searchParams.get("next"), props.defaultNextPath);
+  const plan = getSafePlan(searchParams.get("plan"));
+  const callbackError = searchParams.get("error_description") ?? searchParams.get("error");
+  const nextPath = getSafeNextPath(
+    searchParams.get("next"),
+    plan ? getCheckoutPathForPlan(plan) : props.defaultNextPath
+  );
 
   const [email, setEmail] = useState("");
   const [isCheckingSession, setIsCheckingSession] = useState(true);
@@ -114,6 +130,7 @@ function EmailAuthContent(props: EmailAuthEntryProps) {
   return (
     <EmailAuthShell
       {...props}
+      callbackError={callbackError}
       email={email}
       error={error}
       isCheckingSession={isCheckingSession}
@@ -133,6 +150,7 @@ function EmailAuthShell({
   footerMessage,
   backHref,
   backLabel,
+  callbackError,
   email,
   error,
   isCheckingSession,
@@ -193,9 +211,9 @@ function EmailAuthShell({
           </div>
         ) : null}
 
-        {error ? (
+        {error ?? callbackError ? (
           <div className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
-            {error}
+            {error ?? callbackError}
           </div>
         ) : null}
 
@@ -220,6 +238,7 @@ export default function EmailAuthEntry(props: EmailAuthEntryProps) {
       fallback={
         <EmailAuthShell
           {...props}
+          callbackError={null}
           email=""
           error={null}
           isCheckingSession={true}

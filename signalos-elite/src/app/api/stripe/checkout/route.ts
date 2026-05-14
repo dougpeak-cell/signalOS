@@ -25,8 +25,11 @@ type CheckoutSessionResult = {
 
 function buildUpgradeAuthRedirect(request: Request, planValue: string | undefined): NextResponse {
   const authUrl = new URL("/auth/upgrade", request.url);
+  const tier = coercePaidSigiTier(planValue);
 
-  if (planValue) {
+  if (tier) {
+    authUrl.searchParams.set("plan", tier);
+  } else if (planValue) {
     authUrl.searchParams.set("next", `/api/stripe/checkout?plan=${encodeURIComponent(planValue)}`);
   }
 
