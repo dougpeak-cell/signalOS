@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import PortfolioSigiStrip from "@/components/portfolio/PortfolioSigiStrip";
 import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
+import { useSigiTier } from "@/hooks/useSigiTier";
 import { buildExecutionModel } from "@/lib/engines/executionModel";
 import { buildTargetEngine } from "@/lib/engines/targetEngine";
 import { getQuotePrice } from "@/lib/market/quotes";
@@ -816,6 +817,7 @@ function PortfolioPageSkeleton() {
 function PortfolioPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { tier } = useSigiTier();
   const { quoteMap, ensureQuotes, refreshQuotesNow } = useLiveMarket();
   const { setActiveTicker } = useSelectedTicker();
   const [holdings, setHoldings] = useState<Holding[]>(INITIAL_HOLDINGS);
@@ -827,18 +829,26 @@ function PortfolioPageContent() {
   const [actionState, setActionState] = useState<ActionState>(null);
   const [editingTicker, setEditingTicker] = useState<string | null>(null);
   const [showAddStock, setShowAddStock] = useState(false);
+  const plan = tier ?? "free";
+  const canUseDetail = plan === "smart" || plan === "pro";
   const shouldForceQuickView = searchParams.get("quickView") === "1";
-  const portfolioMode =
+  const requestedMode =
     searchParams.get("mode") === "detail"
       ? "detail"
       : searchParams.get("mode") === "quick" || shouldForceQuickView
         ? "quick"
         : "detail";
+  const safeMode = canUseDetail ? requestedMode : "quick";
+  const isQuick = safeMode === "quick";
+  const isDetail = safeMode === "detail";
 
   function buildPortfolioHref(pathname: string) {
-    return searchParams.get("mobilePreview") === "1"
-      ? `${pathname}?mobilePreview=1`
-      : pathname;
+    if (searchParams.get("mobilePreview") !== "1") {
+      return pathname;
+    }
+
+    const separator = pathname.includes("?") ? "&" : "?";
+    return `${pathname}${separator}mobilePreview=1`;
   }
 
   function buildPortfolioModeHref(mode: "detail" | "quick") {
@@ -1467,21 +1477,30 @@ function PortfolioPageContent() {
                   </p>
 
                   <div className="mt-8 flex flex-wrap gap-3">
-                    <Link
-                      href={buildPortfolioModeHref("detail")}
-                      className={`inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-bold transition ${
-                        portfolioMode === "detail"
-                          ? "border-white/18 bg-white/10 text-white"
-                          : "border-white/10 bg-white/4 text-white/72 hover:border-white/18 hover:bg-white/8 hover:text-white"
-                      }`}
-                    >
-                      Detail View
-                    </Link>
+                    {canUseDetail ? (
+                      <Link
+                        href={buildPortfolioModeHref("detail")}
+                        className={`inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-bold transition ${
+                          isDetail
+                            ? "border-white/18 bg-white/10 text-white"
+                            : "border-white/10 bg-white/4 text-white/72 hover:border-white/18 hover:bg-white/8 hover:text-white"
+                        }`}
+                      >
+                        Detail View
+                      </Link>
+                    ) : (
+                      <Link
+                        href={buildPortfolioHref("/auth/upgrade?plan=smart&feature=portfolio-detail")}
+                        className="inline-flex items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-400/18"
+                      >
+                        Detail View
+                      </Link>
+                    )}
 
                     <Link
                       href={buildPortfolioModeHref("quick")}
                       className={`inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-bold transition ${
-                        portfolioMode === "quick"
+                        isQuick
                           ? "border-cyan-400/30 bg-cyan-400/14 text-cyan-100"
                           : "border-cyan-400/20 bg-cyan-400/10 text-cyan-200 hover:border-cyan-300/38 hover:bg-cyan-400/16 hover:text-cyan-100"
                       }`}
@@ -1532,7 +1551,7 @@ function PortfolioPageContent() {
                 </div>
               </section>
 
-              {portfolioMode === "quick" ? (
+              {isQuick ? (
                 <section className="mb-3 rounded-[28px] border border-cyan-400/14 bg-[linear-gradient(180deg,rgba(7,17,31,0.96),rgba(3,9,18,0.98))] p-4 shadow-[0_0_35px_rgba(34,211,238,0.08)] sm:p-5">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
@@ -1545,19 +1564,40 @@ function PortfolioPageContent() {
                       <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
                         A narrow portfolio mode that keeps each holding focused on ticker, live value, and core conviction.
                       </p>
+
+                      {!canUseDetail ? (
+                        <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4">
+                          <p className="text-sm font-bold text-cyan-100">
+                            Smart unlocks Detail View.
+                          </p>
+                          <p className="mt-1 text-sm text-slate-300">
+                            Upgrade to Smart or Pro to see full conviction scoring, position notes,
+                            setup quality, risk alerts, and Sigi analysis for each stock.
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
 
-                    <Link
-                      href={buildPortfolioModeHref("detail")}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-white/12 bg-white/6 px-4 text-sm font-medium text-white/85 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
-                    >
-                      Return Detail
-                    </Link>
+                    {canUseDetail ? (
+                      <Link
+                        href={buildPortfolioModeHref("detail")}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-white/12 bg-white/6 px-4 text-sm font-medium text-white/85 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+                      >
+                        Return Detail
+                      </Link>
+                    ) : (
+                      <Link
+                        href={buildPortfolioHref("/auth/upgrade?plan=smart&feature=portfolio-detail")}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-400/18"
+                      >
+                        Unlock Detail
+                      </Link>
+                    )}
                   </div>
                 </section>
               ) : null}
 
-              {portfolioMode === "detail" ? (
+              {isDetail ? (
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
                 <div className="relative overflow-hidden rounded-[22px] p-px shadow-[0_0_0_1px_rgba(34,211,238,0.05),0_12px_28px_rgba(0,0,0,0.20)] sm:shadow-[0_0_0_1px_rgba(34,211,238,0.08),0_18px_50px_rgba(0,0,0,0.28)]">
                   <div className="pointer-events-none absolute inset-0 rounded-[22px] bg-[linear-gradient(135deg,rgba(34,211,238,0.32),rgba(56,189,248,0.10),rgba(16,185,129,0.16),rgba(250,204,21,0.10))] sm:bg-[linear-gradient(135deg,rgba(34,211,238,0.52),rgba(56,189,248,0.16),rgba(16,185,129,0.28),rgba(250,204,21,0.18))]" />
@@ -1679,7 +1719,7 @@ function PortfolioPageContent() {
                 </div>
               ) : null}
 
-              {portfolioMode === "detail" ? (
+              {isDetail ? (
                 <PortfolioSigiStrip
                   holdings={portfolioStripHoldings}
                   totalPnl={totalPnL}
@@ -1841,9 +1881,9 @@ function PortfolioPageContent() {
                       actionState?.mode === "edit" ? editingPosition ?? holding : holding;
 
                     const isActiveAction = actionTicker === holding.ticker && actionState;
-                    const quickViewOpen = portfolioMode === "detail";
+                    const quickViewOpen = isDetail;
 
-                    if (portfolioMode === "quick") {
+                    if (isQuick) {
                       return (
                         <QuickPortfolioRowItem
                           key={holding.ticker}

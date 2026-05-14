@@ -7,6 +7,7 @@ import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import { useShellMarketContext } from "@/components/shell/ShellMarketContext";
 import TickerActionButton from "@/components/sigi/TickerActionButton";
 import SignalOSScoreV2 from "@/components/stocks/SignalOSScoreV2";
+import { useSigiTier } from "@/hooks/useSigiTier";
 import { useSyncedWatchlist } from "@/hooks/useSyncedWatchlist";
 import { buildMasterScoreRow } from "@/lib/analysis/buildMasterScoreRow";
 import { buildSparklinePath, getSeriesTrend } from "@/lib/market/sparkline";
@@ -905,6 +906,7 @@ function QuickWatchlistRowItem({ row, stockHref }: { row: WatchlistRow; stockHre
 
 export default function WatchlistPage() {
   const searchParams = useSearchParams();
+  const { tier } = useSigiTier();
   const { watchlistTickers: accountWatchlistTickers } = useShellMarketContext();
   const {
     quoteMap,
@@ -921,13 +923,18 @@ export default function WatchlistPage() {
     {}
   );
   const [hasLoadedWatchlist, setHasLoadedWatchlist] = useState(false);
+  const plan = tier ?? "free";
+  const canUseDetail = plan === "smart" || plan === "pro";
   const shouldForceQuickView = searchParams.get("quickView") === "1";
-  const watchlistMode =
+  const requestedMode =
     searchParams.get("mode") === "detail"
       ? "detail"
       : searchParams.get("mode") === "quick" || shouldForceQuickView
         ? "quick"
         : "detail";
+  const safeMode = canUseDetail ? requestedMode : "quick";
+  const isQuick = safeMode === "quick";
+  const isDetail = safeMode === "detail";
 
   function buildPreviewHref(href: string) {
     if (searchParams.get("mobilePreview") !== "1") {
@@ -1282,21 +1289,30 @@ export default function WatchlistPage() {
           <div className="overflow-hidden rounded-[28px] border border-cyan-400/14 bg-linear-to-b from-cyan-500/5 via-black to-black shadow-[0_0_0_1px_rgba(34,211,238,0.04)]">
             <div className="border-b border-white/6 px-4 py-4 md:px-5">
               <div className="flex flex-wrap items-center gap-3">
-                <Link
-                  href={buildWatchlistModeHref("detail")}
-                  className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition ${
-                    watchlistMode === "detail"
-                      ? "border-white/18 bg-white/10 text-white"
-                      : "border-white/10 bg-white/4 text-white/72 hover:border-white/18 hover:bg-white/8 hover:text-white"
-                  }`}
-                >
-                  Detail View
-                </Link>
+                {canUseDetail ? (
+                  <Link
+                    href={buildWatchlistModeHref("detail")}
+                    className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition ${
+                      isDetail
+                        ? "border-white/18 bg-white/10 text-white"
+                        : "border-white/10 bg-white/4 text-white/72 hover:border-white/18 hover:bg-white/8 hover:text-white"
+                    }`}
+                  >
+                    Detail View
+                  </Link>
+                ) : (
+                  <Link
+                    href={buildPreviewHref("/auth/upgrade?plan=smart&feature=watchlist-detail")}
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-400/18"
+                  >
+                    Detail View
+                  </Link>
+                )}
 
                 <Link
                   href={buildWatchlistModeHref("quick")}
                   className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition ${
-                    watchlistMode === "quick"
+                    isQuick
                       ? "border-cyan-400/30 bg-cyan-400/14 text-cyan-100"
                       : "border-cyan-400/20 bg-cyan-400/10 text-cyan-200 hover:border-cyan-300/38 hover:bg-cyan-400/16 hover:text-cyan-100"
                   }`}
@@ -1332,7 +1348,7 @@ export default function WatchlistPage() {
             </div>
 
             <div className="px-4 py-4 md:px-5 md:py-5">
-              {watchlistMode === "quick" ? (
+              {isQuick ? (
                 <section className="mb-5 rounded-3xl border border-cyan-400/15 bg-[linear-gradient(180deg,rgba(7,17,31,0.96),rgba(3,9,18,0.98))] p-4 shadow-[0_0_35px_rgba(34,211,238,0.08)] md:p-5">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
@@ -1345,14 +1361,35 @@ export default function WatchlistPage() {
                       <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
                         A narrow watchlist mode that keeps only ticker, live price, and daily percent change visible.
                       </p>
+
+                      {!canUseDetail ? (
+                        <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4">
+                          <p className="text-sm font-bold text-cyan-100">
+                            Smart unlocks Detail View.
+                          </p>
+                          <p className="mt-1 text-sm text-slate-300">
+                            Upgrade to Smart or Pro to see full conviction scoring, position notes,
+                            setup quality, risk alerts, and Sigi analysis for each stock.
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
 
-                    <Link
-                      href={buildWatchlistModeHref("detail")}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-white/12 bg-white/6 px-4 text-sm font-medium text-white/85 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
-                    >
-                      Return Detail
-                    </Link>
+                    {canUseDetail ? (
+                      <Link
+                        href={buildWatchlistModeHref("detail")}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-white/12 bg-white/6 px-4 text-sm font-medium text-white/85 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+                      >
+                        Return Detail
+                      </Link>
+                    ) : (
+                      <Link
+                        href={buildPreviewHref("/auth/upgrade?plan=smart&feature=watchlist-detail")}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-400/18"
+                      >
+                        Unlock Detail
+                      </Link>
+                    )}
                   </div>
                 </section>
               ) : (
@@ -1419,7 +1456,7 @@ export default function WatchlistPage() {
                 </section>
               )}
 
-              {watchlistMode === "detail" ? (
+              {isDetail ? (
               <div className="mt-5 grid gap-3 md:grid-cols-3">
                 <div className="rounded-2xl border border-cyan-400/14 bg-cyan-400/5 px-4 py-3">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
@@ -1450,9 +1487,9 @@ export default function WatchlistPage() {
               </div>
               ) : null}
 
-              <div className={`mt-5 rounded-3xl border border-white/6 bg-white/2 ${watchlistMode === "quick" ? "p-2 md:p-3" : "p-3 md:p-4"}`}>
+              <div className={`mt-5 rounded-3xl border border-white/6 bg-white/2 ${isQuick ? "p-2 md:p-3" : "p-3 md:p-4"}`}>
                 <div className="flex flex-col gap-3">
-                  {watchlistMode === "detail" ? (
+                  {isDetail ? (
                   <div className="hidden xl:grid xl:grid-cols-[220px_120px_140px_1fr_140px] xl:items-center xl:gap-4 xl:px-4">
                     <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/32">
                       Ticker
@@ -1479,7 +1516,7 @@ export default function WatchlistPage() {
                       const trend = getSeriesTrend(history);
 
                       return (
-                        watchlistMode === "quick" ? (
+                        isQuick ? (
                           <QuickWatchlistRowItem
                             key={symbol}
                             stockHref={buildPreviewHref(`/stocks/${symbol}`)}
