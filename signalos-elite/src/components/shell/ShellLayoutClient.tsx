@@ -15,9 +15,26 @@ import SigiEyeLogo from "@/components/sigi/SigiEyeLogo";
 import SigiMiniPanel from "@/components/sigi/SigiMiniPanel";
 import { SigiPanelProvider } from "@/components/sigi/SigiPanelContext";
 import SigiUpgradeAnalyticsBridge from "@/components/sigi/SigiUpgradeAnalyticsBridge";
+import type { SigiTier } from "@/lib/sigi/gates";
 import { useResponsiveMobilePreviewWidth } from "@/components/shell/useResponsiveMobilePreview";
 
 const MOBILE_PREVIEW_STORAGE_KEY = "signalos-dev-mobile-preview-today";
+const DEV_PREVIEW_PLAN_COOKIE = "signalos-dev-preview-plan";
+
+function readPreviewPlanCookie(): SigiTier | null {
+  if (typeof document === "undefined") return null;
+
+  const cookieValue = document.cookie
+    .split("; ")
+    .find((part) => part.startsWith(`${DEV_PREVIEW_PLAN_COOKIE}=`))
+    ?.split("=")[1];
+
+  if (cookieValue === "free" || cookieValue === "smart" || cookieValue === "pro") {
+    return cookieValue;
+  }
+
+  return null;
+}
 
 function ShellLoadingFallback() {
   return (
@@ -63,6 +80,7 @@ function ShellLayoutContent({
   const searchParams = useSearchParams();
   const hasSyncedMobilePreviewRef = useRef(false);
   const [hasCompactMobileShell, setHasCompactMobileShell] = useState(false);
+  const [previewPlan, setPreviewPlan] = useState<SigiTier | null>(null);
   const hasMobilePreviewParam = searchParams.get("mobilePreview") === "1";
   const isDevMobilePreview =
     process.env.NODE_ENV !== "production" && hasMobilePreviewParam;
@@ -91,6 +109,26 @@ function ShellLayoutContent({
   }, []);
 
   const shouldUseCompactShell = isDevMobilePreview || hasCompactMobileShell;
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") {
+      return;
+    }
+
+    const nextPreviewPlan = searchParams.get("previewPlan");
+
+    if (nextPreviewPlan === "free" || nextPreviewPlan === "smart" || nextPreviewPlan === "pro") {
+      setPreviewPlan(nextPreviewPlan);
+      return;
+    }
+
+    if (nextPreviewPlan === "off" || nextPreviewPlan === "clear") {
+      setPreviewPlan(null);
+      return;
+    }
+
+    setPreviewPlan(readPreviewPlanCookie());
+  }, [pathname, searchParams]);
 
   useEffect(() => {
     if (process.env.NODE_ENV === "production") {
@@ -233,6 +271,11 @@ function ShellLayoutContent({
                 : "",
             ].join(" ")}
           >
+            {previewPlan ? (
+              <div className="pointer-events-none fixed bottom-4 left-4 z-70 rounded-full border border-emerald-400/25 bg-emerald-500/12 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.16)] backdrop-blur-xl md:bottom-5 md:left-5">
+                Preview plan: {previewPlan}
+              </div>
+            ) : null}
             <div className={isTodayShellRoute ? "hidden md:block" : "block"}>
               <TopNav forceMobilePreview={shouldUseCompactShell} hasAccountSession={hasAccountSession} />
             </div>
