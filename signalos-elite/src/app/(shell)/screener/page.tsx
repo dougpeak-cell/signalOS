@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import ScreenerFilterBar from "@/components/screener/ScreenerFilterBar";
 import ScreenerResultsClient from "@/components/screener/ScreenerResultsClient";
+import LockedScreenerExperience from "@/components/upgrade/LockedScreenerExperience";
 import { buildMasterScoreRow } from "@/lib/analysis/buildMasterScoreRow";
 import { buildExecutionModel } from "@/lib/engines/executionModel";
 import { buildTargetEngine } from "@/lib/engines/targetEngine";
@@ -99,6 +100,11 @@ type MassiveTickerDetail = {
 };
 
 type SortKey = "conviction" | "upside" | "price" | "ticker";
+
+type ScreenerProfile = {
+  subscription_tier?: string | null;
+  plan?: string | null;
+};
 
 type ScreenerRow = {
   ticker: string;
@@ -599,6 +605,26 @@ function MetricCard({
 export default async function ScreenerPage({
   searchParams,
 }: ScreenerPageProps) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let profile: ScreenerProfile | null = null;
+
+  if (user?.id) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("subscription_tier, plan")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    profile = (data as ScreenerProfile | null) ?? null;
+  }
+
+  const isPro =
+    profile?.subscription_tier === "pro" ||
+    profile?.plan === "pro";
+
   const params = (await searchParams) ?? {};
   const rawQ = (params.q ?? "").trim();
   const q = rawQ.toLowerCase();
@@ -938,7 +964,7 @@ export default async function ScreenerPage({
           : "border-cyan-400/20 shadow-[0_0_40px_rgba(34,211,238,0.06)]";
 
   return (
-    <div className="space-y-8">
+      <div className="space-y-8">
       <section className="overflow-hidden rounded-[28px] border border-cyan-500/20 bg-[radial-gradient(circle_at_top_left,rgba(0,255,200,0.12),transparent_28%),linear-gradient(180deg,rgba(6,10,22,0.96),rgba(3,6,18,0.98))] shadow-[0_0_0_1px_rgba(0,255,200,0.04),0_0_32px_rgba(0,255,200,0.08)]">
         <div className="space-y-8 px-6 py-7 sm:px-8 sm:py-8">
           <div
@@ -1003,18 +1029,25 @@ export default async function ScreenerPage({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-1">
             <MetricCard
               label="Results"
-              value={String(allStocks.length)}
-              sublabel="Matching signals"
+              value={isPro ? String(allStocks.length) : "Pro"}
+              sublabel={isPro ? "Matching signals" : "Required for live rankings"}
             />
           </div>
 
-          <ScreenerFilterBar
-            initialQuery={rawQ}
-            initialSector={hasActiveSector ? effectiveSectorParam : ""}
-          />
+          {isPro ? (
+            <ScreenerFilterBar
+              initialQuery={rawQ}
+              initialSector={hasActiveSector ? effectiveSectorParam : ""}
+            />
+          ) : (
+            <div className="rounded-2xl border border-cyan-400/18 bg-cyan-400/6 px-4 py-4 text-sm text-cyan-50 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.04)]">
+              Upgrade to Pro to unlock live filters, conviction rankings, and full screener interactions.
+            </div>
+          )}
         </div>
       </section>
 
+      {isPro ? (
       <section className="mt-6 rounded-3xl border border-cyan-400/16 bg-[linear-gradient(180deg,rgba(7,12,24,0.92),rgba(4,8,18,0.98))] p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.04),0_24px_60px_rgba(0,0,0,0.28)]">
         <div className="mb-5 flex items-center justify-between gap-4">
           <div>
@@ -1085,6 +1118,9 @@ export default async function ScreenerPage({
 
         <ScreenerResultsClient stocks={sortedStocks} />
       </section>
+      ) : (
+        <LockedScreenerExperience />
+      )}
     </div>
   );
 }
