@@ -115,10 +115,17 @@ function ShellLayoutContent({
       return;
     }
 
+    if (nextPlan === "off") {
+      document.cookie = `${DEV_PREVIEW_PLAN_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+    } else {
+      document.cookie = `${DEV_PREVIEW_PLAN_COOKIE}=${nextPlan}; path=/; SameSite=Lax`;
+    }
+
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set("previewPlan", nextPlan);
     const nextQuery = nextParams.toString();
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+    router.refresh();
   }
 
   useEffect(() => {
@@ -283,7 +290,7 @@ function ShellLayoutContent({
             ].join(" ")}
           >
             {process.env.NODE_ENV !== "production" ? (
-              <div className="fixed bottom-4 left-4 z-70 flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-400/25 bg-black/70 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.16)] backdrop-blur-xl md:bottom-5 md:left-5">
+              <div className="pointer-events-auto fixed bottom-4 left-4 z-120 flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-400/25 bg-black/70 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.16)] backdrop-blur-xl md:bottom-5 md:left-5">
                 <span className="text-emerald-200/85">
                   Preview: {previewPlan ?? "off"}
                 </span>

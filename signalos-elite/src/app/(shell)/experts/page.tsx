@@ -11,11 +11,19 @@ import {
   TrendingUp,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import ExpertsProDashboard from "@/components/experts/ExpertsProDashboard";
+import { getSigiSettingsViewForCurrentUser } from "@/lib/sigi/settings";
 
 const PRO_DASHBOARD_HREF = "/experts/pro";
 const SMART_PREVIEW_HREF = "/experts/smart";
 
-export default function ExpertsPage() {
+export default async function ExpertsPage() {
+  const settings = await getSigiSettingsViewForCurrentUser();
+
+  if (settings.hasProFeatures) {
+    return <ExpertsProDashboard />;
+  }
+
   return (
     <main className="min-h-screen bg-[#020817] px-4 py-8 text-white md:px-8">
       <div className="mx-auto max-w-7xl space-y-8">
