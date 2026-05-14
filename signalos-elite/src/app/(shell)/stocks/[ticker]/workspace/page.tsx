@@ -1,6 +1,27 @@
 import { ClientProvider } from "@/components/ClientProvider";
 import StockTradingWorkspace from "@/components/workspace/StockTradingWorkspace";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { createServerClient } from "@supabase/ssr";
 import { getStockWorkspaceData } from "@/lib/workspace/stockWorkspaceData";
+
+async function createSupabaseServerClient() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set() {},
+        remove() {},
+      },
+    }
+  );
+}
 
 export default async function StockWorkspacePage({
   params,
@@ -8,6 +29,32 @@ export default async function StockWorkspacePage({
   params: Promise<{ ticker: string }>;
 }) {
   const { ticker } = await params;
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let plan = "free";
+
+  if (user?.id) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("subscription_tier, plan")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    plan =
+      (typeof data?.subscription_tier === "string" && data.subscription_tier) ||
+      (typeof data?.plan === "string" && data.plan) ||
+      "free";
+  }
+
+  const canUseTradingWorkspace = plan === "pro";
+
+  if (!canUseTradingWorkspace) {
+    redirect("/auth/upgrade?plan=pro&feature=trading-workspace");
+  }
+
   const data = await getStockWorkspaceData(ticker);
 
   return (

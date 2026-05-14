@@ -5,10 +5,12 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
+import LockedLiveChart from "@/components/upgrade/LockedLiveChart";
 import TickerLogo from "@/components/stocks/TickerLogo";
 import TechnicalIntelligenceCard from "@/components/stocks/TechnicalIntelligenceCard";
 import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
 import { useOptionalMarketData } from "@/components/providers/MarketDataProvider";
+import { useSigiTier } from "@/hooks/useSigiTier";
 import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
 import { computeMasterSignalScore } from "@/lib/analysis/masterSignalScore";
 import { buildExecutionModel } from "@/lib/engines/executionModel";
@@ -185,6 +187,7 @@ export default function StockDetailLivePanels({
   fallbackMessage,
 }: StockDetailLivePanelsProps) {
   const searchParams = useSearchParams();
+  const { tier } = useSigiTier();
   const liveMarket = useOptionalLiveMarket();
   const marketData = useOptionalMarketData();
   const liveTicker = row.ticker.toUpperCase();
@@ -205,6 +208,9 @@ export default function StockDetailLivePanels({
   );
   const { watchlistTickerSet } = useStoredWatchlistTickers();
   const isTracked = watchlistTickerSet.has(liveTicker);
+  const plan = tier ?? "free";
+  const canUseLiveChart = plan === "smart" || plan === "pro";
+  const canUseTradingWorkspace = plan === "pro";
 
   function buildPreviewHref(href: string) {
     if (searchParams.get("mobilePreview") !== "1") {
@@ -216,6 +222,11 @@ export default function StockDetailLivePanels({
     const nextQuery = nextParams.toString();
     return nextQuery ? `${href}?${nextQuery}` : href;
   }
+
+  const workspaceHref = buildPreviewHref(`/stocks/${liveTicker.toLowerCase()}/workspace`);
+  const workspaceUpgradeHref = buildPreviewHref(
+    "/auth/upgrade?plan=pro&feature=trading-workspace"
+  );
 
   useEffect(() => {
     if (!liveMarket) return;
@@ -541,10 +552,16 @@ export default function StockDetailLivePanels({
                   </>
                 ) : null}
                 <Link
-                  href={buildPreviewHref(`/stocks/${liveTicker.toLowerCase()}/workspace`)}
-                  className="inline-flex min-h-11 items-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/15 hover:text-white"
+                  href={canUseTradingWorkspace ? workspaceHref : workspaceUpgradeHref}
+                  className={`inline-flex min-h-11 items-center rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                    canUseTradingWorkspace
+                      ? "border-cyan-400/25 bg-cyan-400/10 text-cyan-200 hover:border-cyan-300/40 hover:bg-cyan-400/15 hover:text-white"
+                      : "border-amber-400/40 bg-amber-400/10 text-amber-100 hover:border-amber-300/50 hover:bg-amber-400/16 hover:text-white"
+                  }`}
                 >
-                  Open Trading Workspace
+                  {canUseTradingWorkspace
+                    ? "Open Trading Workspace"
+                    : "Upgrade to Pro Trading Workspace"}
                 </Link>
                 <a
                   href="#live-day-chart"
@@ -626,19 +643,27 @@ export default function StockDetailLivePanels({
               Detail Page Embedded
             </div>
             <Link
-              href={buildPreviewHref(`/stocks/${liveTicker.toLowerCase()}/workspace`)}
-              className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-cyan-200 transition hover:border-cyan-300/35 hover:bg-cyan-400/16 hover:text-white"
+              href={canUseTradingWorkspace ? workspaceHref : workspaceUpgradeHref}
+              className={`rounded-full border px-3 py-1.5 transition ${
+                canUseTradingWorkspace
+                  ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-200 hover:border-cyan-300/35 hover:bg-cyan-400/16 hover:text-white"
+                  : "border-amber-400/35 bg-amber-400/10 text-amber-100 hover:border-amber-300/50 hover:bg-amber-400/16 hover:text-white"
+              }`}
             >
-              Open Trading Workspace
+              {canUseTradingWorkspace
+                ? "Open Trading Workspace"
+                : "Upgrade to Pro Trading Workspace"}
             </Link>
-            <Link
-              href={buildPreviewHref(`/stocks/${liveTicker}/workspace`)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white/75 transition hover:border-cyan-300/30 hover:bg-cyan-400/10 hover:text-white"
-            >
-              Open Workspace ↗
-            </Link>
+            {canUseTradingWorkspace ? (
+              <Link
+                href={buildPreviewHref(`/stocks/${liveTicker}/workspace`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white/75 transition hover:border-cyan-300/30 hover:bg-cyan-400/10 hover:text-white"
+              >
+                Open Workspace ↗
+              </Link>
+            ) : null}
           </div>
         </div>
 
@@ -675,28 +700,38 @@ export default function StockDetailLivePanels({
             </Link>
 
             <Link
-              href={buildPreviewHref(`/stocks/${liveTicker.toLowerCase()}/workspace`)}
-              className="inline-flex min-h-11 items-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/15 hover:text-white"
+              href={canUseTradingWorkspace ? workspaceHref : workspaceUpgradeHref}
+              className={`inline-flex min-h-11 items-center rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                canUseTradingWorkspace
+                  ? "border-cyan-400/25 bg-cyan-400/10 text-cyan-200 hover:border-cyan-300/40 hover:bg-cyan-400/15 hover:text-white"
+                  : "border-amber-400/40 bg-amber-400/10 text-amber-100 hover:border-amber-300/50 hover:bg-amber-400/16 hover:text-white"
+              }`}
             >
-              Workspace
+              {canUseTradingWorkspace ? "Workspace" : "Upgrade to Pro Trading Workspace"}
             </Link>
           </div>
         </details>
 
         <div className="mt-5 overflow-hidden rounded-3xl border border-cyan-400/15 bg-[radial-gradient(circle_at_top,rgba(0,160,255,0.08),transparent_28%),linear-gradient(180deg,rgba(5,10,20,0.96),rgba(0,0,0,0.98))] shadow-[0_0_45px_rgba(0,145,255,0.08)]">
-          <div className="min-h-220 w-full p-0.5 md:p-3">
-            <div className="h-full overflow-hidden rounded-[20px] border border-cyan-400/12 bg-black/70 shadow-[inset_0_0_25px_rgba(0,140,255,0.08)]">
-              <div className="min-h-220 w-full">
-                <LiveStockChart
-                  ticker={liveTicker}
-                  expanded
-                  showSignalRail={false}
-                  signals={[]}
-                  currentPrice={analysisPrice}
-                />
+          {canUseLiveChart ? (
+            <div className="min-h-220 w-full p-0.5 md:p-3">
+              <div className="h-full overflow-hidden rounded-[20px] border border-cyan-400/12 bg-black/70 shadow-[inset_0_0_25px_rgba(0,140,255,0.08)]">
+                <div className="min-h-220 w-full">
+                  <LiveStockChart
+                    ticker={liveTicker}
+                    expanded
+                    showSignalRail={false}
+                    signals={[]}
+                    currentPrice={analysisPrice}
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-4 md:p-5">
+              <LockedLiveChart ticker={liveTicker} />
+            </div>
+          )}
         </div>
       </section>
 
