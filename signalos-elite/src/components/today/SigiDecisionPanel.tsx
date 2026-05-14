@@ -3,6 +3,7 @@
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import SigiOnboarding from "@/components/sigi/SigiOnboarding";
 import SigiResponseCard, {
@@ -171,16 +172,26 @@ function formatInterestList(interests: string[]) {
 }
 
 export default function SigiDecisionPanel({
+  hasSigiSmart,
   topSetups,
   movers,
   news,
   watchlistRows,
 }: {
+  hasSigiSmart: boolean;
   topSetups: TodaySetupItem[];
   movers: TodayCommandCenterMoverRow[];
   news: TodayCommandCenterNewsRow[];
   watchlistRows: TodayWatchlistMoverRow[];
 }): ReactElement {
+  if (!hasSigiSmart) {
+    return (
+      <section id="sigi-command-panel">
+        <UpgradeSigiSmartCard />
+      </section>
+    );
+  }
+
   const router = useRouter();
   const { effectiveTicker, loadHeroStory, stockContext } = useTodayHeroContext();
   const { activeTicker, setActiveTicker, setSigiAction, sigiActionNonce } = useSelectedTicker();

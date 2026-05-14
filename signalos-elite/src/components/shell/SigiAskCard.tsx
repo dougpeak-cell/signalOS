@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import { renderTickerText } from "@/components/sigi/renderTickerText";
 import SigiResponseCards from "@/components/sigi/SigiResponseCards";
+import { useSigiTier } from "@/hooks/useSigiTier";
 
 type SigiAskCardProps = {
   response?: string | null;
@@ -39,7 +41,13 @@ export default function SigiAskCard({
   onRiskView,
   onWhatChanged,
 }: SigiAskCardProps) {
+  const { tier } = useSigiTier();
   const [value, setValue] = useState("");
+  const hasSigiSmart = tier === "smart" || tier === "pro";
+
+  if (!hasSigiSmart) {
+    return <UpgradeSigiSmartCard />;
+  }
 
   const canSubmit = useMemo(
     () => value.trim().length > 0 && !loading,

@@ -14,6 +14,7 @@ import type {
 } from "@/lib/today/pageData";
 
 type TodayMobileHomeSlotProps = {
+  hasSigiSmart: boolean;
   topSetups: TodaySetupItem[];
   news: TodayCommandCenterNewsRow[];
   opportunities: TodayOpportunityItem[];
@@ -27,6 +28,7 @@ type TodayMobileHomeSlotProps = {
 };
 
 export default function TodayMobileHomeSlot({
+  hasSigiSmart,
   topSetups,
   news,
   opportunities,
@@ -65,6 +67,7 @@ export default function TodayMobileHomeSlot({
 
   return (
     <MobileSigiHome
+      hasSigiSmart={hasSigiSmart}
       topSetups={topSetups}
       preMarketTopSetups={preMarketTopSetups}
       news={news}

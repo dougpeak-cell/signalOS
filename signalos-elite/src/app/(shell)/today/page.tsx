@@ -1,6 +1,7 @@
 import MobileSigiSplash from "@/components/mobile/MobileSigiSplash";
 import TodayPageShell from "@/components/today/TodayPageShell";
 import { headers } from "next/headers";
+import { getSigiSettingsViewForCurrentUser } from "@/lib/sigi/settings";
 import { getTodayPageData } from "@/lib/today/pageData";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,7 @@ export default async function TodayPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const todayPageData = await getTodayPageData();
+  const settings = await getSigiSettingsViewForCurrentUser();
   const requestHeaders = await headers();
   const query = (await searchParams) ?? {};
   const mobilePreviewValue = query.mobilePreview;
@@ -35,6 +37,7 @@ export default async function TodayPage({
     <>
       <MobileSigiSplash />
       <TodayPageShell
+        hasSigiSmart={settings.hasSmartFeatures || settings.hasProFeatures}
         isLikelyMobileDevice={isLikelyMobileDevice}
         isDevMobilePreview={isDevMobilePreview}
         defaultSetupSession={todayPageData.defaultSetupSession}

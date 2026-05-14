@@ -10,6 +10,7 @@ import { openMobileSigiSheet } from "@/components/shell/mobileSigiSheetEvents";
 import { setMobileSigiSheetDefaultContext } from "@/components/shell/mobileSigiSheetEvents";
 import SigiOnboarding from "@/components/sigi/SigiOnboarding";
 import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
+import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import type { SigiTodayContext } from "@/hooks/useSigi";
 import {
   clearSigiProfile,
@@ -35,6 +36,7 @@ import type {
 } from "@/lib/today/pageData";
 
 type MobileSigiHomeProps = {
+  hasSigiSmart: boolean;
   topSetups: TodaySetupItem[];
   preMarketTopSetups: TodaySetupItem[];
   news: TodayCommandCenterNewsRow[];
@@ -110,6 +112,7 @@ function formatCompactNumber(value?: number | null) {
 }
 
 export default function MobileSigiHome({
+  hasSigiSmart,
   topSetups,
   preMarketTopSetups,
   news,
@@ -121,6 +124,14 @@ export default function MobileSigiHome({
   defaultSetupSession,
   forceVisible = false,
 }: MobileSigiHomeProps): ReactElement {
+  if (!hasSigiSmart) {
+    return (
+      <section id="sigi-command-panel" className={forceVisible ? "space-y-4" : "space-y-4 md:hidden"}>
+        <UpgradeSigiSmartCard />
+      </section>
+    );
+  }
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const {

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { openMobileSigiSheet } from "@/components/shell/mobileSigiSheetEvents";
+import { useSigiTier } from "@/hooks/useSigiTier";
 import { renderTickerParagraphs } from "@/components/sigi/renderTickerText";
 import { buildMetricContextAnswer } from "@/lib/sigi/sigiMetricContext";
 import { getSigiProfile } from "@/lib/sigi/sigiProfile";
@@ -58,13 +59,16 @@ export default function StockFundamentalsGrid({
   stockName,
   metrics,
 }: StockFundamentalsGridProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const { tier } = useSigiTier();
   const [sigiRead, setSigiRead] = useState<string | null>(null);
   const [followUps, setFollowUps] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const hasSigiSmart = tier === "smart" || tier === "pro";
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
@@ -149,6 +153,11 @@ export default function StockFundamentalsGrid({
   }
 
   function handleMetricClick(term: string, value?: string | number | null) {
+    if (!hasSigiSmart) {
+      router.push("/auth/upgrade?plan=smart");
+      return;
+    }
+
     const educationPrompt = EDUCATION_PROMPTS[term.trim().toLowerCase()];
     const shouldOpenMobileSheet = isMobilePreview || isMobileViewport;
 
@@ -195,7 +204,9 @@ export default function StockFundamentalsGrid({
       </div>
 
       <div className="mt-4 text-[11px] font-medium uppercase tracking-[0.18em] text-white/35">
-        Tap any metric for SIGI context
+        {hasSigiSmart
+          ? "Tap any metric for SIGI context"
+          : "Upgrade to Smart to unlock SIGI metric context"}
       </div>
 
       {sigiRead ? (

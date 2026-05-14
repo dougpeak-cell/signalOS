@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import { renderTickerParagraphs, renderTickerText } from "@/components/sigi/renderTickerText";
 import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import type { SigiStockContext } from "@/hooks/useSigi";
+import { useSigiTier } from "@/hooks/useSigiTier";
 import { resolveSigiTicker } from "@/lib/sigi/resolveTicker";
 import { getVisibleSigiTextFromPayload } from "@/lib/sigi/responseVisibility";
 import { looksLikeTicker, normalizeTickerInput } from "@/lib/sigi/tickerInput";
@@ -113,11 +115,17 @@ export default function StockAskSigiCard({
   onResolvedTicker,
 }: StockAskSigiCardProps) {
   const router = useRouter();
+  const { tier } = useSigiTier();
   const { setActiveTicker } = useSelectedTicker();
   const [question, setQuestion] = useState("");
   const [response, setResponse] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasSigiSmart = tier === "smart" || tier === "pro";
+
+  if (!hasSigiSmart) {
+    return <UpgradeSigiSmartCard />;
+  }
 
   const prompts = useMemo(
     () => [

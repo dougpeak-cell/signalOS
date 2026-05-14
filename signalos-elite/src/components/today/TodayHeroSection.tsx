@@ -11,11 +11,13 @@ import type {
 } from "@/lib/today/pageData";
 
 export default function TodayHeroSection({
+  hasSigiSmart = false,
   topSetups,
   movers,
   news,
   watchlistRows,
 }: {
+  hasSigiSmart?: boolean;
   topSetups: TodaySetupItem[];
   movers: TodayCommandCenterMoverRow[];
   news: TodayCommandCenterNewsRow[];
@@ -26,6 +28,7 @@ export default function TodayHeroSection({
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.45fr_0.95fr]">
         <MarketThesisHero />
         <SigiDecisionPanel
+          hasSigiSmart={hasSigiSmart}
           topSetups={topSetups}
           movers={movers}
           news={news}

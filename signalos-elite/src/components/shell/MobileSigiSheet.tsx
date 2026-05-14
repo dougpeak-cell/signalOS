@@ -2,7 +2,9 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
+import { useSigiTier } from "@/hooks/useSigiTier";
 import { useShellMarketContext } from "@/components/shell/ShellMarketContext";
 import MobileSignalSheet from "@/components/shell/MobileSignalSheet";
 import SigiOnboarding from "@/components/sigi/SigiOnboarding";
@@ -118,6 +120,7 @@ export default function MobileSigiSheet({
     portfolioTickers: accountPortfolioTickers,
   } = useShellMarketContext();
   const { watchlistTickers: localWatchlistTickers } = useStoredWatchlistTickers();
+  const { tier } = useSigiTier();
   const { sendMessage, loading } = useSigi();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -235,6 +238,7 @@ export default function MobileSigiSheet({
   const shouldShowReadCard = Boolean(
     mobileSigiAnswer && mobileSigiAnswer.question === mobileSigiQuestion
   );
+  const hasSigiSmart = tier === "smart" || tier === "pro";
   const shouldShowReadIntro =
     !showReadFirst || (!shouldShowReadCard && !isMobileSigiAnalyzing && !error);
   const extractedInputTicker = resolveSigiTicker({
@@ -572,6 +576,9 @@ export default function MobileSigiSheet({
       initialFocusRef={inputRef}
       forceVisible={forceDesktopPreview}
     >
+      {!hasSigiSmart ? (
+        <UpgradeSigiSmartCard />
+      ) : (
       <div className="relative min-h-[calc(70vh-11rem)] space-y-3 pb-24">
         {showReadFirst && isMobileSigiAnalyzing && !shouldShowReadCard && !error ? (
           <div className="rounded-2xl border border-cyan-400/18 bg-cyan-400/9 px-4 py-4 text-sm text-cyan-100">
@@ -794,6 +801,7 @@ export default function MobileSigiSheet({
           />
         ) : null}
       </div>
+      )}
     </MobileSignalSheet>
   );
 }
