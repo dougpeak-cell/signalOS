@@ -23,6 +23,16 @@ type CheckoutSessionResult = {
   plan: "smart" | "pro";
 };
 
+function buildUpgradeAuthRedirect(request: Request, planValue: string | undefined): NextResponse {
+  const authUrl = new URL("/auth/upgrade", request.url);
+
+  if (planValue) {
+    authUrl.searchParams.set("next", `/api/stripe/checkout?plan=${encodeURIComponent(planValue)}`);
+  }
+
+  return NextResponse.redirect(authUrl);
+}
+
 async function persistStripeCustomerId(userId: string, customerId: string) {
   const supabase = await createSupabaseServerClient();
   await supabase.from("profiles").update({ stripe_customer_id: customerId }).eq("id", userId);
@@ -124,13 +134,18 @@ async function createCheckoutSessionForPlan(planValue: string | undefined): Prom
 }
 
 export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const plan = searchParams.get("plan") ?? searchParams.get("tier") ?? undefined;
+
   try {
-    const { searchParams } = new URL(request.url);
-    const plan = searchParams.get("plan") ?? searchParams.get("tier") ?? undefined;
     const session = await createCheckoutSessionForPlan(plan);
     return NextResponse.redirect(session.url);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create checkout session";
+    if (message === "You must be signed in to upgrade.") {
+      return buildUpgradeAuthRedirect(request, plan);
+    }
+
     const status =
       message === "Invalid plan"
         ? 400

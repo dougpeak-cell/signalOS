@@ -13,6 +13,7 @@ import {
   ChevronDown,
   CreditCard,
   LogOut,
+  LogIn,
   Settings,
   User,
 } from "lucide-react";
@@ -31,6 +32,14 @@ type UserState = {
   userName: string;
   email: string | null;
 };
+
+function getAuthEntryHref(pathname: string | null): string {
+  if (!pathname) {
+    return "/auth";
+  }
+
+  return `/auth?next=${encodeURIComponent(pathname)}`;
+}
 
 function getNameFromEmail(email: string | null): string {
   if (!email) return "Member";
@@ -233,6 +242,7 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
   const initials = getInitials(headerName);
   const tierLabel = resolveTierLabel(tier);
   const isPremium = tier === "smart" || tier === "pro";
+  const authEntryHref = getAuthEntryHref(pathname);
 
   async function handleLogout() {
     setBusy("logout");
@@ -351,6 +361,16 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
           </div>
 
           <div className="p-2">
+            {!hasClientSession ? (
+              <MenuLinkItem
+                href={authEntryHref}
+                icon={<LogIn size={18} />}
+                label="Sign In / Create Account"
+                sub="Open your SignalOS account and sync profile, settings, and billing"
+                onSelect={() => setOpen(false)}
+              />
+            ) : null}
+
             <MenuLinkItem
               href="/settings/sigi#profile"
               icon={<User size={18} />}
@@ -389,31 +409,27 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
               </div>
             </button>
 
-            <button
-              type="button"
-              onClick={() => void handleLogout()}
-              disabled={busy === "logout"}
-              className="mt-2 flex w-full items-start gap-3 rounded-2xl border border-red-500/10 px-4 py-3 text-left transition-all hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <div className="mt-0.5 text-red-300">
-                <LogOut size={18} />
-              </div>
+            {hasClientSession ? (
+              <button
+                type="button"
+                onClick={() => void handleLogout()}
+                disabled={busy === "logout"}
+                className="mt-2 flex w-full items-start gap-3 rounded-2xl border border-red-500/10 px-4 py-3 text-left transition-all hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <div className="mt-0.5 text-red-300">
+                  <LogOut size={18} />
+                </div>
 
-              <div>
-                <div className="text-sm font-semibold text-red-200">
-                  {hasClientSession ? "Logout" : "Reset Session"}
-                </div>
-                <div className="mt-1 text-xs text-red-200/60">
-                  {busy === "logout"
-                    ? hasClientSession
+                <div>
+                  <div className="text-sm font-semibold text-red-200">Logout</div>
+                  <div className="mt-1 text-xs text-red-200/60">
+                    {busy === "logout"
                       ? "Signing out securely"
-                      : "Resetting account state"
-                    : hasClientSession
-                      ? "Securely sign out of SignalOS"
-                      : "Clear local account state and refresh"}
+                      : "Securely sign out of SignalOS"}
+                  </div>
                 </div>
-              </div>
-            </button>
+              </button>
+            ) : null}
 
             {billingError ? (
               <div className="mt-2 rounded-2xl border border-rose-400/18 bg-rose-400/10 px-3 py-2 text-xs text-rose-100">

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AccountMenu from "@/components/navigation/AccountMenu";
 import { MobileHealthyWealthButton } from "@/components/today/HealthyWealthButton";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const MOBILE_PREVIEW_STORAGE_KEY = "signalos-dev-mobile-preview-today";
 
@@ -19,6 +20,23 @@ const navItems = [
   { href: "/education", label: "Education" },
 ];
 
+function getMobileAuthCtaLabel(pathname: string): string {
+  if (pathname === "/today" || pathname.startsWith("/today/")) {
+    return "Account";
+  }
+
+  if (
+    pathname === "/experts" ||
+    pathname.startsWith("/experts/") ||
+    pathname === "/settings/sigi" ||
+    pathname.startsWith("/settings/sigi/")
+  ) {
+    return "Sign In";
+  }
+
+  return "Account";
+}
+
 export default function TopNav({
   forceMobilePreview = false,
   hasAccountSession = false,
@@ -26,7 +44,9 @@ export default function TopNav({
   forceMobilePreview?: boolean;
   hasAccountSession?: boolean;
 }) {
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [contactOpen, setContactOpen] = useState(false);
+  const [hasClientSession, setHasClientSession] = useState(hasAccountSession);
   const [supportMessage, setSupportMessage] = useState("");
   const [supportUserEmail, setSupportUserEmail] = useState("");
   const [sendingSupport, setSendingSupport] = useState(false);
@@ -38,6 +58,7 @@ export default function TopNav({
   const showMobileHealthyWealth = !forceMobilePreview && pathname === "/today";
   const showDevToggle = process.env.NODE_ENV !== "production" && !isCryptoMode;
   const isMobilePreviewEnabled = searchParams.get("mobilePreview") === "1";
+  const mobileAuthCtaLabel = getMobileAuthCtaLabel(pathname);
   const activeLabel =
     navItems.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
       ?.label ?? (isCryptoMode ? "Crypto" : "Today");
@@ -55,6 +76,39 @@ export default function TopNav({
     setContactOpen(false);
   }, [pathname, searchParams]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const syncSession = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!cancelled) {
+          setHasClientSession(Boolean(session));
+        }
+      } catch {
+        if (!cancelled) {
+          setHasClientSession(hasAccountSession);
+        }
+      }
+    };
+
+    void syncSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setHasClientSession(Boolean(session));
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [hasAccountSession, supabase]);
+
   const supportEmail = "support@sigios.com";
 
   function buildCurrentRoute() {
@@ -63,6 +117,10 @@ export default function TopNav({
     const nextQuery = nextParams.toString();
 
     return nextQuery ? `${pathname}?${nextQuery}` : pathname;
+  }
+
+  function buildAuthHref() {
+    return `/auth?next=${encodeURIComponent(buildCurrentRoute())}`;
   }
 
   function withPreviewParam(href: string) {
@@ -185,6 +243,15 @@ export default function TopNav({
         </div>
 
         <div className="flex items-center gap-2">
+          {!hasClientSession && !forceMobilePreview ? (
+            <Link
+              href={buildAuthHref()}
+              className="hidden min-h-9 items-center rounded-full border border-emerald-300/22 bg-emerald-400/10 px-4 text-sm font-semibold text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.1)] transition hover:border-emerald-300/36 hover:bg-emerald-400/16 sm:inline-flex"
+            >
+              Sign In
+            </Link>
+          ) : null}
+
           {!forceMobilePreview ? (
             <div className="relative hidden sm:block">
               <button
@@ -278,12 +345,23 @@ export default function TopNav({
 
           {!forceMobilePreview ? (
             <div className="sm:hidden">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                {!hasClientSession ? (
+                  <Link
+                    href={buildAuthHref()}
+                    className="inline-flex min-h-9 items-center rounded-full border border-emerald-300/22 bg-emerald-400/10 px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.1)] transition hover:border-emerald-300/36 hover:bg-emerald-400/16"
+                  >
+                    {mobileAuthCtaLabel}
+                  </Link>
+                ) : null}
+
                 {showMobileHealthyWealth ? <MobileHealthyWealthButton /> : null}
 
-                <div className="inline-flex min-h-9 items-center rounded-full border border-white/10 bg-white/4 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
-                  {activeLabel}
-                </div>
+                {!showMobileHealthyWealth ? (
+                  <div className="inline-flex min-h-9 items-center rounded-full border border-white/10 bg-white/4 px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
+                    {activeLabel}
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : null}
