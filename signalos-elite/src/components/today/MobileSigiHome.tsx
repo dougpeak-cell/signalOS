@@ -124,14 +124,6 @@ export default function MobileSigiHome({
   defaultSetupSession,
   forceVisible = false,
 }: MobileSigiHomeProps): ReactElement {
-  if (!hasSigiSmart) {
-    return (
-      <section id="sigi-command-panel" className={forceVisible ? "space-y-4" : "space-y-4 md:hidden"}>
-        <UpgradeSigiSmartCard />
-      </section>
-    );
-  }
-
   const router = useRouter();
   const searchParams = useSearchParams();
   const {
@@ -544,149 +536,155 @@ export default function MobileSigiHome({
 
   return (
     <section id="sigi-command-panel" className={forceVisible ? "space-y-4" : "space-y-4 md:hidden"}>
-      <div className={`relative overflow-hidden rounded-[28px] border border-cyan-400/24 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.18),rgba(3,7,18,0.96)_58%)] shadow-[0_0_40px_rgba(34,211,238,0.16)] ${sigiName ? "p-5" : "p-4"}`}>
-        <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(8,47,73,0.22),transparent_42%,rgba(8,145,178,0.08))]" />
-        <div className="absolute -right-10 top-6 h-28 w-28 rounded-full bg-cyan-400/10 blur-2xl" />
-        <div className="absolute -left-8 bottom-6 h-24 w-24 rounded-full bg-sky-500/10 blur-2xl" />
+      {hasSigiSmart ? (
+        <>
+          <div className={`relative overflow-hidden rounded-[28px] border border-cyan-400/24 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.18),rgba(3,7,18,0.96)_58%)] shadow-[0_0_40px_rgba(34,211,238,0.16)] ${sigiName ? "p-5" : "p-4"}`}>
+            <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(8,47,73,0.22),transparent_42%,rgba(8,145,178,0.08))]" />
+            <div className="absolute -right-10 top-6 h-28 w-28 rounded-full bg-cyan-400/10 blur-2xl" />
+            <div className="absolute -left-8 bottom-6 h-24 w-24 rounded-full bg-sky-500/10 blur-2xl" />
 
-        <div className={`relative z-10 flex items-start ${sigiName ? "gap-4" : "gap-3"}`}>
-          <div className={`shrink-0 rounded-3xl border border-cyan-400/20 bg-cyan-400/8 shadow-[0_0_26px_rgba(34,211,238,0.12)] ${sigiName ? "p-2" : "p-1.5"}`}>
-            <SigiSignalIcon size={sigiName ? 72 : 50} />
-          </div>
-
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/84">
-                Mobile Sigi Command Center
+            <div className={`relative z-10 flex items-start ${sigiName ? "gap-4" : "gap-3"}`}>
+              <div className={`shrink-0 rounded-3xl border border-cyan-400/20 bg-cyan-400/8 shadow-[0_0_26px_rgba(34,211,238,0.12)] ${sigiName ? "p-2" : "p-1.5"}`}>
+                <SigiSignalIcon size={sigiName ? 72 : 50} />
               </div>
-              {sigiName ? (
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowProfileEditor((current) => !current)}
-                    className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100 shadow-[0_0_16px_rgba(34,211,238,0.14)] transition hover:border-cyan-300/40 hover:bg-cyan-400/14 active:scale-95"
-                    aria-label="Update Sigi sectors"
-                  >
-                    {showProfileEditor ? "Hide sectors" : "Update sectors"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void resetSigiProfile()}
-                    disabled={isResettingSigi}
-                    className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-white/10 bg-black/55 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 shadow-[0_0_16px_rgba(34,211,238,0.18)] transition hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
-                    aria-label="Reset Sigi profile"
-                  >
-                    {isResettingSigi ? "Resetting..." : "Reset SIGI profile"}
-                  </button>
+
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/84">
+                    Mobile Sigi Command Center
+                  </div>
+                  {sigiName ? (
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowProfileEditor((current) => !current)}
+                        className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100 shadow-[0_0_16px_rgba(34,211,238,0.14)] transition hover:border-cyan-300/40 hover:bg-cyan-400/14 active:scale-95"
+                        aria-label="Update Sigi sectors"
+                      >
+                        {showProfileEditor ? "Hide sectors" : "Update sectors"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void resetSigiProfile()}
+                        disabled={isResettingSigi}
+                        className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-white/10 bg-black/55 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 shadow-[0_0_16px_rgba(34,211,238,0.18)] transition hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+                        aria-label="Reset Sigi profile"
+                      >
+                        {isResettingSigi ? "Resetting..." : "Reset SIGI profile"}
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-            {process.env.NODE_ENV !== "production" ? (
-              <div className="mt-1 inline-flex rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">
-                SIGI watchlist: {sigiWatchlistSource}
+                {process.env.NODE_ENV !== "production" ? (
+                  <div className="mt-1 inline-flex rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">
+                    SIGI watchlist: {sigiWatchlistSource}
+                  </div>
+                ) : null}
+                <h1 className={`mt-2 font-black leading-[1.05] text-white ${sigiName ? "text-[30px]" : "text-[24px]"}`}>
+                  {greeting}
+                </h1>
+                <p className={`text-sm text-white/68 ${sigiName ? "mt-2 leading-6" : "mt-1.5 leading-5"}`}>
+                  {sigiName
+                    ? leadHeadline
+                    : "Enter your name below to personalize answers. You can update sectors any time."}
+                </p>
+                {sigiName ? (
+                  <>
+                    <div className="mt-3 text-[10px] uppercase tracking-[0.16em] text-white/35">
+                      Updated {lastUpdatedLabel}
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.16em] text-white/44">
+                      <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-1 text-cyan-200/88">
+                        {defaultSetupSession === "pre" ? "Pre-market live" : "Regular session"}
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
+                        Top setup: {leadSetup?.ticker ?? "Scanning"}
+                      </span>
+                    </div>
+                  </>
+                ) : null}
               </div>
-            ) : null}
-            <h1 className={`mt-2 font-black leading-[1.05] text-white ${sigiName ? "text-[30px]" : "text-[24px]"}`}>
-              {greeting}
-            </h1>
-            <p className={`text-sm text-white/68 ${sigiName ? "mt-2 leading-6" : "mt-1.5 leading-5"}`}>
-              {sigiName
-                ? leadHeadline
-                : "Enter your name below to personalize answers. You can update sectors any time."}
-            </p>
-            {sigiName ? (
-              <>
-                <div className="mt-3 text-[10px] uppercase tracking-[0.16em] text-white/35">
-                  Updated {lastUpdatedLabel}
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.16em] text-white/44">
-                  <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-1 text-cyan-200/88">
-                    {defaultSetupSession === "pre" ? "Pre-market live" : "Regular session"}
-                  </span>
-                  <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
-                    Top setup: {leadSetup?.ticker ?? "Scanning"}
-                  </span>
-                </div>
-              </>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      {!sigiName ? (
-        <SigiOnboarding
-          initialProfile={sigiProfile}
-          onComplete={(profile) => {
-            setSigiProfile(profile);
-
-            if (pendingSignupPrompt) {
-              openMobileSigiSheet({
-                prompt: pendingSignupPrompt,
-                context: mobileSigiContext,
-                autoSubmit: true,
-              });
-              setPendingSignupPrompt(null);
-            }
-          }}
-        />
-      ) : null}
-
-      {sigiName && showProfileEditor ? (
-        <SigiOnboarding
-          initialProfile={sigiProfile}
-          mode="interests"
-          onComplete={(profile) => {
-            setSigiProfile(profile);
-            setShowProfileEditor(false);
-          }}
-        />
-      ) : null}
-
-      <div className="space-y-3">
-        {answerPreviews.map((item) => (
-          <button
-            key={item.label}
-            type="button"
-            onClick={() => openSigiRead(item.prompt)}
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:border-cyan-300/28 hover:bg-cyan-400/8"
-          >
-            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/76">
-              {item.label}
             </div>
-            <div className="mt-1 text-sm leading-6 text-white/72">{item.preview}</div>
-          </button>
-        ))}
-      </div>
-
-      {sigiName ? (
-        <div className="rounded-3xl border border-cyan-400/18 bg-slate-950/88 p-4 shadow-[0_0_26px_rgba(34,211,238,0.1)]">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/76">
-            Ask Sigi
           </div>
-          <div className="mt-3 flex min-w-0 items-center gap-3">
-            <input
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  handleAnalyze();
+
+          {!sigiName ? (
+            <SigiOnboarding
+              initialProfile={sigiProfile}
+              onComplete={(profile) => {
+                setSigiProfile(profile);
+
+                if (pendingSignupPrompt) {
+                  openMobileSigiSheet({
+                    prompt: pendingSignupPrompt,
+                    context: mobileSigiContext,
+                    autoSubmit: true,
+                  });
+                  setPendingSignupPrompt(null);
                 }
               }}
-              placeholder="Type stock ticker or company"
-              className="min-h-12 min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none placeholder:text-white/34 focus:border-cyan-300/40"
             />
-            <button
-              type="button"
-              onClick={handleAnalyze}
-              className="min-h-12 shrink-0 rounded-2xl border border-cyan-300/30 bg-cyan-400/15 px-4 text-sm font-semibold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/25"
-            >
-              Analyze
-            </button>
+          ) : null}
+
+          {sigiName && showProfileEditor ? (
+            <SigiOnboarding
+              initialProfile={sigiProfile}
+              mode="interests"
+              onComplete={(profile) => {
+                setSigiProfile(profile);
+                setShowProfileEditor(false);
+              }}
+            />
+          ) : null}
+
+          <div className="space-y-3">
+            {answerPreviews.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => openSigiRead(item.prompt)}
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:border-cyan-300/28 hover:bg-cyan-400/8"
+              >
+                <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/76">
+                  {item.label}
+                </div>
+                <div className="mt-1 text-sm leading-6 text-white/72">{item.preview}</div>
+              </button>
+            ))}
           </div>
-        </div>
-      ) : null}
+
+          {sigiName ? (
+            <div className="rounded-3xl border border-cyan-400/18 bg-slate-950/88 p-4 shadow-[0_0_26px_rgba(34,211,238,0.1)]">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/76">
+                Ask Sigi
+              </div>
+              <div className="mt-3 flex min-w-0 items-center gap-3">
+                <input
+                  value={prompt}
+                  onChange={(event) => setPrompt(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleAnalyze();
+                    }
+                  }}
+                  placeholder="Type stock ticker or company"
+                  className="min-h-12 min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none placeholder:text-white/34 focus:border-cyan-300/40"
+                />
+                <button
+                  type="button"
+                  onClick={handleAnalyze}
+                  className="min-h-12 shrink-0 rounded-2xl border border-cyan-300/30 bg-cyan-400/15 px-4 text-sm font-semibold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/25"
+                >
+                  Analyze
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <UpgradeSigiSmartCard />
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         {pageSnapshots.map((item) => (

@@ -246,6 +246,11 @@ function ShellLayoutContent({
                 <BreakingNewsTicker mode="market" />
               </div>
             ) : null}
+            {shouldUseCompactShell && isTodayShellRoute ? (
+              <div className="md:hidden">
+                <BreakingNewsTicker mode="market" />
+              </div>
+            ) : null}
             {isCryptoMode ? (
               <div className="border-b border-cyan-400/20 bg-cyan-400/[0.035] px-6 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200">
                 Crypto Mode · 24/7 market intelligence
