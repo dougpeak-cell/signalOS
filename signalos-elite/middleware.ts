@@ -9,14 +9,20 @@ export function middleware(request: NextRequest) {
   }
 
   const previewPlan = request.nextUrl.searchParams.get("previewPlan")?.trim().toLowerCase();
+  const requestHeaders = new Headers(request.headers);
 
   if (!previewPlan) {
     return NextResponse.next();
   }
 
-  const response = NextResponse.next();
-
   if (previewPlan === "off" || previewPlan === "clear") {
+    requestHeaders.set("x-signalos-preview-plan", "off");
+    const response = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+
     response.cookies.set(DEV_PREVIEW_PLAN_COOKIE, "", {
       path: "/",
       expires: new Date(0),
@@ -25,13 +31,22 @@ export function middleware(request: NextRequest) {
   }
 
   if (VALID_PREVIEW_PLANS.has(previewPlan)) {
+    requestHeaders.set("x-signalos-preview-plan", previewPlan);
+    const response = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+
     response.cookies.set(DEV_PREVIEW_PLAN_COOKIE, previewPlan, {
       path: "/",
       sameSite: "lax",
     });
+
+    return response;
   }
 
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
