@@ -521,6 +521,32 @@ const CHART_LINE_META: Record<
   },
 };
 
+const COMPACT_TOOLBAR_INTERVALS: ReadonlyArray<{
+  label: ChartInterval;
+  interval: ChartInterval;
+  range: ChartRange;
+}> = [
+  { label: "1m", interval: "1m", range: "1D" },
+  { label: "2m", interval: "2m", range: "1D" },
+  { label: "3m", interval: "3m", range: "1D" },
+  { label: "5m", interval: "5m", range: "1D" },
+  { label: "10m", interval: "10m", range: "1D" },
+  { label: "15m", interval: "15m", range: "1D" },
+  { label: "1h", interval: "1h", range: "5D" },
+  { label: "1d", interval: "1d", range: "1Y" },
+  { label: "1w", interval: "1w", range: "5Y" },
+];
+
+const COMPACT_TOOLBAR_LEVELS: ReadonlyArray<{
+  key: VwapAnchorMode;
+  label: string;
+}> = [
+  { key: "day-open", label: "Day Open" },
+  { key: "session-high", label: "Session High" },
+  { key: "session-low", label: "Session Low" },
+  { key: "custom", label: "Custom" },
+];
+
 function getBarSpacingForViewport(mode: CandleDensityMode) {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
@@ -1389,6 +1415,14 @@ export default function LiveStockChart({
       setChartInterval(interval);
     },
     [chartRange]
+  );
+
+  const handleCompactToolbarIntervalSelect = useCallback(
+    (interval: ChartInterval, range: ChartRange) => {
+      setChartRange(range);
+      setChartInterval(interval);
+    },
+    []
   );
 
   const handleAutoFollowToggle = useCallback(() => {
@@ -3944,8 +3978,8 @@ const gapFillLabel =
         ref={liveChartCardRef}
         className="overflow-hidden rounded-3xl border border-cyan-400/15 bg-black/70 shadow-[inset_0_0_25px_rgba(0,140,255,0.08)]"
       >
-        <div className="px-4 pb-4 pt-5 sm:px-5 sm:pb-5 sm:pt-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="p-4 md:p-5">
+          <div className="flex flex-col gap-4">
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
               Live Chart
@@ -4154,132 +4188,78 @@ const gapFillLabel =
               </div>
             </div>
           </div>
-          </div>
 
-          <div className="hidden flex-col items-end gap-2 md:flex">
-            {!expanded ? (
+          <div className="mb-4 hidden flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-400/15 bg-black/40 px-4 py-3 md:flex">
+            <div className="flex flex-wrap items-center gap-2">
+              {COMPACT_TOOLBAR_INTERVALS.map(({ label, interval, range }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => handleCompactToolbarIntervalSelect(interval, range)}
+                  className={[
+                    "rounded-xl border px-3 py-2 text-xs font-bold transition",
+                    chartInterval === interval
+                      ? "border-cyan-400/35 bg-cyan-400/14 text-cyan-200"
+                      : "border-white/10 bg-white/5 text-slate-200 hover:border-cyan-300/40 hover:bg-cyan-400/10 hover:text-cyan-200",
+                  ].join(" ")}
+                >
+                  {label}
+                </button>
+              ))}
+
               <button
                 type="button"
-                onClick={() => setFocusMode((v) => !v)}
-                className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+                onClick={() => {
+                  handleCompactToolbarIntervalSelect("1m", "1D");
+                  setLiveCandleEnabled((value) => !value);
+                }}
+                className={[
+                  "rounded-xl border px-3 py-2 text-xs font-bold transition",
+                  liveCandleEnabled && canUseLive
+                    ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
+                    : "border-white/10 bg-white/5 text-slate-200 hover:border-emerald-300/30 hover:bg-emerald-400/10 hover:text-emerald-200",
+                ].join(" ")}
               >
-                {focusMode ? "Exit Focus Mode" : "Focus Mode"}
+                ● Live Candle
               </button>
-            ) : null}
-
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.9)]" />
-              Live Tick Candle
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
-              {RANGE_OPTIONS.map((range) => (
-                <RangeButton
-                  key={range}
-                  active={chartRange === range}
-                  onClick={() => handleRangeChange(range)}
-                >
-                  {range}
-                </RangeButton>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {INTERVAL_OPTIONS.map((interval) => {
-                const disabled = !ALLOWED_INTERVALS_BY_RANGE[chartRange].includes(interval);
-
-                return (
-                  <div key={interval} className="contents">
-                    <button
-                      type="button"
-                      onClick={() => handleIntervalChange(interval)}
-                      disabled={disabled}
-                      className={`min-h-10 rounded-xl border px-3 text-sm transition ${
-                        chartInterval === interval
-                          ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-200"
-                          : disabled
-                            ? "cursor-not-allowed border-white/5 bg-white/2 text-white/20"
-                            : "border-white/10 bg-white/5 text-white/80"
-                      }`}
-                    >
-                      {interval}
-                    </button>
-
-                    {interval === "1m" ? (
-                      <button
-                        type="button"
-                        onClick={() => setLiveCandleEnabled((value) => !value)}
-                        disabled={!canUseLive}
-                        className={`rounded-xl border px-3 py-2 text-xs font-black uppercase tracking-[0.12em] transition ${
-                          liveCandleEnabled
-                            ? "border-emerald-400/35 bg-emerald-400/12 text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.16)]"
-                            : "border-white/10 bg-white/3.5 text-white/45 hover:border-emerald-400/25 hover:text-emerald-200"
-                        } ${!canUseLive ? "opacity-40 cursor-not-allowed" : ""}`}
-                      >
-                        <span className="mr-2 inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse align-middle shadow-[0_0_12px_rgba(16,185,129,0.9)]" />
-                        Live Candle
-                      </button>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-2 flex flex-wrap gap-2">
-              {[
-                { key: "day-open", label: "Day Open" },
-                { key: "session-high", label: "Session High" },
-                { key: "session-low", label: "Session Low" },
-                { key: "custom", label: "Custom" },
-              ].map((item) => (
+            <div className="flex flex-wrap items-center gap-2">
+              {(Object.entries(CHART_LINE_META) as Array<
+                [WorkspaceChartLineKey, (typeof CHART_LINE_META)[WorkspaceChartLineKey]]
+              >).map(([lineKey, meta]) => (
                 <button
-                  key={item.key}
+                  key={lineKey}
                   type="button"
-                  onClick={() => setVwapAnchorMode(item.key as VwapAnchorMode)}
-                  className={`min-h-10 rounded-xl border px-3 text-sm ${
-                    vwapAnchorMode === item.key
-                      ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-200"
-                      : "border-white/10 bg-white/5 text-white/80"
-                  }`}
+                  onClick={() => toggleLineVisibility(lineKey)}
+                  className={[
+                    "rounded-xl border px-3 py-2 text-xs font-bold transition",
+                    lineVisibility[lineKey]
+                      ? meta.activeClassName
+                      : "border-cyan-400/20 bg-cyan-400/10 text-cyan-200 hover:bg-cyan-400/20",
+                  ].join(" ")}
                 >
-                  {item.label}
+                  {meta.label}
+                </button>
+              ))}
+
+              {COMPACT_TOOLBAR_LEVELS.map((level) => (
+                <button
+                  key={level.key}
+                  type="button"
+                  onClick={() => setVwapAnchorMode(level.key)}
+                  className={[
+                    "rounded-xl border px-3 py-2 text-xs font-bold transition",
+                    vwapAnchorMode === level.key
+                      ? "border-cyan-300/40 bg-cyan-400/10 text-cyan-200"
+                      : "border-white/10 bg-white/5 text-slate-200 hover:border-cyan-300/40 hover:bg-cyan-400/10",
+                  ].join(" ")}
+                >
+                  {level.label}
                 </button>
               ))}
             </div>
-
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <div className="text-xs uppercase tracking-wide text-white/45">Overlay Set</div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {(Object.entries(CHART_LINE_META) as Array<
-                  [WorkspaceChartLineKey, (typeof CHART_LINE_META)[WorkspaceChartLineKey]]
-                >).map(([lineKey, meta]) => (
-                  <button
-                    key={lineKey}
-                    type="button"
-                    onClick={() => toggleLineVisibility(lineKey)}
-                    className={`min-h-10 rounded-xl border px-3 text-sm transition ${
-                      lineVisibility[lineKey]
-                        ? meta.activeClassName
-                        : "border-white/10 bg-white/5 text-white/45"
-                    }`}
-                  >
-                    {meta.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <div className="text-xs uppercase tracking-wide text-white/45">Interval</div>
-              <div className="mt-1 text-lg font-semibold text-white">{chartRange} · {chartInterval}</div>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <div className="text-xs uppercase tracking-wide text-white/45">Latest Bar Volume</div>
-              <div className="mt-1 text-lg font-semibold text-white">
-                {formatCompactNumber(latestDisplayVolume)}
-              </div>
-            </div>
+          </div>
           </div>
         </div>
 
@@ -4738,11 +4718,13 @@ const gapFillLabel =
               ref={chartWrapRef}
               className={
                 isChartFullscreen
-                  ? "relative h-screen w-screen overflow-hidden bg-[#11161c]"
-                  : "relative h-104 w-full overflow-hidden rounded-[22px] bg-[#11161c] sm:h-128 xl:h-180 2xl:h-195"
+                  ? "relative h-screen w-screen overflow-hidden bg-black"
+                  : "relative min-h-130 overflow-hidden rounded-3xl border border-cyan-400/15 bg-black"
               }
             >
-              <div ref={chartHostRef} className="h-full w-full bg-[#11161c]" />
+              <div className="absolute inset-0">
+                <div ref={chartHostRef} className="h-full w-full bg-[#11161c]" />
+              </div>
 
               {showReturnToLive ? (
                 <button
@@ -4816,6 +4798,28 @@ const gapFillLabel =
                         <div className="text-right font-medium text-orange-600">{formatPrice(tooltip.ma30)}</div>
                       </>
                     ) : null}
+                  </div>
+                </div>
+              ) : null}
+
+              {!isChartFullscreen ? (
+                <div className="pointer-events-none absolute bottom-5 right-5 z-20 hidden gap-3 md:grid">
+                  <div className="rounded-2xl border border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
+                      Interval
+                    </div>
+                    <div className="mt-1 text-lg font-black text-white">
+                      {chartRange} · {chartInterval}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
+                      Latest Bar Volume
+                    </div>
+                    <div className="mt-1 text-lg font-black text-white">
+                      {formatCompactNumber(latestDisplayVolume)}
+                    </div>
                   </div>
                 </div>
               ) : null}
