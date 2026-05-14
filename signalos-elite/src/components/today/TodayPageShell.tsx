@@ -79,8 +79,8 @@ export default function TodayPageShell({
 }: TodayPageShellProps): ReactElement {
 	const catalystItems = [...topSetups, ...emergingSetups];
 	const sigiMovers = [...commandCenterGainers, ...commandCenterLosers];
-	const shouldUseMobileTodayHome = isDevMobilePreview;
-	const shouldRenderDesktopTodayLayout = !isDevMobilePreview;
+	const shouldUseMobileTodayHome = isDevMobilePreview || isLikelyMobileDevice;
+	const shouldRenderDesktopTodayLayout = !shouldUseMobileTodayHome;
 
 	return (
 		<div className="min-h-screen bg-black text-white">
