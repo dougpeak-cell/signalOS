@@ -110,6 +110,17 @@ function ShellLayoutContent({
 
   const shouldUseCompactShell = isDevMobilePreview || hasCompactMobileShell;
 
+  function applyPreviewPlan(nextPlan: "free" | "smart" | "pro" | "off") {
+    if (process.env.NODE_ENV === "production") {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("previewPlan", nextPlan);
+    const nextQuery = nextParams.toString();
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+  }
+
   useEffect(() => {
     if (process.env.NODE_ENV === "production") {
       return;
@@ -271,9 +282,37 @@ function ShellLayoutContent({
                 : "",
             ].join(" ")}
           >
-            {previewPlan ? (
-              <div className="pointer-events-none fixed bottom-4 left-4 z-70 rounded-full border border-emerald-400/25 bg-emerald-500/12 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.16)] backdrop-blur-xl md:bottom-5 md:left-5">
-                Preview plan: {previewPlan}
+            {process.env.NODE_ENV !== "production" ? (
+              <div className="fixed bottom-4 left-4 z-70 flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-400/25 bg-black/70 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.16)] backdrop-blur-xl md:bottom-5 md:left-5">
+                <span className="text-emerald-200/85">
+                  Preview: {previewPlan ?? "off"}
+                </span>
+                {(["free", "smart", "pro"] as const).map((tier) => {
+                  const active = previewPlan === tier;
+
+                  return (
+                    <button
+                      key={tier}
+                      type="button"
+                      onClick={() => applyPreviewPlan(tier)}
+                      className={[
+                        "rounded-full border px-2 py-1 transition",
+                        active
+                          ? "border-emerald-300/50 bg-emerald-400/20 text-white"
+                          : "border-white/10 bg-white/5 text-white/70 hover:border-emerald-300/35 hover:bg-emerald-400/12 hover:text-white",
+                      ].join(" ")}
+                    >
+                      {tier}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => applyPreviewPlan("off")}
+                  className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-white/70 transition hover:border-rose-300/35 hover:bg-rose-400/12 hover:text-white"
+                >
+                  clear
+                </button>
               </div>
             ) : null}
             <div className={isTodayShellRoute ? "hidden md:block" : "block"}>
