@@ -13,7 +13,7 @@ import {
 import type { ReactNode } from "react";
 
 const PRO_DASHBOARD_HREF = "/experts/pro";
-const SMART_CHECKOUT_HREF = "/api/stripe/checkout?plan=smart";
+const SMART_PREVIEW_HREF = "/experts/smart";
 
 export default function ExpertsPage() {
   return (
@@ -90,7 +90,7 @@ export default function ExpertsPage() {
               "Momentum context and chart access",
             ]}
             cta="Upgrade to Smart"
-            href={SMART_CHECKOUT_HREF}
+            href={SMART_PREVIEW_HREF}
           />
 
           <PlanCard
@@ -296,29 +296,16 @@ function PlanCard({
         ))}
       </div>
 
-      {href.startsWith("/api/") ? (
-        <a
-          href={href}
-          className={`mt-6 inline-flex w-full justify-center rounded-2xl px-5 py-3 text-sm font-bold transition ${
-            premium
-              ? "border border-amber-300/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20"
-              : "border border-cyan-300/30 bg-cyan-400/10 text-cyan-200 hover:bg-cyan-400/20"
-          }`}
-        >
-          {cta}
-        </a>
-      ) : (
-        <Link
-          href={href}
-          className={`mt-6 inline-flex w-full justify-center rounded-2xl px-4 py-3 text-sm font-bold transition ${
-            premium
-              ? "border border-amber-300/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20"
-              : "border border-cyan-300/30 bg-cyan-400/10 text-cyan-200 hover:bg-cyan-400/20"
-          }`}
-        >
-          {cta}
-        </Link>
-      )}
+      <Link
+        href={href}
+        className={`mt-6 inline-flex w-full justify-center rounded-2xl px-4 py-3 text-sm font-bold transition ${
+          premium
+            ? "border border-amber-300/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20"
+            : "border border-cyan-300/30 bg-cyan-400/10 text-cyan-200 hover:bg-cyan-400/20"
+        }`}
+      >
+        {cta}
+      </Link>
     </div>
   );
 }
