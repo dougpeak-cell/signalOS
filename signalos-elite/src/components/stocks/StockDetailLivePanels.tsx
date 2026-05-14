@@ -563,6 +563,16 @@ export default function StockDetailLivePanels({
                     ? "Open Trading Workspace"
                     : "Upgrade to Pro Trading Workspace"}
                 </Link>
+                {canUseTradingWorkspace ? (
+                  <Link
+                    href={buildPreviewHref(`/stocks/${liveTicker}/workspace`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-11 items-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/15 hover:text-white"
+                  >
+                    Open Workspace ↗
+                  </Link>
+                ) : null}
                 <a
                   href="#live-day-chart"
                   className="inline-flex min-h-11 items-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white/75 transition hover:border-white/20 hover:bg-white/8 hover:text-white"
