@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
+import { useSigiTier } from "@/hooks/useSigiTier";
 import { useCryptoStream } from "@/hooks/useCryptoStream";
 
 type Candle = {
@@ -889,8 +891,12 @@ function CryptoIdentityPanel({
 export default function CryptoDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const { tier } = useSigiTier();
   const ticker = String(params.ticker ?? "BTC").toUpperCase();
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
+  const plan = tier ?? "free";
+  const canUseCrypto = plan === "smart" || plan === "pro";
+  const canUseCryptoWorkspace = plan === "pro";
   const identity = CRYPTO_IDENTITY[ticker];
   const livePrice = useCryptoStream(ticker);
 
@@ -961,12 +967,34 @@ export default function CryptoDetailPage() {
   const spike = volumeSpike(feed);
   const direction = spikeDirection(feed);
 
+  if (!canUseCrypto) {
+    return (
+      <LockedCryptoExperience
+        ticker={ticker}
+        backHref={isMobilePreview ? "/crypto?mobilePreview=1" : "/crypto"}
+        backLabel="Back to Crypto"
+      />
+    );
+  }
+
   return (
     <main className={[
       "min-h-screen bg-black text-white",
       isMobilePreview ? "px-4 py-6" : "px-6 py-8",
     ].join(" ")}>
       <div className="mx-auto max-w-7xl">
+          {!canUseCryptoWorkspace && plan === "smart" ? (
+            <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4">
+              <p className="text-sm font-bold text-amber-100">
+                Pro Crypto Workspace Coming Soon
+              </p>
+
+              <p className="mt-1 text-sm text-slate-300">
+                Advanced operator tools, elite setup scoring, and multi-timeframe crypto intelligence are currently in development.
+              </p>
+            </div>
+          ) : null}
+
         <div className="mb-6">
           <Link
             href={isMobilePreview ? "/crypto?mobilePreview=1" : "/crypto"}

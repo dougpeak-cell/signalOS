@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
+import { useSigiTier } from "@/hooks/useSigiTier";
 import { buildSparklinePath } from "@/lib/market/sparkline";
 
 type CryptoRow = {
@@ -105,6 +107,7 @@ function microSignal(row: CryptoRow) {
 
 export default function CryptoPage() {
   const searchParams = useSearchParams();
+  const { tier } = useSigiTier();
   const [rows, setRows] = useState<CryptoRow[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -241,8 +244,15 @@ export default function CryptoPage() {
     .sort((a, b) => (b.changePercent ?? -999) - (a.changePercent ?? -999))
     .slice(0, 3);
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
+  const plan = tier ?? "free";
+  const canUseCrypto = plan === "smart" || plan === "pro";
+  const canUseCryptoWorkspace = plan === "pro";
   const buildCryptoHref = (symbol: string) =>
     isMobilePreview ? `/crypto/${symbol}?mobilePreview=1` : `/crypto/${symbol}`;
+
+  if (!canUseCrypto) {
+    return <LockedCryptoExperience />;
+  }
 
   return (
     <main
@@ -259,6 +269,18 @@ export default function CryptoPage() {
             isMobilePreview ? "" : "md:flex-row md:items-end",
           ].join(" ")}
         >
+          {!canUseCryptoWorkspace && plan === "smart" ? (
+            <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4">
+              <p className="text-sm font-bold text-amber-100">
+                Pro Crypto Workspace Coming Soon
+              </p>
+
+              <p className="mt-1 text-sm text-slate-300">
+                Advanced operator tools, elite setup scoring, and multi-timeframe crypto intelligence are currently in development.
+              </p>
+            </div>
+          ) : null}
+
           <div>
             <div className="mb-3 inline-flex rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">
               Sigi Crypto
