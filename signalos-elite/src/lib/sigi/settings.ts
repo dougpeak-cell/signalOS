@@ -53,7 +53,7 @@ export type StoredSigiSettingsRow = {
 };
 
 type StoredProfileRow = {
-  id: string;
+  user_id?: string | null;
   sigi_tier?: string | null;
   sigi_provider_enabled?: boolean | null;
   sigi_provider_base_url?: string | null;
@@ -172,9 +172,9 @@ const getUserProfileRowCached = cache(async (userId: string): Promise<StoredProf
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, sigi_tier, sigi_provider_enabled, sigi_provider_base_url, sigi_provider_model, sigi_provider_label, sigi_provider_api_key_encrypted, sigi_usage_count, sigi_last_used_at, stripe_subscription_status, stripe_price_id, stripe_current_period_end, stripe_cancel_at_period_end, billing_status"
+      "user_id, sigi_tier, sigi_provider_enabled, sigi_provider_base_url, sigi_provider_model, sigi_provider_label, sigi_provider_api_key_encrypted, sigi_usage_count, sigi_last_used_at, stripe_subscription_status, stripe_price_id, stripe_current_period_end, stripe_cancel_at_period_end, billing_status"
     )
-    .eq("id", userId)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (error) {
@@ -376,7 +376,7 @@ export async function resetSigiPersonalProviderFailureStateForCurrentUser(): Pro
       sigi_provider_failure_count: 0,
       sigi_provider_last_error: null,
     })
-    .eq("id", auth.userId);
+    .eq("user_id", auth.userId);
 
   if (error) {
     console.error("Failed to reset Sigi personal provider health", error);
@@ -395,7 +395,7 @@ export async function recordSigiPersonalProviderFailureForCurrentUser(
   const { data, error: profileError } = await supabase
     .from("profiles")
     .select("sigi_provider_failure_count")
-    .eq("id", auth.userId)
+    .eq("user_id", auth.userId)
     .maybeSingle();
 
   if (profileError) {
@@ -426,7 +426,7 @@ export async function recordSigiPersonalProviderFailureForCurrentUser(
   const { error } = await supabase
     .from("profiles")
     .update(updatePayload)
-    .eq("id", auth.userId);
+    .eq("user_id", auth.userId);
 
   if (error) {
     console.error("Failed to update Sigi personal provider health", error);
@@ -497,7 +497,7 @@ export async function guardSigiRequestForCurrentUser(): Promise<SigiRequestGuard
         sigi_usage_count: used + 1,
         sigi_last_used_at: new Date().toISOString(),
       })
-      .eq("id", auth.userId);
+      .eq("user_id", auth.userId);
 
     if (profileError) {
       console.error("Failed to update Sigi profile usage", profileError);

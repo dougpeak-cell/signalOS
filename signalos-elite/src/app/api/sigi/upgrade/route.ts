@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("stripe_customer_id")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .maybeSingle();
 
     let customerId = (profile as ProfileBillingRow | null)?.stripe_customer_id ?? null;
@@ -86,7 +86,13 @@ export async function POST(request: Request) {
       ).id;
     }
 
-    await supabase.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user.id);
+    await supabase.from("profiles").upsert(
+      {
+        user_id: user.id,
+        stripe_customer_id: customerId,
+      },
+      { onConflict: "user_id" }
+    );
 
     const stripe = getStripeServer();
     const session = await stripe.checkout.sessions.create({

@@ -26,7 +26,7 @@ async function getUserBillingProfile(userId: string): Promise<ProfileBillingRow 
   const { data } = await supabase
     .from("profiles")
     .select("stripe_customer_id")
-    .eq("id", userId)
+    .eq("user_id", userId)
     .maybeSingle();
 
   return (data as ProfileBillingRow | null) ?? null;

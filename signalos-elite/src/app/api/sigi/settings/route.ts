@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("sigi_tier, sigi_provider_api_key_encrypted")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .maybeSingle();
 
     if (profileError) {
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         sigi_provider_failure_count: 0,
         sigi_provider_last_error: null,
       })
-      .eq("id", user.id);
+      .eq("user_id", user.id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });

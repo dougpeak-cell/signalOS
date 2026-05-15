@@ -39,10 +39,13 @@ function getSubscriptionCancelAtPeriodEnd(subscription: Stripe.Subscription): bo
 
 async function saveStripeCustomerId(userId: string, customerId: string) {
   const admin = createSupabaseAdminClient();
-  const { error } = await admin
-    .from("profiles")
-    .update({ stripe_customer_id: customerId })
-    .eq("id", userId);
+  const { error } = await admin.from("profiles").upsert(
+    {
+      user_id: userId,
+      stripe_customer_id: customerId,
+    },
+    { onConflict: "user_id" }
+  );
 
   if (error) throw error;
 }
@@ -57,6 +60,20 @@ async function updateProfileFromStripeCustomer(
     .from("profiles")
     .update({ stripe_customer_id: customerId, ...updates })
     .eq("stripe_customer_id", customerId);
+
+  if (error) throw error;
+}
+
+async function updateProfileByUserId(userId: string, updates: Partial<BillingProfileUpdate> & { stripe_customer_id?: string | null }) {
+  const admin = createSupabaseAdminClient();
+
+  const { error } = await admin.from("profiles").upsert(
+    {
+      user_id: userId,
+      ...updates,
+    },
+    { onConflict: "user_id" }
+  );
 
   if (error) throw error;
 }
@@ -110,7 +127,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
-  await saveStripeCustomerId(userId, customerId);
+  await updateProfileByUserId(userId, { stripe_customer_id: customerId });
 }
 
 export async function POST(request: Request) {

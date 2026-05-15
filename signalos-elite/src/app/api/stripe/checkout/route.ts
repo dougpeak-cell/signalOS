@@ -15,7 +15,7 @@ type CheckoutRequestBody = {
 };
 
 type ProfileBillingRow = {
-  id: string;
+  user_id?: string | null;
   stripe_customer_id?: string | null;
 };
 
@@ -69,7 +69,13 @@ function buildUpgradeAuthRedirect(
 
 async function persistStripeCustomerId(userId: string, customerId: string) {
   const supabase = await createSupabaseServerClient();
-  await supabase.from("profiles").update({ stripe_customer_id: customerId }).eq("id", userId);
+  await supabase.from("profiles").upsert(
+    {
+      user_id: userId,
+      stripe_customer_id: customerId,
+    },
+    { onConflict: "user_id" }
+  );
 }
 
 async function findStripeCustomerIdByEmail(email: string): Promise<string | null> {
@@ -133,8 +139,8 @@ async function createCheckoutSessionForPlan(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, stripe_customer_id")
-    .eq("id", user.id)
+    .select("user_id, stripe_customer_id")
+    .eq("user_id", user.id)
     .maybeSingle();
 
   const customerId = await getOrCreateStripeCustomerId({
