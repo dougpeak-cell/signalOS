@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { priceIdToTier } from "@/lib/billing/tiers";
+import {
+  getHighestTierFromStripeSubscriptions,
+  isStripeSubscriptionActive,
+  priceIdToTier,
+} from "@/lib/billing/tiers";
 import { getStripeServer, getStripeWebhookSecret } from "@/lib/stripe/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
@@ -103,6 +107,51 @@ async function updateProfileByUserId(userId: string, updates: Partial<BillingPro
   if (error) throw error;
 }
 
+async function syncSubscriptionToUserProfile(
+  userId: string,
+  customerId: string,
+  subscription: Stripe.Subscription,
+  options?: { paymentFailed?: boolean }
+) {
+  const item = subscription.items.data[0];
+  const priceId = item?.price?.id ?? null;
+  const cancelAtPeriodEnd = getSubscriptionCancelAtPeriodEnd(subscription);
+  const tier =
+    subscription.status === "active" || subscription.status === "trialing"
+      ? priceIdToTier(priceId)
+      : "free";
+
+  await updateProfileByUserId(userId, {
+    sigi_tier: tier,
+    stripe_customer_id: customerId,
+    stripe_subscription_id: subscription.id,
+    stripe_subscription_schedule_id: getSubscriptionScheduleId(subscription),
+    stripe_subscription_status: subscription.status,
+    stripe_price_id: priceId,
+    stripe_current_period_end: getSubscriptionCurrentPeriodEnd(subscription),
+    stripe_cancel_at_period_end: cancelAtPeriodEnd,
+    billing_status: options?.paymentFailed ? "past_due" : cancelAtPeriodEnd ? "canceling" : "ok",
+    pending_sigi_tier: null,
+    pending_sigi_tier_effective_at: null,
+  });
+}
+
+async function getHighestActiveSubscriptionForCustomer(customerId: string): Promise<Stripe.Subscription | null> {
+  const stripe = getStripeServer();
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "all",
+    limit: 20,
+    expand: ["data.items.data.price"],
+  });
+
+  const activeSubscriptions = subscriptions.data.filter((subscription) =>
+    isStripeSubscriptionActive(subscription.status)
+  );
+
+  return getHighestTierFromStripeSubscriptions(activeSubscriptions);
+}
+
 async function syncSubscriptionToProfile(
   subscription: Stripe.Subscription,
   options?: { paymentFailed?: boolean }
@@ -111,26 +160,45 @@ async function syncSubscriptionToProfile(
   if (!customerId) return;
 
   const existingProfile = await getProfileByCustomerId(customerId);
+  const highestActiveSubscription = await getHighestActiveSubscriptionForCustomer(customerId);
 
-  const item = subscription.items.data[0];
+  if (!highestActiveSubscription) {
+    await updateProfileFromStripeCustomer(customerId, {
+      sigi_tier: "free",
+      stripe_subscription_id: subscription.id,
+      stripe_subscription_schedule_id: null,
+      stripe_subscription_status: subscription.status,
+      stripe_price_id: null,
+      stripe_current_period_end: getSubscriptionCurrentPeriodEnd(subscription),
+      stripe_cancel_at_period_end: false,
+      billing_status: options?.paymentFailed ? "past_due" : "canceled",
+      pending_sigi_tier: null,
+      pending_sigi_tier_effective_at: null,
+    });
+    return;
+  }
+
+  const item = highestActiveSubscription.items.data[0];
   const priceId = item?.price?.id ?? null;
-  const cancelAtPeriodEnd = getSubscriptionCancelAtPeriodEnd(subscription);
+  const cancelAtPeriodEnd = getSubscriptionCancelAtPeriodEnd(highestActiveSubscription);
   const tier =
-    subscription.status === "active" || subscription.status === "trialing"
+    highestActiveSubscription.status === "active" || highestActiveSubscription.status === "trialing"
       ? priceIdToTier(priceId)
       : "free";
   const shouldClearPending =
     existingProfile?.pending_sigi_tier === tier || tier === "free";
+  const shouldMarkPaymentFailed =
+    options?.paymentFailed === true && highestActiveSubscription.id === subscription.id;
 
   await updateProfileFromStripeCustomer(customerId, {
     sigi_tier: tier,
-    stripe_subscription_id: subscription.id,
-    stripe_subscription_schedule_id: getSubscriptionScheduleId(subscription),
-    stripe_subscription_status: subscription.status,
+    stripe_subscription_id: highestActiveSubscription.id,
+    stripe_subscription_schedule_id: getSubscriptionScheduleId(highestActiveSubscription),
+    stripe_subscription_status: highestActiveSubscription.status,
     stripe_price_id: priceId,
-    stripe_current_period_end: getSubscriptionCurrentPeriodEnd(subscription),
+    stripe_current_period_end: getSubscriptionCurrentPeriodEnd(highestActiveSubscription),
     stripe_cancel_at_period_end: cancelAtPeriodEnd,
-    billing_status: options?.paymentFailed ? "past_due" : cancelAtPeriodEnd ? "canceling" : "ok",
+    billing_status: shouldMarkPaymentFailed ? "past_due" : cancelAtPeriodEnd ? "canceling" : "ok",
     pending_sigi_tier: shouldClearPending ? null : existingProfile?.pending_sigi_tier ?? null,
     pending_sigi_tier_effective_at: shouldClearPending ? null : existingProfile?.pending_sigi_tier_effective_at ?? null,
   });
@@ -139,6 +207,13 @@ async function syncSubscriptionToProfile(
 async function markSubscriptionCanceled(subscription: Stripe.Subscription) {
   const customerId = toCustomerId(subscription.customer);
   if (!customerId) return;
+
+  const highestActiveSubscription = await getHighestActiveSubscriptionForCustomer(customerId);
+
+  if (highestActiveSubscription) {
+    await syncSubscriptionToProfile(highestActiveSubscription);
+    return;
+  }
 
   await updateProfileFromStripeCustomer(customerId, {
     sigi_tier: "free",
@@ -155,6 +230,7 @@ async function markSubscriptionCanceled(subscription: Stripe.Subscription) {
 }
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  const stripe = getStripeServer();
   const customerId = typeof session.customer === "string" ? session.customer : null;
   const userId = session.client_reference_id ?? session.metadata?.supabase_user_id ?? null;
 
@@ -163,6 +239,17 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   }
 
   await updateProfileByUserId(userId, { stripe_customer_id: customerId });
+
+  const subscriptionId = typeof session.subscription === "string" ? session.subscription : null;
+  if (!subscriptionId) {
+    return;
+  }
+
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+    expand: ["items.data.price"],
+  });
+
+  await syncSubscriptionToUserProfile(userId, customerId, subscription);
 }
 
 export async function POST(request: Request) {

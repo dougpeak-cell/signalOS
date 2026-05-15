@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { SIGI_PRICING } from "@/lib/billing/pricing";
 import {
   coercePaidSigiTier,
+  getHighestTierFromStripeSubscriptions,
   getTierFromStripeSubscription,
   isStripeSubscriptionActive,
 } from "@/lib/billing/tiers";
@@ -161,6 +162,22 @@ async function getOrCreateStripeCustomerId(args: {
   return customer.id;
 }
 
+async function findExistingActiveSubscription(customerId: string): Promise<Stripe.Subscription | null> {
+  const stripe = getStripeServer();
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "all",
+    limit: 20,
+    expand: ["data.items.data.price"],
+  });
+
+  const activeSubscriptions = subscriptions.data.filter((subscription) =>
+    isStripeSubscriptionActive(subscription.status)
+  );
+
+  return getHighestTierFromStripeSubscriptions(activeSubscriptions);
+}
+
 async function createCheckoutSessionForPlan(
   planValue: string | undefined,
   returnTo: string | null
@@ -202,9 +219,26 @@ async function createCheckoutSessionForPlan(
     existingCustomerId: billingProfile?.stripe_customer_id ?? null,
   });
 
-  if (billingProfile?.stripe_subscription_id) {
+  const fallbackSubscription =
+    !billingProfile?.stripe_subscription_id && customerId
+      ? await findExistingActiveSubscription(customerId)
+      : null;
+
+  if (fallbackSubscription && isStripeSubscriptionActive(fallbackSubscription.status)) {
+    await persistStripeSubscriptionState({
+      userId: user.id,
+      customerId,
+      subscription: fallbackSubscription,
+      tier: coercePaidSigiTier(getTierFromStripeSubscription(fallbackSubscription)) ?? "smart",
+    });
+  }
+
+  const effectiveSubscriptionId =
+    billingProfile?.stripe_subscription_id ?? fallbackSubscription?.id ?? null;
+
+  if (effectiveSubscriptionId) {
     const existingSubscription = await stripe.subscriptions.retrieve(
-      billingProfile.stripe_subscription_id,
+      effectiveSubscriptionId,
       { expand: ["items.data.price"] }
     );
 
