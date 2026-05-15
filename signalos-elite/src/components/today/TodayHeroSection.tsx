@@ -12,12 +12,14 @@ import type {
 
 export default function TodayHeroSection({
   hasSigiSmart = false,
+  hasSigiPro = false,
   topSetups,
   movers,
   news,
   watchlistRows,
 }: {
   hasSigiSmart?: boolean;
+  hasSigiPro?: boolean;
   topSetups: TodaySetupItem[];
   movers: TodayCommandCenterMoverRow[];
   news: TodayCommandCenterNewsRow[];
@@ -29,6 +31,7 @@ export default function TodayHeroSection({
         <MarketThesisHero />
         <SigiDecisionPanel
           hasSigiSmart={hasSigiSmart}
+          hasSigiPro={hasSigiPro}
           topSetups={topSetups}
           movers={movers}
           news={news}

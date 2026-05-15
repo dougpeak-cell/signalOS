@@ -161,24 +161,32 @@ function buildRisk(stockContext: SigiStockContext | null, ticker: string | null)
   return `The main risk is weak confirmation: if follow-through fades, the tape can rotate faster than the headline story implies.`;
 }
 
-function formatInterestList(interests: string[]) {
-  const visibleInterests = interests.filter(Boolean).slice(0, 3);
+function formatInterestList(interests: string[], visibleLimit: number) {
+  const visibleInterests = interests.filter(Boolean).slice(0, visibleLimit);
 
   if (visibleInterests.length === 0) return "the market";
   if (visibleInterests.length === 1) return visibleInterests[0];
   if (visibleInterests.length === 2) return `${visibleInterests[0]} and ${visibleInterests[1]}`;
 
-  return `${visibleInterests[0]}, ${visibleInterests[1]}, and ${visibleInterests[2]}`;
+  if (visibleInterests.length === 3) {
+    return `${visibleInterests[0]}, ${visibleInterests[1]}, and ${visibleInterests[2]}`;
+  }
+
+  const head = visibleInterests.slice(0, -1).join(", ");
+  const tail = visibleInterests[visibleInterests.length - 1];
+  return `${head}, and ${tail}`;
 }
 
 export default function SigiDecisionPanel({
   hasSigiSmart,
+  hasSigiPro,
   topSetups,
   movers,
   news,
   watchlistRows,
 }: {
   hasSigiSmart: boolean;
+  hasSigiPro: boolean;
   topSetups: TodaySetupItem[];
   movers: TodayCommandCenterMoverRow[];
   news: TodayCommandCenterNewsRow[];
@@ -293,10 +301,10 @@ export default function SigiDecisionPanel({
     if (!profile) return null;
 
     const userName = profile.name?.trim() || "friend";
-    const interests = formatInterestList(profile.interests);
+    const interests = formatInterestList(profile.interests, hasSigiPro ? 6 : 3);
 
     return `Hi ${userName} - I'm watching ${interests} for you.`;
-  }, [profile]);
+  }, [hasSigiPro, profile]);
 
   function showResponse(
     question: string,

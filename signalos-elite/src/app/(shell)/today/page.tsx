@@ -42,6 +42,7 @@ export default async function TodayPage({
 
   const plan = previewTier || profile?.sigi_tier || profile?.subscription_tier || profile?.plan || "free";
   const canUseSigiCommand = plan === "smart" || plan === "pro";
+  const hasSigiPro = plan === "pro";
   const isLikelyMobileDevice = isLikelyMobileUserAgent(
     requestHeaders.get("user-agent") ?? ""
   );
@@ -57,6 +58,7 @@ export default async function TodayPage({
       <MobileSigiSplash />
       <TodayPageShell
         hasSigiSmart={canUseSigiCommand}
+        hasSigiPro={hasSigiPro}
         isLikelyMobileDevice={isLikelyMobileDevice}
         isDevMobilePreview={isDevMobilePreview}
         defaultSetupSession={todayPageData.defaultSetupSession}

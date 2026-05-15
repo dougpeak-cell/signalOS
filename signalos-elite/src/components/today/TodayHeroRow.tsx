@@ -12,12 +12,14 @@ import type {
 
 export default async function TodayHeroRow({
   hasSigiSmart,
+  hasSigiPro,
   topSetups,
   movers,
   news,
   watchlistRows,
 }: {
   hasSigiSmart: boolean;
+  hasSigiPro: boolean;
   topSetups: TodaySetupItem[];
   movers: TodayCommandCenterMoverRow[];
   news: TodayCommandCenterNewsRow[];
@@ -31,6 +33,7 @@ export default async function TodayHeroRow({
         <MarketThesisHero />
         <SigiDecisionPanel
           hasSigiSmart={hasSigiSmart}
+          hasSigiPro={hasSigiPro}
           topSetups={topSetups}
           movers={movers}
           news={news}

@@ -46,6 +46,7 @@ type TodayPageShellProps = Pick<
 	| "leadershipWatch"
 > & {
 	hasSigiSmart: boolean;
+	hasSigiPro: boolean;
 	isDevMobilePreview?: boolean;
 	isLikelyMobileDevice?: boolean;
 };
@@ -76,6 +77,7 @@ export default function TodayPageShell({
 	featuredMacro,
 	leadershipWatch,
 	hasSigiSmart,
+	hasSigiPro,
 	isDevMobilePreview = false,
 	isLikelyMobileDevice = false,
 }: TodayPageShellProps): ReactElement {
@@ -108,6 +110,7 @@ export default function TodayPageShell({
 				<div className={`${shouldRenderDesktopTodayLayout ? "space-y-6" : "hidden"}`}>
 					<TodayHeroRow
 						hasSigiSmart={hasSigiSmart}
+						hasSigiPro={hasSigiPro}
 						topSetups={topSetups}
 						movers={sigiMovers}
 						news={commandCenterNews}
