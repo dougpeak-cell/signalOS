@@ -35,7 +35,12 @@ export default async function SigiSettingsPage() {
 
       <SigiBillingStateCard settings={settings} />
 
-      <SigiPlanCards cards={SIGI_TIER_CARDS} currentTier={settings.currentTier} />
+      <SigiPlanCards
+        cards={SIGI_TIER_CARDS}
+        currentTier={settings.currentTier}
+        pendingTier={settings.pendingTier}
+        pendingTierEffectiveLabel={settings.pendingTierEffectiveLabel}
+      />
 
       <SigiSettingsForm settings={settings} />
     </main>

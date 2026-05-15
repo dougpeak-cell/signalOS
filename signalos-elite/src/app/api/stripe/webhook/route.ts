@@ -10,11 +10,14 @@ export const dynamic = "force-dynamic";
 type BillingProfileUpdate = {
   sigi_tier: "free" | "smart" | "pro";
   stripe_subscription_id: string | null;
+  stripe_subscription_schedule_id?: string | null;
   stripe_price_id: string | null;
   stripe_subscription_status: string;
   stripe_current_period_end: string | null;
   stripe_cancel_at_period_end: boolean;
   billing_status: string;
+  pending_sigi_tier?: string | null;
+  pending_sigi_tier_effective_at?: string | null;
 };
 
 function toCustomerId(customer: string | Stripe.Customer | Stripe.DeletedCustomer | null): string | null {
@@ -35,6 +38,12 @@ function getSubscriptionCurrentPeriodEnd(subscription: Stripe.Subscription): str
 function getSubscriptionCancelAtPeriodEnd(subscription: Stripe.Subscription): boolean {
   const value = (subscription as unknown as { cancel_at_period_end?: unknown }).cancel_at_period_end;
   return value === true;
+}
+
+function getSubscriptionScheduleId(subscription: Stripe.Subscription): string | null {
+  const schedule = subscription.schedule;
+  if (!schedule) return null;
+  return typeof schedule === "string" ? schedule : schedule.id;
 }
 
 async function saveStripeCustomerId(userId: string, customerId: string) {
@@ -64,6 +73,22 @@ async function updateProfileFromStripeCustomer(
   if (error) throw error;
 }
 
+async function getProfileByCustomerId(customerId: string) {
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("profiles")
+    .select("pending_sigi_tier, pending_sigi_tier_effective_at, stripe_subscription_schedule_id")
+    .eq("stripe_customer_id", customerId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as {
+    pending_sigi_tier?: string | null;
+    pending_sigi_tier_effective_at?: string | null;
+    stripe_subscription_schedule_id?: string | null;
+  } | null;
+}
+
 async function updateProfileByUserId(userId: string, updates: Partial<BillingProfileUpdate> & { stripe_customer_id?: string | null }) {
   const admin = createSupabaseAdminClient();
 
@@ -85,6 +110,8 @@ async function syncSubscriptionToProfile(
   const customerId = toCustomerId(subscription.customer);
   if (!customerId) return;
 
+  const existingProfile = await getProfileByCustomerId(customerId);
+
   const item = subscription.items.data[0];
   const priceId = item?.price?.id ?? null;
   const cancelAtPeriodEnd = getSubscriptionCancelAtPeriodEnd(subscription);
@@ -92,15 +119,20 @@ async function syncSubscriptionToProfile(
     subscription.status === "active" || subscription.status === "trialing"
       ? priceIdToTier(priceId)
       : "free";
+  const shouldClearPending =
+    existingProfile?.pending_sigi_tier === tier || tier === "free";
 
   await updateProfileFromStripeCustomer(customerId, {
     sigi_tier: tier,
     stripe_subscription_id: subscription.id,
+    stripe_subscription_schedule_id: getSubscriptionScheduleId(subscription),
     stripe_subscription_status: subscription.status,
     stripe_price_id: priceId,
     stripe_current_period_end: getSubscriptionCurrentPeriodEnd(subscription),
     stripe_cancel_at_period_end: cancelAtPeriodEnd,
     billing_status: options?.paymentFailed ? "past_due" : cancelAtPeriodEnd ? "canceling" : "ok",
+    pending_sigi_tier: shouldClearPending ? null : existingProfile?.pending_sigi_tier ?? null,
+    pending_sigi_tier_effective_at: shouldClearPending ? null : existingProfile?.pending_sigi_tier_effective_at ?? null,
   });
 }
 
@@ -111,11 +143,14 @@ async function markSubscriptionCanceled(subscription: Stripe.Subscription) {
   await updateProfileFromStripeCustomer(customerId, {
     sigi_tier: "free",
     stripe_subscription_id: subscription.id,
+    stripe_subscription_schedule_id: null,
     stripe_subscription_status: subscription.status,
     stripe_price_id: null,
     stripe_current_period_end: getSubscriptionCurrentPeriodEnd(subscription),
     stripe_cancel_at_period_end: false,
     billing_status: "canceled",
+    pending_sigi_tier: null,
+    pending_sigi_tier_effective_at: null,
   });
 }
 

@@ -55,6 +55,9 @@ export type StoredSigiSettingsRow = {
 type StoredProfileRow = {
   user_id?: string | null;
   sigi_tier?: string | null;
+  pending_sigi_tier?: string | null;
+  pending_sigi_tier_effective_at?: string | null;
+  stripe_subscription_schedule_id?: string | null;
   sigi_provider_enabled?: boolean | null;
   sigi_provider_base_url?: string | null;
   sigi_provider_model?: string | null;
@@ -100,6 +103,8 @@ export type SigiUserSettingsView = {
   billingStatusLabel: BillingUI["status"];
   billingCtaLabel: BillingUI["cta"];
   billingPeriodEndLabel: string | null;
+  pendingTier: SigiTier | null;
+  pendingTierEffectiveLabel: string | null;
   canManageBilling: boolean;
   message: string | null;
 };
@@ -172,7 +177,7 @@ const getUserProfileRowCached = cache(async (userId: string): Promise<StoredProf
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "user_id, sigi_tier, sigi_provider_enabled, sigi_provider_base_url, sigi_provider_model, sigi_provider_label, sigi_provider_api_key_encrypted, sigi_usage_count, sigi_last_used_at, stripe_subscription_status, stripe_price_id, stripe_current_period_end, stripe_cancel_at_period_end, billing_status"
+      "user_id, sigi_tier, pending_sigi_tier, pending_sigi_tier_effective_at, stripe_subscription_schedule_id, sigi_provider_enabled, sigi_provider_base_url, sigi_provider_model, sigi_provider_label, sigi_provider_api_key_encrypted, sigi_usage_count, sigi_last_used_at, stripe_subscription_status, stripe_price_id, stripe_current_period_end, stripe_cancel_at_period_end, billing_status"
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -277,6 +282,8 @@ function toViewModel(
     profile?.sigi_provider_api_key_encrypted ?? row?.encrypted_api_key
   );
   const isEnabled = Boolean(profile?.sigi_provider_enabled ?? row?.is_enabled ?? false);
+  const pendingTier = normalizeSigiTier(profile?.pending_sigi_tier);
+  const scheduledTier = pendingTier !== currentTier ? pendingTier : null;
 
   let message: string | null = null;
   if (!isSignedIn) {
@@ -313,6 +320,8 @@ function toViewModel(
     billingStatusLabel: billingUI?.status ?? "Active",
     billingCtaLabel: billingUI?.cta ?? "Manage billing",
     billingPeriodEndLabel: formatBillingDate(profile?.stripe_current_period_end),
+    pendingTier: scheduledTier,
+    pendingTierEffectiveLabel: formatBillingDate(profile?.pending_sigi_tier_effective_at),
     canManageBilling: Boolean(isSignedIn && profile?.stripe_subscription_status),
     message,
   };

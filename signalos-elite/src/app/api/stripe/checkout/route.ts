@@ -1,6 +1,11 @@
+import type Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { SIGI_PRICING } from "@/lib/billing/pricing";
-import { coercePaidSigiTier } from "@/lib/billing/tiers";
+import {
+  coercePaidSigiTier,
+  getTierFromStripeSubscription,
+  isStripeSubscriptionActive,
+} from "@/lib/billing/tiers";
 import {
   getStripeCheckoutCancelUrl,
   getStripeCheckoutSuccessUrl,
@@ -17,6 +22,9 @@ type CheckoutRequestBody = {
 type ProfileBillingRow = {
   user_id?: string | null;
   stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  stripe_subscription_status?: string | null;
+  stripe_price_id?: string | null;
 };
 
 type CheckoutSessionResult = {
@@ -76,6 +84,50 @@ async function persistStripeCustomerId(userId: string, customerId: string) {
     },
     { onConflict: "user_id" }
   );
+}
+
+async function persistStripeSubscriptionState(args: {
+  userId: string;
+  customerId: string;
+  subscription: Stripe.Subscription;
+  tier: "smart" | "pro";
+}) {
+  const { userId, customerId, subscription, tier } = args;
+  const subscriptionItem = subscription.items.data[0];
+  const periodEnd =
+    typeof (subscription as Stripe.Subscription & { current_period_end?: number }).current_period_end === "number"
+      ? new Date((subscription as Stripe.Subscription & { current_period_end?: number }).current_period_end! * 1000).toISOString()
+      : null;
+  const cancelAtPeriodEnd =
+    (subscription as Stripe.Subscription & { cancel_at_period_end?: boolean }).cancel_at_period_end === true;
+
+  const supabase = await createSupabaseServerClient();
+  await supabase.from("profiles").upsert(
+    {
+      user_id: userId,
+      sigi_tier: tier,
+      subscription_tier: tier,
+      plan: tier,
+      stripe_customer_id: customerId,
+      stripe_subscription_id: subscription.id,
+      stripe_subscription_status: subscription.status,
+      stripe_price_id: subscriptionItem?.price?.id ?? null,
+      stripe_current_period_end: periodEnd,
+      stripe_cancel_at_period_end: cancelAtPeriodEnd,
+      billing_status: cancelAtPeriodEnd ? "canceling" : "ok",
+    },
+    { onConflict: "user_id" }
+  );
+}
+
+function getTierRank(tier: "free" | "smart" | "pro"): number {
+  if (tier === "pro") return 2;
+  if (tier === "smart") return 1;
+  return 0;
+}
+
+function getPrimarySubscriptionItem(subscription: Stripe.Subscription): Stripe.SubscriptionItem | null {
+  return subscription.items.data[0] ?? null;
 }
 
 async function findStripeCustomerIdByEmail(email: string): Promise<string | null> {
@@ -139,15 +191,68 @@ async function createCheckoutSessionForPlan(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("user_id, stripe_customer_id")
+    .select("user_id, stripe_customer_id, stripe_subscription_id, stripe_subscription_status, stripe_price_id")
     .eq("user_id", user.id)
     .maybeSingle();
 
+  const billingProfile = (profile as ProfileBillingRow | null) ?? null;
   const customerId = await getOrCreateStripeCustomerId({
     userId: user.id,
     email: user.email,
-    existingCustomerId: (profile as ProfileBillingRow | null)?.stripe_customer_id ?? null,
+    existingCustomerId: billingProfile?.stripe_customer_id ?? null,
   });
+
+  if (billingProfile?.stripe_subscription_id) {
+    const existingSubscription = await stripe.subscriptions.retrieve(
+      billingProfile.stripe_subscription_id,
+      { expand: ["items.data.price"] }
+    );
+
+    if (isStripeSubscriptionActive(existingSubscription.status)) {
+      const currentTier = getTierFromStripeSubscription(existingSubscription);
+
+      if (currentTier === tier) {
+        return {
+          url: getStripeCheckoutSuccessUrl(getSafeReturnTo(returnTo)),
+          plan: tier,
+        };
+      }
+
+      if (getTierRank(tier) > getTierRank(currentTier)) {
+        const currentItem = getPrimarySubscriptionItem(existingSubscription);
+
+        if (!currentItem?.id) {
+          throw new Error("Existing Stripe subscription is missing a billable item.");
+        }
+
+        const updatedSubscription = await stripe.subscriptions.update(existingSubscription.id, {
+          cancel_at_period_end: false,
+          proration_behavior: "create_prorations",
+          items: [{
+            id: currentItem.id,
+            price: priceId,
+          }],
+          metadata: {
+            ...existingSubscription.metadata,
+            supabase_user_id: user.id,
+            sigi_plan: tier,
+          },
+        });
+
+        await persistStripeSubscriptionState({
+          userId: user.id,
+          customerId,
+          subscription: updatedSubscription,
+          tier,
+        });
+
+        return {
+          url: getStripeCheckoutSuccessUrl(getSafeReturnTo(returnTo)),
+          plan: tier,
+        };
+      }
+    }
+  }
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",

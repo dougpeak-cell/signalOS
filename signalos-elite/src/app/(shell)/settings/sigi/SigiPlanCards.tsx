@@ -2,18 +2,21 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { startStripeUpgradeCheckout } from "@/lib/billing/client";
+import { scheduleStripeDowngrade, startStripeUpgradeCheckout } from "@/lib/billing/client";
 import { SIGI_PRICING } from "@/lib/billing/pricing";
 import type { SigiTier } from "@/lib/sigi/gates";
+import { getSigiTierCard } from "@/lib/sigi/plans";
 import type { SigiTierCard } from "@/lib/sigi/plans";
 
 type Props = {
   cards: SigiTierCard[];
   currentTier: SigiTier;
+  pendingTier: SigiTier | null;
+  pendingTierEffectiveLabel: string | null;
 };
 
-export default function SigiPlanCards({ cards, currentTier }: Props) {
-  const [pendingPlan, setPendingPlan] = useState<"smart" | "pro" | null>(null);
+export default function SigiPlanCards({ cards, currentTier, pendingTier, pendingTierEffectiveLabel }: Props) {
+  const [pendingPlan, setPendingPlan] = useState<"smart" | "pro" | "downgrade-smart" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function getIdentityCta(plan: "smart" | "pro"): string {
@@ -28,6 +31,19 @@ export default function SigiPlanCards({ cards, currentTier }: Props) {
       await startStripeUpgradeCheckout(plan);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to start checkout");
+      setPendingPlan(null);
+    }
+  }
+
+  async function startDowngrade(plan: "smart") {
+    setPendingPlan(`downgrade-${plan}`);
+    setError(null);
+
+    try {
+      await scheduleStripeDowngrade(plan);
+      window.location.reload();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to schedule downgrade");
       setPendingPlan(null);
     }
   }
@@ -69,6 +85,8 @@ export default function SigiPlanCards({ cards, currentTier }: Props) {
                 : null;
           const paidTierIdentityCta = paidTier ? getIdentityCta(paidTier) : null;
           const isBusy = pendingPlan === card.tier;
+          const isScheduledDowngradeTarget = currentTier === "pro" && card.tier === "smart";
+          const hasScheduledDowngrade = pendingTier === "smart";
 
           return (
             <article
@@ -130,6 +148,26 @@ export default function SigiPlanCards({ cards, currentTier }: Props) {
                   <span className="inline-flex rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/78">
                     Current plan
                   </span>
+                ) : isScheduledDowngradeTarget ? (
+                  hasScheduledDowngrade ? (
+                    <div>
+                      <span className="inline-flex rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/78">
+                        Downgrades to {getSigiTierCard("smart").name}
+                      </span>
+                      {pendingTierEffectiveLabel ? (
+                        <div className="mt-2 text-xs text-white/52">Scheduled for {pendingTierEffectiveLabel}</div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => void startDowngrade("smart")}
+                      disabled={pendingPlan !== null}
+                      className="inline-flex w-full justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white/82 transition hover:border-white/18 hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {pendingPlan === "downgrade-smart" ? "Scheduling downgrade" : "Downgrade to Smart next cycle"}
+                    </button>
+                  )
                 ) : isPaidTier && paidTier === "smart" ? (
                   <a
                     href="/auth/upgrade?plan=smart"

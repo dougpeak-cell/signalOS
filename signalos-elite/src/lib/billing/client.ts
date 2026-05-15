@@ -5,6 +5,11 @@ type CheckoutResponse = {
   url?: string;
 };
 
+type SubscriptionActionResponse = {
+  error?: string;
+  success?: boolean;
+};
+
 export async function startStripeUpgradeCheckout(plan: PlanKey): Promise<void> {
   const res = await fetch("/api/stripe/checkout", {
     method: "POST",
@@ -22,4 +27,20 @@ export async function startStripeUpgradeCheckout(plan: PlanKey): Promise<void> {
   }
 
   window.location.href = data.url;
+}
+
+export async function scheduleStripeDowngrade(plan: Extract<PlanKey, "smart">): Promise<void> {
+  const res = await fetch("/api/stripe/subscription", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action: "schedule_downgrade", tier: plan }),
+  });
+
+  const data = (await res.json()) as SubscriptionActionResponse;
+
+  if (!res.ok) {
+    throw new Error(data.error || "Unable to schedule downgrade");
+  }
 }

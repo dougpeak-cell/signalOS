@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { startStripeUpgradeCheckout } from "@/lib/billing/client";
+import { scheduleStripeDowngrade, startStripeUpgradeCheckout } from "@/lib/billing/client";
 import { SIGI_PRICING } from "@/lib/billing/pricing";
 import type { SigiUserSettingsView } from "@/lib/sigi/settings";
 import { getSigiTierCard } from "@/lib/sigi/plans";
@@ -11,7 +11,7 @@ type Props = {
 };
 
 export default function SigiBillingStateCard({ settings }: Props) {
-  const [busyAction, setBusyAction] = useState<"smart" | "pro" | "portal" | null>(null);
+  const [busyAction, setBusyAction] = useState<"smart" | "pro" | "portal" | "downgrade-smart" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const planName = getSigiTierCard(settings.currentTier).name;
   const paidPlan =
@@ -54,6 +54,19 @@ export default function SigiBillingStateCard({ settings }: Props) {
     }
   }
 
+  async function startDowngrade(plan: "smart") {
+    setBusyAction(`downgrade-${plan}`);
+    setError(null);
+
+    try {
+      await scheduleStripeDowngrade(plan);
+      window.location.reload();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to schedule downgrade");
+      setBusyAction(null);
+    }
+  }
+
   let statusLabel: string = settings.billingStatusLabel;
   let detailLabel: string | null = null;
   const upgradeTarget: "smart" | "pro" | null =
@@ -87,12 +100,18 @@ export default function SigiBillingStateCard({ settings }: Props) {
     statusLabel = settings.billingStatusLabel;
   } else if (settings.billingStatus === "canceling" && settings.billingPeriodEndLabel) {
     statusLabel = `Ends ${settings.billingPeriodEndLabel}`;
+  } else if (settings.pendingTier && settings.pendingTierEffectiveLabel) {
+    statusLabel = `Downgrades to ${getSigiTierCard(settings.pendingTier).name} ${settings.pendingTierEffectiveLabel}`;
   } else if (settings.billingPeriodEndLabel && settings.currentTier !== "free") {
     detailLabel = `Next billing: ${settings.billingPeriodEndLabel}`;
   }
 
   const showManageBilling = settings.currentTier !== "free";
   const showUpgradeToPro = settings.currentTier === "smart" && settings.billingStatus === "active";
+  const showDowngradeToSmart =
+    settings.currentTier === "pro" &&
+    settings.billingStatus === "active" &&
+    settings.pendingTier !== "smart";
   const showFixBilling = settings.billingStatus === "payment_issue";
   const showResumePlan = settings.billingStatus === "canceling";
 
@@ -117,6 +136,11 @@ export default function SigiBillingStateCard({ settings }: Props) {
                 <span className="text-white/52">Status:</span> {statusLabel}
               </div>
               {detailLabel ? <div className="text-white/62">{detailLabel}</div> : null}
+              {settings.pendingTier && settings.pendingTierEffectiveLabel ? (
+                <div className="text-white/62">
+                  Scheduled change: {getSigiTierCard(settings.pendingTier).name} on {settings.pendingTierEffectiveLabel}
+                </div>
+              ) : null}
               {upsellLabel ? <div className="text-white/62">{upsellLabel}</div> : null}
               {socialProofLabel ? <div className="text-xs text-white/52">{socialProofLabel}</div> : null}
               {upgradeTarget ? <div className="text-xs text-white/52">Cancel anytime. No commitment.</div> : null}
@@ -154,6 +178,17 @@ export default function SigiBillingStateCard({ settings }: Props) {
                 className="rounded-2xl border border-amber-200/18 bg-amber-200/8 px-4 py-2.5 text-sm font-medium text-amber-50 transition hover:border-amber-100/30 hover:bg-amber-200/12 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {busyAction === "pro" ? "Starting checkout" : primaryUpgradeLabel}
+              </button>
+            ) : null}
+
+            {showDowngradeToSmart ? (
+              <button
+                type="button"
+                onClick={() => void startDowngrade("smart")}
+                disabled={!settings.isSignedIn || busyAction !== null}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/82 transition hover:border-white/18 hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {busyAction === "downgrade-smart" ? "Scheduling downgrade" : "Downgrade to Smart next cycle"}
               </button>
             ) : null}
           </div>
