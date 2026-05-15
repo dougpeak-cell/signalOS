@@ -28,19 +28,19 @@ export default async function TodayPage({
   const query = (await searchParams) ?? {};
   const mobilePreviewValue = query.mobilePreview;
   const previewTier = await getDevPreviewTier();
-  let profile: { subscription_tier: string | null; plan: string | null } | null = null;
+  let profile: { sigi_tier: string | null; subscription_tier: string | null; plan: string | null } | null = null;
 
   if (user?.id) {
     const { data } = await supabase
       .from("profiles")
-      .select("subscription_tier, plan")
+      .select("sigi_tier, subscription_tier, plan")
       .eq("id", user.id)
       .maybeSingle();
 
     profile = data;
   }
 
-  const plan = previewTier || profile?.subscription_tier || profile?.plan || "free";
+  const plan = previewTier || profile?.sigi_tier || profile?.subscription_tier || profile?.plan || "free";
   const canUseSigiCommand = plan === "smart" || plan === "pro";
   const isLikelyMobileDevice = isLikelyMobileUserAgent(
     requestHeaders.get("user-agent") ?? ""

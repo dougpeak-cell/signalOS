@@ -34,8 +34,22 @@ function getSafePlan(value: string | null): UpgradePlan | null {
   return value === "smart" || value === "pro" ? value : null;
 }
 
-function getCheckoutPathForPlan(plan: UpgradePlan): string {
-  return `/api/stripe/checkout?plan=${plan}`;
+function getSafeReturnTo(value: string | null): string | null {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return null;
+  }
+
+  return value;
+}
+
+function getCheckoutPathForPlan(plan: UpgradePlan, returnTo: string | null): string {
+  const checkoutParams = new URLSearchParams({ plan });
+
+  if (returnTo) {
+    checkoutParams.set("returnTo", returnTo);
+  }
+
+  return `/api/stripe/checkout?${checkoutParams.toString()}`;
 }
 
 function getSafeNextPath(value: string | null, fallbackPath: string): string {
@@ -51,10 +65,11 @@ function EmailAuthContent(props: EmailAuthEntryProps) {
   const searchParams = useSearchParams();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const plan = getSafePlan(searchParams.get("plan"));
+  const returnTo = getSafeReturnTo(searchParams.get("returnTo"));
   const callbackError = searchParams.get("error_description") ?? searchParams.get("error");
   const nextPath = getSafeNextPath(
     searchParams.get("next"),
-    plan ? getCheckoutPathForPlan(plan) : props.defaultNextPath
+    plan ? getCheckoutPathForPlan(plan, returnTo) : props.defaultNextPath
   );
 
   const [email, setEmail] = useState("");

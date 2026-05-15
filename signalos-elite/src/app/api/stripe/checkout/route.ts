@@ -11,6 +11,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 type CheckoutRequestBody = {
   plan?: "smart" | "pro";
   tier?: string;
+  returnTo?: string;
 };
 
 type ProfileBillingRow = {
@@ -23,14 +24,44 @@ type CheckoutSessionResult = {
   plan: "smart" | "pro";
 };
 
-function buildUpgradeAuthRedirect(request: Request, planValue: string | undefined): NextResponse {
+function getSafeReturnTo(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) {
+    return null;
+  }
+
+  return trimmed;
+}
+
+function buildUpgradeAuthRedirect(
+  request: Request,
+  planValue: string | undefined,
+  returnTo: string | null
+): NextResponse {
   const authUrl = new URL("/auth/upgrade", request.url);
   const tier = coercePaidSigiTier(planValue);
+  const safeReturnTo = getSafeReturnTo(returnTo);
 
   if (tier) {
     authUrl.searchParams.set("plan", tier);
   } else if (planValue) {
-    authUrl.searchParams.set("next", `/api/stripe/checkout?plan=${encodeURIComponent(planValue)}`);
+    const nextUrl = new URL("/api/stripe/checkout", request.url);
+    nextUrl.searchParams.set("plan", planValue);
+
+    if (safeReturnTo) {
+      nextUrl.searchParams.set("returnTo", safeReturnTo);
+    }
+
+    authUrl.searchParams.set("next", `${nextUrl.pathname}${nextUrl.search}`);
+  }
+
+  if (safeReturnTo) {
+    authUrl.searchParams.set("returnTo", safeReturnTo);
   }
 
   return NextResponse.redirect(authUrl);
@@ -72,7 +103,10 @@ async function getOrCreateStripeCustomerId(args: {
   return customer.id;
 }
 
-async function createCheckoutSessionForPlan(planValue: string | undefined): Promise<CheckoutSessionResult> {
+async function createCheckoutSessionForPlan(
+  planValue: string | undefined,
+  returnTo: string | null
+): Promise<CheckoutSessionResult> {
   const stripe = getStripeServer();
   const tier = coercePaidSigiTier(planValue);
   if (!tier) {
@@ -115,7 +149,7 @@ async function createCheckoutSessionForPlan(planValue: string | undefined): Prom
     client_reference_id: user.id,
     line_items: [{ price: priceId, quantity: 1 }],
     allow_promotion_codes: true,
-    success_url: getStripeCheckoutSuccessUrl(),
+    success_url: getStripeCheckoutSuccessUrl(getSafeReturnTo(returnTo)),
     cancel_url: getStripeCheckoutCancelUrl(),
     metadata: {
       supabase_user_id: user.id,
@@ -139,14 +173,15 @@ async function createCheckoutSessionForPlan(planValue: string | undefined): Prom
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const plan = searchParams.get("plan") ?? searchParams.get("tier") ?? undefined;
+  const returnTo = getSafeReturnTo(searchParams.get("returnTo"));
 
   try {
-    const session = await createCheckoutSessionForPlan(plan);
+    const session = await createCheckoutSessionForPlan(plan, returnTo);
     return NextResponse.redirect(session.url);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create checkout session";
     if (message === "You must be signed in to upgrade.") {
-      return buildUpgradeAuthRedirect(request, plan);
+      return buildUpgradeAuthRedirect(request, plan, returnTo);
     }
 
     const status =
@@ -165,7 +200,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as CheckoutRequestBody;
-    const session = await createCheckoutSessionForPlan(body.plan ?? body.tier);
+    const session = await createCheckoutSessionForPlan(
+      body.plan ?? body.tier,
+      getSafeReturnTo(body.returnTo)
+    );
     return NextResponse.json(session);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create checkout session";

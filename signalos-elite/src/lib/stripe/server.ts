@@ -34,6 +34,20 @@ function buildAppUrl(path: string): string {
   return new URL(path, `${getSiteUrl()}/`).toString();
 }
 
+function normalizeReturnPath(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) {
+    return null;
+  }
+
+  return trimmed;
+}
+
 let stripeServer: Stripe | null = null;
 
 export function getStripeServer(): Stripe {
@@ -58,8 +72,20 @@ export function getStripePortalReturnUrl(): string {
   return process.env.STRIPE_PORTAL_RETURN_URL?.trim() || buildAppUrl("/settings/sigi");
 }
 
-export function getStripeCheckoutSuccessUrl(): string {
-  return process.env.STRIPE_CHECKOUT_SUCCESS_URL?.trim() || buildAppUrl("/settings/sigi?checkout=success");
+export function getStripeCheckoutSuccessUrl(returnTo?: string | null): string {
+  if (process.env.STRIPE_CHECKOUT_SUCCESS_URL?.trim()) {
+    return process.env.STRIPE_CHECKOUT_SUCCESS_URL.trim();
+  }
+
+  const safeReturnTo = normalizeReturnPath(returnTo);
+
+  if (!safeReturnTo) {
+    return buildAppUrl("/settings/sigi?checkout=success");
+  }
+
+  const successUrl = new URL(safeReturnTo, `${getSiteUrl()}/`);
+  successUrl.searchParams.set("checkout", "success");
+  return successUrl.toString();
 }
 
 export function getStripeCheckoutCancelUrl(): string {

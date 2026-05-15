@@ -34,7 +34,7 @@ export default function UpgradeSigiSmartCard() {
 			</div>
 
 			<Link
-				href="/auth/upgrade?plan=smart"
+				href="/auth/upgrade?plan=smart&returnTo=/today"
 				className="block rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-5 py-3 text-center text-sm font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-400/25"
 			>
 				Upgrade to Smart

@@ -41,11 +41,12 @@ export default async function StockWorkspacePage({
   if (user?.id) {
     const { data } = await supabase
       .from("profiles")
-      .select("subscription_tier, plan")
+      .select("sigi_tier, subscription_tier, plan")
       .eq("id", user.id)
       .maybeSingle();
 
     plan =
+      (typeof data?.sigi_tier === "string" && data.sigi_tier) ||
       (typeof data?.subscription_tier === "string" && data.subscription_tier) ||
       (typeof data?.plan === "string" && data.plan) ||
       "free";

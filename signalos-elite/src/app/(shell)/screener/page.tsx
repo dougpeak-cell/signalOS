@@ -106,6 +106,7 @@ type MassiveTickerDetail = {
 type SortKey = "conviction" | "upside" | "price" | "ticker";
 
 type ScreenerProfile = {
+  sigi_tier?: string | null;
   subscription_tier?: string | null;
   plan?: string | null;
 };
@@ -647,14 +648,15 @@ export default async function ScreenerPage({
   if (user?.id) {
     const { data } = await supabase
       .from("profiles")
-      .select("subscription_tier, plan")
+      .select("sigi_tier, subscription_tier, plan")
       .eq("id", user.id)
       .maybeSingle();
 
     profile = (data as ScreenerProfile | null) ?? null;
   }
 
-  const effectivePlan = previewTier || profile?.subscription_tier || profile?.plan || "free";
+  const effectivePlan =
+    previewTier || profile?.sigi_tier || profile?.subscription_tier || profile?.plan || "free";
   const isPro = effectivePlan === "pro" && !shouldForceLockedPreview;
 
   const rawQ = (params.q ?? "").trim();
