@@ -301,7 +301,11 @@ export default function SigiDecisionPanel({
     if (!profile) return null;
 
     const userName = profile.name?.trim() || "friend";
-    const interests = formatInterestList(profile.interests, hasSigiPro ? 6 : 3);
+    const interests = formatInterestList(profile.interests, 3);
+
+    if (hasSigiPro) {
+      return `Hi ${userName}, I have prioritized your selections and I'm watching all the sectors you have selected.`;
+    }
 
     return `Hi ${userName} - I'm watching ${interests} for you.`;
   }, [hasSigiPro, profile]);
