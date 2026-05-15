@@ -48,7 +48,6 @@ type TodayPageShellProps = Pick<
 	hasSigiSmart: boolean;
 	hasSigiPro: boolean;
 	isDevMobilePreview?: boolean;
-	isLikelyMobileDevice?: boolean;
 };
 
 export default function TodayPageShell({
@@ -79,11 +78,10 @@ export default function TodayPageShell({
 	hasSigiSmart,
 	hasSigiPro,
 	isDevMobilePreview = false,
-	isLikelyMobileDevice = false,
 }: TodayPageShellProps): ReactElement {
 	const catalystItems = [...topSetups, ...emergingSetups];
 	const sigiMovers = [...commandCenterGainers, ...commandCenterLosers];
-	const shouldUseMobileTodayHome = isDevMobilePreview || isLikelyMobileDevice;
+	const shouldUseMobileTodayHome = isDevMobilePreview;
 	const shouldRenderDesktopTodayLayout = !shouldUseMobileTodayHome;
 
 	return (
@@ -107,7 +105,7 @@ export default function TodayPageShell({
 					/>
 				</Suspense>
 
-				<div className={`${shouldRenderDesktopTodayLayout ? "space-y-6" : "hidden"}`}>
+				<div className={`${shouldRenderDesktopTodayLayout ? "hidden md:space-y-6" : "hidden"}`}>
 					<TodayHeroRow
 						hasSigiSmart={hasSigiSmart}
 						hasSigiPro={hasSigiPro}

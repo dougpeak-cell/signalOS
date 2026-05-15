@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useResponsiveMobilePreviewWidth } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { buildSparklinePath } from "@/lib/market/sparkline";
@@ -244,6 +245,7 @@ export default function CryptoPage() {
     .sort((a, b) => (b.changePercent ?? -999) - (a.changePercent ?? -999))
     .slice(0, 3);
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
+  const mobilePreviewWidth = useResponsiveMobilePreviewWidth(isMobilePreview);
   const plan = tier ?? "free";
   const canUseCrypto = plan === "smart" || plan === "pro";
   const canUseCryptoWorkspace = plan === "pro";
@@ -260,6 +262,16 @@ export default function CryptoPage() {
         "relative min-h-screen overflow-hidden bg-black text-white",
         isMobilePreview ? "px-4 py-6" : "px-6 py-8",
       ].join(" ")}
+      style={
+        isMobilePreview
+          ? {
+              width: "100%",
+              maxWidth: `${mobilePreviewWidth}px`,
+              marginInline: "auto",
+              overflowX: "hidden",
+            }
+          : undefined
+      }
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(0,255,200,0.08),transparent_40%),radial-gradient(circle_at_80%_0%,rgba(80,120,255,0.08),transparent_40%)]" />
       <div className="relative z-10 mx-auto max-w-7xl">

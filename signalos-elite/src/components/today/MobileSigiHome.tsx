@@ -746,7 +746,9 @@ export default function MobileSigiHome({
                   type="button"
                   onClick={() =>
                     router.push(
-                      `/stocks/${row.ticker}/live?source=%2Ftoday&session=${defaultSetupSession}`
+                      buildPreviewHref(
+                        `/stocks/${row.ticker}/live?source=%2Ftoday&session=${defaultSetupSession}`
+                      )
                     )
                   }
                   className="min-h-9 shrink-0 rounded-lg border border-cyan-300/30 px-2.5 text-[11px] font-semibold text-cyan-100"
@@ -822,7 +824,9 @@ export default function MobileSigiHome({
                     type="button"
                     onClick={() =>
                       router.push(
-                        `/stocks/${row.ticker}/live?source=%2Ftoday&session=${defaultSetupSession}`
+                        buildPreviewHref(
+                          `/stocks/${row.ticker}/live?source=%2Ftoday&session=${defaultSetupSession}`
+                        )
                       )
                     }
                     className="min-h-11 rounded-lg border border-cyan-300/30 px-2 py-1 text-xs text-cyan-100"

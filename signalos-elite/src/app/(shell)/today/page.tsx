@@ -1,18 +1,11 @@
 import MobileSigiSplash from "@/components/mobile/MobileSigiSplash";
 import TodayPageShell from "@/components/today/TodayPageShell";
-import { headers } from "next/headers";
 import { getDevPreviewTier } from "@/lib/sigi/devPreview";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTodayPageData } from "@/lib/today/pageData";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-function isLikelyMobileUserAgent(userAgent: string): boolean {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(
-    userAgent
-  );
-}
 
 export default async function TodayPage({
   searchParams,
@@ -24,7 +17,6 @@ export default async function TodayPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const requestHeaders = await headers();
   const query = (await searchParams) ?? {};
   const mobilePreviewValue = query.mobilePreview;
   const previewTier = await getDevPreviewTier();
@@ -43,9 +35,6 @@ export default async function TodayPage({
   const plan = previewTier || profile?.sigi_tier || profile?.subscription_tier || profile?.plan || "free";
   const canUseSigiCommand = plan === "smart" || plan === "pro";
   const hasSigiPro = plan === "pro";
-  const isLikelyMobileDevice = isLikelyMobileUserAgent(
-    requestHeaders.get("user-agent") ?? ""
-  );
   const isDevMobilePreview =
     process.env.NODE_ENV !== "production" &&
     (mobilePreviewValue === "1" ||
@@ -59,7 +48,6 @@ export default async function TodayPage({
       <TodayPageShell
         hasSigiSmart={canUseSigiCommand}
         hasSigiPro={hasSigiPro}
-        isLikelyMobileDevice={isLikelyMobileDevice}
         isDevMobilePreview={isDevMobilePreview}
         defaultSetupSession={todayPageData.defaultSetupSession}
         topSetups={todayPageData.topSetups}

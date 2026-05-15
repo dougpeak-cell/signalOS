@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import { prefetchCompanyProfile } from "@/lib/companyCache";
@@ -30,6 +31,24 @@ export default function CompactMoverList({
 }) {
   void tone;
   const { setActiveTicker } = useSelectedTicker();
+  const searchParams = useSearchParams();
+
+  function buildPreviewHref(href: string) {
+    if (searchParams.get("mobilePreview") !== "1") {
+      return href;
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("mobilePreview", "1");
+    const nextQuery = nextParams.toString();
+
+    if (!nextQuery) {
+      return href;
+    }
+
+    const separator = href.includes("?") ? "&" : "?";
+    return `${href}${separator}${nextQuery}`;
+  }
 
   return (
     <div className="rounded-3xl border border-cyan-400/10 bg-linear-to-br from-[#040b12] via-[#05121b] to-[#020910] p-4 shadow-[0_0_0_1px_rgba(0,255,255,0.05),0_0_24px_rgba(0,255,255,0.06)]">
@@ -37,7 +56,7 @@ export default function CompactMoverList({
         <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/75">
           {title}
         </div>
-        <Link href="/stocks" className="text-xs text-white/45 hover:text-white">
+        <Link href={buildPreviewHref("/stocks")} className="text-xs text-white/45 hover:text-white">
           View all
         </Link>
       </div>
@@ -46,7 +65,7 @@ export default function CompactMoverList({
         {rows.slice(0, 5).map((row) => (
           <Link
             key={row.ticker}
-            href={`/stocks/${row.ticker}`}
+            href={buildPreviewHref(`/stocks/${row.ticker}`)}
             onClick={() => setActiveTicker(row.ticker)}
             onMouseEnter={() => prefetchCompanyProfile(row.ticker)}
             onFocus={() => prefetchCompanyProfile(row.ticker)}

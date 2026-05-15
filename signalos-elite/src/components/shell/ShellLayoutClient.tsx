@@ -215,47 +215,6 @@ function ShellLayoutContent({
     };
   }, []);
 
-  useEffect(() => {
-    if (process.env.NODE_ENV === "production") {
-      return;
-    }
-
-    const html = document.documentElement;
-    const body = document.body;
-
-    const prevHtmlWidth = html.style.maxWidth;
-    const prevHtmlMargin = html.style.marginInline;
-    const prevHtmlOverflow = html.style.overflowX;
-    const prevBodyWidth = body.style.maxWidth;
-    const prevBodyMargin = body.style.marginInline;
-    const prevBodyOverflow = body.style.overflowX;
-
-    if (isDevMobilePreview) {
-      html.style.maxWidth = `${mobilePreviewWidth}px`;
-      html.style.marginInline = "auto";
-      html.style.overflowX = "hidden";
-      body.style.maxWidth = `${mobilePreviewWidth}px`;
-      body.style.marginInline = "auto";
-      body.style.overflowX = "hidden";
-    } else {
-      html.style.maxWidth = "";
-      html.style.marginInline = "";
-      html.style.overflowX = "";
-      body.style.maxWidth = "";
-      body.style.marginInline = "";
-      body.style.overflowX = "";
-    }
-
-    return () => {
-      html.style.maxWidth = prevHtmlWidth;
-      html.style.marginInline = prevHtmlMargin;
-      html.style.overflowX = prevHtmlOverflow;
-      body.style.maxWidth = prevBodyWidth;
-      body.style.marginInline = prevBodyMargin;
-      body.style.overflowX = prevBodyOverflow;
-    };
-  }, [isDevMobilePreview, mobilePreviewWidth]);
-
   const isWorkspaceStockPage =
     pathname.startsWith("/stocks/") && pathname.includes("/workspace");
   const isStockChartPage = /^\/stocks\/[^/]+\/chart(?:\/.*)?$/i.test(pathname);
@@ -283,11 +242,21 @@ function ShellLayoutContent({
           <SigiUpgradeAnalyticsBridge />
           <div
             className={[
-              "min-h-screen bg-black pb-32 text-white transition-colors md:pb-0",
+              "min-h-screen bg-black pb-[calc(8rem+env(safe-area-inset-bottom))] text-white transition-colors md:pb-0",
               isCryptoMode
                 ? "bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.10),transparent_34%),#000]"
                 : "",
             ].join(" ")}
+            style={
+              isDevMobilePreview
+                ? {
+                    width: "100%",
+                    maxWidth: `${mobilePreviewWidth}px`,
+                    marginInline: "auto",
+                    overflowX: "hidden",
+                  }
+                : undefined
+            }
           >
             {process.env.NODE_ENV !== "production" ? (
               <div className="pointer-events-auto fixed bottom-4 left-4 z-120 flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-400/25 bg-black/70 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.16)] backdrop-blur-xl md:bottom-5 md:left-5">

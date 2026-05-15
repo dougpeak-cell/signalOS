@@ -688,17 +688,19 @@ function QuickPortfolioRowItem({
   name,
   livePrice,
   pnlPct,
+  href,
 }: {
   ticker: string;
   name: string;
   livePrice: number;
   pnlPct: number;
+  href: string;
 }) {
   const changeTone = pnlPct > 0 ? "text-emerald-300" : pnlPct < 0 ? "text-rose-300" : "text-white/55";
 
   return (
     <Link
-      href={`/stocks/${ticker}`}
+      href={href}
       className="group flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/3 px-4 py-3 transition hover:border-cyan-400/20 hover:bg-cyan-400/5"
     >
       <div className="min-w-0">
@@ -1891,6 +1893,7 @@ function PortfolioPageContent() {
                           name={holding.name}
                           livePrice={holding.livePrice}
                           pnlPct={holding.pnlPct}
+                          href={buildPortfolioHref(`/stocks/${holding.ticker}`)}
                         />
                       );
                     }
@@ -2047,7 +2050,7 @@ function PortfolioPageContent() {
 
                           <div className="flex flex-wrap items-center gap-2 border-t border-white/6 pt-3 sm:pt-4">
                             <Link
-                              href={`/stocks/${holding.ticker}`}
+                              href={buildPortfolioHref(`/stocks/${holding.ticker}`)}
                               onClick={() => setActiveTicker(holding.ticker)}
                               className="inline-flex h-9 items-center justify-center rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-3 text-sm font-medium text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/16 hover:text-cyan-100"
                             >

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import {
   internalCardStackClass,
@@ -45,6 +46,24 @@ export default function CompactWatchlistBoard({
   rows: WatchlistRow[];
 }) {
   const { setActiveTicker } = useSelectedTicker();
+  const searchParams = useSearchParams();
+
+  function buildPreviewHref(href: string) {
+    if (searchParams.get("mobilePreview") !== "1") {
+      return href;
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("mobilePreview", "1");
+    const nextQuery = nextParams.toString();
+
+    if (!nextQuery) {
+      return href;
+    }
+
+    const separator = href.includes("?") ? "&" : "?";
+    return `${href}${separator}${nextQuery}`;
+  }
 
   return (
     <div className={`${supportSectionClass} border-white/10 bg-white/2`}>
@@ -52,7 +71,7 @@ export default function CompactWatchlistBoard({
         <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-300/70">
           Watchlist Movers
         </div>
-        <Link href="/watchlist" className="text-xs text-white/50 hover:text-white">
+        <Link href={buildPreviewHref("/watchlist")} className="text-xs text-white/50 hover:text-white">
           Open watchlist
         </Link>
       </div>
@@ -72,7 +91,7 @@ export default function CompactWatchlistBoard({
             return (
             <Link
               key={row.ticker}
-              href={`/stocks/${row.ticker}`}
+              href={buildPreviewHref(`/stocks/${row.ticker}`)}
               onClick={() => setActiveTicker(row.ticker)}
               onMouseEnter={() => prefetchCompanyProfile(row.ticker)}
               onFocus={() => prefetchCompanyProfile(row.ticker)}

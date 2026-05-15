@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useResponsiveMobilePreviewWidth } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { useCryptoStream } from "@/hooks/useCryptoStream";
@@ -894,6 +895,7 @@ export default function CryptoDetailPage() {
   const { tier } = useSigiTier();
   const ticker = String(params.ticker ?? "BTC").toUpperCase();
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
+  const mobilePreviewWidth = useResponsiveMobilePreviewWidth(isMobilePreview);
   const plan = tier ?? "free";
   const canUseCrypto = plan === "smart" || plan === "pro";
   const canUseCryptoWorkspace = plan === "pro";
@@ -981,7 +983,18 @@ export default function CryptoDetailPage() {
     <main className={[
       "min-h-screen bg-black text-white",
       isMobilePreview ? "px-4 py-6" : "px-6 py-8",
-    ].join(" ")}>
+    ].join(" ")}
+      style={
+        isMobilePreview
+          ? {
+              width: "100%",
+              maxWidth: `${mobilePreviewWidth}px`,
+              marginInline: "auto",
+              overflowX: "hidden",
+            }
+          : undefined
+      }
+    >
       <div className="mx-auto max-w-7xl">
           {!canUseCryptoWorkspace && plan === "smart" ? (
             <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4">

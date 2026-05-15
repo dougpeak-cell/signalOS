@@ -1,11 +1,13 @@
-import { redirect } from "next/navigation";
+import GenericStockView, {
+  type GenericStockViewContext,
+} from "@/components/stocks/GenericStockView";
 
 type PageProps = {
   params: Promise<{ ticker: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function buildRedirectTarget(
+function buildStockSummaryTarget(
   ticker: string,
   searchParams: Record<string, string | string[] | undefined>
 ) {
@@ -33,6 +35,20 @@ function buildRedirectTarget(
   return query ? `${basePath}?${query}` : basePath;
 }
 
+function buildLiveContext(
+  ticker: string,
+  searchParams: Record<string, string | string[] | undefined>
+): GenericStockViewContext {
+  const normalizedTicker = String(ticker ?? "").trim().toUpperCase();
+
+  return {
+    badge: "Live Surface",
+    backHref: buildStockSummaryTarget(normalizedTicker, searchParams),
+    backLabel: "Back to Stock",
+    subtitle: `Real-time stock surface for ${normalizedTicker}.`,
+  };
+}
+
 export default async function StockLivePageRedirect({
   params,
   searchParams,
@@ -40,5 +56,10 @@ export default async function StockLivePageRedirect({
   const { ticker } = await params;
   const resolvedSearchParams = (await searchParams) ?? {};
 
-  redirect(buildRedirectTarget(ticker, resolvedSearchParams));
+  return (
+    <GenericStockView
+      ticker={ticker}
+      context={buildLiveContext(ticker, resolvedSearchParams)}
+    />
+  );
 }

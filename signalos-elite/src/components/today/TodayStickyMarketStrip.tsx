@@ -66,7 +66,7 @@ export default function TodayStickyMarketStrip(): ReactElement {
   }, [quoteLoadingMap, quoteMap]);
 
   return (
-    <div className="sticky top-0 z-40 border-b border-cyan-500/10 bg-black/85 backdrop-blur-xl">
+    <div className="sticky top-[calc(env(safe-area-inset-top)+3rem)] z-40 border-b border-cyan-500/10 bg-black/85 backdrop-blur-xl md:top-13">
       <TodayLiveBootstrap />
       <div className="mx-auto flex w-full max-w-400 items-center gap-2 overflow-x-auto px-3 py-2 sm:px-4 lg:px-5 xl:px-6">
         <div className="mr-3 whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">

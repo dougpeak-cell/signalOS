@@ -37,7 +37,6 @@ export default function MobileBottomNav({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const navPositionClass = "bottom-3";
   const isMobilePreviewEnabled = searchParams.get("mobilePreview") === "1";
   const lastScrollYRef = useRef(0);
   const showNavTimeoutRef = useRef<number | null>(null);
@@ -126,13 +125,13 @@ export default function MobileBottomNav({
 
   const navShellClass = forceVisible
     ? [
-        "fixed bottom-2 left-1/2 z-50 w-[min(calc(100%-1rem),392px)] -translate-x-1/2 will-change-transform transition-[transform,opacity] duration-150 ease-out",
+        "fixed bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-1/2 z-50 w-[min(calc(100%-1rem),392px)] -translate-x-1/2 will-change-transform transition-[transform,opacity] duration-150 ease-out",
         isNavHidden
           ? "translate-y-[calc(100%+1.5rem)] opacity-0 pointer-events-none"
           : "translate-y-0 opacity-100",
       ].join(" ")
     : [
-        `fixed inset-x-3 z-50 md:hidden ${navPositionClass} will-change-transform transition-[transform,opacity] duration-150 ease-out`,
+        "fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 md:hidden will-change-transform transition-[transform,opacity] duration-150 ease-out",
         isNavHidden
           ? "translate-y-[calc(100%+1.5rem)] opacity-0 pointer-events-none"
           : "translate-y-0 opacity-100",

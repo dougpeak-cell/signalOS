@@ -853,7 +853,7 @@ export default function WatchlistPageClient({
                   </Link>
 
                   <Link
-                    href="/experts"
+                    href={withPreviewParam("/experts")}
                     className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm font-medium text-white/80 transition hover:bg-white/10"
                   >
                     View Experts
@@ -896,7 +896,10 @@ export default function WatchlistPageClient({
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <ReturnToContextButton fallbackHref="/" label="Back to Today context" />
+                        <ReturnToContextButton
+                          fallbackHref={withPreviewParam("/")}
+                          label="Back to Today context"
+                        />
                         <Link
                           href={withPreviewParam("/watchlist")}
                           className="inline-flex rounded-2xl border border-white/15 bg-black/20 px-3 py-2 text-sm text-white/85 transition hover:bg-black/30"
@@ -972,7 +975,7 @@ export default function WatchlistPageClient({
                   </Link>
 
                   <Link
-                    href="/experts"
+                    href={withPreviewParam("/experts")}
                     className="block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm font-medium text-white/80 transition hover:bg-white/10"
                   >
                     View Experts

@@ -24,7 +24,7 @@ export default function MarketContextStrip({
   items: Item[];
 }) {
   return (
-    <div className="sticky top-0 z-20 -mx-1 mb-2 rounded-[22px] border border-white/10 bg-black/70 px-2 py-2 backdrop-blur-md">
+    <div className="sticky top-[calc(env(safe-area-inset-top)+3rem)] z-20 -mx-1 mb-2 rounded-[22px] border border-white/10 bg-black/70 px-2 py-2 backdrop-blur-md md:top-13">
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
         {items.map((item) => (
           <div

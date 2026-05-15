@@ -200,8 +200,8 @@ export default function TopNav({
   }
 
   return (
-    <header className="sticky top-0 z-40 h-12 border-b border-cyan-400/10 bg-black/84 backdrop-blur-xl md:h-13">
-      <div className="mx-auto flex h-full w-full items-center justify-between max-w-430 px-3 sm:px-5 md:px-6 xl:px-6 2xl:px-7">
+    <header className="sticky top-0 z-40 border-b border-cyan-400/10 bg-black/84 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
+      <div className="mx-auto flex min-h-12 w-full items-center justify-between max-w-430 px-3 sm:px-5 md:min-h-13 md:px-6 xl:px-6 2xl:px-7">
         <div className="flex items-center gap-4 md:gap-6">
           <Link
             href={buildNavHref("/today")}
