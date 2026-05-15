@@ -7,7 +7,6 @@ import {
 import { getSigiSettingsViewForCurrentUser } from "@/lib/sigi/settings";
 import SigiBillingStateCard from "./SigiBillingStateCard";
 import SigiPlanCards from "./SigiPlanCards";
-import SigiSettingsForm from "./SigiSettingsForm";
 
 export default async function SigiSettingsPage() {
   const settings = await getSigiSettingsViewForCurrentUser();
@@ -41,8 +40,6 @@ export default async function SigiSettingsPage() {
         pendingTier={settings.pendingTier}
         pendingTierEffectiveLabel={settings.pendingTierEffectiveLabel}
       />
-
-      <SigiSettingsForm settings={settings} />
     </main>
   );
 }
