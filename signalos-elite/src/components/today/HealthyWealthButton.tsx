@@ -80,6 +80,14 @@ const DAILY_SCRIPTURES = [
     principle:
       "Compounding rewards patience more than emotion.",
   },
+  {
+    reference: "Proverbs 10:14",
+    verse:
+      "Wise people store up knowledge, but the mouth of a fool invites ruin.",
+    principle: "Knowledge compounds before wealth does.",
+    message:
+      "Strong investors prepare before they act. Wisdom, patience, and discipline create stability when markets become emotional or uncertain.",
+  },
 ];
 
 function getDailyHealthyWealth() {
