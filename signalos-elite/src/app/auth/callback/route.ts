@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 const DEFAULT_AUTH_REDIRECT = "/settings/sigi#profile";
@@ -19,6 +20,20 @@ function getSafeNextPath(value: string | null): string {
   }
 
   return value;
+}
+
+function getSafeOtpType(value: string | null): EmailOtpType | null {
+  switch (value) {
+    case "signup":
+    case "invite":
+    case "magiclink":
+    case "recovery":
+    case "email_change":
+    case "email":
+      return value;
+    default:
+      return null;
+  }
 }
 
 function buildRetryUrl(requestUrl: URL, nextPath: string, plan: UpgradePlan | null, error: string) {
@@ -50,12 +65,8 @@ export async function GET(request: NextRequest) {
   }
 
   const code = requestUrl.searchParams.get("code");
-
-  if (!code) {
-    return NextResponse.redirect(
-      buildRetryUrl(requestUrl, nextPath, plan, "Missing sign-in code.")
-    );
-  }
+  const tokenHash = requestUrl.searchParams.get("token_hash");
+  const otpType = getSafeOtpType(requestUrl.searchParams.get("type"));
 
   const redirectUrl = new URL(nextPath, requestUrl.origin);
   const response = NextResponse.redirect(redirectUrl);
@@ -76,7 +87,22 @@ export async function GET(request: NextRequest) {
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  let error: Error | null = null;
+
+  if (code) {
+    const result = await supabase.auth.exchangeCodeForSession(code);
+    error = result.error;
+  } else if (tokenHash && otpType) {
+    const result = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: otpType,
+    });
+    error = result.error;
+  } else {
+    return NextResponse.redirect(
+      buildRetryUrl(requestUrl, nextPath, plan, "Missing sign-in token.")
+    );
+  }
 
   if (error) {
     return NextResponse.redirect(buildRetryUrl(requestUrl, nextPath, plan, error.message));
