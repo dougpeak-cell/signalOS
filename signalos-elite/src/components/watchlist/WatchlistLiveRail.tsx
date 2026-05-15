@@ -72,9 +72,9 @@ export default function WatchlistLiveRail({
   const [mounted, setMounted] = useState(false);
   const [tick, setTick] = useState(0);
   const [fetchedStocks, setFetchedStocks] = useState<WatchlistLiveStock[]>([]);
-  const baselineRef = useRef<Record<string, number>>({});
   const prevPricesRef = useRef<Record<string, number>>({});
   const [flashMap, setFlashMap] = useState<Record<string, "up" | "down" | null>>({});
+  const [deltaMap, setDeltaMap] = useState<Record<string, number>>({});
   const { quoteMap, ensureQuotes } = useLiveMarket();
 
   useEffect(() => {
@@ -252,8 +252,25 @@ export default function WatchlistLiveRail({
         href: `/stocks/${ticker}`,
       };
 
-      // --- FLASH LOGIC ---
-      const prev = prevPricesRef.current[ticker];
+      return row;
+    });
+  }, [savedTickers, stockMap, tick, quoteMap]);
+
+  useEffect(() => {
+    if (!rows.length) {
+      setFlashMap({});
+      setDeltaMap({});
+      return;
+    }
+
+    const nextFlashMap: Record<string, "up" | "down" | null> = {};
+    const nextDeltaMap: Record<string, number> = {};
+    const resetTimers: number[] = [];
+
+    for (const row of rows) {
+      const prev = prevPricesRef.current[row.ticker];
+      const price = row.price;
+
       let flash: "up" | "down" | null = null;
 
       if (price != null && prev != null) {
@@ -261,32 +278,32 @@ export default function WatchlistLiveRail({
         if (price < prev) flash = "down";
       }
 
-      if (price != null) {
-        prevPricesRef.current[ticker] = price;
-      }
+      nextFlashMap[row.ticker] = flash;
+      nextDeltaMap[row.ticker] =
+        price != null && prev != null ? Number((price - prev).toFixed(2)) : 0;
 
-      const delta =
-        price != null && prev != null
-          ? Number((price - prev).toFixed(2))
-          : 0;
+      if (price != null) {
+        prevPricesRef.current[row.ticker] = price;
+      }
 
       if (flash) {
-        setTimeout(() => {
-          setFlashMap((m) => ({ ...m, [ticker]: null }));
+        const timer = window.setTimeout(() => {
+          setFlashMap((current) =>
+            current[row.ticker] ? { ...current, [row.ticker]: null } : current
+          );
         }, 400);
 
-        if (flashMap[ticker] !== flash) {
-          setFlashMap((m) => ({ ...m, [ticker]: flash }));
-        }
+        resetTimers.push(timer);
       }
+    }
 
-      return {
-        ...row,
-        flash,
-        delta,
-      };
-    });
-  }, [savedTickers, stockMap, tick, flashMap, quoteMap]);
+    setFlashMap(nextFlashMap);
+    setDeltaMap(nextDeltaMap);
+
+    return () => {
+      resetTimers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [rows]);
 
   useEffect(() => {
     const tickers = rows.map((row) => row.ticker).filter(Boolean);
@@ -328,10 +345,12 @@ export default function WatchlistLiveRail({
         ...row,
         price: livePrice,
         changePercent: liveChangePercent,
+        flash: flashMap[row.ticker] ?? null,
+        delta: deltaMap[row.ticker] ?? 0,
         signalosScore: score,
       };
     });
-  }, [rows, quoteMap]);
+  }, [deltaMap, flashMap, rows, quoteMap]);
 
   return (
     <div className="rounded-3xl border border-white/10 bg-white/4 p-4">
