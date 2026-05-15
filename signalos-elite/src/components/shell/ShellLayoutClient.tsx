@@ -322,7 +322,7 @@ function ShellLayoutContent({
                 </button>
               </div>
             ) : null}
-            <div className={isTodayShellRoute ? "hidden md:block" : "block"}>
+            <div className="block">
               <TopNav forceMobilePreview={shouldUseCompactShell} hasAccountSession={hasAccountSession} />
             </div>
             {!shouldUseCompactShell ? (
