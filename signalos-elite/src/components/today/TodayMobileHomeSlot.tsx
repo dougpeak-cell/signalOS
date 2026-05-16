@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactElement } from "react";
 import MobileSigiHome from "@/components/today/MobileSigiHome";
 import TodayLoadingScreen from "@/components/today/TodayLoadingScreen";
+import { TodayHeroProvider } from "@/components/today/TodayHeroContext";
 import type {
   TodayCommandCenterNewsRow,
   TodayMostTradedRow,
@@ -66,18 +67,20 @@ export default function TodayMobileHomeSlot({
   }
 
   return (
-    <MobileSigiHome
-      hasSigiSmart={hasSigiSmart}
-      topSetups={topSetups}
-      preMarketTopSetups={preMarketTopSetups}
-      news={news}
-      opportunities={opportunities}
-      risks={risks}
-      leadershipWatch={leadershipWatch}
-      highVolumeRows={highVolumeRows}
-      watchlistRows={watchlistRows}
-      defaultSetupSession={defaultSetupSession}
-      forceVisible={forceVisible}
-    />
+    <TodayHeroProvider>
+      <MobileSigiHome
+        hasSigiSmart={hasSigiSmart}
+        topSetups={topSetups}
+        preMarketTopSetups={preMarketTopSetups}
+        news={news}
+        opportunities={opportunities}
+        risks={risks}
+        leadershipWatch={leadershipWatch}
+        highVolumeRows={highVolumeRows}
+        watchlistRows={watchlistRows}
+        defaultSetupSession={defaultSetupSession}
+        forceVisible={forceVisible}
+      />
+    </TodayHeroProvider>
   );
 }

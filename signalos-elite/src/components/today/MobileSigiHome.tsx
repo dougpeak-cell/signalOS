@@ -10,6 +10,7 @@ import { openMobileSigiSheet } from "@/components/shell/mobileSigiSheetEvents";
 import { setMobileSigiSheetDefaultContext } from "@/components/shell/mobileSigiSheetEvents";
 import SigiOnboarding from "@/components/sigi/SigiOnboarding";
 import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
+import MarketThesisHero from "@/components/today/MarketThesisHero";
 import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import type { SigiTodayContext } from "@/hooks/useSigi";
 import {
@@ -536,6 +537,8 @@ export default function MobileSigiHome({
 
   return (
     <section id="sigi-command-panel" className={forceVisible ? "space-y-4" : "space-y-4 md:hidden"}>
+      <MarketThesisHero showHeatmapAction={false} />
+
       {hasSigiSmart ? (
         <>
           <div className={`relative overflow-hidden rounded-[28px] border border-cyan-400/24 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.18),rgba(3,7,18,0.96)_58%)] shadow-[0_0_40px_rgba(34,211,238,0.16)] ${sigiName ? "p-5" : "p-4"}`}>
@@ -767,9 +770,9 @@ export default function MobileSigiHome({
         </div>
       </div>
 
-      <div className="mb-6 rounded-2xl border border-white/10 bg-black/40 p-4">
+      <div id="top-setups" className="mb-6 rounded-2xl border border-white/10 bg-black/40 p-4">
         <div className="text-xs uppercase tracking-[0.16em] text-cyan-300">
-          Best Stocks Right Now
+          Top Setups Right Now
         </div>
 
         <div className="mt-3 space-y-3">

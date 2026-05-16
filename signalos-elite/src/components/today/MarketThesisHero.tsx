@@ -5,6 +5,7 @@ import Link from "next/link";
 import NewsImage from "@/components/news/NewsImage";
 import { renderTickerParagraphs } from "@/components/sigi/renderTickerText";
 import HealthyWealthButton from "@/components/today/HealthyWealthButton";
+import { MobileHealthyWealthButton } from "@/components/today/HealthyWealthButton";
 import { SectionHeader } from "@/components/today/SectionHeader";
 import { getSigiBackgroundStyle } from "@/lib/sigiBackgrounds";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
@@ -31,7 +32,11 @@ function toTitleCase(value?: string | null) {
     .join(" ");
 }
 
-export default function MarketThesisHero(): ReactElement {
+export default function MarketThesisHero({
+  showHeatmapAction = true,
+}: {
+  showHeatmapAction?: boolean;
+} = {}): ReactElement {
   const { effectiveTicker, heroStory, stockContext } = useTodayHeroContext();
 
   const heroCandidates = useMemo<HeroCandidate[]>(() => {
@@ -178,6 +183,7 @@ export default function MarketThesisHero(): ReactElement {
           action={
             <div className="flex flex-wrap items-center gap-2">
               <HealthyWealthButton />
+              <MobileHealthyWealthButton />
               <Link
                 href="#top-setups"
                 className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-medium text-cyan-200"
@@ -194,12 +200,14 @@ export default function MarketThesisHero(): ReactElement {
                   Open Story
                 </a>
               ) : null}
-              <Link
-                href="#sector-heatmap"
-                className="rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs font-medium text-white/70"
-              >
-                View Heatmap
-              </Link>
+              {showHeatmapAction ? (
+                <Link
+                  href="#sector-heatmap"
+                  className="rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs font-medium text-white/70"
+                >
+                  View Heatmap
+                </Link>
+              ) : null}
             </div>
           }
         />
