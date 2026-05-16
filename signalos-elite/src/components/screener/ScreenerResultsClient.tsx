@@ -817,7 +817,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
             </div>
           </div>
           <div className="border-b border-white/8 bg-white/3 px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/35">
-            <div className="hidden min-w-215 grid-cols-[1.1fr_1.4fr_1fr_1fr_1fr_1fr] gap-4 md:grid">
+            <div className={isMobilePreviewEnabled ? "hidden" : "hidden min-w-215 grid-cols-[1.1fr_1.4fr_1fr_1fr_1fr_1fr] gap-4 md:grid"}>
               <div>Stock</div>
               <div>Company</div>
               <div>Price</div>
@@ -825,7 +825,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
               <div>Score</div>
               <div className="text-right">Actions</div>
             </div>
-            <div className="md:hidden">Live opportunities feed</div>
+            <div className={isMobilePreviewEnabled ? "block" : "md:hidden"}>Live opportunities feed</div>
           </div>
 
           <div className="signalos-thin-scrollbar overflow-x-auto">
@@ -862,7 +862,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                 onFocus={() => prefetchCompanyProfile(stock.ticker)}
                 className="border-b border-white/6 px-4 py-2.5 transition last:border-b-0 hover:bg-cyan-400/3.5"
               >
-                <div className="hidden min-w-215 grid-cols-[1.1fr_1.4fr_1fr_1fr_1fr_1fr] items-center gap-4 md:grid">
+                <div className={isMobilePreviewEnabled ? "hidden" : "hidden min-w-215 grid-cols-[1.1fr_1.4fr_1fr_1fr_1fr_1fr] items-center gap-4 md:grid"}>
                   <div>
                     <div className="flex items-center gap-2">
                       <div className="text-lg font-black text-white">{ticker}</div>
@@ -931,7 +931,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                   </div>
                 </div>
 
-                <div className="space-y-2.5 md:hidden">
+                <div className={isMobilePreviewEnabled ? "space-y-2.5" : "space-y-2.5 md:hidden"}>
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
@@ -1006,7 +1006,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                   </div>
 
                   {quickViewOpen ? (
-                    <div className="rounded-xl border border-white/8 bg-black/20 px-3 py-2 text-[11px] leading-5 text-white/55 md:hidden">
+                    <div className={isMobilePreviewEnabled ? "rounded-xl border border-white/8 bg-black/20 px-3 py-2 text-[11px] leading-5 text-white/55" : "rounded-xl border border-white/8 bg-black/20 px-3 py-2 text-[11px] leading-5 text-white/55 md:hidden"}>
                       Sector: {stock.sector ?? "Market"} · Score {safeScore.toFixed(0)}/100
                     </div>
                   ) : null}

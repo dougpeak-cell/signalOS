@@ -60,6 +60,7 @@ export default async function StockLivePageRedirect({
     <GenericStockView
       ticker={ticker}
       context={buildLiveContext(ticker, resolvedSearchParams)}
+      isMobilePreview={resolvedSearchParams.mobilePreview === "1"}
     />
   );
 }

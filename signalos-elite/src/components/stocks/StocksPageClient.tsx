@@ -61,12 +61,21 @@ function convictionBarClass(conviction: number) {
   return "bg-amber-400";
 }
 
+function buildStockHref(ticker: string, preservePreview = false) {
+  const encodedTicker = encodeURIComponent(ticker);
+  return preservePreview
+    ? `/stocks/${encodedTicker}?mobilePreview=1`
+    : `/stocks/${encodedTicker}`;
+}
+
 function StockIdeaCard({
   idea,
   compact = false,
+  preservePreview = false,
 }: {
   idea: StockIdea;
   compact?: boolean;
+  preservePreview?: boolean;
 }) {
   return (
     <article className="group rounded-2xl border border-cyan-500/15 bg-slate-950/80 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.28)] transition hover:border-cyan-400/35 hover:bg-cyan-400/4">
@@ -126,14 +135,14 @@ function StockIdeaCard({
 
       <div className="mt-5 flex items-center gap-3">
         <Link
-          href={`/stocks/${idea.ticker}`}
+          href={buildStockHref(idea.ticker, preservePreview)}
           className="flex-1 rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-2.5 text-center text-sm font-semibold text-cyan-200 transition hover:bg-cyan-400/15"
         >
           Open Chart
         </Link>
 
         <Link
-          href={`/stocks/${idea.ticker}`}
+          href={buildStockHref(idea.ticker, preservePreview)}
           className="rounded-xl border border-white/10 bg-white/3 px-4 py-2.5 text-sm font-medium text-white/60 transition hover:border-white/20 hover:text-white"
         >
           Details →
@@ -163,7 +172,7 @@ export default function StocksPageClient({
   function openTicker() {
     if (!hasSearchTicker) return;
 
-    router.push(`/stocks/${encodeURIComponent(normalizedSearchTicker)}`);
+    router.push(buildStockHref(normalizedSearchTicker, isMobilePreview));
   }
 
   function addSearchTickerToWatchlist() {
@@ -223,9 +232,19 @@ export default function StocksPageClient({
   }, [ideas]);
 
   return (
-    <main className="mx-auto flex w-full max-w-400 flex-col gap-6 px-3 pb-12 pt-5 sm:px-4 lg:px-5 xl:px-6">
+    <main
+      className={[
+        "mx-auto flex w-full max-w-400 flex-col gap-6 px-3 pb-12 pt-5",
+        isMobilePreview ? "" : "sm:px-4 lg:px-5 xl:px-6",
+      ].join(" ")}
+    >
       <section className="rounded-3xl border border-cyan-500/20 bg-[radial-gradient(circle_at_top_left,rgba(8,145,178,0.14),rgba(2,6,23,0.96)_45%,rgba(0,0,0,0.98))] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.45)]">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+        <div
+          className={[
+            "flex flex-col gap-5",
+            isMobilePreview ? "" : "xl:flex-row xl:items-end xl:justify-between",
+          ].join(" ")}
+        >
           <div>
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.26em] text-cyan-300/80">
               SigiOS Discovery
@@ -239,9 +258,19 @@ export default function StocksPageClient({
           <StocksHeaderActions stocks={stockOptions} />
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+        <div
+          className={[
+            "mt-5 grid grid-cols-1 gap-3",
+            isMobilePreview ? "" : "lg:grid-cols-[minmax(0,1fr)_auto]",
+          ].join(" ")}
+        >
           <div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+            <div
+              className={[
+                "grid grid-cols-1 gap-2",
+                isMobilePreview ? "" : "sm:grid-cols-[minmax(0,1fr)_auto_auto]",
+              ].join(" ")}
+            >
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -255,7 +284,7 @@ export default function StocksPageClient({
                 className="h-11 flex-1 rounded-2xl border border-white/10 bg-black/35 px-4 text-sm text-white outline-none placeholder:text-white/30 transition focus:border-cyan-400/35"
               />
 
-              <div className="grid grid-cols-1 gap-2 sm:contents">
+              <div className={isMobilePreview ? "grid grid-cols-1 gap-2" : "grid grid-cols-1 gap-2 sm:contents"}>
                 <button
                   type="button"
                   onClick={openTicker}
@@ -288,7 +317,12 @@ export default function StocksPageClient({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <div
+            className={[
+              "grid grid-cols-2 gap-2",
+              isMobilePreview ? "" : "sm:flex sm:flex-wrap sm:items-center",
+            ].join(" ")}
+          >
             {[
               ["all", "All"],
               ["top", "Top Setups"],
@@ -302,7 +336,10 @@ export default function StocksPageClient({
                   key={value}
                   onClick={() => setFilter(value as typeof filter)}
                   className={[
-                    "w-full whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition sm:w-auto",
+                    [
+                      "w-full whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition",
+                      isMobilePreview ? "" : "sm:w-auto",
+                    ].join(" "),
                     active
                       ? "border-cyan-400/35 bg-cyan-400/12 text-cyan-200"
                       : "border-white/10 bg-white/3 text-white/55 hover:text-white",
@@ -330,19 +367,19 @@ export default function StocksPageClient({
             </p>
           </div>
 
-          <div className="hidden rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs text-white/55 sm:block">
+          <div className={isMobilePreview ? "hidden" : "hidden rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs text-white/55 sm:block"}>
             {filteredIdeas.length} names
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className={isMobilePreview ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 gap-4 xl:grid-cols-3"}>
           {topIdeas.map((idea) => (
-            <StockIdeaCard key={idea.id} idea={idea} />
+            <StockIdeaCard key={idea.id} idea={idea} preservePreview={isMobilePreview} />
           ))}
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <section className={isMobilePreview ? "grid grid-cols-1 gap-6" : "grid grid-cols-1 gap-6 xl:grid-cols-2"}>
         <section className="rounded-3xl border border-cyan-500/15 bg-slate-950/70 p-5">
           <div className="mb-4">
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.26em] text-cyan-300/70">
@@ -356,7 +393,12 @@ export default function StocksPageClient({
 
           <div className="space-y-3">
             {(emergingIdeas.length ? emergingIdeas : filteredIdeas.slice(0, 3)).map((idea) => (
-              <StockIdeaCard key={`forming-${idea.id}`} idea={idea} compact />
+              <StockIdeaCard
+                key={`forming-${idea.id}`}
+                idea={idea}
+                compact
+                preservePreview={isMobilePreview}
+              />
             ))}
           </div>
         </section>
@@ -374,7 +416,12 @@ export default function StocksPageClient({
 
           <div className="space-y-3">
             {(watchIdeas.length ? watchIdeas : filteredIdeas.slice(0, 3)).map((idea) => (
-              <StockIdeaCard key={`watch-${idea.id}`} idea={idea} compact />
+              <StockIdeaCard
+                key={`watch-${idea.id}`}
+                idea={idea}
+                compact
+                preservePreview={isMobilePreview}
+              />
             ))}
           </div>
         </section>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useResponsiveMobilePreviewWidth } from "@/components/shell/useResponsiveMobilePreview";
+import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { buildSparklinePath } from "@/lib/market/sparkline";
@@ -245,7 +245,7 @@ export default function CryptoPage() {
     .sort((a, b) => (b.changePercent ?? -999) - (a.changePercent ?? -999))
     .slice(0, 3);
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
-  const mobilePreviewWidth = useResponsiveMobilePreviewWidth(isMobilePreview);
+  const mobilePreviewFrame = useResponsiveMobilePreviewFrame(isMobilePreview);
   const plan = tier ?? "free";
   const canUseCrypto = plan === "smart" || plan === "pro";
   const canUseCryptoWorkspace = plan === "pro";
@@ -266,9 +266,16 @@ export default function CryptoPage() {
         isMobilePreview
           ? {
               width: "100%",
-              maxWidth: `${mobilePreviewWidth}px`,
+              maxWidth: `${mobilePreviewFrame.width}px`,
               marginInline: "auto",
               overflowX: "hidden",
+              ...(mobilePreviewFrame.isFramed
+                ? {
+                    height: `${mobilePreviewFrame.height}px`,
+                    overflowY: "auto",
+                    overscrollBehaviorY: "contain",
+                  }
+                : null),
             }
           : undefined
       }

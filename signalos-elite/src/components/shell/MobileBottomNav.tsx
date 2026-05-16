@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import {
   getMobileSigiSheetDefaultContext,
   openMobileSigiSheet,
@@ -38,6 +39,7 @@ export default function MobileBottomNav({
   const router = useRouter();
   const searchParams = useSearchParams();
   const isMobilePreviewEnabled = searchParams.get("mobilePreview") === "1";
+  const mobilePreviewFrame = useResponsiveMobilePreviewFrame(forceVisible || isMobilePreviewEnabled);
   const lastScrollYRef = useRef(0);
   const showNavTimeoutRef = useRef<number | null>(null);
   const [isNavHidden, setIsNavHidden] = useState(false);
@@ -125,7 +127,7 @@ export default function MobileBottomNav({
 
   const navShellClass = forceVisible
     ? [
-        "fixed bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] left-1/2 z-50 w-[min(calc(100%-1rem),392px)] -translate-x-1/2 will-change-transform transition-[transform,opacity] duration-150 ease-out",
+        "fixed left-1/2 z-50 -translate-x-1/2 will-change-transform transition-[transform,opacity] duration-150 ease-out",
         isNavHidden
           ? "translate-y-[calc(100%+1.5rem)] opacity-0 pointer-events-none"
           : "translate-y-0 opacity-100",
@@ -141,8 +143,16 @@ export default function MobileBottomNav({
     ? "grid min-h-[104px] grid-cols-5 items-center gap-1 overflow-hidden rounded-[24px] border border-cyan-300/15 bg-black/80 px-1.5 py-1.5 shadow-[0_0_12px_rgba(103,232,249,0.10),0_12px_24px_rgba(8,47,73,0.22)] backdrop-blur-2xl"
     : "grid min-h-[104px] grid-cols-5 items-center gap-1 rounded-[28px] border border-cyan-300/20 bg-black/88 px-2 py-2 shadow-[0_0_28px_rgba(103,232,249,0.18),0_20px_50px_rgba(8,47,73,0.38)] backdrop-blur-xl sm:min-h-[104px] sm:grid-cols-5 sm:gap-1";
 
+  const navShellStyle = forceVisible
+    ? {
+        bottom: `calc(${mobilePreviewFrame.bottomGap}px + env(safe-area-inset-bottom) + 0.75rem)`,
+        width: "calc(100% - 1rem)",
+        maxWidth: `${Math.max(320, mobilePreviewFrame.width - 16)}px`,
+      }
+    : undefined;
+
   return (
-    <nav className={navShellClass}>
+    <nav className={navShellClass} style={navShellStyle}>
       {forceVisible ? (
         <div className="pointer-events-none absolute inset-x-5 -bottom-3 h-8 rounded-b-[22px] bg-linear-to-t from-black/70 via-black/28 to-transparent" />
       ) : null}
@@ -162,6 +172,7 @@ export default function MobileBottomNav({
                   ? "bg-cyan-400/12 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.14)]"
                   : "text-white/56 hover:bg-white/6 hover:text-white",
               ].join(" ")}
+
             >
               <span
                 className={[

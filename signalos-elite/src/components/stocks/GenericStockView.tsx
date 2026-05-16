@@ -58,6 +58,7 @@ type SignalRow = {
 type GenericStockViewProps = {
   ticker: string;
   context?: GenericStockViewContext;
+  isMobilePreview?: boolean;
 };
 
 type CompanyProfile = {
@@ -371,11 +372,19 @@ function buildInvestmentThesis({
   return `${company || ticker} is currently ${move}. ${volumeRead} ${valuationRead} The key read is whether buyers can defend support and push back toward recent highs.`;
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+function SummaryRow({
+  label,
+  value,
+  compact = false,
+}: {
+  label: string;
+  value: string;
+  compact?: boolean;
+}) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-white/4 px-3 py-2.5 md:px-4 md:py-3">
-      <span className="text-[13px] text-white/45 md:text-sm">{label}</span>
-      <span className="text-right text-[13px] font-semibold text-white md:text-sm">{value}</span>
+    <div className={compact ? "grid gap-1 rounded-2xl bg-white/4 px-3 py-2.5" : "flex items-center justify-between rounded-2xl bg-white/4 px-3 py-2.5 md:px-4 md:py-3"}>
+      <span className={compact ? "text-[13px] text-white/45" : "text-[13px] text-white/45 md:text-sm"}>{label}</span>
+      <span className={compact ? "wrap-anywhere text-left text-[15px] font-semibold text-white" : "text-right text-[13px] font-semibold text-white md:text-sm"}>{value}</span>
     </div>
   );
 }
@@ -429,6 +438,7 @@ function ListBlock({
 export default async function GenericStockView({
   ticker,
   context,
+  isMobilePreview = false,
 }: GenericStockViewProps) {
   const dbRow = await getSignalByTicker(ticker);
   const liveTicker = ticker.toUpperCase();
@@ -641,13 +651,13 @@ export default async function GenericStockView({
           fallbackMessage={isUnavailableTicker ? fallbackThesis : null}
         />
 
-        <section className="grid gap-8 xl:grid-cols-[1.25fr_0.9fr]">
+        <section className={["grid gap-8", isMobilePreview ? "" : "xl:grid-cols-[1.25fr_0.9fr]"].join(" ")}>
           <div className="space-y-8">
-            <div className="rounded-3xl border border-emerald-400/20 bg-emerald-400/4.5 p-6 shadow-[0_0_40px_rgba(16,185,129,0.08)]">
+            <div className={isMobilePreview ? "rounded-3xl border border-emerald-400/20 bg-emerald-400/4.5 p-5 shadow-[0_0_40px_rgba(16,185,129,0.08)]" : "rounded-3xl border border-emerald-400/20 bg-emerald-400/4.5 p-6 shadow-[0_0_40px_rgba(16,185,129,0.08)]"}>
               <div className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">
                 Sigi Investment Thesis
               </div>
-              <p className="text-lg leading-8 text-white/80">{investmentThesis}</p>
+              <p className={isMobilePreview ? "text-base leading-8 text-white/80" : "text-lg leading-8 text-white/80"}>{investmentThesis}</p>
             </div>
 
             <ListBlock
@@ -747,21 +757,21 @@ export default async function GenericStockView({
           </div>
 
           <div className="space-y-8">
-            <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-6">
-              <h2 className="text-xl font-semibold text-white">Signal summary</h2>
+            <div className={isMobilePreview ? "rounded-3xl border border-white/10 bg-white/[0.035] p-5" : "rounded-3xl border border-white/10 bg-white/[0.035] p-6"}>
+              <h2 className={isMobilePreview ? "text-2xl font-semibold text-white" : "text-xl font-semibold text-white"}>Signal summary</h2>
 
               <div className="mt-5 space-y-3">
-                <SummaryRow label="Ticker" value={row.ticker} />
-                <SummaryRow label="Company" value={companyProfile?.name ?? row.company_name ?? "—"} />
-                <SummaryRow label="Sector" value={companyProfile?.sector ?? row.sector ?? "—"} />
-                <SummaryRow label="Exchange" value={companyProfile?.exchange ?? "—"} />
-                <SummaryRow label="Country" value={companyProfile?.country ?? "—"} />
-                <SummaryRow label="IPO" value={companyProfile?.ipo ?? "—"} />
+                <SummaryRow label="Ticker" value={row.ticker} compact={isMobilePreview} />
+                <SummaryRow label="Company" value={companyProfile?.name ?? row.company_name ?? "—"} compact={isMobilePreview} />
+                <SummaryRow label="Sector" value={companyProfile?.sector ?? row.sector ?? "—"} compact={isMobilePreview} />
+                <SummaryRow label="Exchange" value={companyProfile?.exchange ?? "—"} compact={isMobilePreview} />
+                <SummaryRow label="Country" value={companyProfile?.country ?? "—"} compact={isMobilePreview} />
+                <SummaryRow label="IPO" value={companyProfile?.ipo ?? "—"} compact={isMobilePreview} />
               </div>
 
               <div className="mt-5 grid gap-3">
                 <Link
-                  href="/screener"
+                  href={isMobilePreview ? "/screener?mobilePreview=1" : "/screener"}
                   className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/8 hover:text-white"
                 >
                   Back to search

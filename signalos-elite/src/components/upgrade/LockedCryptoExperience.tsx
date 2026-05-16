@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Activity,
   Coins,
@@ -20,8 +21,11 @@ export default function LockedCryptoExperience({
   backHref,
   backLabel,
 }: LockedCryptoExperienceProps) {
+  const searchParams = useSearchParams();
+  const isMobilePreview = searchParams.get("mobilePreview") === "1";
+
   return (
-    <main className="min-h-screen bg-black px-6 py-8 text-white">
+    <main className={isMobilePreview ? "min-h-screen bg-black px-4 py-6 text-white" : "min-h-screen bg-black px-6 py-8 text-white"}>
       <div className="mx-auto max-w-7xl">
         {backHref && backLabel ? (
           <div className="mb-6">
@@ -31,8 +35,8 @@ export default function LockedCryptoExperience({
           </div>
         ) : null}
 
-        <div className="rounded-4xl border border-cyan-400/20 bg-slate-950/90 p-6 shadow-[0_0_40px_rgba(34,211,238,0.10)] md:p-8">
-          <div className="mb-8 flex items-start gap-4">
+        <div className={isMobilePreview ? "rounded-4xl border border-cyan-400/20 bg-slate-950/90 p-5 shadow-[0_0_40px_rgba(34,211,238,0.10)]" : "rounded-4xl border border-cyan-400/20 bg-slate-950/90 p-6 shadow-[0_0_40px_rgba(34,211,238,0.10)] md:p-8"}>
+          <div className={isMobilePreview ? "mb-6 flex items-start gap-3" : "mb-8 flex items-start gap-4"}>
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10">
               <Lock className="h-6 w-6 text-cyan-200" />
             </div>
@@ -42,18 +46,18 @@ export default function LockedCryptoExperience({
                 Crypto Preview
               </p>
 
-              <h1 className="text-4xl font-black text-white">
+              <h1 className={isMobilePreview ? "text-3xl font-black text-white" : "text-4xl font-black text-white"}>
                 Unlock Full Crypto Command
               </h1>
 
-              <p className="mt-3 max-w-3xl text-base leading-7 text-slate-300">
+              <p className={isMobilePreview ? "mt-3 max-w-3xl text-sm leading-6 text-slate-300" : "mt-3 max-w-3xl text-base leading-7 text-slate-300"}>
                 Smart opens the full crypto experience with live charts, Sigi crypto intelligence,
                 watchlists, and current signal workflows{ticker ? ` for ${ticker}` : ""}.
               </p>
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className={isMobilePreview ? "grid gap-3" : "grid gap-4 md:grid-cols-2 xl:grid-cols-4"}>
             <FeatureCard
               icon={<Coins />}
               title="Live Crypto Board"
@@ -76,38 +80,38 @@ export default function LockedCryptoExperience({
             />
           </div>
 
-          <div className="relative mt-10 overflow-hidden rounded-3xl border border-white/10 bg-black/30 p-6">
-            <div className="absolute inset-0 backdrop-blur-md" />
+          <div className={isMobilePreview ? "relative mt-8 overflow-hidden rounded-3xl border border-white/10 bg-black/30 p-4" : "relative mt-10 overflow-hidden rounded-3xl border border-white/10 bg-black/30 p-6"}>
+            <div className={isMobilePreview ? "absolute inset-0 bg-black/55 backdrop-blur-md" : "absolute inset-0 backdrop-blur-md"} />
 
-            <div className="relative grid gap-4 opacity-60 md:grid-cols-2 xl:grid-cols-3">
+            <div className={isMobilePreview ? "relative grid gap-3 opacity-60" : "relative grid gap-4 opacity-60 md:grid-cols-2 xl:grid-cols-3"}>
               {["BTC", "ETH", "SOL", "XRP", "AVAX", "LINK"].map((symbol, index) => (
                 <div
                   key={symbol}
-                  className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5"
+                  className={isMobilePreview ? "rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4" : "rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5"}
                 >
                   <div className="mb-2 flex items-center justify-between">
-                    <h3 className="text-xl font-black text-white">{symbol}</h3>
+                    <h3 className={isMobilePreview ? "text-lg font-black text-white" : "text-xl font-black text-white"}>{symbol}</h3>
 
                     <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-bold text-emerald-300">
                       {index % 2 === 0 ? "Live" : "Signal"}
                     </span>
                   </div>
 
-                  <p className="text-sm text-slate-300">
+                  <p className={isMobilePreview ? "text-xs leading-5 text-slate-300" : "text-sm text-slate-300"}>
                     Crypto charting and intelligence are locked until Smart upgrade.
                   </p>
                 </div>
               ))}
             </div>
 
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+            <div className={isMobilePreview ? "absolute inset-0 flex flex-col items-center justify-center px-4 text-center" : "absolute inset-0 flex flex-col items-center justify-center px-6 text-center"}>
               <Lock className="mb-4 h-10 w-10 text-cyan-200" />
 
-              <h2 className="text-3xl font-black text-white">
+              <h2 className={isMobilePreview ? "text-2xl font-black text-white" : "text-3xl font-black text-white"}>
                 Full Crypto Access Starts On Smart
               </h2>
 
-              <p className="mt-3 max-w-xl text-slate-300">
+              <p className={isMobilePreview ? "mt-3 max-w-sm text-sm leading-6 text-slate-300" : "mt-3 max-w-xl text-slate-300"}>
                 Upgrade to Smart to unlock live crypto charts, full Sigi reads, watchlists,
                 and the full current crypto experience.
               </p>

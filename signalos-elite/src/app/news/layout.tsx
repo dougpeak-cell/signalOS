@@ -10,7 +10,7 @@ import MobileSigiSheet from "@/components/shell/MobileSigiSheet";
 import BreakingNewsTicker from "@/components/news/BreakingNewsTicker";
 import SigiMiniPanel from "@/components/sigi/SigiMiniPanel";
 import { SigiPanelProvider } from "@/components/sigi/SigiPanelContext";
-import { useResponsiveMobilePreviewWidth } from "@/components/shell/useResponsiveMobilePreview";
+import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 
 const MOBILE_PREVIEW_STORAGE_KEY = "signalos-dev-mobile-preview-today";
 
@@ -25,7 +25,7 @@ function NewsLayoutInner({
   const hasSyncedMobilePreviewRef = useRef(false);
   const isDevMobilePreview =
     process.env.NODE_ENV !== "production" && searchParams.get("mobilePreview") === "1";
-  const mobilePreviewWidth = useResponsiveMobilePreviewWidth(isDevMobilePreview);
+  const mobilePreviewFrame = useResponsiveMobilePreviewFrame(isDevMobilePreview);
 
   useEffect(() => {
     if (process.env.NODE_ENV === "production") {
@@ -70,9 +70,16 @@ function NewsLayoutInner({
             isDevMobilePreview
               ? {
                   width: "100%",
-                  maxWidth: `${mobilePreviewWidth}px`,
+                  maxWidth: `${mobilePreviewFrame.width}px`,
                   marginInline: "auto",
                   overflowX: "hidden",
+                  ...(mobilePreviewFrame.isFramed
+                    ? {
+                        height: `${mobilePreviewFrame.height}px`,
+                        overflowY: "auto",
+                        overscrollBehaviorY: "contain",
+                      }
+                    : null),
                 }
               : undefined
           }

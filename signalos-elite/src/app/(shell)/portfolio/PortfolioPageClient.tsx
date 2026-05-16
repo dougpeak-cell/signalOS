@@ -833,6 +833,7 @@ function PortfolioPageContent() {
   const [showAddStock, setShowAddStock] = useState(false);
   const plan = tier ?? "free";
   const canUseDetail = plan === "smart" || plan === "pro";
+  const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const shouldForceQuickView = searchParams.get("quickView") === "1";
   const requestedMode =
     searchParams.get("mode") === "detail"
@@ -1600,7 +1601,7 @@ function PortfolioPageContent() {
               ) : null}
 
               {isDetail ? (
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+                <div className={isMobilePreview ? "grid gap-3" : "grid gap-3 md:grid-cols-2 xl:grid-cols-7"}>
                 <div className="relative overflow-hidden rounded-[22px] p-px shadow-[0_0_0_1px_rgba(34,211,238,0.05),0_12px_28px_rgba(0,0,0,0.20)] sm:shadow-[0_0_0_1px_rgba(34,211,238,0.08),0_18px_50px_rgba(0,0,0,0.28)]">
                   <div className="pointer-events-none absolute inset-0 rounded-[22px] bg-[linear-gradient(135deg,rgba(34,211,238,0.32),rgba(56,189,248,0.10),rgba(16,185,129,0.16),rgba(250,204,21,0.10))] sm:bg-[linear-gradient(135deg,rgba(34,211,238,0.52),rgba(56,189,248,0.16),rgba(16,185,129,0.28),rgba(250,204,21,0.18))]" />
                   <div className="relative rounded-[21px] border border-black/40 bg-[linear-gradient(180deg,rgba(8,14,26,0.99),rgba(5,9,18,0.99))] p-3 sm:p-4 sm:border-black/55 sm:bg-[linear-gradient(180deg,rgba(8,14,26,0.98),rgba(5,9,18,0.98))]">
@@ -1940,7 +1941,7 @@ function PortfolioPageContent() {
                               ) : null}
                             </div>
 
-                            <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:w-72 2xl:w-80">
+                            <div className={isMobilePreview ? "grid min-w-0 gap-3" : "grid min-w-0 gap-3 sm:grid-cols-2 xl:w-72 2xl:w-80"}>
                               <div className="rounded-2xl border border-white/8 bg-black/30 px-4 py-3">
                                 <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
                                   Conviction
@@ -1963,7 +1964,7 @@ function PortfolioPageContent() {
 
                           {quickViewOpen ? (
                             <>
-                              <div className="grid gap-3 xl:grid-cols-2">
+                              <div className={isMobilePreview ? "grid gap-3" : "grid gap-3 xl:grid-cols-2"}>
                                 <ProgressBar
                                   label="Progress to Target"
                                   value={progressToTarget}
@@ -1978,7 +1979,7 @@ function PortfolioPageContent() {
                                 />
                               </div>
 
-                              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
+                              <div className={isMobilePreview ? "grid gap-3" : "grid gap-3 sm:grid-cols-2 xl:grid-cols-7"}>
                                 <MetricCell label="Shares" value={String(holding.shares)} />
                                 <MetricCell
                                   label="Cost Basis"
@@ -2024,7 +2025,7 @@ function PortfolioPageContent() {
                                 />
                               </div>
 
-                              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                              <div className={isMobilePreview ? "grid gap-3" : "grid gap-3 sm:grid-cols-2 xl:grid-cols-4"}>
                                 <MetricCell
                                   label="P/L %"
                                   value={displayPLPct}

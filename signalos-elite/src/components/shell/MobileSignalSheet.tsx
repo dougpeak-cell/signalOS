@@ -4,7 +4,7 @@ import type { ReactNode, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
-import { useResponsiveMobilePreviewWidth } from "@/components/shell/useResponsiveMobilePreview";
+import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 
 type Props = {
   open: boolean;
@@ -31,7 +31,7 @@ export default function MobileSignalSheet({
 }: Props) {
   const searchParams = useSearchParams();
   const forceDesktopPreview = forceVisible || searchParams.get("mobilePreview") === "1";
-  const mobilePreviewWidth = useResponsiveMobilePreviewWidth(forceDesktopPreview);
+  const mobilePreviewFrame = useResponsiveMobilePreviewFrame(forceDesktopPreview);
   const [mounted, setMounted] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -73,7 +73,16 @@ export default function MobileSignalSheet({
   if (!open || !mounted) return null;
 
   return createPortal(
-    <div className={forceDesktopPreview ? "fixed inset-0 z-120" : "fixed inset-0 z-120 md:hidden"} aria-modal="true" role="dialog">
+    <div
+      className={forceDesktopPreview ? "fixed inset-x-0 top-0 z-120" : "fixed inset-0 z-120 md:hidden"}
+      style={
+        forceDesktopPreview
+          ? { bottom: `${mobilePreviewFrame.bottomGap}px` }
+          : undefined
+      }
+      aria-modal="true"
+      role="dialog"
+    >
       <button
         type="button"
         aria-label="Close sheet"
@@ -82,7 +91,7 @@ export default function MobileSignalSheet({
       />
 
       <div
-        className="fixed inset-x-0 bottom-0 z-50 min-h-[72vh] overflow-hidden rounded-t-4xl border border-cyan-400/20 bg-slate-950/95 px-5 pb-6 pt-4 shadow-[0_-20px_60px_rgba(34,211,238,0.20)] backdrop-blur-2xl"
+        className={`${forceDesktopPreview ? "absolute" : "fixed"} inset-x-0 bottom-0 z-50 min-h-[72vh] overflow-hidden rounded-t-4xl border border-cyan-400/20 bg-slate-950/95 px-5 pb-6 pt-4 shadow-[0_-20px_60px_rgba(34,211,238,0.20)] backdrop-blur-2xl`}
         style={
           {
             paddingTop: "max(1rem, env(safe-area-inset-top))",
@@ -94,7 +103,7 @@ export default function MobileSignalSheet({
                   left: "50%",
                   right: "auto",
                   width: "100%",
-                  maxWidth: `${mobilePreviewWidth}px`,
+                  maxWidth: `${mobilePreviewFrame.width}px`,
                   transform: "translateX(-50%)",
                 }
               : null),
@@ -123,7 +132,15 @@ export default function MobileSignalSheet({
           </button>
         </div>
 
-        <div ref={scrollContainerRef} className="signalos-thin-scrollbar max-h-[76vh] overflow-y-auto px-5 py-4">{children}</div>
+        <div
+          ref={scrollContainerRef}
+          className="signalos-thin-scrollbar overflow-y-auto px-5 py-4"
+          style={
+            forceDesktopPreview
+              ? { maxHeight: `${Math.max(280, mobilePreviewFrame.height - 190)}px` }
+              : undefined
+          }
+        >{children}</div>
 
         {footer ? <div className="border-t border-white/8 px-5 py-4">{footer}</div> : null}
       </div>

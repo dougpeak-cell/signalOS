@@ -569,6 +569,7 @@ export default function WatchlistPageClient({
   allStocks: WatchlistStock[];
 }) {
   const searchParams = useSearchParams();
+  const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const shouldForceQuickView = searchParams.get("quickView") === "1";
   const withPreviewParam = useMemo(() => {
     return (href: string) => {
@@ -786,7 +787,7 @@ export default function WatchlistPageClient({
         />
 
         {savedStocks.length === 0 ? (
-          <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <section className={isMobilePreview ? "grid gap-4" : "grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]"}>
             <div className="space-y-4">
               <div className="rounded-3xl border border-white/10 bg-white/4 p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
@@ -802,7 +803,7 @@ export default function WatchlistPageClient({
                   <div className="text-xs text-white/45">0 saved</div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                <div className={isMobilePreview ? "grid gap-4" : "grid gap-4 md:grid-cols-2 2xl:grid-cols-3"}>
                   <EmptyWatchlistPlaceholder />
                 </div>
               </div>
@@ -863,7 +864,7 @@ export default function WatchlistPageClient({
             </aside>
           </section>
         ) : (
-          <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <section className={isMobilePreview ? "grid gap-4" : "grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]"}>
             <div className="space-y-4">
               <div className="rounded-3xl border border-white/10 bg-white/4 p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
@@ -911,7 +912,7 @@ export default function WatchlistPageClient({
                   </div>
                 ) : null}
 
-                <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                <div className={isMobilePreview ? "grid gap-4" : "grid gap-4 md:grid-cols-2 2xl:grid-cols-3"}>
                   {opportunityAwareRows.map((stock) => {
                     return (
                       <WatchlistStockCard

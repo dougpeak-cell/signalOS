@@ -98,20 +98,22 @@ function StatCard({
   label,
   value,
   subtext,
+  compact = false,
 }: {
   label: string;
   value: string;
   subtext?: string;
+  compact?: boolean;
 }) {
   return (
-    <div className="glow-card-soft rounded-2xl p-3 md:p-4">
-      <div className="text-[10px] uppercase tracking-[0.16em] text-white/40 md:text-[11px] md:tracking-[0.18em]">
+    <div className={compact ? "glow-card-soft rounded-2xl p-3" : "glow-card-soft rounded-2xl p-3 md:p-4"}>
+      <div className={compact ? "text-[10px] uppercase tracking-[0.12em] text-white/40" : "text-[10px] uppercase tracking-[0.16em] text-white/40 md:text-[11px] md:tracking-[0.18em]"}>
         {label}
       </div>
-      <div className="mt-2 text-xl font-semibold tracking-tight text-white md:text-2xl">
+      <div className={compact ? "mt-2 text-lg font-semibold tracking-tight text-white" : "mt-2 text-xl font-semibold tracking-tight text-white md:text-2xl"}>
         {value}
       </div>
-      {subtext ? <div className="mt-1 text-[13px] text-white/55 md:text-sm">{subtext}</div> : null}
+      {subtext ? <div className={compact ? "mt-1 text-xs leading-5 text-white/55" : "mt-1 text-[13px] text-white/55 md:text-sm"}>{subtext}</div> : null}
     </div>
   );
 }
@@ -208,6 +210,7 @@ export default function StockDetailLivePanels({
   );
   const { watchlistTickerSet } = useStoredWatchlistTickers();
   const isTracked = watchlistTickerSet.has(liveTicker);
+  const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const plan = tier ?? "free";
   const canUseLiveChart = plan === "smart" || plan === "pro";
   const canUseTradingWorkspace = plan === "pro";
@@ -589,22 +592,30 @@ export default function StockDetailLivePanels({
                 </button>
               </>
             }
-            titleClassName="text-3xl md:text-6xl"
-            descriptionClassName="max-w-none text-sm leading-6 text-white/55 md:text-base"
+            titleClassName={isMobilePreview ? "text-3xl" : "text-3xl md:text-6xl"}
+            descriptionClassName={isMobilePreview ? "max-w-none text-sm leading-6 text-white/55" : "max-w-none text-sm leading-6 text-white/55 md:text-base"}
             className="border-white/0 bg-transparent p-0 md:p-0"
           >
             {heroMetrics.length > 0 ? (
-              <div className="grid gap-3 md:max-w-[320px] md:grid-cols-2">
+              <div className={isMobilePreview ? "grid w-full max-w-none grid-cols-2 gap-3" : "grid gap-3 md:max-w-[320px] md:grid-cols-2"}>
                 {heroMetrics.map((metric) => (
-                  <div key={metric.key} className="glow-card-soft rounded-2xl p-4 text-right">
-                    <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">
+                  <div
+                    key={metric.key}
+                    className={isMobilePreview ? "glow-card-soft min-w-0 rounded-2xl p-3 text-left" : "glow-card-soft rounded-2xl p-4 text-right"}
+                  >
+                    <div className={isMobilePreview ? "text-[10px] uppercase tracking-[0.14em] text-white/40" : "text-[11px] uppercase tracking-[0.18em] text-white/40"}>
                       {metric.label}
                     </div>
-                    <div className="mt-2 text-2xl font-semibold text-white">
+                    <div className={isMobilePreview ? "mt-2 text-[1.45rem] font-semibold leading-none text-white" : "mt-2 text-2xl font-semibold text-white"}>
                       {metric.value}
                     </div>
                     {metric.subtext ? (
-                      <div className={`mt-1 text-sm font-semibold ${metric.subtextClassName}`}>
+                      <div
+                        className={[
+                          metric.subtextClassName,
+                          isMobilePreview ? "mt-2 text-sm font-semibold leading-5" : "mt-1 text-sm font-semibold",
+                        ].join(" ")}
+                      >
                         {metric.subtext}
                       </div>
                     ) : null}
@@ -621,13 +632,14 @@ export default function StockDetailLivePanels({
           </div>
         </div>
 
-        <div className="grid gap-4 px-6 py-6 md:grid-cols-2 md:px-8 xl:grid-cols-5">
+        <div className={isMobilePreview ? "grid grid-cols-2 gap-3 px-4 py-5" : "grid gap-4 px-6 py-6 md:grid-cols-2 md:px-8 xl:grid-cols-5"}>
           {summaryCards.map((card) => (
             <StatCard
               key={card.key}
               label={card.label}
               value={card.value}
               subtext={card.subtext}
+              compact={isMobilePreview}
             />
           ))}
         </div>

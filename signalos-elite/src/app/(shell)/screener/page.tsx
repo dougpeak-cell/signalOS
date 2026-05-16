@@ -666,6 +666,7 @@ export default async function ScreenerPage({
   const sort = cleanSort(params.sort);
   const lockedPreviewHref = buildScreenerPreviewHref(params, "locked");
   const livePreviewHref = buildScreenerPreviewHref(params, "live");
+  const isMobilePreview = params?.mobilePreview === "1";
 
   const hasActiveQuery = Boolean(q);
   const hasActiveSector = Boolean(sector && sector !== "all");
@@ -1001,9 +1002,9 @@ export default async function ScreenerPage({
   return (
       <div className="space-y-8">
       <section className="overflow-hidden rounded-[28px] border border-cyan-500/20 bg-[radial-gradient(circle_at_top_left,rgba(0,255,200,0.12),transparent_28%),linear-gradient(180deg,rgba(6,10,22,0.96),rgba(3,6,18,0.98))] shadow-[0_0_0_1px_rgba(0,255,200,0.04),0_0_32px_rgba(0,255,200,0.08)]">
-        <div className="space-y-8 px-6 py-7 sm:px-8 sm:py-8">
+        <div className={isMobilePreview ? "space-y-8 px-4 py-5" : "space-y-8 px-6 py-7 sm:px-8 sm:py-8"}>
           <div
-            className={`relative overflow-hidden rounded-2xl bg-linear-to-br from-[#061018] to-[#0b1f2e] p-8 transition-all duration-500 ${headerStateClass}`}
+            className={`relative overflow-hidden rounded-2xl bg-linear-to-br from-[#061018] to-[#0b1f2e] transition-all duration-500 ${isMobilePreview ? "p-5" : "p-8"} ${headerStateClass}`}
           >
             {headerIntelligenceState === "hot" ? (
               <div className="pointer-events-none absolute inset-0 animate-pulse bg-emerald-400/5" />
@@ -1042,28 +1043,29 @@ export default async function ScreenerPage({
                 profile, and upside potential.
               </p>
 
-              <div className="mt-4 flex gap-3">
+              <div className={isMobilePreview ? "mt-4 grid grid-cols-2 gap-2" : "mt-4 flex gap-3"}>
                 <Link
-                  href="/"
-                  className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-cyan-300 transition hover:border-cyan-300/50 hover:bg-cyan-500/15"
+                  href={isMobilePreview ? "/?mobilePreview=1" : "/"}
+                  className={isMobilePreview ? "inline-flex items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-center text-cyan-300 transition hover:border-cyan-300/50 hover:bg-cyan-500/15" : "rounded-full border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-cyan-300 transition hover:border-cyan-300/50 hover:bg-cyan-500/15"}
                 >
                   Today
                 </Link>
                 <Link
-                  href="/portfolio"
-                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-white/70 transition hover:border-white/20 hover:bg-white/8"
+                  href={isMobilePreview ? "/portfolio?mobilePreview=1" : "/portfolio"}
+                  className={isMobilePreview ? "inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-center text-white/70 transition hover:border-white/20 hover:bg-white/8" : "rounded-full border border-white/10 bg-white/5 px-4 py-2 text-white/70 transition hover:border-white/20 hover:bg-white/8"}
                 >
                   Portfolio
                 </Link>
               </div>
 
               {process.env.NODE_ENV !== "production" ? (
-                <div className="mt-4 inline-flex flex-wrap items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/8 px-2 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/85">
-                  <span className="px-2 text-emerald-200/70">Screener Preview</span>
+                <div className={isMobilePreview ? "mt-4 flex w-full flex-col gap-2 rounded-3xl border border-emerald-400/20 bg-emerald-400/8 p-2 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/85" : "mt-4 inline-flex flex-wrap items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/8 px-2 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/85"}>
+                  <span className={isMobilePreview ? "px-2 py-1 text-emerald-200/70" : "px-2 text-emerald-200/70"}>Screener Preview</span>
+                  <div className={isMobilePreview ? "grid grid-cols-2 gap-2" : "contents"}>
                   <Link
                     href={livePreviewHref}
                     className={[
-                      "rounded-full border px-3 py-1.5 transition",
+                      isMobilePreview ? "inline-flex items-center justify-center rounded-2xl border px-3 py-2 text-center transition" : "rounded-full border px-3 py-1.5 transition",
                       !shouldForceLockedPreview
                         ? "border-emerald-300/45 bg-emerald-400/18 text-white"
                         : "border-white/10 bg-white/5 text-white/70 hover:border-emerald-300/35 hover:bg-emerald-400/12 hover:text-white",
@@ -1074,7 +1076,7 @@ export default async function ScreenerPage({
                   <Link
                     href={lockedPreviewHref}
                     className={[
-                      "rounded-full border px-3 py-1.5 transition",
+                      isMobilePreview ? "inline-flex items-center justify-center rounded-2xl border px-3 py-2 text-center transition" : "rounded-full border px-3 py-1.5 transition",
                       shouldForceLockedPreview
                         ? "border-emerald-300/45 bg-emerald-400/18 text-white"
                         : "border-white/10 bg-white/5 text-white/70 hover:border-emerald-300/35 hover:bg-emerald-400/12 hover:text-white",
@@ -1082,6 +1084,7 @@ export default async function ScreenerPage({
                   >
                     Locked
                   </Link>
+                  </div>
                 </div>
               ) : null}
             </div>

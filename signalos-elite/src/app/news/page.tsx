@@ -462,8 +462,14 @@ function getLiveHeartbeatClasses(item: any): {
   };
 }
 
-export default async function NewsPage() {
+export default async function NewsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ mobilePreview?: string }>;
+}) {
   let unifiedNews: any[] = [];
+  const params = (await searchParams) ?? {};
+  const isMobilePreview = params.mobilePreview === "1";
 
   try {
     unifiedNews = await fetchUnifiedFreeNews({
@@ -588,7 +594,7 @@ export default async function NewsPage() {
 
   return (
     <main className="min-h-screen bg-black text-white w-full">
-      <div className="w-full space-y-6 md:space-y-6 xl:space-y-7">
+    <div className={isMobilePreview ? "w-full space-y-5" : "w-full space-y-6 md:space-y-6 xl:space-y-7"}>
         <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/60 p-4 md:p-8">
           <div
             className="pointer-events-none absolute inset-0 opacity-25"
@@ -607,9 +613,9 @@ export default async function NewsPage() {
           <div className="relative z-10">
             <div className="mb-2 text-[11px] tracking-[0.2em] text-cyan-400">SIGI</div>
 
-            <h1 className="text-2xl font-semibold text-white md:text-4xl">News</h1>
+            <h1 className={isMobilePreview ? "text-2xl font-semibold text-white" : "text-2xl font-semibold text-white md:text-4xl"}>News</h1>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60 md:text-base">
+            <p className={isMobilePreview ? "mt-2 max-w-none text-sm leading-6 text-white/60" : "mt-2 max-w-2xl text-sm leading-6 text-white/60 md:text-base"}>
               Live market intelligence, watchlist headlines, and trader-relevant macro flow.
             </p>
 
@@ -636,7 +642,7 @@ export default async function NewsPage() {
           </div>
         </div>
 
-        <section className="rounded-3xl border border-emerald-500/15 bg-linear-to-b from-emerald-500/5 to-transparent p-4 md:p-5">
+        <section className={isMobilePreview ? "rounded-3xl border border-emerald-500/15 bg-linear-to-b from-emerald-500/5 to-transparent p-4" : "rounded-3xl border border-emerald-500/15 bg-linear-to-b from-emerald-500/5 to-transparent p-4 md:p-5"}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
@@ -651,7 +657,7 @@ export default async function NewsPage() {
           </div>
 
           <div className={`mt-4 rounded-2xl border p-3 ${headlineBias.border} ${headlineBias.bg}`}>
-            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div className={["flex flex-col gap-2", isMobilePreview ? "" : "md:flex-row md:items-end md:justify-between"].join(" ")}>
               <div>
                 <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
                   Headline Bias
@@ -661,7 +667,7 @@ export default async function NewsPage() {
                 </div>
               </div>
 
-              <div className="text-xs text-white/55 md:text-sm">
+              <div className={isMobilePreview ? "text-xs text-white/55" : "text-xs text-white/55 md:text-sm"}>
                 {bullishCount} Bullish • {neutralCount} Neutral • {bearishCount} Bearish
               </div>
             </div>
@@ -683,7 +689,7 @@ export default async function NewsPage() {
               </div>
             </div>
 
-            <div className="mt-3 grid gap-2 md:grid-cols-3">
+            <div className={["mt-3 grid gap-2", isMobilePreview ? "" : "md:grid-cols-3"].join(" ")}>
               <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/6 px-3 py-2">
                 <div className="text-[9px] uppercase tracking-[0.18em] text-white/35">
                   Bullish
@@ -724,14 +730,14 @@ export default async function NewsPage() {
         </section>
 
         {leadStory ? (
-          <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.35fr_0.85fr]">
+          <section className={["grid grid-cols-1 gap-6", isMobilePreview ? "" : "xl:grid-cols-[1.35fr_0.85fr]"].join(" ")}>
             <div
               className="relative overflow-hidden rounded-xl border border-white/10 transition hover:border-cyan-300/30"
               style={getSigiBackgroundStyle("news")}
             >
               <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(56,189,248,0.25),transparent_60%)] opacity-20" />
-              <div className="relative z-10 p-5">
+              <div className={isMobilePreview ? "relative z-10 p-4" : "relative z-10 p-5"}>
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300">
                   Market driver
@@ -757,7 +763,7 @@ export default async function NewsPage() {
                   href={leadStory.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="group inline-flex min-h-11 items-center gap-1.5 rounded-full border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.25)] transition hover:border-cyan-200/60 hover:bg-cyan-400/20 hover:text-white"
+                  className={isMobilePreview ? "group inline-flex min-h-11 items-center gap-1.5 rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.25)] transition hover:border-cyan-200/60 hover:bg-cyan-400/20 hover:text-white" : "group inline-flex min-h-11 items-center gap-1.5 rounded-full border border-cyan-300/30 bg-cyan-400/10 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.25)] transition hover:border-cyan-200/60 hover:bg-cyan-400/20 hover:text-white"}
                 >
                   <span>OPEN ARTICLE</span>
                   <span className="transition-transform duration-200 group-hover:translate-x-0.5">
@@ -766,11 +772,11 @@ export default async function NewsPage() {
                 </a>
               </div>
 
-              <h2 className="max-w-4xl wrap-anywhere text-xl font-semibold tracking-tight text-white md:text-3xl">
+              <h2 className={isMobilePreview ? "max-w-none wrap-anywhere text-xl font-semibold tracking-tight text-white" : "max-w-4xl wrap-anywhere text-xl font-semibold tracking-tight text-white md:text-3xl"}>
                 {leadStory.headline}
               </h2>
 
-              <p className="mt-4 max-w-3xl wrap-anywhere text-sm leading-6 text-white/65">
+              <p className={isMobilePreview ? "mt-4 max-w-none wrap-anywhere text-sm leading-6 text-white/65" : "mt-4 max-w-3xl wrap-anywhere text-sm leading-6 text-white/65"}>
                 {leadStory.summary}
               </p>
 
@@ -783,11 +789,11 @@ export default async function NewsPage() {
                 className="mt-5 aspect-video h-full overflow-hidden rounded-3xl border border-white/10 bg-black/25"
               />
 
-              <div className="mt-5 rounded-2xl border border-white/10 bg-white/3 p-4">
+              <div className={isMobilePreview ? "mt-5 rounded-2xl border border-white/10 bg-white/3 p-3" : "mt-5 rounded-2xl border border-white/10 bg-white/3 p-4"}>
                 <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
                   Market Impact
                 </div>
-                <div className="mt-3 grid gap-3 md:grid-cols-3">
+                <div className={["mt-3 grid gap-3", isMobilePreview ? "" : "md:grid-cols-3"].join(" ")}>
                   <div className="rounded-2xl border border-white/8 bg-black/25 px-4 py-3">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
                       Affects
@@ -817,7 +823,7 @@ export default async function NewsPage() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className={isMobilePreview ? "mt-4 rounded-2xl border border-white/10 bg-black/20 p-3" : "mt-4 rounded-2xl border border-white/10 bg-black/20 p-4"}>
                 <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
                   What To Watch
                 </div>
@@ -869,7 +875,7 @@ export default async function NewsPage() {
               </div>
             </div>
 
-            <div className="min-w-0 rounded-[28px] border border-emerald-400/15 bg-linear-to-b from-emerald-500/8 via-black to-black p-4 shadow-[0_0_30px_rgba(16,185,129,0.08)]">
+            <div className={isMobilePreview ? "min-w-0 rounded-[28px] border border-emerald-400/15 bg-linear-to-b from-emerald-500/8 via-black to-black p-3 shadow-[0_0_30px_rgba(16,185,129,0.08)]" : "min-w-0 rounded-[28px] border border-emerald-400/15 bg-linear-to-b from-emerald-500/8 via-black to-black p-4 shadow-[0_0_30px_rgba(16,185,129,0.08)]"}>
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300/80">
@@ -973,7 +979,7 @@ export default async function NewsPage() {
                         className={`group block rounded-[18px] border p-3 transition hover:bg-white/4.5 ${getDriverToneClasses(item.tone).border} ${getDriverToneClasses(item.tone).bg}`}
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <div className="w-28 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/35">
+                          <div className={isMobilePreview ? "w-24 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/35" : "w-28 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/35"}>
                             <NewsImage
                               src={item.image ?? item.imageUrl}
                               title={item.headline}
@@ -1047,7 +1053,7 @@ export default async function NewsPage() {
               MARKET HEADLINES
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+            <div className={["grid grid-cols-1 gap-4", isMobilePreview ? "" : "md:grid-cols-2 2xl:grid-cols-3"].join(" ")}>
               {visibleNewsItems.map((item: any, index: number) => (
                 <NewsCard
                   key={`news-${item.id}-${item.rawPublishedAt ?? item.publishedAt ?? ""}-${index}`}

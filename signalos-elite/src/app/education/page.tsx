@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useResponsiveMobilePreviewWidth } from "@/components/shell/useResponsiveMobilePreview";
+import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import { fundamentalsPack } from "@/lib/education/fundamentalsPack";
 
 const MOBILE_PREVIEW_STORAGE_KEY = "signalos-dev-mobile-preview-today";
@@ -406,7 +406,7 @@ function EducationPageContent() {
   const [hasStoredMobilePreview, setHasStoredMobilePreview] = useState(false);
   const returnTo = normalizeReturnTo(searchParams.get("returnTo"));
   const isMobilePreview = searchParams.get("mobilePreview") === "1" || hasStoredMobilePreview;
-  const mobilePreviewWidth = useResponsiveMobilePreviewWidth(isMobilePreview);
+  const mobilePreviewFrame = useResponsiveMobilePreviewFrame(isMobilePreview);
   const fallbackExitHref = isMobilePreview ? "/?mobilePreview=1" : "/";
   const exitHref = returnTo ?? fallbackExitHref;
 
@@ -447,9 +447,16 @@ function EducationPageContent() {
         isMobilePreview
           ? {
               width: "100%",
-              maxWidth: `${mobilePreviewWidth}px`,
+              maxWidth: `${mobilePreviewFrame.width}px`,
               marginInline: "auto",
               overflowX: "hidden",
+              ...(mobilePreviewFrame.isFramed
+                ? {
+                    height: `${mobilePreviewFrame.height}px`,
+                    overflowY: "auto",
+                    overscrollBehaviorY: "contain",
+                  }
+                : null),
             }
           : undefined
       }

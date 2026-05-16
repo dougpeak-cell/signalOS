@@ -17,26 +17,32 @@ import { getSigiSettingsViewForCurrentUser } from "@/lib/sigi/settings";
 const PRO_DASHBOARD_HREF = "/experts/pro";
 const SMART_PREVIEW_HREF = "/experts/smart";
 
-export default async function ExpertsPage() {
+export default async function ExpertsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ mobilePreview?: string }>;
+}) {
   const settings = await getSigiSettingsViewForCurrentUser();
+  const params = (await searchParams) ?? {};
+  const isMobilePreview = params.mobilePreview === "1";
 
   if (settings.hasProFeatures) {
     return <ExpertsProDashboard />;
   }
 
   return (
-    <main className="min-h-screen bg-[#020817] px-4 py-8 text-white md:px-8">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <section className="rounded-3xl border border-cyan-400/20 bg-cyan-950/20 p-6 shadow-[0_0_40px_rgba(34,211,238,0.08)] md:p-8">
+    <main className={isMobilePreview ? "min-h-screen bg-[#020817] px-3 py-6 text-white" : "min-h-screen bg-[#020817] px-4 py-8 text-white md:px-8"}>
+      <div className={isMobilePreview ? "mx-auto max-w-xl space-y-6" : "mx-auto max-w-7xl space-y-8"}>
+        <section className={isMobilePreview ? "rounded-3xl border border-cyan-400/20 bg-cyan-950/20 p-4 shadow-[0_0_40px_rgba(34,211,238,0.08)]" : "rounded-3xl border border-cyan-400/20 bg-cyan-950/20 p-6 shadow-[0_0_40px_rgba(34,211,238,0.08)] md:p-8"}>
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
             SignalOS Access
           </div>
 
-          <h1 className="text-3xl font-bold md:text-5xl">
+          <h1 className={isMobilePreview ? "max-w-[10ch] text-2xl font-bold leading-[1.05]" : "text-3xl font-bold md:text-5xl"}>
             Choose the intelligence level that fits your market workflow.
           </h1>
 
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 md:text-base">
+          <p className={isMobilePreview ? "mt-4 max-w-none text-sm leading-6 text-slate-300" : "mt-4 max-w-3xl text-sm leading-7 text-slate-300 md:text-base"}>
             Current users get Quick View access to Watchlist and Portfolio.
             Smart unlocks Sigi Personal Assistant, Watchlist intelligence, and
             Portfolio Read. Pro unlocks total Sigi Intelligence, including
@@ -44,24 +50,26 @@ export default async function ExpertsPage() {
           </p>
         </section>
 
-        <section className="rounded-3xl border border-slate-700/70 bg-slate-950/70 p-6">
+        <section className={isMobilePreview ? "rounded-3xl border border-slate-700/70 bg-slate-950/70 p-4" : "rounded-3xl border border-slate-700/70 bg-slate-950/70 p-6"}>
           <div className="flex items-center gap-3">
             <Eye className="text-cyan-300" />
-            <h2 className="text-2xl font-bold">Current Users</h2>
+            <h2 className={isMobilePreview ? "text-xl font-bold" : "text-2xl font-bold"}>Current Users</h2>
           </div>
 
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
+          <p className={isMobilePreview ? "mt-3 max-w-none text-sm leading-6 text-slate-300" : "mt-3 max-w-3xl text-sm leading-7 text-slate-300"}>
             Current users have Quick View access to SignalOS Watchlist and Sigi
             Portfolio so they can preview the market workflow before upgrading.
           </p>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <div className={["mt-6 grid gap-4", isMobilePreview ? "" : "md:grid-cols-2"].join(" ")}>
             <FeatureCard
+              compact={isMobilePreview}
               icon={<TrendingUp />}
               title="Quick View Watchlist"
               text="Preview selected stocks and market movement inside the SignalOS experience."
             />
             <FeatureCard
+              compact={isMobilePreview}
               icon={<Briefcase />}
               title="Quick View Portfolio"
               text="Preview portfolio structure and idea tracking before unlocking deeper intelligence."
@@ -69,8 +77,9 @@ export default async function ExpertsPage() {
           </div>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-3">
+        <section className={["grid gap-6", isMobilePreview ? "" : "lg:grid-cols-3"].join(" ")}>
           <PlanCard
+            compact={isMobilePreview}
             badge="Current Access"
             title="Sigi"
             price="$0"
@@ -85,6 +94,7 @@ export default async function ExpertsPage() {
           />
 
           <PlanCard
+            compact={isMobilePreview}
             highlighted
             badge="Smart Users"
             title="Sigi Smart"
@@ -102,6 +112,7 @@ export default async function ExpertsPage() {
           />
 
           <PlanCard
+            compact={isMobilePreview}
             premium
             badge="Pro Users"
             title="Sigi Pro"
@@ -119,32 +130,35 @@ export default async function ExpertsPage() {
           />
         </section>
 
-        <section className="rounded-3xl border border-cyan-400/20 bg-slate-950/80 p-6 md:p-8">
+        <section className={isMobilePreview ? "rounded-3xl border border-cyan-400/20 bg-slate-950/80 p-4" : "rounded-3xl border border-cyan-400/20 bg-slate-950/80 p-6 md:p-8"}>
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
             Smart Access
           </div>
 
-          <h2 className="text-3xl font-bold">Sigi Smart unlocks your personal investing assistant.</h2>
+          <h2 className={isMobilePreview ? "text-2xl font-bold leading-tight" : "text-3xl font-bold"}>Sigi Smart unlocks your personal investing assistant.</h2>
 
-          <p className="mt-4 max-w-4xl text-sm leading-7 text-slate-300 md:text-base">
+          <p className={isMobilePreview ? "mt-4 max-w-none text-sm leading-6 text-slate-300" : "mt-4 max-w-4xl text-sm leading-7 text-slate-300 md:text-base"}>
             Smart users have access to Sigi Personal Assistant, SignalOS
             Watchlist, and Sigi Portfolio Read.
           </p>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-3">
+          <div className={["mt-6 grid gap-4", isMobilePreview ? "" : "lg:grid-cols-3"].join(" ")}>
             <FeatureCard
+              compact={isMobilePreview}
               icon={<Brain />}
               title="Sigi Personal Assistant"
               text="Ask Sigi market questions, review stocks, understand risk, and receive guided intelligence inside your workflow."
             />
 
             <FeatureCard
+              compact={isMobilePreview}
               icon={<ChartNoAxesCombined />}
               title="SignalOS Watchlist"
               text="Opens Track What Matters, where users monitor selected stocks with live pricing, SigiOS scoring, momentum context, and quick access to charts, portfolio tracking, and workspaces."
             />
 
             <FeatureCard
+              compact={isMobilePreview}
               icon={<Briefcase />}
               title="Sigi Portfolio Read"
               text="Track holdings, monitor conviction, and manage idea buckets inside the same intelligence system."
@@ -152,23 +166,24 @@ export default async function ExpertsPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-amber-400/30 bg-linear-to-br from-amber-950/30 to-slate-950 p-6 md:p-8">
+        <section className={isMobilePreview ? "rounded-3xl border border-amber-400/30 bg-linear-to-br from-amber-950/30 to-slate-950 p-4" : "rounded-3xl border border-amber-400/30 bg-linear-to-br from-amber-950/30 to-slate-950 p-6 md:p-8"}>
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-amber-300">
             Pro Intelligence
           </div>
 
-          <h2 className="text-3xl font-bold">
+          <h2 className={isMobilePreview ? "text-2xl font-bold leading-tight" : "text-3xl font-bold"}>
             Sigi Pro reserves total access to Sigi Intelligence.
           </h2>
 
-          <p className="mt-4 max-w-4xl text-sm leading-7 text-slate-300 md:text-base">
+          <p className={isMobilePreview ? "mt-4 max-w-none text-sm leading-6 text-slate-300" : "mt-4 max-w-4xl text-sm leading-7 text-slate-300 md:text-base"}>
             Pro users unlock Sigi Experts and Sigi Screener, giving serious
             investors deeper market discovery, analyst conviction, insider
             signals, and institutional context.
           </p>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <div className={["mt-6 grid gap-4", isMobilePreview ? "" : "lg:grid-cols-2"].join(" ")}>
             <FeatureCard
+              compact={isMobilePreview}
               gold
               icon={<Star />}
               title="Sigi Experts"
@@ -176,6 +191,7 @@ export default async function ExpertsPage() {
             />
 
             <FeatureCard
+              compact={isMobilePreview}
               gold
               icon={<Search />}
               title="Sigi Screener"
@@ -183,6 +199,7 @@ export default async function ExpertsPage() {
             />
 
             <FeatureCard
+              compact={isMobilePreview}
               gold
               icon={<Sparkles />}
               title="Analyst Top Picks Across the Market"
@@ -190,6 +207,7 @@ export default async function ExpertsPage() {
             />
 
             <FeatureCard
+              compact={isMobilePreview}
               gold
               icon={<ChartNoAxesCombined />}
               title="Sector Tabs"
@@ -198,13 +216,13 @@ export default async function ExpertsPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-amber-400/20 bg-black/40 p-6 md:p-8">
+        <section className={isMobilePreview ? "rounded-3xl border border-amber-400/20 bg-black/40 p-4" : "rounded-3xl border border-amber-400/20 bg-black/40 p-6 md:p-8"}>
           <div className="flex items-center gap-3">
             <Lock className="text-amber-300" />
-            <h2 className="text-2xl font-bold">Experts Page Reserved for Pro</h2>
+            <h2 className={isMobilePreview ? "text-xl font-bold" : "text-2xl font-bold"}>Experts Page Reserved for Pro</h2>
           </div>
 
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
+          <p className={isMobilePreview ? "mt-3 max-w-none text-sm leading-6 text-slate-300" : "mt-3 max-w-3xl text-sm leading-7 text-slate-300"}>
             Expert market intelligence is reserved for Sigi Pro members. Upgrade
             to unlock analyst-ranked opportunities, institutional ownership
             trends, insider conviction, and advanced market discovery.
@@ -227,23 +245,25 @@ function FeatureCard({
   title,
   text,
   gold = false,
+  compact = false,
 }: {
   icon: ReactNode;
   title: string;
   text: string;
   gold?: boolean;
+  compact?: boolean;
 }) {
   return (
     <div
-      className={`rounded-2xl border p-5 ${
+      className={`rounded-2xl border ${compact ? "p-4" : "p-5"} ${
         gold
           ? "border-amber-400/20 bg-amber-400/5"
           : "border-cyan-400/15 bg-cyan-400/5"
       }`}
     >
       <div className={gold ? "text-amber-300" : "text-cyan-300"}>{icon}</div>
-      <h3 className="mt-4 text-lg font-bold">{title}</h3>
-      <p className="mt-3 text-sm leading-6 text-slate-300">{text}</p>
+      <h3 className={compact ? "mt-3 text-base font-bold" : "mt-4 text-lg font-bold"}>{title}</h3>
+      <p className={compact ? "mt-2 text-sm leading-6 text-slate-300" : "mt-3 text-sm leading-6 text-slate-300"}>{text}</p>
     </div>
   );
 }
@@ -258,6 +278,7 @@ function PlanCard({
   href,
   highlighted = false,
   premium = false,
+  compact = false,
 }: {
   badge: string;
   title: string;
@@ -268,10 +289,11 @@ function PlanCard({
   href: string;
   highlighted?: boolean;
   premium?: boolean;
+  compact?: boolean;
 }) {
   return (
     <div
-      className={`rounded-3xl border p-6 ${
+      className={`rounded-3xl border ${compact ? "p-4" : "p-6"} ${
         premium
           ? "border-amber-400/30 bg-amber-950/20"
           : highlighted
@@ -287,10 +309,10 @@ function PlanCard({
         {badge}
       </div>
 
-      <h3 className="mt-4 text-2xl font-bold">{title}</h3>
+      <h3 className={compact ? "mt-3 text-xl font-bold" : "mt-4 text-2xl font-bold"}>{title}</h3>
 
       <div className="mt-3 flex items-end gap-1">
-        <span className="text-4xl font-black">{price}</span>
+        <span className={compact ? "text-3xl font-black" : "text-4xl font-black"}>{price}</span>
         {price !== "$0" ? <span className="mb-1 text-sm text-slate-400">/mo</span> : null}
       </div>
 

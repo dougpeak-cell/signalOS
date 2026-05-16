@@ -16,7 +16,7 @@ import SigiMiniPanel from "@/components/sigi/SigiMiniPanel";
 import { SigiPanelProvider } from "@/components/sigi/SigiPanelContext";
 import SigiUpgradeAnalyticsBridge from "@/components/sigi/SigiUpgradeAnalyticsBridge";
 import type { SigiTier } from "@/lib/sigi/gates";
-import { useResponsiveMobilePreviewWidth } from "@/components/shell/useResponsiveMobilePreview";
+import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 
 const MOBILE_PREVIEW_STORAGE_KEY = "signalos-dev-mobile-preview-today";
 const DEV_PREVIEW_PLAN_COOKIE = "signalos-dev-preview-plan";
@@ -85,7 +85,7 @@ function ShellLayoutContent({
   const isDevMobilePreview =
     process.env.NODE_ENV !== "production" && hasMobilePreviewParam;
   const isDensePreviewRoute = /^\/stocks\/[^/]+\/live(?:\/.*)?$/i.test(pathname);
-  const mobilePreviewWidth = useResponsiveMobilePreviewWidth(
+  const mobilePreviewFrame = useResponsiveMobilePreviewFrame(
     isDevMobilePreview,
     isDensePreviewRoute ? "dense" : "standard"
   );
@@ -251,9 +251,16 @@ function ShellLayoutContent({
               isDevMobilePreview
                 ? {
                     width: "100%",
-                    maxWidth: `${mobilePreviewWidth}px`,
+                    maxWidth: `${mobilePreviewFrame.width}px`,
                     marginInline: "auto",
                     overflowX: "hidden",
+                    ...(mobilePreviewFrame.isFramed
+                      ? {
+                          height: `${mobilePreviewFrame.height}px`,
+                          overflowY: "auto",
+                          overscrollBehaviorY: "contain",
+                        }
+                      : null),
                   }
                 : undefined
             }
