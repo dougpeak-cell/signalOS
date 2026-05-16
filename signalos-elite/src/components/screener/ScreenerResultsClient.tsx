@@ -582,7 +582,10 @@ export default function ScreenerResultsClient({ stocks }: Props) {
   const renderedFeedRows = displayRows;
   const canShowMore = feedRows.length > visibleCount;
 
-  const resultCount = feedRows.length;
+  const resultCount =
+    shouldUseSectorUniverse && filteredRows.length > 0
+      ? filteredRows.length
+      : feedRows.length;
   const matchedRowCount = resultCount;
   const scoreValues = feedRows.map((row) =>
     Math.max(0, Math.min(100, row.masterScore ?? row.score ?? row.conviction ?? 0))
