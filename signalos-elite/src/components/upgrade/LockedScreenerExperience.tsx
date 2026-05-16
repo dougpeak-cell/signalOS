@@ -91,7 +91,7 @@ export default function LockedScreenerExperience() {
         </div>
 
         <div className="relative mt-8 overflow-hidden rounded-3xl border border-white/10 bg-black/30 p-4 sm:mt-10 sm:p-6">
-          <div className="absolute inset-0 backdrop-blur-md" />
+          <div className="absolute inset-0 hidden md:block backdrop-blur-md" />
 
           <div className="relative grid gap-2 opacity-60 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
             {PREVIEW_ROWS.map((row) => (
@@ -134,7 +134,7 @@ export default function LockedScreenerExperience() {
             ))}
           </div>
 
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center sm:px-6">
+          <div className="relative mt-5 rounded-3xl border border-cyan-400/20 bg-slate-950/88 px-4 py-5 text-center shadow-[0_0_24px_rgba(34,211,238,0.08)] md:absolute md:inset-0 md:mt-0 md:flex md:flex-col md:items-center md:justify-center md:rounded-none md:border-0 md:bg-transparent md:px-4 md:py-0 md:shadow-none sm:px-6">
             <Lock className="mb-3 h-8 w-8 text-cyan-200 sm:mb-4 sm:h-10 sm:w-10" />
 
             <h2 className="text-2xl font-black text-white sm:text-3xl">
