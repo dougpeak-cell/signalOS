@@ -82,11 +82,12 @@ export default function SigiAnalystLeaders() {
   const strongestCall = summarizeStrongestCall(leader.strongestCall);
   const mostRecentPick = normalizeMostRecentPick(leader.mostRecentPick, leader.strongestCall);
 
-  async function handleAskSigi() {
-    const sector = input.trim() || activeSector;
+  async function requestAnalystLeader(nextSector: string) {
+    const sector = nextSector.trim();
     if (!sector) return;
 
     setLoading(true);
+    setActiveSector(sector);
 
     try {
       const res = await fetch("/api/sigi", {
@@ -104,12 +105,17 @@ export default function SigiAnalystLeaders() {
       const data = await res.json();
 
       setAiLeader(data.intelligence ?? data.thesis ?? data);
-      setActiveSector(sector);
     } catch (error) {
       console.error("Sigi analyst leader error:", error);
+      setAiLeader(null);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleAskSigi() {
+    const sector = input.trim() || activeSector;
+    await requestAnalystLeader(sector);
   }
 
   return (
@@ -153,14 +159,15 @@ export default function SigiAnalystLeaders() {
           <button
             key={sector}
             onClick={() => {
-              setAiLeader(null);
-              setActiveSector(sector);
+              setInput(sector);
+              void requestAnalystLeader(sector);
             }}
+            disabled={loading}
             className={`rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] transition ${
               activeSector === sector
                 ? "border-cyan-300 bg-cyan-300/15 text-cyan-100"
                 : "border-white/10 bg-white/5 text-slate-400 hover:border-cyan-300/30 hover:text-white"
-            }`}
+            } disabled:cursor-not-allowed disabled:opacity-60`}
           >
             {sector}
           </button>
@@ -187,7 +194,7 @@ export default function SigiAnalystLeaders() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Stat label="Success Rate" value={leader.successRate} />
             <Stat label="Avg Return" value={leader.avgReturn} />
             <Stat label="Strongest Call" value={strongestCall} />
@@ -246,11 +253,11 @@ function Stat({ label, value }: { label: string; value: string }) {
   const hidden = isDisclosureHidden(value);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+    <div className="min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4">
       <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
         {label}
       </p>
-      <p className="mt-2 wrap-break-word text-xl font-black text-white sm:text-2xl">{hidden ? "—" : value}</p>
+      <p className="mt-2 text-xl font-black leading-tight text-white sm:text-2xl">{hidden ? "—" : value}</p>
       {hidden ? (
         <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
           Not disclosed
@@ -268,7 +275,8 @@ function isDisclosureHidden(value: unknown) {
     normalized === "" ||
     normalized === "—" ||
     normalized === "not disclosed" ||
-    normalized === "n/a"
+    normalized === "n/a" ||
+    normalized.includes("needs live analyst-feed confirmation")
   );
 }
 
