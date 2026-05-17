@@ -488,10 +488,11 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
     const timeLabels = visibleCandles.length >= 3
       ? [0, Math.floor((visibleCandles.length - 1) / 2), visibleCandles.length - 1].map((index) => {
           const candle = visibleCandles[index];
-          const date = new Date(candle.time * 1000);
+          const date = new Date(candle.time);
           const label = date.toLocaleTimeString([], {
             hour: "numeric",
             minute: "2-digit",
+            timeZone: "America/New_York",
           });
 
           return {
