@@ -23,6 +23,7 @@ import {
   type SigiProfile,
 } from "@/lib/sigi/sigiProfile";
 import { clearSigiSessionContext } from "@/lib/sigi/sigiSessionContext";
+import { formatMarketClockTimeMs } from "@/lib/marketTime";
 import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
 import {
   readPortfolioHoldings,
@@ -104,10 +105,7 @@ function uniqueTickers(values: Array<string | null | undefined>) {
 
 function buildLastUpdatedLabel(value: number | null) {
   if (!value) return "just now";
-  return new Date(value).toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatMarketClockTimeMs(value, { includeZone: true });
 }
 
 function formatCompactNumber(value?: number | null) {

@@ -4,7 +4,7 @@ import TradeReadinessBar from "@/components/stocks/TradeReadinessBar";
 import MobileSignalSheet from "@/components/shell/MobileSignalSheet";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatMarketTime } from "@/lib/marketTime";
+import { MARKET_TIME_ABBR, formatMarketTime } from "@/lib/marketTime";
 import {
   CandlestickSeries,
   ColorType,
@@ -3983,6 +3983,9 @@ const gapFillLabel =
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
               Live Chart
+            </div>
+            <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/34">
+              All chart times {MARKET_TIME_ABBR}
             </div>
 
             <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4">

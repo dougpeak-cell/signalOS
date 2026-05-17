@@ -16,6 +16,7 @@ import {
   type TodayUnifiedPortfolioItem,
   type TodayUnifiedWatchlistItem,
 } from "@/lib/today/todayIntelligence";
+import { formatMarketClockTimeMs } from "@/lib/marketTime";
 
 
 
@@ -816,11 +817,7 @@ function formatPct(value: number | null | undefined): string {
 
 function formatHeatmapTimestamp(value: number | null): string {
   if (value == null || !Number.isFinite(value)) return "Waiting for refresh";
-
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
+  return formatMarketClockTimeMs(value, { includeZone: true });
 }
 
 function getMemberPeriodChange(

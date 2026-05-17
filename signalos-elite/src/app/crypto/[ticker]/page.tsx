@@ -7,6 +7,7 @@ import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiv
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { useCryptoStream } from "@/hooks/useCryptoStream";
+import { MARKET_TIME_ABBR, formatMarketClockTimeMs } from "@/lib/marketTime";
 
 type Candle = {
   time: number;
@@ -284,10 +285,9 @@ function compact(value: number | null | undefined) {
 function tradeTime(value: number | null) {
   if (!value) return "—";
 
-  return new Date(value / 1_000_000).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
+  return formatMarketClockTimeMs(value / 1_000_000, {
+    includeSeconds: true,
+    includeZone: true,
   });
 }
 
@@ -489,11 +489,7 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
       ? [0, Math.floor((visibleCandles.length - 1) / 2), visibleCandles.length - 1].map((index) => {
           const candle = visibleCandles[index];
           const date = new Date(candle.time);
-          const label = date.toLocaleTimeString([], {
-            hour: "numeric",
-            minute: "2-digit",
-            timeZone: "America/New_York",
-          });
+          const label = formatMarketClockTimeMs(candle.time);
 
           return {
             key: `${candle.time}-${index}`,
@@ -552,6 +548,9 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
           "flex flex-wrap items-center gap-2",
           compact ? "justify-start" : "justify-end",
         ].join(" ")}>
+          <div className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">
+            Times {MARKET_TIME_ABBR}
+          </div>
           <div className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs font-semibold text-white/65">
             {chart?.latestClose ? `Last ${money(chart.latestClose)}` : "Waiting for price"}
           </div>

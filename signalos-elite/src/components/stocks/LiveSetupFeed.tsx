@@ -2,6 +2,7 @@
 
 import { useSignal } from "@/context/SignalContext";
 import type { ChartSignal } from "@/lib/chartSignals";
+import { formatMarketClockTimeWithZone } from "@/lib/marketTime";
 
 function getConfluenceScore(signal: {
   confidence?: number | null;
@@ -111,10 +112,7 @@ function gradeClasses(grade?: string) {
 }
 
 function formatSignalTime(unixSeconds: number) {
-  return new Date(unixSeconds * 1000).toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatMarketClockTimeWithZone(unixSeconds);
 }
 
 export default function LiveSetupFeed({

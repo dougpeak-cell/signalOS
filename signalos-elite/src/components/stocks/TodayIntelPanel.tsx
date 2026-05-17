@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useMarketData } from "@/components/providers/MarketDataProvider";
+import { formatMarketClockTimeMs } from "@/lib/marketTime";
 
 type IntelMetricChip = {
   label: string;
@@ -19,10 +20,7 @@ function commandBuildStockHref(ticker: string): string {
 
 function formatUpdatedAt(value: number | null): string {
   if (!value) return "—";
-  return new Date(value).toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatMarketClockTimeMs(value, { includeZone: true });
 }
 
 function formatWholeNumber(value: number | null | undefined) {
