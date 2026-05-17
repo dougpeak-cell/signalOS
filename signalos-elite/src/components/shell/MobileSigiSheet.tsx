@@ -30,6 +30,7 @@ import { getSigiMarketCondition } from "@/lib/sigi/sigiMarketCondition";
 import { matchSigiIntentWithContext } from "@/lib/sigi/sigiIntentRouter";
 import { buildSigiTodayResponse } from "@/lib/sigi/todayAssistant";
 import {
+  buildSigiProfilePrompt,
   clearSigiProfile,
   getSigiProfile,
   SIGI_PROFILE_CHANGED_EVENT,
@@ -442,12 +443,16 @@ export default function MobileSigiSheet({
       setFollowUps([]);
 
       try {
+        const stock = await fetchStockContext(ticker);
+
         const response = await fetch("/api/sigi", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: question,
             ticker,
+            profilePrompt: buildSigiProfilePrompt(sigiProfile),
+            stock,
             source: "mobile_today",
             profile: sigiProfile ?? null,
             context: effectiveSheetContext,
