@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactElement } from "react";
+import MobileMarketThesisHero, { type SigiIntelligence } from "@/components/mobile/MobileMarketThesisHero";
 import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
 import { useOptionalMarketData } from "@/components/providers/MarketDataProvider";
 import { useShellMarketContext } from "@/components/shell/ShellMarketContext";
@@ -10,7 +11,9 @@ import { openMobileSigiSheet } from "@/components/shell/mobileSigiSheetEvents";
 import { setMobileSigiSheetDefaultContext } from "@/components/shell/mobileSigiSheetEvents";
 import SigiOnboarding from "@/components/sigi/SigiOnboarding";
 import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
-import MarketThesisHero from "@/components/today/MarketThesisHero";
+import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
+import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
+import TodayTrendingNewsPanel from "@/components/today/TodayTrendingNewsPanel";
 import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import type { SigiTodayContext } from "@/hooks/useSigi";
 import {
@@ -26,6 +29,7 @@ import {
   readPortfolioTickers,
   type LocalPortfolioHolding,
 } from "@/lib/portfolio/localPortfolio";
+import type { RankedSetupItem } from "@/lib/today/setupDiscovery";
 import type {
   TodayCommandCenterNewsRow,
   TodayMostTradedRow,
@@ -40,7 +44,10 @@ type MobileSigiHomeProps = {
   hasSigiSmart: boolean;
   topSetups: TodaySetupItem[];
   preMarketTopSetups: TodaySetupItem[];
+  emergingSetups: RankedSetupItem[];
+  preMarketEmergingSetups: RankedSetupItem[];
   news: TodayCommandCenterNewsRow[];
+  trendingNews: TodayCommandCenterNewsRow[];
   opportunities: TodayOpportunityItem[];
   risks: TodayRiskItem[];
   leadershipWatch: TodaySetupItem[];
@@ -112,11 +119,27 @@ function formatCompactNumber(value?: number | null) {
   }).format(value);
 }
 
+function formatPulsePrice(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "--";
+
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: value >= 100 ? 0 : 2,
+    maximumFractionDigits: value >= 100 ? 2 : 2,
+  }).format(value);
+}
+
+function formatPulseTicker(ticker: string) {
+  return ticker === "^VIX" ? "VIX" : ticker;
+}
+
 export default function MobileSigiHome({
   hasSigiSmart,
   topSetups,
   preMarketTopSetups,
+  emergingSetups,
+  preMarketEmergingSetups,
   news,
+  trendingNews,
   opportunities,
   risks,
   leadershipWatch,
@@ -125,6 +148,7 @@ export default function MobileSigiHome({
   defaultSetupSession,
   forceVisible = false,
 }: MobileSigiHomeProps): ReactElement {
+  const { effectiveTicker, heroStory, stockContext } = useTodayHeroContext();
   const router = useRouter();
   const searchParams = useSearchParams();
   const {
@@ -243,11 +267,15 @@ export default function MobileSigiHome({
   const greeting = sigiName
     ? `Hi ${sigiName}, what do you want to know today?`
     : "Sigi is ready.";
+  const commandCenterGreeting = hasSigiSmart
+    ? greeting
+    : "Sigi Command Center";
   const leadHeadline = news[0]?.headline ?? "Sigi is watching setups, movers, and market headlines for you.";
   const todaySnapshotTicker = leadOpportunity?.ticker ?? leadSetup?.ticker ?? null;
   const chartHref = todaySnapshotTicker
     ? `/stocks/${todaySnapshotTicker}/live?source=%2Ftoday&session=${defaultSetupSession}`
     : `/screener/setups?session=${defaultSetupSession}`;
+  const upgradeHref = buildPreviewHref("/auth/upgrade?plan=smart&returnTo=/today");
 
   function buildPreviewHref(href: string) {
     if (searchParams.get("mobilePreview") !== "1") {
@@ -300,6 +328,99 @@ export default function MobileSigiHome({
   const lastUpdatedLabel = useMemo(
     () => buildLastUpdatedLabel(lastRefreshedAt ?? lastUpdatedAt),
     [lastRefreshedAt, lastUpdatedAt]
+  );
+  const mobileIntelligence = useMemo<SigiIntelligence>(() => {
+    const heroStoryUrl =
+      heroStory?.items?.find((item) => item.headline?.trim() === heroStory?.headline?.trim())?.url?.trim() ||
+      heroStory?.items?.[0]?.url?.trim() ||
+      null;
+    const ticker =
+      effectiveTicker ??
+      heroStory?.ticker?.trim() ??
+      leadOpportunity?.ticker ??
+      leadSetup?.ticker ??
+      leadRisk?.ticker ??
+      null;
+    const catalyst =
+      stockContext?.catalyst?.trim() ??
+      heroStory?.stage?.replace(/-/g, " ")?.trim() ??
+      leadHeadline;
+    const changePercent = stockContext?.changePercent ?? leadOpportunity?.changePercent ?? leadSetup?.changePercent ?? null;
+    const tone: SigiIntelligence["tone"] =
+      typeof changePercent === "number" && Number.isFinite(changePercent)
+        ? changePercent >= 1
+          ? "bullish"
+          : changePercent <= -1
+            ? "bearish"
+            : "neutral"
+        : leadRisk
+          ? "caution"
+          : "neutral";
+
+    return {
+      ticker,
+      heroTitle:
+        heroStory?.headline?.trim() ||
+        (ticker
+          ? `${ticker} is setting the tone for ${defaultSetupSession === "pre" ? "the pre-market" : "today's tape"}`
+          : defaultSetupSession === "pre"
+            ? "Pre-market leadership is starting to take shape"
+            : "The tape is showing its clearest market thesis"),
+      heroSummary:
+        heroStory?.whyItMatters?.trim() ||
+        heroStory?.summary?.trim() ||
+        leadHeadline,
+      heroImageUrl: heroStory?.image?.trim() || null,
+      heroArticleUrl: heroStoryUrl,
+      tone,
+      badges: [
+        defaultSetupSession === "pre" ? "Pre-market live" : "Regular session",
+        ticker ? `Focus: ${ticker}` : null,
+        leadSetup?.ticker ? `Setup: ${leadSetup.ticker}` : null,
+        stockContext?.sector?.trim() ? `Sector: ${stockContext.sector.trim()}` : null,
+      ].filter((value): value is string => Boolean(value)),
+      analysis:
+        stockContext?.notes?.trim() ||
+        leadOpportunity?.whyThisSetup ||
+        leadSetup?.whyThisSetup ||
+        leadHeadline,
+      risk:
+        leadRisk?.whyThisSetup ||
+        (ticker
+          ? `${ticker} remains actionable, but keep risk tight if momentum or breadth fades.`
+          : "Respect weak breadth and failed breakouts while the tape is still sorting itself out."),
+      catalyst,
+      nextStep: leadOpportunity?.ticker
+        ? `Open ${leadOpportunity.ticker} for the clearest live follow-through.`
+        : "Use the command input to drill into the clearest setup on your watchlist.",
+    };
+  }, [
+    defaultSetupSession,
+    effectiveTicker,
+    heroStory,
+    leadHeadline,
+    leadOpportunity,
+    leadRisk,
+    leadSetup,
+    heroStory?.headline,
+    heroStory?.items,
+    stockContext,
+  ]);
+  const quickPulseCards = useMemo(
+    () =>
+      MOBILE_PULSE_TICKERS.map((ticker) => {
+        const quote = quoteMap[ticker];
+        const sparkline = historyMap[ticker] ?? [];
+
+        return {
+          ticker,
+          label: formatPulseTicker(ticker),
+          price: quote?.price ?? null,
+          changePercent: quote?.changePct ?? null,
+          sparklinePath: buildSparklinePath(sparkline),
+        };
+      }),
+    [historyMap, quoteMap]
   );
 
   useEffect(() => {
@@ -515,9 +636,28 @@ export default function MobileSigiHome({
     });
   }
 
+  function openUpgradePrompt(nextPrompt?: string) {
+    const promptParam = nextPrompt?.trim();
+
+    if (!promptParam) {
+      router.push(upgradeHref);
+      return;
+    }
+
+    const nextParams = new URLSearchParams();
+    nextParams.set("plan", "smart");
+    nextParams.set("returnTo", "/today");
+    nextParams.set("intent", promptParam);
+    router.push(buildPreviewHref(`/auth/upgrade?${nextParams.toString()}`));
+  }
+
   function handleAnalyze() {
     const nextPrompt = prompt.trim();
-    openSigiRead(nextPrompt || undefined);
+    if (hasSigiSmart) {
+      openSigiRead(nextPrompt || undefined);
+    } else {
+      openUpgradePrompt(nextPrompt || undefined);
+    }
     setPrompt("");
   }
 
@@ -537,81 +677,80 @@ export default function MobileSigiHome({
 
   return (
     <section id="sigi-command-panel" className={forceVisible ? "space-y-4" : "space-y-4 md:hidden"}>
-      <MarketThesisHero showHeatmapAction={false} />
+      <MobileMarketThesisHero intelligence={mobileIntelligence} />
 
-      {hasSigiSmart ? (
-        <>
-          <div className={`relative overflow-hidden rounded-[28px] border border-cyan-400/24 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.18),rgba(3,7,18,0.96)_58%)] shadow-[0_0_40px_rgba(34,211,238,0.16)] ${sigiName ? "p-5" : "p-4"}`}>
-            <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(8,47,73,0.22),transparent_42%,rgba(8,145,178,0.08))]" />
-            <div className="absolute -right-10 top-6 h-28 w-28 rounded-full bg-cyan-400/10 blur-2xl" />
-            <div className="absolute -left-8 bottom-6 h-24 w-24 rounded-full bg-sky-500/10 blur-2xl" />
+      <div className={`relative overflow-hidden rounded-[28px] border border-cyan-400/24 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.18),rgba(3,7,18,0.96)_58%)] shadow-[0_0_40px_rgba(34,211,238,0.16)] ${sigiName && hasSigiSmart ? "p-5" : "p-4"}`}>
+        <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(8,47,73,0.22),transparent_42%,rgba(8,145,178,0.08))]" />
+        <div className="absolute -right-10 top-6 h-28 w-28 rounded-full bg-cyan-400/10 blur-2xl" />
+        <div className="absolute -left-8 bottom-6 h-24 w-24 rounded-full bg-sky-500/10 blur-2xl" />
 
-            <div className={`relative z-10 flex items-start ${sigiName ? "gap-4" : "gap-3"}`}>
-              <div className={`shrink-0 rounded-3xl border border-cyan-400/20 bg-cyan-400/8 shadow-[0_0_26px_rgba(34,211,238,0.12)] ${sigiName ? "p-2" : "p-1.5"}`}>
-                <SigiSignalIcon size={sigiName ? 72 : 50} />
-              </div>
-
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/84">
-                    Mobile Sigi Command Center
-                  </div>
-                  {sigiName ? (
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowProfileEditor((current) => !current)}
-                        className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100 shadow-[0_0_16px_rgba(34,211,238,0.14)] transition hover:border-cyan-300/40 hover:bg-cyan-400/14 active:scale-95"
-                        aria-label="Update Sigi sectors"
-                      >
-                        {showProfileEditor ? "Hide sectors" : "Update sectors"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void resetSigiProfile()}
-                        disabled={isResettingSigi}
-                        className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-white/10 bg-black/55 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 shadow-[0_0_16px_rgba(34,211,238,0.18)] transition hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
-                        aria-label="Reset Sigi profile"
-                      >
-                        {isResettingSigi ? "Resetting..." : "Reset SIGI profile"}
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-                {process.env.NODE_ENV !== "production" ? (
-                  <div className="mt-1 inline-flex rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">
-                    SIGI watchlist: {sigiWatchlistSource}
-                  </div>
-                ) : null}
-                <h1 className={`mt-2 font-black leading-[1.05] text-white ${sigiName ? "text-[30px]" : "text-[24px]"}`}>
-                  {greeting}
-                </h1>
-                <p className={`text-sm text-white/68 ${sigiName ? "mt-2 leading-6" : "mt-1.5 leading-5"}`}>
-                  {sigiName
-                    ? leadHeadline
-                    : "Enter your name below to personalize answers. You can update sectors any time."}
-                </p>
-                {sigiName ? (
-                  <>
-                    <div className="mt-3 text-[10px] uppercase tracking-[0.16em] text-white/35">
-                      Updated {lastUpdatedLabel}
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.16em] text-white/44">
-                      <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-1 text-cyan-200/88">
-                        {defaultSetupSession === "pre" ? "Pre-market live" : "Regular session"}
-                      </span>
-                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
-                        Top setup: {leadSetup?.ticker ?? "Scanning"}
-                      </span>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-            </div>
+        <div className={`relative z-10 flex items-start ${sigiName && hasSigiSmart ? "gap-4" : "gap-3"}`}>
+          <div className={`shrink-0 rounded-3xl border border-cyan-400/20 bg-cyan-400/8 shadow-[0_0_26px_rgba(34,211,238,0.12)] ${sigiName && hasSigiSmart ? "p-2" : "p-1.5"}`}>
+            <SigiSignalIcon size={sigiName && hasSigiSmart ? 72 : 50} />
           </div>
 
-          {!sigiName ? (
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/84">
+                Mobile Sigi Command Center
+              </div>
+              {hasSigiSmart && sigiName ? (
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowProfileEditor((current) => !current)}
+                    className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100 shadow-[0_0_16px_rgba(34,211,238,0.14)] transition hover:border-cyan-300/40 hover:bg-cyan-400/14 active:scale-95"
+                    aria-label="Update Sigi sectors"
+                  >
+                    {showProfileEditor ? "Hide sectors" : "Update sectors"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void resetSigiProfile()}
+                    disabled={isResettingSigi}
+                    className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-white/10 bg-black/55 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 shadow-[0_0_16px_rgba(34,211,238,0.18)] transition hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+                    aria-label="Reset Sigi profile"
+                  >
+                    {isResettingSigi ? "Resetting..." : "Reset SIGI profile"}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+            {process.env.NODE_ENV !== "production" ? (
+              <div className="mt-1 inline-flex rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">
+                SIGI watchlist: {sigiWatchlistSource}
+              </div>
+            ) : null}
+            <h1 className={`mt-2 font-black leading-[1.05] text-white ${sigiName && hasSigiSmart ? "text-[30px]" : "text-[24px]"}`}>
+              {commandCenterGreeting}
+            </h1>
+            <p className={`text-sm text-white/68 ${sigiName && hasSigiSmart ? "mt-2 leading-6" : "mt-1.5 leading-5"}`}>
+              {hasSigiSmart
+                ? sigiName
+                  ? leadHeadline
+                  : "Enter your name below to personalize answers. You can update sectors any time."
+                : "Ask for a ticker read, market pulse, or setup check. Smart unlocks the full answer flow and command center analysis."}
+            </p>
+            {hasSigiSmart && sigiName ? (
+              <>
+                <div className="mt-3 text-[10px] uppercase tracking-[0.16em] text-white/35">
+                  Updated {lastUpdatedLabel}
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.16em] text-white/44">
+                  <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-1 text-cyan-200/88">
+                    {defaultSetupSession === "pre" ? "Pre-market live" : "Regular session"}
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
+                    Top setup: {leadSetup?.ticker ?? "Scanning"}
+                  </span>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </div>
+        <div className="relative z-10 mt-4 space-y-3">
+          {!sigiName && hasSigiSmart ? (
             <SigiOnboarding
               initialProfile={sigiProfile}
               onComplete={(profile) => {
@@ -629,7 +768,7 @@ export default function MobileSigiHome({
             />
           ) : null}
 
-          {sigiName && showProfileEditor ? (
+          {sigiName && hasSigiSmart && showProfileEditor ? (
             <SigiOnboarding
               initialProfile={sigiProfile}
               mode="interests"
@@ -645,7 +784,7 @@ export default function MobileSigiHome({
               <button
                 key={item.label}
                 type="button"
-                onClick={() => openSigiRead(item.prompt)}
+                onClick={() => (hasSigiSmart ? openSigiRead(item.prompt) : openUpgradePrompt(item.prompt))}
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:border-cyan-300/28 hover:bg-cyan-400/8"
               >
                 <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/76">
@@ -656,38 +795,122 @@ export default function MobileSigiHome({
             ))}
           </div>
 
-          {sigiName ? (
-            <div className="rounded-3xl border border-cyan-400/18 bg-slate-950/88 p-4 shadow-[0_0_26px_rgba(34,211,238,0.1)]">
+          <div className="rounded-3xl border border-cyan-400/18 bg-slate-950/88 p-4 shadow-[0_0_26px_rgba(34,211,238,0.1)]">
+            <div className="flex items-center justify-between gap-3">
               <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/76">
-                Ask Sigi
+                Mobile Sigi Input
               </div>
-              <div className="mt-3 flex min-w-0 items-center gap-3">
-                <input
-                  value={prompt}
-                  onChange={(event) => setPrompt(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      handleAnalyze();
-                    }
-                  }}
-                  placeholder="Type stock ticker or company"
-                  className="min-h-12 min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none placeholder:text-white/34 focus:border-cyan-300/40"
-                />
-                <button
-                  type="button"
-                  onClick={handleAnalyze}
-                  className="min-h-12 shrink-0 rounded-2xl border border-cyan-300/30 bg-cyan-400/15 px-4 text-sm font-semibold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/25"
+              {!hasSigiSmart ? (
+                <Link
+                  href={upgradeHref}
+                  className="text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100/80 hover:text-cyan-50"
                 >
-                  Analyze
-                </button>
+                  Smart unlock
+                </Link>
+              ) : null}
+            </div>
+            <div className="mt-3 flex min-w-0 items-center gap-3">
+              <input
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    handleAnalyze();
+                  }
+                }}
+                placeholder={hasSigiSmart ? "Type stock ticker or company" : "Ask about NVDA, TSLA, AAPL..."}
+                className="min-h-12 min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none placeholder:text-white/34 focus:border-cyan-300/40"
+              />
+              <button
+                type="button"
+                onClick={handleAnalyze}
+                className="min-h-12 shrink-0 rounded-2xl border border-cyan-300/30 bg-cyan-400/15 px-4 text-sm font-semibold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/25"
+              >
+                {hasSigiSmart ? "Analyze" : "Unlock Smart"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,30,0.96),rgba(3,7,18,0.9))] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/80">
+              Quick Market Pulse
+            </div>
+            <div className="mt-1 text-sm text-white/68">
+              Live index tone first, then the strongest movers building behind it.
+            </div>
+          </div>
+          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/46">
+            Updated {lastUpdatedLabel}
+          </span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          {quickPulseCards.map((item) => (
+            <div key={item.ticker} className="rounded-2xl border border-white/10 bg-white/4 p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/44">
+                {item.label}
+              </div>
+              <div className="mt-2 text-lg font-bold text-white">{formatPulsePrice(item.price)}</div>
+              <div className={`mt-1 text-xs ${changeClass(item.changePercent)}`}>
+                {formatChange(item.changePercent)}
+              </div>
+              <div className="mt-3 h-8 rounded bg-black/25 px-1 py-1">
+                {item.sparklinePath ? (
+                  <svg viewBox="0 0 100 100" className="h-full w-full" preserveAspectRatio="none">
+                    <path
+                      d={item.sparklinePath}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="6"
+                      className={changeClass(item.changePercent)}
+                    />
+                  </svg>
+                ) : (
+                  <div className="h-full w-full rounded bg-white/6" />
+                )}
               </div>
             </div>
-          ) : null}
-        </>
-      ) : (
-        <UpgradeSigiSmartCard />
-      )}
+          ))}
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-white/42">Leader</div>
+            <div className="mt-1 text-sm font-semibold text-white">
+              {leadOpportunity?.ticker ?? leadSetup?.ticker ?? "Scanning"}
+            </div>
+            <div className="mt-1 text-xs text-white/58">
+              {leadOpportunity?.whyThisSetup ?? leadSetup?.whyThisSetup ?? "Momentum leadership is still forming."}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+            <div className="text-[10px] uppercase tracking-[0.16em] text-white/42">High Volume</div>
+            <div className="mt-1 text-sm font-semibold text-white">
+              {mobileHighVolumeRows[0]?.ticker ?? "Loading"}
+            </div>
+            <div className="mt-1 text-xs text-white/58">
+              {mobileHighVolumeRows[0]
+                ? `${formatCompactNumber(mobileHighVolumeRows[0].volume)} volume with ${formatChange(mobileHighVolumeRows[0].changePercent)}.`
+                : "Volume leaders are populating now."}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <TodayEmergingSetupsPanel
+        items={emergingSetups}
+        preMarketItems={preMarketEmergingSetups}
+        defaultSession={defaultSetupSession}
+      />
+
+      {hasSigiSmart ? null : <UpgradeSigiSmartCard />}
+
+      <TodayTrendingNewsPanel items={trendingNews} />
 
       <div className="grid grid-cols-2 gap-3">
         {pageSnapshots.map((item) => (

@@ -95,6 +95,44 @@ type SigiRouteOptions = {
   context: SigiTodayContext | null;
 };
 
+type SigiIntelligence = {
+  ticker: string | null;
+  heroTitle: string;
+  heroSummary: string;
+  tone: "bullish" | "bearish" | "neutral" | "caution";
+  badges: string[];
+  analysis: string;
+  risk: string;
+  catalyst: string;
+  nextStep: string;
+};
+
+const SIGI_SYSTEM_PROMPT = `
+You are SIGI, the elite AI market intelligence engine inside SigiOS.
+
+You analyze stocks, market headlines, sectors, risk, and opportunity.
+
+Rules:
+- Educational only. Do not give financial advice.
+- Never tell the user to buy, sell, or hold.
+- Be concise, elite, calm, and clear.
+- Sound like a premium market terminal, not a chatbot.
+- Return JSON only. No markdown.
+
+Return this exact JSON shape:
+{
+  "ticker": "string or null",
+  "heroTitle": "string",
+  "heroSummary": "string",
+  "tone": "bullish | bearish | neutral | caution",
+  "badges": ["string", "string", "string"],
+  "analysis": "string",
+  "risk": "string",
+  "catalyst": "string",
+  "nextStep": "string"
+}
+`;
+
 function encyclopediaLookup(term: string) {
   const normalized = term.trim().toLowerCase();
   const entry = fundamentalsPack.find(
@@ -597,7 +635,126 @@ function buildUnavailableResponse(text: string, citedTickers: string[] = []) {
 }
 
 function getResolvedModel(config: SigiResolvedModelConfig) {
-  return config.model || "gpt-4.1-mini";
+  return config.model || "gpt-4o-mini";
+}
+
+function buildFallbackIntelligence(raw: string, ticker: string | null = null): SigiIntelligence {
+  return {
+    ticker,
+    heroTitle: ticker ? `${ticker} Sigi Market Intelligence` : "Sigi Market Intelligence",
+    heroSummary: raw,
+    tone: "neutral",
+    badges: ["Market Live", "AI Analysis", "Educational"],
+    analysis: raw,
+    risk: "Risk depends on market conditions, volatility, and position sizing.",
+    catalyst: "No specific catalyst detected.",
+    nextStep: "Review the chart, news, and risk before making decisions.",
+  };
+}
+
+function normalizeIntelligencePayload(
+  raw: string,
+  ticker: string | null = null
+): SigiIntelligence {
+  try {
+    const parsed = JSON.parse(raw) as Partial<SigiIntelligence>;
+
+    return {
+      ticker:
+        typeof parsed.ticker === "string" && parsed.ticker.trim()
+          ? parsed.ticker.trim().toUpperCase()
+          : ticker,
+      heroTitle:
+        typeof parsed.heroTitle === "string" && parsed.heroTitle.trim()
+          ? parsed.heroTitle.trim()
+          : ticker
+            ? `${ticker} Sigi Market Intelligence`
+            : "Sigi Market Intelligence",
+      heroSummary:
+        typeof parsed.heroSummary === "string" && parsed.heroSummary.trim()
+          ? parsed.heroSummary.trim()
+          : raw,
+      tone:
+        parsed.tone === "bullish" ||
+        parsed.tone === "bearish" ||
+        parsed.tone === "neutral" ||
+        parsed.tone === "caution"
+          ? parsed.tone
+          : "neutral",
+      badges: Array.isArray(parsed.badges)
+        ? parsed.badges
+            .filter((value): value is string => typeof value === "string")
+            .map((value) => value.trim())
+            .filter(Boolean)
+            .slice(0, 3)
+        : ["Market Live", "AI Analysis", "Educational"],
+      analysis:
+        typeof parsed.analysis === "string" && parsed.analysis.trim()
+          ? parsed.analysis.trim()
+          : raw,
+      risk:
+        typeof parsed.risk === "string" && parsed.risk.trim()
+          ? parsed.risk.trim()
+          : "Risk depends on market conditions, volatility, and position sizing.",
+      catalyst:
+        typeof parsed.catalyst === "string" && parsed.catalyst.trim()
+          ? parsed.catalyst.trim()
+          : "No specific catalyst detected.",
+      nextStep:
+        typeof parsed.nextStep === "string" && parsed.nextStep.trim()
+          ? parsed.nextStep.trim()
+          : "Review the chart, news, and risk before making decisions.",
+    };
+  } catch {
+    return buildFallbackIntelligence(raw, ticker);
+  }
+}
+
+function formatIntelligenceText(intelligence: SigiIntelligence): string {
+  return [
+    intelligence.heroTitle,
+    intelligence.heroSummary,
+    `Analysis: ${intelligence.analysis}`,
+    `Risk: ${intelligence.risk}`,
+    `Catalyst: ${intelligence.catalyst}`,
+    `Next step: ${intelligence.nextStep}`,
+  ].join("\n\n");
+}
+
+async function requestOpenAiIntelligence({
+  client,
+  config,
+  message,
+  marketContext,
+  ticker = null,
+}: {
+  client: OpenAI;
+  config: SigiResolvedModelConfig;
+  message: string;
+  marketContext: unknown;
+  ticker?: string | null;
+}): Promise<SigiIntelligence> {
+  const completion = await client.chat.completions.create({
+    model: getResolvedModel(config),
+    temperature: 0.35,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: SIGI_SYSTEM_PROMPT },
+      {
+        role: "user",
+        content: `
+User question:
+${message}
+
+Market context:
+${JSON.stringify(marketContext ?? {}, null, 2)}
+      `,
+      },
+    ],
+  });
+
+  const raw = completion.choices[0]?.message?.content ?? "{}";
+  return normalizeIntelligencePayload(raw, ticker);
 }
 
 async function handleGeneralSigi(message: string, options: SigiRouteOptions) {
@@ -621,48 +778,30 @@ async function handleGeneralSigi(message: string, options: SigiRouteOptions) {
 
   const { client, config } = resolved;
 
-  const response = await client.responses.create({
-    model: getResolvedModel(config),
-    max_output_tokens: 220,
-    input: [
-      {
-        role: "system",
-        content: `
-You are Sigi, the SignalOS intelligence assistant.
-
-Give a concise, actionable market answer.
-- Match the requested answer style when possible.
-- If answer style is simple, explain in plain English.
-- If answer style is balanced, organize around setup, risk, catalyst, and action.
-- If answer style is fast, be brief and direct.
-- Use the broader SignalOS context when it is relevant.
-        `.trim(),
-      },
-      {
-        role: "user",
-        content: `
-${options.profilePrompt ? `${options.profilePrompt}
-
-` : ""}User request:
-${message}
-
-SignalOS context:
-${todayContext}
-        `.trim(),
-      },
-    ],
+  const intelligence = await requestOpenAiIntelligence({
+    client,
+    config,
+    message,
+    marketContext: {
+      profilePrompt: options.profilePrompt || null,
+      intent: options.intent,
+      answerStyle: options.answerStyle,
+      signalosContext: todayContext,
+      context: options.context,
+    },
   });
 
-  const text = response.output_text?.trim() || "No response returned.";
+  const text = formatIntelligenceText(intelligence);
 
   return Response.json({
+    provider: "openai",
+    intelligence,
     mode: "future-ai",
-    title: "SIGI Market Read",
-    summary: text,
+    title: intelligence.heroTitle,
+    summary: intelligence.heroSummary,
     bullets: [],
     followUps: [],
     citedTickers,
-    provider: "openai",
     updatedAt: new Date().toISOString(),
     text,
   });
@@ -699,146 +838,42 @@ async function handleStockRequest(
 
   const { client, config } = resolved;
 
-  const response = await client.responses.create({
-    model: getResolvedModel(config),
-    max_output_tokens: 260,
-    input: [
-      {
-        role: "system",
-        content: `
-You are Sigi, an elite trading assistant inside SignalOS.
-
-Always respond using these exact labels and this exact structure:
-
-BIAS: ...
-MOMENTUM: ...
-SETUP: ...
-ENTRY: ...
-STOP: ...
-TARGET: ...
-RISK: ...
-INVALIDATION: ...
-ACTION: ...
-
-Rules:
-- Keep each field concise
-- Be decisive
-- If a field is uncertain, still provide the best judgment
-- When Name or Description is present in Stock context, the BIAS line must begin by identifying the company and business model before the trade view
-- In that case, open the BIAS line with the ticker and company name if available, then tie the setup to the business or sector exposure in plain language
-- Example style for the BIAS line: "LIVE (Live Ventures) is a diversified holding company; the setup matters because its retail exposure makes it sensitive to consumer trends."
-- ENTRY, STOP, TARGET, and INVALIDATION must anchor to the provided live Price, Support, and Resistance fields when those values are available
-- Do not invent stale levels or generic levels when live Price, Support, or Resistance are present
-- If Price, Support, or Resistance are missing, say that clearly and make the level logic conditional instead of pretending precision
-- Do not add extra headings before or between fields
-- Do not use markdown bullets
-        `.trim(),
-      },
-      {
-        role: "user",
-        content: `
-${options.profilePrompt ? `${options.profilePrompt}
-
-` : ""}User request:
-${message}
-
-Stock context:
-${stockContext}
-
-SignalOS context:
-${todayContext}
-        `.trim(),
-      },
-    ],
-  });
-
-  const outputText = response.output_text || "No response returned.";
-  const structured = parseStructuredTradeRead(outputText);
-  const normalizedLevels = normalizeLevels(
-    stock?.price,
-    extractLevelNumber(structured.entry),
-    extractLevelNumber(structured.stop),
-    extractLevelNumber(structured.target)
-  );
-  const normalizedInvalidation =
-    normalizedLevels.stop != null && Number.isFinite(normalizedLevels.stop)
-      ? normalizedLevels.stop
-      : null;
-
-  if (normalizedLevels.entry != null) {
-    structured.entry = formatPrice(normalizedLevels.entry);
-  }
-
-  if (normalizedLevels.stop != null) {
-    structured.stop = formatPrice(normalizedLevels.stop);
-  }
-
-  if (normalizedLevels.target != null) {
-    structured.target = formatPrice(normalizedLevels.target);
-  }
-
-  if (normalizedInvalidation != null) {
-    structured.invalidation = `Below ${formatPrice(normalizedInvalidation)} invalidates setup`;
-  }
-
-  structured.momentum = buildNormalizedMomentum(
-    structured.momentum,
-    stock?.changePercent ?? null,
-    stock?.previousClose ?? null
-  );
-
-  structured.bias = buildNormalizedBias(
-    stock?.trend,
-    structured.momentum,
-    structured.bias
-  );
-
-  structured.risk = buildNormalizedRisk(
-    stock?.trend,
-    structured.momentum,
-    structured.risk
-  );
-
-  structured.action = buildNormalizedAction(
-    normalizedLevels.entry,
-    normalizedLevels.stop,
-    normalizedLevels.target
-  );
-
-  const eliteAnswer = buildEliteSigiAnswer({
+  const intelligence = await requestOpenAiIntelligence({
+    client,
+    config,
+    message,
     ticker: stock?.ticker?.toUpperCase() ?? ticker,
-    intent: options.intent,
-    answerStyle: options.answerStyle,
-    price: stock?.price ?? null,
-    changePercent: stock?.changePercent ?? null,
-    signal: structured.bias,
-    score: null,
-    support: stock?.support ?? null,
-    resistance: stock?.resistance ?? null,
-    target: normalizedLevels.target,
-    stop: normalizedLevels.stop,
-    hasCoveredSetup: Boolean(stock?.trend || stock?.setup || stock?.catalyst),
+    marketContext: {
+      profilePrompt: options.profilePrompt || null,
+      intent: options.intent,
+      answerStyle: options.answerStyle,
+      stockContext,
+      signalosContext: todayContext,
+      stock,
+      context: options.context,
+    },
   });
+
+  const text = formatIntelligenceText(intelligence);
 
   return Response.json({
+    provider: "openai",
+    intelligence,
     mode: "future-ai",
-    title: eliteAnswer.title,
-    summary: eliteAnswer.body,
-    bullets: buildBullets(structured),
+    title: intelligence.heroTitle,
+    summary: intelligence.heroSummary,
+    bullets: [],
     followUps: [],
     citedTickers,
-    provider: "openai",
     updatedAt: new Date().toISOString(),
-    text: `${eliteAnswer.title}\n\n${eliteAnswer.body}`,
-    bias: structured.bias,
-    momentum: structured.momentum,
-    setup: structured.setup,
-    entry: structured.entry,
-    stop: structured.stop,
-    target: structured.target,
-    risk: structured.risk,
-    invalidation: structured.invalidation,
-    action: structured.action,
+    text,
+    ticker: intelligence.ticker,
+    tone: intelligence.tone,
+    badges: intelligence.badges,
+    analysis: intelligence.analysis,
+    risk: intelligence.risk,
+    catalyst: intelligence.catalyst,
+    nextStep: intelligence.nextStep,
   });
 }
 

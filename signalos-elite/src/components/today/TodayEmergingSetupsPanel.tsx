@@ -107,8 +107,10 @@ export default function TodayEmergingSetupsPanel({
         eyebrow="Developing Early"
         title={title}
         subtitle={subtitle}
+        layoutClassName="mb-4 flex flex-col gap-3"
+        actionClassName="w-full"
         action={
-          <div className="flex flex-wrap items-center gap-2 justify-end">
+          <div className="flex w-full flex-wrap items-center gap-2 justify-start sm:justify-end">
             <SessionToggleButton
               active={sessionView === "regular"}
               onClick={() => setSessionView("regular")}
@@ -165,18 +167,18 @@ export default function TodayEmergingSetupsPanel({
             <Link
               key={`${sessionView}-${item.ticker}`}
               href={`/stocks/${item.ticker}?source=%2Ftoday&session=${sessionView}`}
-              className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/3 px-4 py-3 text-left transition hover:border-cyan-400/25 hover:bg-cyan-400/5"
+              className="flex w-full flex-col gap-3 rounded-2xl border border-white/10 bg-white/3 px-4 py-3 text-left transition hover:border-cyan-400/25 hover:bg-cyan-400/5 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="text-base font-semibold text-white">{item.ticker}</div>
                 <div className="mt-1 text-sm text-white/60">{item.whyThisSetup}</div>
               </div>
 
-              <div className="ml-4 shrink-0 text-right">
+              <div className="flex items-center justify-between gap-3 sm:ml-4 sm:shrink-0 sm:flex-col sm:items-end sm:text-right">
                 <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-emerald-200">
                   {emergingTag(item)}
                 </div>
-                <div className={`mt-2 text-sm ${percentClass(item.changePercent)}`}>
+                <div className={`text-sm sm:mt-2 ${percentClass(item.changePercent)}`}>
                   {formatPercent(item.changePercent)}
                 </div>
               </div>

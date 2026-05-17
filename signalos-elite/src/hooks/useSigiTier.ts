@@ -12,6 +12,50 @@ export type SigiPlanSummary = {
 };
 
 const PLAN_SUMMARY_SESSION_KEY = "signalos.sigi.plan-summary.v1";
+const DEV_PREVIEW_PLAN_COOKIE = "signalos-dev-preview-plan";
+
+function buildPreviewPlanSummary(tier: SigiTier): SigiPlanSummary {
+  return {
+    currentTier: tier,
+    nextTier: tier === "free" ? "smart" : tier === "smart" ? "pro" : null,
+    hasSmartFeatures: tier === "smart" || tier === "pro",
+    hasProFeatures: tier === "pro",
+    isSignedIn: true,
+  };
+}
+
+function readPreviewPlanCookie(): SigiTier | null {
+  if (typeof document === "undefined") return null;
+
+  const cookieValue = document.cookie
+    .split("; ")
+    .find((part) => part.startsWith(`${DEV_PREVIEW_PLAN_COOKIE}=`))
+    ?.split("=")[1];
+
+  if (cookieValue === "free" || cookieValue === "smart" || cookieValue === "pro") {
+    return cookieValue;
+  }
+
+  return null;
+}
+
+function readPreviewTierOverride(): SigiTier | null {
+  if (typeof window === "undefined" || process.env.NODE_ENV === "production") {
+    return null;
+  }
+
+  const nextPreviewPlan = new URLSearchParams(window.location.search).get("previewPlan");
+
+  if (nextPreviewPlan === "free" || nextPreviewPlan === "smart" || nextPreviewPlan === "pro") {
+    return nextPreviewPlan;
+  }
+
+  if (nextPreviewPlan === "off" || nextPreviewPlan === "clear") {
+    return null;
+  }
+
+  return readPreviewPlanCookie();
+}
 
 function readCachedPlanSummary(): SigiPlanSummary | null {
   if (typeof window === "undefined") return null;
@@ -30,6 +74,14 @@ export function useSigiTier() {
 
   useEffect(() => {
     let cancelled = false;
+
+    const previewTierOverride = readPreviewTierOverride();
+    if (previewTierOverride && !cancelled) {
+      setPlanSummaryState(buildPreviewPlanSummary(previewTierOverride));
+      return () => {
+        cancelled = true;
+      };
+    }
 
     const cached = readCachedPlanSummary();
     if (cached && !cancelled) {

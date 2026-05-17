@@ -17,14 +17,15 @@ export default function UpgradeSigiSmartCard() {
 						Sigi Smart
 					</p>
 					<h2 className="text-2xl font-black text-white">
-						Unlock Sigi Command
+						Go Deeper With Sigi Smart
 					</h2>
 				</div>
 			</div>
 
 			<p className="mb-5 text-sm leading-6 text-slate-300">
-				Sigi Command Center is part of the Smart upgrade. Unlock instant market
-				structure, best opportunity, risk alerts, and ticker intelligence.
+				You are seeing the market thesis preview. Upgrade to unlock
+				ticker-by-ticker intelligence, risk alerts, Smart setups, and command
+				center analysis.
 			</p>
 
 			<div className="mb-6 space-y-3">

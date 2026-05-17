@@ -13,7 +13,7 @@ import { renderTickerParagraphs } from "@/components/sigi/renderTickerText";
 import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
 import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
-import { useSigi, type SigiStockContext } from "@/hooks/useSigi";
+import type { SigiStockContext } from "@/hooks/useSigi";
 import type {
   TodayCommandCenterNewsRow,
   TodayCommandCenterMoverRow,
@@ -37,6 +37,7 @@ import {
 } from "@/lib/sigi/sigiEducationLookup";
 import { buildSigiPromptLabel } from "@/lib/sigi/sigiInput";
 import {
+  buildSigiProfilePrompt,
   clearSigiProfile,
   getSigiProfile,
   SIGI_PROFILE_CHANGED_EVENT,
@@ -77,6 +78,27 @@ const NON_TICKER_INTENTS = new Set<string>([
 ]);
 
 const MARKET_CONDITION_TICKERS = ["SPY", "QQQ", "IWM", "DIA", "^VIX"] as const;
+
+type DesktopSigiApiResponse = {
+  summary?: string;
+  message?: string;
+  text?: string;
+  error?: string;
+  tone?: SigiResponseCardData["tone"];
+  badges?: string[];
+  analysis?: string;
+  risk?: string;
+  catalyst?: string;
+  nextStep?: string;
+  intelligence?: {
+    tone?: SigiResponseCardData["tone"];
+    badges?: string[];
+    analysis?: string;
+    risk?: string;
+    catalyst?: string;
+    nextStep?: string;
+  } | null;
+};
 
 function getSigiIntelligenceResetKey() {
   const easternDate = new Intl.DateTimeFormat("en-CA", {
@@ -203,7 +225,6 @@ export default function SigiDecisionPanel({
   const router = useRouter();
   const { effectiveTicker, loadHeroStory, stockContext } = useTodayHeroContext();
   const { activeTicker, setActiveTicker, setSigiAction, sigiActionNonce } = useSelectedTicker();
-  const { sendMessage, loading } = useSigi();
   const { ensureQuotes, quoteMap } = useLiveMarket();
   const lastHandledSigiActionNonceRef = useRef(sigiActionNonce);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -313,16 +334,19 @@ export default function SigiDecisionPanel({
   function showResponse(
     question: string,
     summary: string,
-    options?: {
-      title?: string | null;
-      actionLabel?: string | null;
-    }
+    options?: Omit<SigiResponseCardData, "question" | "summary">
   ) {
     setResponse({
       question,
       title: options?.title ?? "Sigi Read",
       summary,
       actionLabel: options?.actionLabel ?? (focusedTicker ? "Open Live Chart" : null),
+      tone: options?.tone ?? null,
+      badges: options?.badges ?? [],
+      analysis: options?.analysis ?? null,
+      risk: options?.risk ?? null,
+      catalyst: options?.catalyst ?? null,
+      nextStep: options?.nextStep ?? null,
     });
   }
 
@@ -400,7 +424,7 @@ export default function SigiDecisionPanel({
   }) {
     const normalizedTicker = ticker.trim().toUpperCase();
 
-    if (!normalizedTicker || loading || isAnalyzing) return;
+    if (!normalizedTicker || isAnalyzing) return;
 
     if (!shouldAllowTicker(normalizedTicker, source)) {
       setError(
@@ -490,8 +514,8 @@ export default function SigiDecisionPanel({
     });
     const needsTicker = !NON_TICKER_INTENTS.has(intent.type);
 
-    if (!tickerToAnalyze || loading || isAnalyzing) {
-      if (!loading && !isAnalyzing && sigiInput.trim()) {
+    if (!tickerToAnalyze || isAnalyzing) {
+      if (!isAnalyzing && sigiInput.trim()) {
         if (needsTicker) {
           setError(
             "Want a stock analysis? Try NVDA or TSLA. Or ask me what stock is strongest today."
@@ -531,7 +555,7 @@ export default function SigiDecisionPanel({
 
   async function ask(rawQuestion: string, fallbackTicker = effectiveTicker) {
     const trimmed = rawQuestion.trim();
-    if (!trimmed || loading) return;
+    if (!trimmed || isAnalyzing) return;
 
     const educationEntry = findEducationEntry(trimmed);
 
@@ -613,14 +637,10 @@ export default function SigiDecisionPanel({
     setActiveTicker(resolvedTicker);
     setError(null);
     setResponse(null);
+    setIsAnalyzing(true);
 
     try {
       await loadHeroStory(resolvedTicker);
-
-      if (tickerOnlyInput) {
-        setSigiInput("");
-        return;
-      }
 
       const context =
         resolvedTicker === effectiveTicker &&
@@ -633,20 +653,46 @@ export default function SigiDecisionPanel({
         : parsed.ticker
           ? parsed.originalQuestion
           : withTicker(trimmed, resolvedTicker);
-      const text = await sendMessage(withTicker(question, resolvedTicker), context);
-      if (!text) {
+      const response = await fetch("/api/sigi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: withTicker(question, resolvedTicker),
+          profilePrompt: buildSigiProfilePrompt(profile),
+          stock: context ?? null,
+          context: null,
+          source: "today_desktop",
+        }),
+      });
+
+      const data = (await response.json()) as DesktopSigiApiResponse;
+
+      if (!response.ok) {
+        throw new Error(data.error || "Sigi request failed.");
+      }
+
+      const summary = data.summary ?? data.message ?? data.text ?? `I'm reading ${resolvedTicker} now.`;
+      if (!summary) {
         setResponse(null);
         setSigiInput("");
         return;
       }
 
-      showResponse(trimmed, text, {
+      showResponse(trimmed, summary, {
         title: `${resolvedTicker} Sigi Read`,
         actionLabel: "Open Live Chart",
+        tone: data.intelligence?.tone ?? data.tone ?? null,
+        badges: data.intelligence?.badges ?? data.badges ?? [],
+        analysis: data.intelligence?.analysis ?? data.analysis ?? null,
+        risk: data.intelligence?.risk ?? data.risk ?? null,
+        catalyst: data.intelligence?.catalyst ?? data.catalyst ?? null,
+        nextStep: data.intelligence?.nextStep ?? data.nextStep ?? null,
       });
       setSigiInput("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sigi request failed.");
+    } finally {
+      setIsAnalyzing(false);
     }
   }
 
@@ -805,7 +851,7 @@ export default function SigiDecisionPanel({
         <button
           type="button"
           onClick={() => void handleAnalyze()}
-          disabled={loading || isAnalyzing || !sigiInput.trim()}
+          disabled={isAnalyzing || !sigiInput.trim()}
           className={[
             "relative h-12 shrink-0 rounded-2xl px-5 text-sm font-bold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50",
             isAnalyzing

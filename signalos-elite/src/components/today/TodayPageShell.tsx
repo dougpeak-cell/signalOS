@@ -93,8 +93,11 @@ export default function TodayPageShell({
 					<TodayMobileHomeSlot
 						hasSigiSmart={hasSigiSmart}
 						topSetups={topSetups}
+						emergingSetups={emergingSetups}
+						preMarketEmergingSetups={preMarketEmergingSetups}
 						preMarketTopSetups={preMarketTopSetups}
 						news={commandCenterNews}
+						trendingNews={trendingNews}
 						opportunities={opportunities}
 						risks={risks}
 						leadershipWatch={leadershipWatch}

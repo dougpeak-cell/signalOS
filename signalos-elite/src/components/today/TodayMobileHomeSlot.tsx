@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactElement } from "react";
 import MobileSigiHome from "@/components/today/MobileSigiHome";
 import TodayLoadingScreen from "@/components/today/TodayLoadingScreen";
 import { TodayHeroProvider } from "@/components/today/TodayHeroContext";
+import type { RankedSetupItem } from "@/lib/today/setupDiscovery";
 import type {
   TodayCommandCenterNewsRow,
   TodayMostTradedRow,
@@ -17,7 +18,10 @@ import type {
 type TodayMobileHomeSlotProps = {
   hasSigiSmart: boolean;
   topSetups: TodaySetupItem[];
+  emergingSetups: RankedSetupItem[];
+  preMarketEmergingSetups: RankedSetupItem[];
   news: TodayCommandCenterNewsRow[];
+  trendingNews: TodayCommandCenterNewsRow[];
   opportunities: TodayOpportunityItem[];
   risks: TodayRiskItem[];
   leadershipWatch: TodaySetupItem[];
@@ -31,7 +35,10 @@ type TodayMobileHomeSlotProps = {
 export default function TodayMobileHomeSlot({
   hasSigiSmart,
   topSetups,
+  emergingSetups,
+  preMarketEmergingSetups,
   news,
+  trendingNews,
   opportunities,
   risks,
   leadershipWatch,
@@ -71,8 +78,11 @@ export default function TodayMobileHomeSlot({
       <MobileSigiHome
         hasSigiSmart={hasSigiSmart}
         topSetups={topSetups}
+        emergingSetups={emergingSetups}
+        preMarketEmergingSetups={preMarketEmergingSetups}
         preMarketTopSetups={preMarketTopSetups}
         news={news}
+        trendingNews={trendingNews}
         opportunities={opportunities}
         risks={risks}
         leadershipWatch={leadershipWatch}

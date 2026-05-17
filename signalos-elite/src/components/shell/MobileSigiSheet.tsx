@@ -106,6 +106,27 @@ type MobileSigiAnswer = SigiResponseCardData & {
   ticker?: string | null;
 };
 
+type MobileSigiApiResponse = {
+  summary?: string;
+  message?: string;
+  text?: string;
+  error?: string;
+  tone?: SigiResponseCardData["tone"];
+  badges?: string[];
+  analysis?: string;
+  risk?: string;
+  catalyst?: string;
+  nextStep?: string;
+  intelligence?: {
+    tone?: SigiResponseCardData["tone"];
+    badges?: string[];
+    analysis?: string;
+    risk?: string;
+    catalyst?: string;
+    nextStep?: string;
+  } | null;
+};
+
 export default function MobileSigiSheet({
   forceDesktopPreview = false,
 }: {
@@ -411,21 +432,6 @@ export default function MobileSigiSheet({
       setFollowUps([]);
 
       try {
-        if (effectiveSheetContext?.pathname === "/today" && !parsedQuestion.isNaturalLanguage) {
-          const todayResponse = buildSigiTodayResponse(question, effectiveSheetContext);
-
-          setMobileSigiAnswer({
-            question,
-            title: todayResponse.title,
-            summary: formatTodayResponseSummary(todayResponse.summary, todayResponse.bullets),
-            ticker,
-            actionLabel: "Open Live Chart",
-          });
-          setFollowUps(todayResponse.followUps);
-          setMobileSigiInput("");
-          return;
-        }
-
         const response = await fetch("/api/sigi", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -438,12 +444,7 @@ export default function MobileSigiSheet({
           }),
         });
 
-        const data = (await response.json()) as {
-          summary?: string;
-          message?: string;
-          text?: string;
-          error?: string;
-        };
+        const data = (await response.json()) as MobileSigiApiResponse;
 
         if (!response.ok) {
           throw new Error(data.error || "Sigi had trouble answering.");
@@ -455,6 +456,12 @@ export default function MobileSigiSheet({
           summary: data.summary ?? data.message ?? data.text ?? `I'm reading ${ticker} now.`,
           ticker,
           actionLabel: "Open Live Chart",
+          tone: data.intelligence?.tone ?? data.tone ?? null,
+          badges: data.intelligence?.badges ?? data.badges ?? [],
+          analysis: data.intelligence?.analysis ?? data.analysis ?? null,
+          risk: data.intelligence?.risk ?? data.risk ?? null,
+          catalyst: data.intelligence?.catalyst ?? data.catalyst ?? null,
+          nextStep: data.intelligence?.nextStep ?? data.nextStep ?? null,
         });
 
         setMobileSigiInput("");

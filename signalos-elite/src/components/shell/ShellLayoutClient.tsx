@@ -222,6 +222,9 @@ function ShellLayoutContent({
   const isScreenerRoute = pathname.startsWith("/screener");
   const isTodayShellRoute = pathname === "/" || pathname === "/today";
   const shouldShowMobileBottomNav = !shouldUseCompactShell || !isStockChartPage;
+  const shellBottomPadding = isDevMobilePreview
+    ? `calc(${mobilePreviewFrame.bottomGap}px + 8rem + env(safe-area-inset-bottom))`
+    : undefined;
 
   const hideShellRightRail = isWorkspaceStockPage || isScreenerRoute || shouldUseCompactShell;
   const shellMarketContextValue = useMemo(
@@ -254,6 +257,8 @@ function ShellLayoutContent({
                     maxWidth: `${mobilePreviewFrame.width}px`,
                     marginInline: "auto",
                     overflowX: "hidden",
+                    paddingBottom: shellBottomPadding,
+                    scrollPaddingBottom: shellBottomPadding,
                     ...(mobilePreviewFrame.isFramed
                       ? {
                           height: `${mobilePreviewFrame.height}px`,
@@ -266,8 +271,15 @@ function ShellLayoutContent({
             }
           >
             {process.env.NODE_ENV !== "production" ? (
-              <div className="pointer-events-auto fixed bottom-4 left-4 z-120 flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-400/25 bg-black/70 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.16)] backdrop-blur-xl md:bottom-5 md:left-5">
-                <span className="text-emerald-200/85">
+              <div
+                className={[
+                  "pointer-events-auto fixed z-120 flex flex-wrap items-center gap-2 border backdrop-blur-xl",
+                  shouldUseCompactShell
+                    ? "right-3 top-[calc(env(safe-area-inset-top)+4.25rem)] rounded-full border-white/10 bg-black/45 px-2.5 py-1.5 text-[9px] font-medium uppercase tracking-[0.12em] text-white/55 shadow-[0_6px_18px_rgba(0,0,0,0.18)]"
+                    : "bottom-4 left-4 rounded-2xl border-emerald-400/25 bg-black/70 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.16)] md:bottom-5 md:left-5",
+                ].join(" ")}
+              >
+                <span className={shouldUseCompactShell ? "text-white/52" : "text-emerald-200/85"}>
                   Preview: {previewPlan ?? "off"}
                 </span>
                 {(["free", "smart", "pro"] as const).map((tier) => {
@@ -279,10 +291,17 @@ function ShellLayoutContent({
                       type="button"
                       onClick={() => applyPreviewPlan(tier)}
                       className={[
-                        "rounded-full border px-2 py-1 transition",
+                        "rounded-full border transition",
+                        shouldUseCompactShell
+                          ? "px-2 py-0.5 text-[9px]"
+                          : "px-2 py-1",
                         active
-                          ? "border-emerald-300/50 bg-emerald-400/20 text-white"
-                          : "border-white/10 bg-white/5 text-white/70 hover:border-emerald-300/35 hover:bg-emerald-400/12 hover:text-white",
+                          ? shouldUseCompactShell
+                            ? "border-cyan-300/30 bg-cyan-400/10 text-cyan-100"
+                            : "border-emerald-300/50 bg-emerald-400/20 text-white"
+                          : shouldUseCompactShell
+                            ? "border-white/8 bg-white/4 text-white/45 hover:border-white/14 hover:bg-white/7 hover:text-white/70"
+                            : "border-white/10 bg-white/5 text-white/70 hover:border-emerald-300/35 hover:bg-emerald-400/12 hover:text-white",
                       ].join(" ")}
                     >
                       {tier}
@@ -292,7 +311,12 @@ function ShellLayoutContent({
                 <button
                   type="button"
                   onClick={() => applyPreviewPlan("off")}
-                  className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-white/70 transition hover:border-rose-300/35 hover:bg-rose-400/12 hover:text-white"
+                  className={[
+                    "rounded-full border transition",
+                    shouldUseCompactShell
+                      ? "border-white/8 bg-white/4 px-2 py-0.5 text-[9px] text-white/45 hover:border-rose-300/20 hover:bg-rose-400/8 hover:text-white/70"
+                      : "border-white/10 bg-white/5 px-2 py-1 text-white/70 hover:border-rose-300/35 hover:bg-rose-400/12 hover:text-white",
+                  ].join(" ")}
                 >
                   clear
                 </button>
