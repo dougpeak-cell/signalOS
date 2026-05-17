@@ -107,10 +107,20 @@ type MobileSigiAnswer = SigiResponseCardData & {
 };
 
 type MobileSigiApiResponse = {
+  answer?: string;
   summary?: string;
   message?: string;
   text?: string;
   error?: string;
+  thesis?: {
+    mode?: "ticker" | "market";
+    ticker?: string | null;
+    title?: string;
+    summary?: string;
+    badges?: string[];
+    risk?: string | null;
+    catalyst?: string | null;
+  } | null;
   tone?: SigiResponseCardData["tone"];
   badges?: string[];
   analysis?: string;
@@ -450,17 +460,23 @@ export default function MobileSigiSheet({
           throw new Error(data.error || "Sigi had trouble answering.");
         }
 
+        const answer = data.answer?.trim() || `I'm reading ${ticker} now.`;
+        const thesis = data.thesis ?? null;
+        const title = thesis?.title?.trim() || `${ticker} Sigi Read`;
+        const thesisSummary = thesis?.summary?.trim() || null;
+        const analysis = thesisSummary && thesisSummary !== answer ? thesisSummary : null;
+
         setMobileSigiAnswer({
           question,
-          title: `${ticker} Sigi Read`,
-          summary: data.summary ?? data.message ?? data.text ?? `I'm reading ${ticker} now.`,
+          title,
+          summary: answer,
           ticker,
           actionLabel: "Open Live Chart",
           tone: data.intelligence?.tone ?? data.tone ?? null,
-          badges: data.intelligence?.badges ?? data.badges ?? [],
-          analysis: data.intelligence?.analysis ?? data.analysis ?? null,
-          risk: data.intelligence?.risk ?? data.risk ?? null,
-          catalyst: data.intelligence?.catalyst ?? data.catalyst ?? null,
+          badges: thesis?.badges ?? data.intelligence?.badges ?? data.badges ?? [],
+          analysis,
+          risk: thesis?.risk ?? data.intelligence?.risk ?? data.risk ?? null,
+          catalyst: thesis?.catalyst ?? data.intelligence?.catalyst ?? data.catalyst ?? null,
           nextStep: data.intelligence?.nextStep ?? data.nextStep ?? null,
         });
 

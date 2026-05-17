@@ -86,9 +86,21 @@ type StructuredTradeRead = {
   invalidation: string;
   action: string;
 };
+type SigiRequestMode = "ticker" | "market" | "sector" | "general";
+
+type SigiThesis = {
+  mode: "ticker" | "market";
+  ticker?: string | null;
+  title: string;
+  summary: string;
+  badges: string[];
+  risk?: string | null;
+  catalyst?: string | null;
+};
 
 type SigiRouteOptions = {
   intent: string;
+  requestMode: SigiRequestMode;
   answerStyle: SigiAnswerStyle;
   profilePrompt: string;
   stock: SigiStockContext | null;
@@ -286,6 +298,218 @@ function buildTodayContextBlock(context?: SigiTodayContext | null) {
     `Tracked quotes: ${trackedQuotes || "n/a"}`,
     `Headlines: ${headlines || "n/a"}`,
   ].join("\n");
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeIntent(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function classifySigiRequestMode({
+  intent,
+  message,
+  ticker,
+}: {
+  intent: string;
+  message: string;
+  ticker?: string | null;
+}): SigiRequestMode {
+  if (ticker) {
+    return "ticker";
+  }
+
+  const normalizedIntent = normalizeIntent(intent);
+  const normalizedMessage = message.trim().toLowerCase();
+
+  if (
+    normalizedIntent.includes("sector") ||
+    /\bsector\b|\bsemiconductors?\b|\bsoftware\b|\benergy\b|\bfinancials?\b|\bhealthcare\b/i.test(
+      normalizedMessage
+    )
+  ) {
+    return "sector";
+  }
+
+  if (
+    normalizedIntent.includes("market") ||
+    normalizedIntent.includes("watchlist") ||
+    /\bmarket\b|\bfutures\b|\btape\b|\bbreadth\b|\bregime\b|\bspy\b|\bqqq\b|\biwm\b|\bdia\b|\bvix\b/i.test(
+      normalizedMessage
+    )
+  ) {
+    return "market";
+  }
+
+  return "general";
+}
+
+function headlineMatchesTicker(
+  item: NonNullable<SigiTodayContext["headlines"]>[number],
+  ticker: string,
+  stock?: SigiStockContext | null
+) {
+  const normalizedTicker = ticker.trim().toUpperCase();
+  if (!normalizedTicker) {
+    return false;
+  }
+
+  const normalizedItemTickers = (item.tickers ?? []).map((value) => value.trim().toUpperCase());
+  if (normalizedItemTickers.includes(normalizedTicker)) {
+    return true;
+  }
+
+  const haystack = `${item.headline} ${item.source ?? ""}`.toLowerCase();
+  const tickerPattern = new RegExp(`\\b${escapeRegExp(normalizedTicker.toLowerCase())}\\b`, "i");
+  if (tickerPattern.test(haystack)) {
+    return true;
+  }
+
+  const companyName = stock?.name?.trim().toLowerCase();
+  return Boolean(companyName && haystack.includes(companyName));
+}
+
+function buildScopedTickerContext(
+  context: SigiTodayContext | null,
+  ticker: string,
+  stock?: SigiStockContext | null
+): SigiTodayContext | null {
+  if (!context) {
+    return null;
+  }
+
+  const normalizedTicker = ticker.trim().toUpperCase();
+  const trackedQuotes = (context.trackedQuotes ?? []).filter(
+    (quote) => quote.ticker?.trim().toUpperCase() === normalizedTicker
+  );
+  const headlines = (context.headlines ?? []).filter((item) =>
+    headlineMatchesTicker(item, normalizedTicker, stock)
+  );
+  const watchlistTickers = (context.watchlistTickers ?? []).filter(
+    (value) => value.trim().toUpperCase() === normalizedTicker
+  );
+  const portfolioTickers = (context.portfolioTickers ?? []).filter(
+    (value) => value.trim().toUpperCase() === normalizedTicker
+  );
+
+  return {
+    pathname: context.pathname,
+    intel: context.intel
+      ? {
+          regime: context.intel.regime ?? null,
+          regimeReason: context.intel.regimeReason ?? null,
+        }
+      : null,
+    trackedQuotes,
+    headlines,
+    watchlistTickers,
+    portfolioTickers,
+  };
+}
+
+function buildContextForRequestMode(
+  mode: SigiRequestMode,
+  context: SigiTodayContext | null,
+  ticker: string | null,
+  stock?: SigiStockContext | null
+): SigiTodayContext | null {
+  if (mode === "ticker" && ticker) {
+    return buildScopedTickerContext(context, ticker, stock);
+  }
+
+  return context;
+}
+
+function buildThesisFromIntelligence(
+  mode: SigiRequestMode,
+  intelligence: SigiIntelligence
+): SigiThesis {
+  const thesisMode = mode === "ticker" ? "ticker" : "market";
+  const normalizedTicker = intelligence.ticker?.trim().toUpperCase() ?? null;
+  const title =
+    intelligence.heroTitle?.trim() ||
+    (thesisMode === "ticker" && normalizedTicker
+      ? `${normalizedTicker} Market Thesis`
+      : "Market Thesis");
+
+  return {
+    mode: thesisMode,
+    ticker: thesisMode === "ticker" ? normalizedTicker : null,
+    title,
+    summary: intelligence.heroSummary,
+    badges: intelligence.badges,
+    risk: intelligence.risk,
+    catalyst: intelligence.catalyst,
+  };
+}
+
+function buildStructuredJsonResponse({
+  mode,
+  provider,
+  intelligence,
+  citedTickers,
+  updatedAt,
+}: {
+  mode: SigiRequestMode;
+  provider: string;
+  intelligence: SigiIntelligence;
+  citedTickers: string[];
+  updatedAt?: string;
+}) {
+  const thesis = buildThesisFromIntelligence(mode, intelligence);
+  const text = formatIntelligenceText(intelligence);
+
+  return Response.json({
+    answer: intelligence.analysis,
+    thesis,
+    provider,
+    intelligence,
+    mode: provider === "openai" ? "future-ai" : "fallback",
+    title: thesis.title,
+    summary: thesis.summary,
+    bullets: [],
+    followUps: [],
+    citedTickers,
+    updatedAt: updatedAt ?? new Date().toISOString(),
+    text,
+    ticker: intelligence.ticker,
+    tone: intelligence.tone,
+    badges: intelligence.badges,
+    analysis: intelligence.analysis,
+    risk: intelligence.risk,
+    catalyst: intelligence.catalyst,
+    nextStep: intelligence.nextStep,
+  });
+}
+
+function buildStructuredTodayResponse(response: {
+  title: string;
+  summary: string;
+  bullets?: string[];
+  followUps?: string[];
+  citedTickers?: string[];
+  mode?: string;
+  provider?: string;
+  updatedAt?: string;
+}) {
+  const answer = [response.summary, ...(response.bullets ?? [])].filter(Boolean).join("\n\n");
+
+  return Response.json({
+    ...response,
+    answer,
+    thesis: {
+      mode: "market",
+      title: response.title || "Market Thesis",
+      summary: response.summary,
+      badges: (response.citedTickers ?? []).slice(0, 3),
+      risk: null,
+      catalyst: null,
+    },
+    text: `${response.title}\n\n${response.summary}`,
+    updatedAt: response.updatedAt ?? new Date().toISOString(),
+  });
 }
 
 function parseStructuredTradeRead(text: string): StructuredTradeRead {
@@ -620,8 +844,16 @@ Action: ${actionLine}`;
   };
 }
 
-function buildUnavailableResponse(text: string, citedTickers: string[] = []) {
+function buildUnavailableResponse(
+  text: string,
+  citedTickers: string[] = [],
+  mode: SigiRequestMode = "general"
+) {
+  const intelligence = buildFallbackIntelligence(text, citedTickers[0] ?? null);
+
   return Response.json({
+    answer: text,
+    thesis: mode === "general" ? null : buildThesisFromIntelligence(mode, intelligence),
     mode: "fallback",
     title: "SIGI Temporarily Offline",
     summary: text,
@@ -631,6 +863,7 @@ function buildUnavailableResponse(text: string, citedTickers: string[] = []) {
     provider: "local",
     updatedAt: new Date().toISOString(),
     text,
+    intelligence,
   });
 }
 
@@ -759,20 +992,27 @@ ${JSON.stringify(marketContext ?? {}, null, 2)}
 
 async function handleGeneralSigi(message: string, options: SigiRouteOptions) {
   const resolved = await getResolvedSigiClient();
-  const todayContext = buildTodayContextBlock(options.context);
+  const scopedContext = buildContextForRequestMode(
+    options.requestMode,
+    options.context,
+    null,
+    options.stock
+  );
+  const todayContext = buildTodayContextBlock(scopedContext);
   const citedTickers = uniqueTickers([
-    options.context?.intel?.topSignal,
-    options.context?.intel?.bestSetup,
-    options.context?.intel?.mover,
-    options.context?.intel?.riskName,
-    options.context?.watchlistTickers?.[0],
-    options.context?.portfolioTickers?.[0],
+    scopedContext?.intel?.topSignal,
+    scopedContext?.intel?.bestSetup,
+    scopedContext?.intel?.mover,
+    scopedContext?.intel?.riskName,
+    scopedContext?.watchlistTickers?.[0],
+    scopedContext?.portfolioTickers?.[0],
   ]);
 
   if (!resolved) {
     return buildUnavailableResponse(
       "Sigi AI is not configured right now. Connect a hosted or personal provider in Sigi settings to enable live answers.",
-      citedTickers
+      citedTickers,
+      options.requestMode
     );
   }
 
@@ -785,25 +1025,18 @@ async function handleGeneralSigi(message: string, options: SigiRouteOptions) {
     marketContext: {
       profilePrompt: options.profilePrompt || null,
       intent: options.intent,
+      requestMode: options.requestMode,
       answerStyle: options.answerStyle,
       signalosContext: todayContext,
-      context: options.context,
+      context: scopedContext,
     },
   });
 
-  const text = formatIntelligenceText(intelligence);
-
-  return Response.json({
+  return buildStructuredJsonResponse({
+    mode: options.requestMode,
     provider: "openai",
     intelligence,
-    mode: "future-ai",
-    title: intelligence.heroTitle,
-    summary: intelligence.heroSummary,
-    bullets: [],
-    followUps: [],
     citedTickers,
-    updatedAt: new Date().toISOString(),
-    text,
   });
 }
 
@@ -817,22 +1050,24 @@ async function handleStockRequest(
     ...(options.stock ?? {}),
     ticker,
   });
+  const scopedContext = buildContextForRequestMode("ticker", options.context, ticker, stock);
   const stockContext = buildStockContextBlock(stock);
-  const todayContext = buildTodayContextBlock(options.context);
+  const todayContext = buildTodayContextBlock(scopedContext);
   const citedTickers = uniqueTickers([
     stock?.ticker,
-    options.context?.intel?.topSignal,
-    options.context?.intel?.bestSetup,
-    options.context?.intel?.mover,
-    options.context?.intel?.riskName,
-    options.context?.watchlistTickers?.[0],
-    options.context?.portfolioTickers?.[0],
+    scopedContext?.intel?.topSignal,
+    scopedContext?.intel?.bestSetup,
+    scopedContext?.intel?.mover,
+    scopedContext?.intel?.riskName,
+    scopedContext?.watchlistTickers?.[0],
+    scopedContext?.portfolioTickers?.[0],
   ]);
 
   if (!resolved) {
     return buildUnavailableResponse(
       `Sigi AI is not configured right now. Connect a hosted or personal provider in Sigi settings to analyze ${ticker.toUpperCase()}.`,
-      citedTickers
+      citedTickers,
+      "ticker"
     );
   }
 
@@ -846,34 +1081,20 @@ async function handleStockRequest(
     marketContext: {
       profilePrompt: options.profilePrompt || null,
       intent: options.intent,
+      requestMode: options.requestMode,
       answerStyle: options.answerStyle,
       stockContext,
       signalosContext: todayContext,
       stock,
-      context: options.context,
+      context: scopedContext,
     },
   });
 
-  const text = formatIntelligenceText(intelligence);
-
-  return Response.json({
+  return buildStructuredJsonResponse({
+    mode: "ticker",
     provider: "openai",
     intelligence,
-    mode: "future-ai",
-    title: intelligence.heroTitle,
-    summary: intelligence.heroSummary,
-    bullets: [],
-    followUps: [],
     citedTickers,
-    updatedAt: new Date().toISOString(),
-    text,
-    ticker: intelligence.ticker,
-    tone: intelligence.tone,
-    badges: intelligence.badges,
-    analysis: intelligence.analysis,
-    risk: intelligence.risk,
-    catalyst: intelligence.catalyst,
-    nextStep: intelligence.nextStep,
   });
 }
 
@@ -906,6 +1127,8 @@ export async function POST(req: Request) {
       const text = encyclopediaLookup(encyclopediaTerm) ?? "No encyclopedia entry found.";
 
       return Response.json({
+        answer: text,
+        thesis: null,
         mode: "encyclopedia",
         title: encyclopediaTerm.toUpperCase(),
         summary: text,
@@ -915,20 +1138,6 @@ export async function POST(req: Request) {
         provider: "local",
         updatedAt: new Date().toISOString(),
         text,
-      });
-    }
-
-    if (
-      context &&
-      intent === "general_market_question" &&
-      !explicitTicker &&
-      !stock?.ticker
-    ) {
-      const response = buildSigiTodayResponse(message, context);
-      return Response.json({
-        ...response,
-        text: `${response.title}\n\n${response.summary}`,
-        updatedAt: response.updatedAt ?? new Date().toISOString(),
       });
     }
 
@@ -951,11 +1160,21 @@ export async function POST(req: Request) {
 
     const options: SigiRouteOptions = {
       intent,
+      requestMode: classifySigiRequestMode({
+        intent,
+        message,
+        ticker,
+      }),
       answerStyle,
       profilePrompt,
       stock,
       context,
     };
+
+    if (context && options.requestMode !== "ticker" && !ticker) {
+      const response = buildSigiTodayResponse(message, context);
+      return buildStructuredTodayResponse(response);
+    }
 
     if (ticker) {
       return handleStockRequest(ticker, message, options);

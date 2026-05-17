@@ -80,10 +80,20 @@ const NON_TICKER_INTENTS = new Set<string>([
 const MARKET_CONDITION_TICKERS = ["SPY", "QQQ", "IWM", "DIA", "^VIX"] as const;
 
 type DesktopSigiApiResponse = {
+  answer?: string;
   summary?: string;
   message?: string;
   text?: string;
   error?: string;
+  thesis?: {
+    mode?: "ticker" | "market";
+    ticker?: string | null;
+    title?: string;
+    summary?: string;
+    badges?: string[];
+    risk?: string | null;
+    catalyst?: string | null;
+  } | null;
   tone?: SigiResponseCardData["tone"];
   badges?: string[];
   analysis?: string;
@@ -671,21 +681,26 @@ export default function SigiDecisionPanel({
         throw new Error(data.error || "Sigi request failed.");
       }
 
-      const summary = data.summary ?? data.message ?? data.text ?? `I'm reading ${resolvedTicker} now.`;
-      if (!summary) {
+      const answer = data.answer?.trim() || `I'm reading ${resolvedTicker} now.`;
+      if (!answer) {
         setResponse(null);
         setSigiInput("");
         return;
       }
 
-      showResponse(trimmed, summary, {
-        title: `${resolvedTicker} Sigi Read`,
+      const thesis = data.thesis ?? null;
+      const title = thesis?.title?.trim() || `${resolvedTicker} Sigi Read`;
+      const thesisSummary = thesis?.summary?.trim() || null;
+      const analysis = thesisSummary && thesisSummary !== answer ? thesisSummary : null;
+
+      showResponse(trimmed, answer, {
+        title,
         actionLabel: "Open Live Chart",
         tone: data.intelligence?.tone ?? data.tone ?? null,
-        badges: data.intelligence?.badges ?? data.badges ?? [],
-        analysis: data.intelligence?.analysis ?? data.analysis ?? null,
-        risk: data.intelligence?.risk ?? data.risk ?? null,
-        catalyst: data.intelligence?.catalyst ?? data.catalyst ?? null,
+        badges: thesis?.badges ?? data.intelligence?.badges ?? data.badges ?? [],
+        analysis,
+        risk: thesis?.risk ?? data.intelligence?.risk ?? data.risk ?? null,
+        catalyst: thesis?.catalyst ?? data.intelligence?.catalyst ?? data.catalyst ?? null,
         nextStep: data.intelligence?.nextStep ?? data.nextStep ?? null,
       });
       setSigiInput("");
