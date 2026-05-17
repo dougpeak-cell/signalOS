@@ -24,6 +24,7 @@ const mockLeaders: Record<string, any> = {
     successRate: "78%",
     avgReturn: "+26.7%",
     coveredNames: ["NVDA", "MSFT", "AAPL", "AVGO"],
+    mostRecentPick: "NVDA - Buy (+17.4%)",
     strongestCall: "NVDA",
     reason:
       "Sigi selected this leader because recent technology calls show strong AI infrastructure alignment, high conviction, and consistent upside capture across mega-cap software and semiconductor names.",
@@ -37,6 +38,7 @@ const mockLeaders: Record<string, any> = {
     successRate: "72%",
     avgReturn: "+18.4%",
     coveredNames: ["LLY", "UNH", "ISRG", "VRTX"],
+    mostRecentPick: "LLY - Buy (+11.2%)",
     strongestCall: "LLY",
     reason:
       "Sigi selected this healthcare leader for durable large-cap coverage, strong earnings revision trends, and consistent quality signals.",
@@ -58,6 +60,7 @@ export default function SigiAnalystLeaders() {
     successRate: "—",
     avgReturn: "—",
     coveredNames: ["—"],
+    mostRecentPick: "Needs live analyst-feed confirmation before publishing.",
     strongestCall: "—",
     reason:
       "Sigi is ready to rank this sector once live analyst-flow data is connected.",
@@ -77,6 +80,7 @@ export default function SigiAnalystLeaders() {
   const displaySector = isDisclosureHidden(leader.sector) ? activeSector : leader.sector;
   const displayCoveredNames = normalizeCoveredNames(leader.coveredNames);
   const strongestCall = summarizeStrongestCall(leader.strongestCall);
+  const mostRecentPick = normalizeMostRecentPick(leader.mostRecentPick, leader.strongestCall);
 
   async function handleAskSigi() {
     const sector = input.trim() || activeSector;
@@ -119,8 +123,8 @@ export default function SigiAnalystLeaders() {
             Top Analyst by Sector
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Type a sector or select below. Sigi ranks analyst leadership using
-            success rate, return consistency, recency, conviction, and sector fit.
+            Type a sector or select below. Sigi confirms the top analyst from
+            analyst-profile data first, then explains why that analyst leads the group.
           </p>
         </div>
 
@@ -187,6 +191,15 @@ export default function SigiAnalystLeaders() {
             <Stat label="Success Rate" value={leader.successRate} />
             <Stat label="Avg Return" value={leader.avgReturn} />
             <Stat label="Strongest Call" value={strongestCall} />
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-white/10 bg-black/25 p-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
+              Most Recent Visible Pick
+            </p>
+            <p className="mt-2 text-sm font-semibold leading-6 text-white">
+              {mostRecentPick}
+            </p>
           </div>
 
           <div className="mt-6">
@@ -291,4 +304,16 @@ function normalizeCoveredNames(value: unknown) {
 
     return name.length > 26 ? `${name.slice(0, 23)}...` : name;
   });
+}
+
+function normalizeMostRecentPick(value: unknown, fallback: unknown) {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+
+  if (typeof fallback === "string" && fallback.trim()) {
+    return fallback.trim();
+  }
+
+  return "Needs live analyst-feed confirmation before publishing.";
 }
