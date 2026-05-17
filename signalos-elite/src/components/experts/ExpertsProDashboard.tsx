@@ -837,6 +837,10 @@ export default function ExpertsPage() {
                   ) : null}
                 </div>
               </div>
+
+              <div id="sigi-analyst-leaders" className="mt-6 scroll-mt-28">
+                <SigiAnalystLeaders />
+              </div>
             </div>
           </div>
 
@@ -1068,9 +1072,6 @@ export default function ExpertsPage() {
             </div>
           </section>
 
-          <div className="mt-10">
-            <SigiAnalystLeaders />
-          </div>
         </section>
 
         <ActiveExpertSignals rows={activeSignals} />

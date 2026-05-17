@@ -669,7 +669,7 @@ function buildExpertsModel(): RightRailContextModel {
             value: "View leaders",
             tone: "default",
             statusDot: "accent",
-            href: "/experts/rankings",
+            href: "#sigi-analyst-leaders",
           },
         ],
       },
