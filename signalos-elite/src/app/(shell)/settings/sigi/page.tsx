@@ -15,7 +15,7 @@ export default async function SigiSettingsPage() {
     <main id="profile" className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-16 pt-2 md:px-6 xl:px-8">
       <PageHeaderBlock
         eyebrow="SigiOS Settings"
-        title="SignalOS Experts"
+        title="SigiOS Experts"
         description="Advanced institutional-grade intelligence reserved for Pro members. Access elite AI-driven market analysis, conviction setups, macro intelligence, analyst consensus, and premium trading workflows built for serious investors."
         actions={
           <div className="flex flex-wrap gap-3">

@@ -303,7 +303,7 @@ export default function TodayHeroPanel({
       ? `${normalizedFocusedTicker} in focus as ${headline.charAt(0).toLowerCase()}${headline.slice(1)}`
       : headline;
   const storyUrl = primary?.url;
-  const source = primary?.source || story.source || "SignalOS";
+  const source = primary?.source || story.source || "SigiOS";
   const publishedAt = primary?.publishedAt || story.timestamp || "";
   const tickers = (() => {
     const raw = primary?.tickers ?? [];

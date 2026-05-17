@@ -19,7 +19,7 @@ export default async function ExpertsProPage() {
         </div>
 
         <h1 className="mt-5 text-3xl font-semibold tracking-[0.01em] text-white md:text-4xl">
-          The real Experts terminal is reserved for SignalOS Pro.
+          The real Experts terminal is reserved for SigiOS Pro.
         </h1>
 
         <p className="mt-4 max-w-3xl text-base leading-7 text-white/72">

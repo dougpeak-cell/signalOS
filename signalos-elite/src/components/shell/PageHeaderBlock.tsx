@@ -20,7 +20,7 @@ function classes(...values: Array<string | undefined | false>) {
 export default function PageHeaderBlock({
   title,
   description,
-  eyebrow = "SignalOS",
+  eyebrow = "SigiOS",
   actions,
   children,
   aside,

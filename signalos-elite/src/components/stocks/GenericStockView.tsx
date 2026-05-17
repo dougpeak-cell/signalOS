@@ -605,7 +605,7 @@ export default async function GenericStockView({
     initialAnalysisPrice != null || row.target_price != null || quoteState.price != null;
   const isUnavailableTicker = !dbRow && !hasLiveData;
   const fallbackThesis = isUnavailableTicker
-    ? `${liveTicker} is not in SignalOS coverage or live quote data yet. Try a valid ticker, open Sigi analysis, or add it to your watchlist.`
+    ? `${liveTicker} is not in SigiOS coverage or live quote data yet. Try a valid ticker, open Sigi analysis, or add it to your watchlist.`
     : investmentThesis;
   const investmentThesisText = row.thesis?.trim()
     ? row.thesis
@@ -779,7 +779,7 @@ export default async function GenericStockView({
 
                 <div className="glow-card rounded-2xl p-4">
                   <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                    SignalOS
+                    SigiOS
                   </div>
 
                   <div className="mt-3 text-sm text-white/70">

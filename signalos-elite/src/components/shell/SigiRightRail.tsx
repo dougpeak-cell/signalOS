@@ -449,7 +449,7 @@ export default function SigiRightRail({
               item?.tone === "bullish" || item?.tone === "bearish" || item?.tone === "neutral"
                 ? item.tone
                 : "neutral",
-            source: String(item?.source ?? "SignalOS Feed"),
+            source: String(item?.source ?? "SigiOS Feed"),
             href:
               typeof item?.url === "string"
                 ? item.url

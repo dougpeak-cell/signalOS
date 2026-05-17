@@ -312,7 +312,7 @@ export default function InstitutionalRadarBoard({
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div className="min-w-0">
               <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-sky-300/85">
-                SignalOS Radar Board
+                SigiOS Radar Board
               </div>
               <div className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                 Institutional Market Scanner

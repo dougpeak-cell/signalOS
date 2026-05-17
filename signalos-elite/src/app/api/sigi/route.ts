@@ -789,7 +789,7 @@ function buildEliteSigiAnswer({
     : `a push through ${resistanceText} opens room toward ${targetText}.`;
   const actionLine = hasCoveredSetup
     ? `Action: stay patient until structure confirms, then act only with defined risk.`
-    : `trade the live levels and keep size tighter until SignalOS has a fuller setup read.`;
+    : `trade the live levels and keep size tighter until SigiOS has a fuller setup read.`;
   const bullCaseLine = `${ticker} holds support ${supportText}, momentum stays firm, and price can push through ${resistanceText}.`;
   const bearCaseLine = `${ticker} loses support or stalls before resistance, which weakens the setup quickly.`;
   const triggerLine = `A clean move through ${resistanceText} is the trigger to watch.`;

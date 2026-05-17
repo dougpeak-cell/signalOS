@@ -368,7 +368,7 @@ export default function SigiSettingsForm({ settings }: Props) {
               </div>
 
               <div className="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300/78">
-                SignalOS Experts
+                SigiOS Experts
               </div>
               <h2 className="mt-3 text-3xl font-semibold tracking-[0.01em] text-white md:text-4xl">
                 Advanced institutional-grade intelligence reserved for Pro members.
@@ -383,7 +383,7 @@ export default function SigiSettingsForm({ settings }: Props) {
                   Pro Intelligence
                 </div>
                 <div className="mt-3 text-xl font-semibold text-white">
-                  Expert market intelligence is reserved for SignalOS Pro members.
+                  Expert market intelligence is reserved for SigiOS Pro members.
                 </div>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-white/68">
                   Unlock institutional-grade setups, advanced AI analysis, analyst conviction tracking,

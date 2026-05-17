@@ -336,7 +336,7 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
 
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-white">
-                  {hasClientSession ? userName : "SignalOS Account"}
+                  {hasClientSession ? userName : "SigiOS Account"}
                 </div>
 
                 {email ? (
@@ -366,7 +366,7 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
                 href={authEntryHref}
                 icon={<LogIn size={18} />}
                 label="Sign In / Create Account"
-                sub="Open your SignalOS account and sync profile, settings, and billing"
+                sub="Open your SigiOS account and sync profile, settings, and billing"
                 onSelect={() => setOpen(false)}
               />
             ) : null}
@@ -383,7 +383,7 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
               href="/settings/sigi#settings"
               icon={<Settings size={18} />}
               label="Settings"
-              sub="Customize your SignalOS experience"
+              sub="Customize your SigiOS experience"
               onSelect={() => setOpen(false)}
             />
 
@@ -425,7 +425,7 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
                   <div className="mt-1 text-xs text-red-200/60">
                     {busy === "logout"
                       ? "Signing out securely"
-                      : "Securely sign out of SignalOS"}
+                      : "Securely sign out of SigiOS"}
                   </div>
                 </div>
               </button>

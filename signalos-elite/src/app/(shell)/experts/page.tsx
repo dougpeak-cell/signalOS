@@ -35,7 +35,7 @@ export default async function ExpertsPage({
       <div className={isMobilePreview ? "mx-auto max-w-xl space-y-6" : "mx-auto max-w-7xl space-y-8"}>
         <section className={isMobilePreview ? "rounded-3xl border border-cyan-400/20 bg-cyan-950/20 p-4 shadow-[0_0_40px_rgba(34,211,238,0.08)]" : "rounded-3xl border border-cyan-400/20 bg-cyan-950/20 p-6 shadow-[0_0_40px_rgba(34,211,238,0.08)] md:p-8"}>
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-            SignalOS Access
+            SigiOS Access
           </div>
 
           <h1 className={isMobilePreview ? "max-w-[10ch] text-2xl font-bold leading-[1.05]" : "text-3xl font-bold md:text-5xl"}>
@@ -57,7 +57,7 @@ export default async function ExpertsPage({
           </div>
 
           <p className={isMobilePreview ? "mt-3 max-w-none text-sm leading-6 text-slate-300" : "mt-3 max-w-3xl text-sm leading-7 text-slate-300"}>
-            Current users have Quick View access to SignalOS Watchlist and Sigi
+            Current users have Quick View access to SigiOS Watchlist and Sigi
             Portfolio so they can preview the market workflow before upgrading.
           </p>
 
@@ -66,7 +66,7 @@ export default async function ExpertsPage({
               compact={isMobilePreview}
               icon={<TrendingUp />}
               title="Quick View Watchlist"
-              text="Preview selected stocks and market movement inside the SignalOS experience."
+              text="Preview selected stocks and market movement inside the SigiOS experience."
             />
             <FeatureCard
               compact={isMobilePreview}
@@ -102,7 +102,7 @@ export default async function ExpertsPage({
             subtitle="Personal assistant + portfolio intelligence"
             features={[
               "Sigi Personal Assistant",
-              "SignalOS Watchlist intelligence",
+              "SigiOS Watchlist intelligence",
               "Sigi Portfolio Read",
               "Live pricing and SigiOS scoring",
               "Momentum context and chart access",
@@ -138,7 +138,7 @@ export default async function ExpertsPage({
           <h2 className={isMobilePreview ? "text-2xl font-bold leading-tight" : "text-3xl font-bold"}>Sigi Smart unlocks your personal investing assistant.</h2>
 
           <p className={isMobilePreview ? "mt-4 max-w-none text-sm leading-6 text-slate-300" : "mt-4 max-w-4xl text-sm leading-7 text-slate-300 md:text-base"}>
-            Smart users have access to Sigi Personal Assistant, SignalOS
+            Smart users have access to Sigi Personal Assistant, SigiOS
             Watchlist, and Sigi Portfolio Read.
           </p>
 
@@ -153,7 +153,7 @@ export default async function ExpertsPage({
             <FeatureCard
               compact={isMobilePreview}
               icon={<ChartNoAxesCombined />}
-              title="SignalOS Watchlist"
+              title="SigiOS Watchlist"
               text="Opens Track What Matters, where users monitor selected stocks with live pricing, SigiOS scoring, momentum context, and quick access to charts, portfolio tracking, and workspaces."
             />
 

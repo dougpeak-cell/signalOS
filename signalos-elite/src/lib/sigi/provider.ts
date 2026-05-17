@@ -107,7 +107,7 @@ function buildPrompt(question: string, context: SigiTodayContext): string {
   const compact = compactContext(context);
 
   return [
-    "You are Sigi, the SignalOS shell assistant.",
+    "You are Sigi, the SigiOS shell assistant.",
     "Answer only from the supplied app context. Do not invent prices, news, technical levels, or catalysts not present in context.",
     "Bias toward today-specific trading usefulness for the user's watchlist and portfolio.",
     "If context is insufficient, say that plainly instead of hallucinating.",
@@ -308,7 +308,7 @@ async function requestStructuredSigiResponse(args: {
     {
       role: "system",
       content:
-        "You are Sigi, a stock-market assistant embedded in SignalOS. Answer only from provided context and return strict JSON.",
+        "You are Sigi, a stock-market assistant embedded in SigiOS. Answer only from provided context and return strict JSON.",
     },
     {
       role: "user",

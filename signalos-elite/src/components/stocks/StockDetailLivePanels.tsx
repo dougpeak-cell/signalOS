@@ -761,7 +761,7 @@ export default function StockDetailLivePanels({
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="text-lg font-semibold text-white">
-              SignalOS master score
+              SigiOS master score
             </div>
             <div className="mt-1 text-sm text-white/45">
               Unified technical, fundamental, and conviction score

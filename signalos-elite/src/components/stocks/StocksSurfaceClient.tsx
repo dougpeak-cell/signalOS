@@ -39,7 +39,7 @@ function buildFallbackStock(ticker: string): BrowseStock {
     price: 0,
     conviction: 60,
     signal: "Neutral",
-    thesis: "Added from SignalOS.",
+    thesis: "Added from SigiOS.",
     inWatchlist: true,
     href: `/stocks/${t}`,
     liveHref: `/stocks/${t}`,

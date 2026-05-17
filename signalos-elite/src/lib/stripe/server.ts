@@ -57,7 +57,7 @@ export function getStripeServer(): Stripe {
 
   stripeServer = new Stripe(requireEnv("STRIPE_SECRET_KEY"), {
     appInfo: {
-      name: "SignalOS Elite",
+      name: "SigiOS Elite",
     },
   });
 

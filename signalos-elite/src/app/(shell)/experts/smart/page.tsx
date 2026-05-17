@@ -27,7 +27,7 @@ export default async function ExpertsSmartPage() {
         <p className="mt-4 max-w-3xl text-base leading-7 text-white/72">
           {hasSmartAccess
             ? "You already have access to Sigi Smart features, including the personal assistant, Watchlist intelligence, and Portfolio Read."
-            : "Smart members unlock the personal assistant, deeper watchlist context, portfolio intelligence, and a more responsive SignalOS workflow before stepping up to Pro."}
+            : "Smart members unlock the personal assistant, deeper watchlist context, portfolio intelligence, and a more responsive SigiOS workflow before stepping up to Pro."}
         </p>
 
         <div className="mt-8 grid gap-4 md:grid-cols-3">

@@ -1152,7 +1152,7 @@ export default function SigiTodayAssistantRail() {
             headline: String(item.headline ?? "Market update"),
             tone: item.tone ?? "neutral",
             tickers: Array.isArray(item.tickers) ? item.tickers : [],
-            source: item.source ?? "SignalOS Feed",
+            source: item.source ?? "SigiOS Feed",
           }))
         );
       } catch {

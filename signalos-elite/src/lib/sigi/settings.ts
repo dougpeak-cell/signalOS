@@ -287,9 +287,9 @@ function toViewModel(
 
   let message: string | null = null;
   if (!isSignedIn) {
-    message = "SignalOS Experts is available on every plan. Upgrade to Pro when you want elite AI-driven market analysis, conviction setups, and institutional-grade workflows.";
+    message = "SigiOS Experts is available on every plan. Upgrade to Pro when you want elite AI-driven market analysis, conviction setups, and institutional-grade workflows.";
   } else if (!hasSmart(currentTier)) {
-    message = "SignalOS Experts is reserved for Pro members. Upgrade when you want institutional-grade setups, deeper AI analysis, and premium market workflows.";
+    message = "SigiOS Experts is reserved for Pro members. Upgrade when you want institutional-grade setups, deeper AI analysis, and premium market workflows.";
   } else if (!encryptionReady && isSignedIn) {
     message = "Hosted Sigi AI stays active. SIGI_SETTINGS_ENCRYPTION_KEY is only needed if you want to store your own provider key in Advanced AI Settings.";
   }
