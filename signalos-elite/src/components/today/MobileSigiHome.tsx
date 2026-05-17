@@ -819,7 +819,7 @@ export default function MobileSigiHome({
                     handleAnalyze();
                   }
                 }}
-                placeholder={hasSigiSmart ? "Type stock ticker or company" : "Ask about NVDA, TSLA, AAPL..."}
+                placeholder={hasSigiSmart ? "Stock/Ticker?" : "Ask about NVDA, TSLA, AAPL..."}
                 className="min-h-12 min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none placeholder:text-white/34 focus:border-cyan-300/40"
               />
               <button
