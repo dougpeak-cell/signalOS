@@ -409,6 +409,13 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
   const chart = useMemo(() => {
     if (!visibleCandles.length) return null;
 
+    const svgWidth = 1000;
+    const plotLeft = 32;
+    const priceLabelGutter = compact ? 132 : 108;
+    const plotRight = svgWidth - priceLabelGutter;
+    const plotWidth = Math.max(plotRight - plotLeft, 1);
+    const priceLabelX = svgWidth - 20;
+
     const highs = visibleCandles.map((candle) => candle.high);
     const lows = visibleCandles.map((candle) => candle.low);
     const volumes = visibleCandles.map((candle) => candle.volume);
@@ -420,14 +427,14 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
     const chartBottom = chartTop + chartHeight;
     const volumeTop = chartBottom + 16;
     const volumeHeight = isExpanded ? 56 : 44;
-    const slotWidth = 1000 / Math.max(visibleCandles.length, 1);
+    const slotWidth = plotWidth / Math.max(visibleCandles.length, 1);
     const bodyWidth = Math.max(4, Math.min(slotWidth * 0.62, 12));
     const maxVolume = Math.max(...volumes, 1);
 
     const toY = (price: number) => chartBottom - ((price - min) / range) * chartHeight;
 
     const candleShapes = visibleCandles.map((candle, index) => {
-      const centerX = slotWidth * index + slotWidth / 2;
+      const centerX = plotLeft + slotWidth * index + slotWidth / 2;
       const openY = toY(candle.open);
       const closeY = toY(candle.close);
       const highY = toY(candle.high);
@@ -459,7 +466,7 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
         const window = visibleCandles.slice(start, index + 1);
         const average =
           window.reduce((sum, candle) => sum + candle.close, 0) / Math.max(window.length, 1);
-        const x = slotWidth * index + slotWidth / 2;
+        const x = plotLeft + slotWidth * index + slotWidth / 2;
         const y = toY(average);
         return `${x},${y}`;
       })
@@ -489,7 +496,7 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
 
           return {
             key: `${candle.time}-${index}`,
-            x: slotWidth * index + slotWidth / 2,
+            x: plotLeft + slotWidth * index + slotWidth / 2,
             label,
           };
         })
@@ -503,10 +510,13 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
       latestCloseY,
       latestClose,
       latestBullish: latest ? latest.close >= latest.open : true,
+      plotLeft,
+      plotRight,
+      priceLabelX,
       volumeTop,
       volumeBottom: volumeTop + volumeHeight,
     };
-  }, [isExpanded, visibleCandles]);
+  }, [compact, isExpanded, visibleCandles]);
 
   if (!candles.length) {
     return (
@@ -609,15 +619,15 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
         {chart?.gridLines.map((line) => (
           <g key={`${line.y}-${line.label}`}>
             <line
-              x1="32"
-              x2="968"
+              x1={chart.plotLeft}
+              x2={chart.plotRight}
               y1={line.y}
               y2={line.y}
               stroke="rgba(255,255,255,0.08)"
               strokeDasharray="6 10"
             />
             <text
-              x="972"
+              x={chart.priceLabelX}
               y={line.y + 4}
               textAnchor="end"
               fontSize="11"
@@ -630,8 +640,8 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
 
         {chart?.latestCloseY ? (
           <line
-            x1="32"
-            x2="968"
+            x1={chart.plotLeft}
+            x2={chart.plotRight}
             y1={chart.latestCloseY}
             y2={chart.latestCloseY}
             stroke={chart.latestBullish ? "rgba(52,211,153,0.65)" : "rgba(251,113,133,0.65)"}
@@ -683,14 +693,14 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
         {chart ? (
           <>
             <line
-              x1="32"
-              x2="968"
+              x1={chart.plotLeft}
+              x2={chart.plotRight}
               y1={chart.volumeTop - 6}
               y2={chart.volumeTop - 6}
               stroke="rgba(255,255,255,0.08)"
             />
             <text
-              x="32"
+              x={chart.plotLeft}
               y={chart.volumeTop - 10}
               fontSize="11"
               fill="rgba(255,255,255,0.42)"
