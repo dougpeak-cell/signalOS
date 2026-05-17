@@ -4805,28 +4805,6 @@ const gapFillLabel =
                 </div>
               ) : null}
 
-              {!isChartFullscreen ? (
-                <div className="pointer-events-none absolute bottom-5 right-5 z-20 hidden gap-3 md:grid">
-                  <div className="rounded-2xl border border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
-                      Interval
-                    </div>
-                    <div className="mt-1 text-lg font-black text-white">
-                      {chartRange} · {chartInterval}
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
-                      Latest Bar Volume
-                    </div>
-                    <div className="mt-1 text-lg font-black text-white">
-                      {formatCompactNumber(latestDisplayVolume)}
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
               {loading ? (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70 text-sm text-neutral-300">
                   Loading chart...
@@ -4838,6 +4816,26 @@ const gapFillLabel =
 
         {!isChartFullscreen ? (
           <>
+            <div className="mt-4 hidden gap-3 md:grid md:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-xl">
+                <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
+                  Interval
+                </div>
+                <div className="mt-1 text-lg font-black text-white">
+                  {chartRange} · {chartInterval}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-xl">
+                <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
+                  Latest Bar Volume
+                </div>
+                <div className="mt-1 text-lg font-black text-white">
+                  {formatCompactNumber(latestDisplayVolume)}
+                </div>
+              </div>
+            </div>
+
             <TradeReadinessBar
               score={displayedSignalScore}
               bias={readiness.bias}
