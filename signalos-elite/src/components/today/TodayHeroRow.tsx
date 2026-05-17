@@ -1,7 +1,9 @@
 import type { ReactElement } from "react";
 import MarketThesisHero from "@/components/today/MarketThesisHero";
 import SigiDecisionPanel from "@/components/today/SigiDecisionPanel";
+import TodayHeroClientBoundary from "@/components/today/TodayHeroClientBoundary";
 import { TodayHeroProvider } from "@/components/today/TodayHeroContext";
+import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import { getHeroStoryPayload } from "@/lib/news/heroStory";
 import type {
   TodayCommandCenterNewsRow,
@@ -31,14 +33,16 @@ export default async function TodayHeroRow({
     <TodayHeroProvider initialHeroStory={initialHeroStory}>
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.45fr_0.95fr]">
         <MarketThesisHero />
-        <SigiDecisionPanel
-          hasSigiSmart={hasSigiSmart}
-          hasSigiPro={hasSigiPro}
-          topSetups={topSetups}
-          movers={movers}
-          news={news}
-          watchlistRows={watchlistRows}
-        />
+        <TodayHeroClientBoundary fallback={<section id="sigi-command-panel"><UpgradeSigiSmartCard /></section>}>
+          <SigiDecisionPanel
+            hasSigiSmart={hasSigiSmart}
+            hasSigiPro={hasSigiPro}
+            topSetups={topSetups}
+            movers={movers}
+            news={news}
+            watchlistRows={watchlistRows}
+          />
+        </TodayHeroClientBoundary>
       </section>
     </TodayHeroProvider>
   );

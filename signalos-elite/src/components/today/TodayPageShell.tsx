@@ -105,7 +105,7 @@ export default function TodayPageShell({
 					/>
 				</Suspense>
 
-				<div className={`${shouldRenderDesktopTodayLayout ? "hidden md:space-y-6" : "hidden"}`}>
+				<div className={`${shouldRenderDesktopTodayLayout ? "hidden md:block md:space-y-6" : "hidden"}`}>
 					<TodayHeroRow
 						hasSigiSmart={hasSigiSmart}
 						hasSigiPro={hasSigiPro}
