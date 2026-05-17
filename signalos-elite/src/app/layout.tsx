@@ -1,5 +1,5 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { LiveMarketProvider } from "@/components/market/LiveMarketProvider";
 import MarketContextSyncBridge from "@/components/providers/MarketContextSyncBridge";
 import AppQuoteBootstrap from "@/components/providers/AppQuoteBootstrap";
@@ -20,6 +20,12 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/apple-icon", sizes: "180x180", type: "image/png" }],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
