@@ -110,12 +110,12 @@ export default function SigiAnalystLeaders() {
 
   return (
     <section className="rounded-4xl border border-cyan-400/20 bg-[#020817] p-6 shadow-[0_0_60px_rgba(34,211,238,0.08)]">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div>
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+        <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.35em] text-emerald-300">
             Sigi Analyst Command
           </p>
-          <h2 className="mt-2 text-3xl font-black text-white">
+          <h2 className="mt-2 text-3xl font-black text-white sm:text-[2rem]">
             Top Analyst by Sector
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
@@ -124,7 +124,7 @@ export default function SigiAnalystLeaders() {
           </p>
         </div>
 
-        <div className="flex w-full gap-2 lg:w-105">
+        <div className="flex w-full flex-col gap-2 sm:flex-row xl:w-96 2xl:w-105">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -170,10 +170,10 @@ export default function SigiAnalystLeaders() {
               <p className="text-xs font-bold uppercase tracking-[0.3em] text-emerald-300">
                 Sigi Pick
               </p>
-              <h3 className="mt-3 text-3xl font-black text-white">
+              <h3 className="mt-3 wrap-break-word text-2xl font-black text-white sm:text-3xl">
                 {displayAnalyst}
               </h3>
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 wrap-break-word text-sm text-slate-400">
                 {displayFirm} · {displaySector}
               </p>
             </div>
@@ -237,7 +237,7 @@ function Stat({ label, value }: { label: string; value: string }) {
       <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
         {label}
       </p>
-      <p className="mt-2 text-2xl font-black text-white">{hidden ? "—" : value}</p>
+      <p className="mt-2 wrap-break-word text-xl font-black text-white sm:text-2xl">{hidden ? "—" : value}</p>
       {hidden ? (
         <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
           Not disclosed
