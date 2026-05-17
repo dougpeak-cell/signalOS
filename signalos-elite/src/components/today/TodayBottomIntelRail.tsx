@@ -24,6 +24,24 @@ type FeedCard = {
   meta?: string;
 };
 
+function ensureUniqueFeedCardKeys(items: FeedCard[]): FeedCard[] {
+  const seen = new Map<string, number>();
+
+  return items.map((item) => {
+    const currentCount = seen.get(item.key) ?? 0;
+    seen.set(item.key, currentCount + 1);
+
+    if (currentCount === 0) {
+      return item;
+    }
+
+    return {
+      ...item,
+      key: `${item.key}-${currentCount + 1}`,
+    };
+  });
+}
+
 function buildLeadershipCard(item: TodaySetupItem): FeedCard {
   const pulseMeta = item.pulse?.topLabel
     ? `${item.pulse.topLabel}${item.pulse.newestAgeLabel ? ` • ${item.pulse.newestAgeLabel}` : ""}`
@@ -49,7 +67,7 @@ export default function TodayBottomIntelRail({
   featuredMacro,
   leadershipWatch,
 }: Pick<TodayPageData, "globalPulseItems" | "featuredMacro" | "leadershipWatch">) {
-  const feedCards: FeedCard[] = [
+  const feedCards = ensureUniqueFeedCardKeys([
     {
       key: "macro-first",
       title: "Macro First",
@@ -69,7 +87,7 @@ export default function TodayBottomIntelRail({
       meta: item.tickers.slice(0, 3).join(" • "),
     })),
     ...leadershipWatch.slice(0, 2).map(buildLeadershipCard),
-  ];
+  ]);
 
   return (
     <section className={supportSectionClass}>
