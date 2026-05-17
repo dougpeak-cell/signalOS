@@ -1041,7 +1041,7 @@ export default function ExpertsPage() {
                       href={`/stocks/${row.symbol}/workspace`}
                       className="inline-flex h-8 items-center rounded-xl border border-white/10 bg-white/4 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70 transition-all hover:border-white/20 hover:bg-white/7 hover:text-white"
                     >
-                      Open Workspace Gåù
+                      Open Workspace ↗
                     </Link>
                   </div>
                 </div>
