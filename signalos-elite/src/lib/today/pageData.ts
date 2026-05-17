@@ -941,7 +941,12 @@ function buildSectorHeatmapItems(candidates: SetupDiscoveryCandidate[]): TodaySe
 
   for (const candidate of candidates) {
     const sector = getDisplaySectorForTicker(candidate.ticker, candidate.sector);
-    if (!sector) continue;
+    const normalizedSector = sector.trim().toLowerCase();
+
+    if (!normalizedSector || normalizedSector === "stocks" || normalizedSector === "all") {
+      continue;
+    }
+
     const bucket = grouped.get(sector) ?? [];
     bucket.push(candidate);
     grouped.set(sector, bucket);
