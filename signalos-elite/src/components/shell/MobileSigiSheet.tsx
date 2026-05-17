@@ -763,7 +763,7 @@ export default function MobileSigiSheet({
                 void handleMobileSigiSubmit();
               }
             }}
-            placeholder="Type stock ticker or company"
+            placeholder="Stock/Ticker?"
             className="h-12 min-w-0 flex-1 rounded-2xl border border-cyan-300/25 bg-black/50 px-4 text-sm text-white outline-none placeholder:text-white/35 transition focus:border-cyan-400/38"
             disabled={isMobileSigiAnalyzing}
           />
