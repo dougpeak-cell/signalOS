@@ -973,8 +973,14 @@ export default function CryptoDetailPage() {
     };
   }, [ticker, candleMultiplier, liveMode]);
 
-  const positive = (snapshot?.changePercent ?? 0) >= 0;
   const latest = candles.at(-1);
+  const latestFeedPrice = feed.find((entry) => typeof entry.price === "number")?.price ?? null;
+  const displayPrice = livePrice ?? latestFeedPrice ?? snapshot?.price ?? latest?.close ?? null;
+  const displayChangePercent =
+    typeof displayPrice === "number" && typeof snapshot?.open === "number" && snapshot.open !== 0
+      ? ((displayPrice - snapshot.open) / snapshot.open) * 100
+      : snapshot?.changePercent ?? null;
+  const positive = (displayChangePercent ?? 0) >= 0;
   const flow = orderFlowHeat(feed);
   const spike = volumeSpike(feed);
   const direction = spikeDirection(feed);
@@ -1116,7 +1122,7 @@ export default function CryptoDetailPage() {
                 "font-semibold transition-all duration-300 animate-pulse",
                 isMobilePreview ? "text-2xl" : "text-3xl",
               ].join(" ")}>
-                {money(livePrice ?? snapshot?.price ?? latest?.close)}
+                {money(displayPrice)}
               </div>
 
               <div className="animate-pulse text-xs text-white/40">
@@ -1136,7 +1142,7 @@ export default function CryptoDetailPage() {
                 positive ? "text-emerald-300" : "text-red-300",
               ].join(" ")}
             >
-              {pct(snapshot?.changePercent)}
+              {pct(displayChangePercent)}
             </div>
           </div>
 
