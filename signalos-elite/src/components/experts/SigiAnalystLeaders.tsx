@@ -126,7 +126,7 @@ export default function SigiAnalystLeaders() {
             Sigi Analyst Command
           </p>
           <h2 className="mt-2 text-3xl font-black text-white sm:text-[2rem]">
-            Top Analyst by Sector
+            Analysts Picks by Sector
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
             Type a sector or select below. Sigi confirms the top analyst from
