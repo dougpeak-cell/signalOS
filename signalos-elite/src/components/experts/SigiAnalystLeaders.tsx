@@ -194,7 +194,7 @@ export default function SigiAnalystLeaders() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-6 grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
             <Stat label="Success Rate" value={leader.successRate} />
             <Stat label="Avg Return" value={leader.avgReturn} />
             <Stat label="Strongest Call" value={strongestCall} />
@@ -257,7 +257,9 @@ function Stat({ label, value }: { label: string; value: string }) {
       <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
         {label}
       </p>
-      <p className="mt-2 text-xl font-black leading-tight text-white sm:text-2xl">{hidden ? "—" : value}</p>
+      <p className="mt-2 text-lg font-black leading-tight text-white sm:text-xl 2xl:text-2xl">
+        {hidden ? "—" : value}
+      </p>
       {hidden ? (
         <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
           Not disclosed
