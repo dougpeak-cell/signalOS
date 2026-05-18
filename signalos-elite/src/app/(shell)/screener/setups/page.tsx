@@ -5,8 +5,10 @@ import SetupsSessionAutoSync from "@/components/screener/SetupsSessionAutoSync";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import { getSetupDiscoveryData } from "@/lib/today/setupDiscoveryData";
 import {
+  buildPreMarketTopSetups,
   buildRenderablePreMarketEmergingSetups,
   countPreMarketEmergingCandidates,
+  countPreMarketQualifiedCandidates,
   type TodaySetupSession,
 } from "@/lib/today/pageData";
 import { isPreMarketNow } from "@/lib/today/marketPhase";
@@ -26,6 +28,7 @@ type SetupsPageProps = {
 };
 
 type PriceRangeKey = "2-5" | "5-10" | "10-25" | "25-100" | "100+";
+type SetupView = "top" | "emerging";
 
 const MIN_VOLUME_PRESETS = [
   { label: "Any", value: null },
@@ -81,6 +84,10 @@ function normalizeSession(value?: string): TodaySetupSession {
   if (value === "pre") return "pre";
   if (value === "regular") return "regular";
   return isPreMarketNow() ? "pre" : "regular";
+}
+
+function normalizeView(value?: string): SetupView {
+  return value === "top" ? "top" : "emerging";
 }
 
 function normalizeDirection(value?: string): "both" | "bullish" | "bearish" {
@@ -145,6 +152,7 @@ function filterRows(
 }
 
 function filterLink(params: {
+  view: SetupView;
   session: TodaySetupSession;
   direction: "both" | "bullish" | "bearish";
   minPrice: PriceRangeKey | null;
@@ -154,6 +162,7 @@ function filterLink(params: {
   mobilePreview?: boolean;
 }) {
   const search = new URLSearchParams();
+  if (params.view !== "emerging") search.set("view", params.view);
   search.set("session", params.session);
   if (params.direction !== "both") search.set("direction", params.direction);
   if (params.minPrice != null) search.set("minPrice", String(params.minPrice));
@@ -171,6 +180,7 @@ function filterPillClass(isActive: boolean): string {
 }
 
 function renderFilterControls({
+  view,
   session,
   direction,
   minPrice,
@@ -181,6 +191,7 @@ function renderFilterControls({
   filterCardClass,
   filterPillRowClass,
 }: {
+  view: SetupView;
   session: TodaySetupSession;
   direction: "both" | "bullish" | "bearish";
   minPrice: PriceRangeKey | null;
@@ -205,6 +216,7 @@ function renderFilterControls({
               <Link
                 key={preset.value}
                 href={filterLink({
+                  view,
                   session,
                   direction: preset.value,
                   minPrice,
@@ -233,6 +245,7 @@ function renderFilterControls({
               <Link
                 key={preset.label}
                 href={filterLink({
+                  view,
                   session,
                   direction,
                   minPrice: preset.value,
@@ -261,6 +274,7 @@ function renderFilterControls({
               <Link
                 key={preset.label}
                 href={filterLink({
+                  view,
                   session,
                   direction,
                   minPrice,
@@ -289,6 +303,7 @@ function renderFilterControls({
               <Link
                 key={preset.value}
                 href={filterLink({
+                  view,
                   session,
                   direction,
                   minPrice,
@@ -317,6 +332,7 @@ function renderFilterControls({
               <Link
                 key={preset.value}
                 href={filterLink({
+                  view,
                   session,
                   direction,
                   minPrice,
@@ -341,6 +357,7 @@ export default async function SetupsPage({
   searchParams,
 }: SetupsPageProps): Promise<ReactElement> {
   const params = (await searchParams) ?? {};
+  const view = normalizeView(params.view);
   const session = normalizeSession(params.session);
   const direction = normalizeDirection(params.direction);
   const minPrice = normalizePriceRange(params.minPrice);
@@ -357,10 +374,17 @@ export default async function SetupsPage({
   });
 
   const sourceRows =
-    session === "pre"
-      ? buildRenderablePreMarketEmergingSetups(setupDiscovery, { limit: undefined })
-      : setupDiscovery.emerging;
-  const preMarketRawCandidateCount = countPreMarketEmergingCandidates(setupDiscovery);
+    view === "top"
+      ? session === "pre"
+        ? buildPreMarketTopSetups(setupDiscovery)
+        : setupDiscovery.top
+      : session === "pre"
+        ? buildRenderablePreMarketEmergingSetups(setupDiscovery, { limit: undefined })
+        : setupDiscovery.emerging;
+  const preMarketRawCandidateCount =
+    view === "top"
+      ? countPreMarketQualifiedCandidates(setupDiscovery)
+      : countPreMarketEmergingCandidates(setupDiscovery);
   const filteredRows = filterRows(sourceRows, {
     direction,
     minPrice,
@@ -376,17 +400,57 @@ export default async function SetupsPage({
 
       <PageHeaderBlock
         eyebrow="Sigi Market Setup Rankings"
-        title="Setups"
-        description="Emerging setups powered by Sigi Intelligence."
+        title={view === "top" ? "Top Setups" : "Setups"}
+        description={
+          view === "top"
+            ? "Highest-conviction setups powered by Sigi Intelligence."
+            : "Emerging setups powered by Sigi Intelligence."
+        }
       />
 
       <section className="rounded-[28px] border border-cyan-400/10 bg-linear-to-br from-[#040b12] via-[#05121b] to-[#020910] p-5 shadow-[0_0_0_1px_rgba(0,255,255,0.05),0_0_30px_rgba(0,255,255,0.08)]">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-cyan-400/30 bg-cyan-400/14 px-4 py-2 text-sm text-cyan-200">
-            Emerging Setups
-          </span>
           <Link
             href={filterLink({
+              view: "top",
+              session,
+              direction,
+              minPrice,
+              minVolume,
+              catalystOnly,
+              highRvol,
+              mobilePreview: isMobilePreview,
+            })}
+            className={`rounded-full border px-4 py-2 text-sm transition ${
+              view === "top"
+                ? "border-cyan-400/30 bg-cyan-400/14 text-cyan-200"
+                : "border-cyan-400/10 bg-black/20 text-cyan-100/70 hover:border-cyan-400/25 hover:text-cyan-50"
+            }`}
+          >
+            Top Setups
+          </Link>
+          <Link
+            href={filterLink({
+              view: "emerging",
+              session,
+              direction,
+              minPrice,
+              minVolume,
+              catalystOnly,
+              highRvol,
+              mobilePreview: isMobilePreview,
+            })}
+            className={`rounded-full border px-4 py-2 text-sm transition ${
+              view === "emerging"
+                ? "border-cyan-400/30 bg-cyan-400/14 text-cyan-200"
+                : "border-cyan-400/10 bg-black/20 text-cyan-100/70 hover:border-cyan-400/25 hover:text-cyan-50"
+            }`}
+          >
+            Emerging Setups
+          </Link>
+          <Link
+            href={filterLink({
+              view,
               session: "regular",
               direction,
               minPrice,
@@ -405,6 +469,7 @@ export default async function SetupsPage({
           </Link>
           <Link
             href={filterLink({
+              view,
               session: "pre",
               direction,
               minPrice,
@@ -439,6 +504,7 @@ export default async function SetupsPage({
             </summary>
             <div className="mt-3">
               {renderFilterControls({
+                view,
                 session,
                 direction,
                 minPrice,
@@ -454,6 +520,7 @@ export default async function SetupsPage({
         ) : (
           <div className="mt-4">
             {renderFilterControls({
+              view,
               session,
               direction,
               minPrice,
@@ -577,8 +644,12 @@ export default async function SetupsPage({
           {!filteredRows.length ? (
             <div className="px-4 py-8 text-sm text-white/45">
               {session === "pre"
-                ? "Pre-market is active. Signals are limited right now — try lowering filters or check Top Movers."
-                : "No setups matched the current filters."}
+                ? view === "top"
+                  ? "Pre-market is active, but no top setups matched the current filters."
+                  : "Pre-market is active. Signals are limited right now — try lowering filters or check Top Movers."
+                : view === "top"
+                  ? "No top setups matched the current filters."
+                  : "No setups matched the current filters."}
             </div>
           ) : null}
         </div>

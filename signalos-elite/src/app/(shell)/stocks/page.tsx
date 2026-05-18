@@ -5,6 +5,7 @@ import { fetchFreeTickerPulses } from "@/lib/news/fetchFreeTickerPulses";
 import type { TickerNewsPulse } from "@/lib/news/tickerNewsPulse";
 import { getSetupDiscoveryData } from "@/lib/today/setupDiscoveryData";
 import type {
+  SetupDiscoveryCandidate,
   RankedSetupItem,
 } from "@/lib/today/setupDiscovery";
 import { rankSetupCandidates } from "@/lib/today/setupDiscovery";
@@ -149,6 +150,86 @@ function toWatchIdea(
   };
 }
 
+function toFallbackIdea(
+  candidate: SetupDiscoveryCandidate,
+  bucket: Extract<StockIdea["bucket"], "emerging" | "watch">,
+  pulseMap: Record<string, TickerNewsPulse>
+): StockIdea {
+  const ticker = normalizeTicker(candidate.ticker);
+  const conviction = Math.max(25, Math.min(79, Math.round(candidateActivityScore(candidate))));
+
+  return {
+    id: `fallback-${bucket}-${ticker}`,
+    ticker,
+    name: candidate.name?.trim() || ticker,
+    sector: candidate.sector?.trim() || "Market",
+    price: candidate.price ?? null,
+    changePercent: candidate.changePercent ?? null,
+    conviction,
+    thesis: buildFallbackThesis(candidate, bucket),
+    bucket,
+    badge: bucketBadge(bucket, conviction),
+    pulse: createPulse(ticker, pulseMap),
+  };
+}
+
+function candidateActivityScore(candidate: SetupDiscoveryCandidate): number {
+  const move = Math.abs(candidate.changePercent ?? 0);
+  const rvol = candidate.rvol ?? 0;
+  const volume = candidate.volume ?? 0;
+  const hasCatalyst =
+    Boolean(candidate.hasNews) ||
+    Boolean(candidate.hasEarnings) ||
+    Boolean(candidate.hasAnalystAction) ||
+    Boolean(candidate.hasSectorTailwind);
+
+  return move * 10 + rvol * 12 + volume / 1_000_000 + (hasCatalyst ? 8 : 0);
+}
+
+function buildFallbackThesis(
+  candidate: SetupDiscoveryCandidate,
+  bucket: Extract<StockIdea["bucket"], "emerging" | "watch">
+): string {
+  const catalyst =
+    candidate.hasEarnings
+      ? "Earnings catalyst"
+      : candidate.hasNews || candidate.hasAnalystAction
+        ? "News catalyst"
+        : candidate.hasSectorTailwind
+          ? "Sector tailwind"
+          : null;
+  const setup = candidate.setupLabel?.trim() || candidate.reason?.trim() || candidate.summary?.trim() || null;
+
+  if (setup && catalyst) {
+    return `${setup}. ${catalyst}.`;
+  }
+
+  if (setup) {
+    return setup;
+  }
+
+  return bucket === "emerging"
+    ? "Scanner activity is building, but the setup has not cleared the higher-conviction rank threshold yet."
+    : "Keep this name on watch while price, volume, and catalyst conditions develop.";
+}
+
+function buildFallbackCandidateIdeas(
+  candidates: SetupDiscoveryCandidate[],
+  excludedTickers: Set<string>,
+  bucket: Extract<StockIdea["bucket"], "emerging" | "watch">,
+  pulseMap: Record<string, TickerNewsPulse>,
+  limit: number
+): StockIdea[] {
+  return candidates
+    .filter((candidate) => {
+      const ticker = normalizeTicker(candidate.ticker);
+      return Boolean(ticker) && !excludedTickers.has(ticker);
+    })
+    .sort((left, right) => candidateActivityScore(right) - candidateActivityScore(left))
+    .slice(0, limit)
+    .map((candidate) => toFallbackIdea(candidate, bucket, pulseMap));
+}
+
 export default async function StocksPage() {
   const discovery = await getSetupDiscoveryData({
     signalLimit: STOCKS_SIGNAL_LIMIT,
@@ -173,11 +254,28 @@ export default async function StocksPage() {
   )
     .slice(0, 8);
 
+  const fallbackEmergingCandidates =
+    discovery.emerging.length > 0
+      ? []
+      : buildFallbackCandidateIdeas(discovery.candidates, new Set(scannerTickers), "emerging", {}, 4);
+
+  const watchExclusionTickers = new Set([
+    ...scannerTickers,
+    ...fallbackEmergingCandidates.map((idea) => normalizeTicker(idea.ticker)),
+  ]);
+
+  const fallbackWatchIdeas =
+    watchCandidates.length > 0
+      ? []
+      : buildFallbackCandidateIdeas(discovery.candidates, watchExclusionTickers, "watch", {}, 4);
+
   const tickers = Array.from(
     new Set([
       ...discovery.top.map((item) => normalizeTicker(item.ticker)),
       ...discovery.emerging.map((item) => normalizeTicker(item.ticker)),
       ...watchCandidates.map((item) => normalizeTicker(item.ticker)),
+      ...fallbackEmergingCandidates.map((idea) => normalizeTicker(idea.ticker)),
+      ...fallbackWatchIdeas.map((idea) => normalizeTicker(idea.ticker)),
     ])
   );
 
@@ -193,10 +291,20 @@ export default async function StocksPage() {
 
   const ideas: StockIdea[] = [
     ...discovery.top.slice(0, 3).map((item) => toRankedIdea(item, pulseMap)),
-    ...discovery.emerging
-      .slice(0, 4)
-      .map((item) => toRankedIdea(item, pulseMap)),
-    ...watchCandidates.slice(0, 4).map((item) => toWatchIdea(item, pulseMap)),
+    ...(discovery.emerging.length > 0
+      ? discovery.emerging
+          .slice(0, 4)
+          .map((item) => toRankedIdea(item, pulseMap))
+      : fallbackEmergingCandidates.map((idea) => ({
+          ...idea,
+          pulse: createPulse(idea.ticker, pulseMap),
+        }))),
+    ...(watchCandidates.length > 0
+      ? watchCandidates.slice(0, 4).map((item) => toWatchIdea(item, pulseMap))
+      : fallbackWatchIdeas.map((idea) => ({
+          ...idea,
+          pulse: createPulse(idea.ticker, pulseMap),
+        }))),
   ];
 
   return <StocksPageClient ideas={ideas} />;

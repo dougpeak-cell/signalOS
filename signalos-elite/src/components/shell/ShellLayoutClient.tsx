@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SelectedSignalProvider } from "@/components/chart/SelectedSignalContext";
+import { LiveMarketProvider } from "@/components/market/LiveMarketProvider";
 import MarketPulseStrip from "@/components/market/MarketPulseStrip";
 import BreakingNewsTicker from "@/components/news/BreakingNewsTicker";
 import MarketDataDebugOverlay from "@/components/dev/MarketDataDebugOverlay";
@@ -238,10 +239,11 @@ function ShellLayoutContent({
 
   return (
     <SelectedSignalProvider>
-      <SigiPanelProvider>
-        <ShellMarketContextProvider
-          value={shellMarketContextValue}
-        >
+      <LiveMarketProvider>
+        <SigiPanelProvider>
+          <ShellMarketContextProvider
+            value={shellMarketContextValue}
+          >
           <SigiUpgradeAnalyticsBridge />
           <div
             className={[
@@ -369,8 +371,9 @@ function ShellLayoutContent({
           {!shouldUseCompactShell ? <SigiMiniPanel /> : null}
           <MobileSigiSheet forceDesktopPreview={shouldUseCompactShell} />
           {shouldShowMobileBottomNav ? <MobileBottomNav forceVisible={shouldUseCompactShell} /> : null}
-        </ShellMarketContextProvider>
-      </SigiPanelProvider>
+          </ShellMarketContextProvider>
+        </SigiPanelProvider>
+      </LiveMarketProvider>
     </SelectedSignalProvider>
   );
 }
