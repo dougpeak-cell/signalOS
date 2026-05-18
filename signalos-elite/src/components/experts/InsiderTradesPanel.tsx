@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import type { SigiAnalystLeader } from "@/components/experts/SigiAnalystLeaders";
 
 type InsiderTradeRow = {
   symbol: string;
@@ -97,6 +99,94 @@ function flagClasses(tone: SigiFlag["tone"]) {
   return "border-cyan-400/20 bg-cyan-400/8 text-cyan-100";
 }
 
+function getRowToneChips(row: InsiderTradeRow) {
+  const chips: Array<{ label: string; className: string }> = [];
+
+  if (row.sector) {
+    chips.push({
+      label: row.sector,
+      className: "border-cyan-400/20 bg-cyan-400/8 text-cyan-100",
+    });
+  }
+
+  if (row.amountPurchased != null && row.amountPurchased >= 1_000_000) {
+    chips.push({
+      label: "Large Buy",
+      className: "border-amber-300/20 bg-amber-300/8 text-amber-100",
+    });
+  }
+
+  if ((row.purchaserTitle ?? "").toLowerCase().includes("director")) {
+    chips.push({
+      label: "Director",
+      className: "border-emerald-400/20 bg-emerald-400/8 text-emerald-100",
+    });
+  } else if ((row.purchaserTitle ?? "").toLowerCase().includes("officer")) {
+    chips.push({
+      label: "Officer",
+      className: "border-fuchsia-400/20 bg-fuchsia-400/8 text-fuchsia-100",
+    });
+  } else if ((row.purchaserTitle ?? "").toLowerCase().includes("10 percent owner")) {
+    chips.push({
+      label: "10% Owner",
+      className: "border-orange-300/20 bg-orange-300/8 text-orange-100",
+    });
+  }
+
+  return chips;
+}
+
+function normalizeSymbol(value: string) {
+  const match = value.toUpperCase().match(/[A-Z]{1,5}/);
+  return match ? match[0] : value.trim().toUpperCase();
+}
+
+function buildLeaderMatchSet(leader: SigiAnalystLeader | null) {
+  if (!leader) return new Set<string>();
+
+  const values = [leader.strongestCall, leader.mostRecentPick, ...(leader.coveredNames ?? [])]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .map(normalizeSymbol);
+
+  return new Set(values);
+}
+
+function getAnalystLeaderMatchLabel(row: InsiderTradeRow, leader: SigiAnalystLeader | null) {
+  if (!leader) return null;
+
+  const matches = buildLeaderMatchSet(leader);
+  if (!matches.has(row.symbol)) return null;
+
+  const strongestCall = normalizeSymbol(leader.strongestCall);
+  if (row.symbol === strongestCall) {
+    return "Strongest Call Match";
+  }
+
+  return "Leader Coverage Match";
+}
+
+function compareRowsByLeaderCorrelation(
+  left: InsiderTradeRow,
+  right: InsiderTradeRow,
+  leader: SigiAnalystLeader | null
+) {
+  const matches = buildLeaderMatchSet(leader);
+  const leftMatch = Number(matches.has(left.symbol));
+  const rightMatch = Number(matches.has(right.symbol));
+
+  if (rightMatch !== leftMatch) {
+    return rightMatch - leftMatch;
+  }
+
+  const rightDate = Date.parse(right.transactionDate ?? right.filingDate ?? "") || 0;
+  const leftDate = Date.parse(left.transactionDate ?? left.filingDate ?? "") || 0;
+  if (rightDate !== leftDate) {
+    return rightDate - leftDate;
+  }
+
+  return (right.amountPurchased ?? -1) - (left.amountPurchased ?? -1);
+}
+
 function formatCurrency(value: number | null) {
   if (value == null || !Number.isFinite(value)) return "—";
 
@@ -129,7 +219,13 @@ function formatDate(value: string | null) {
   }).format(new Date(parsed));
 }
 
-export default function InsiderTradesPanel({ selectedSector = "All" }: { selectedSector?: string }) {
+export default function InsiderTradesPanel({
+  selectedSector = "All",
+  analystLeader,
+}: {
+  selectedSector?: string;
+  analystLeader?: SigiAnalystLeader | null;
+}) {
   const [rows, setRows] = useState<InsiderTradeRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -181,7 +277,27 @@ export default function InsiderTradesPanel({ selectedSector = "All" }: { selecte
     };
   }, [selectedSector]);
 
-  const flags = buildSigiFlags(rows);
+  const orderedRows = useMemo(
+    () => [...rows].sort((left, right) => compareRowsByLeaderCorrelation(left, right, analystLeader ?? null)),
+    [analystLeader, rows]
+  );
+  const leaderOverlapCount = useMemo(() => {
+    const matches = buildLeaderMatchSet(analystLeader ?? null);
+    return orderedRows.filter((row) => matches.has(row.symbol)).length;
+  }, [analystLeader, orderedRows]);
+  const flags = useMemo(() => {
+    const nextFlags = buildSigiFlags(orderedRows);
+
+    if (analystLeader && leaderOverlapCount > 0) {
+      nextFlags.unshift({
+        label: "Analyst Alignment",
+        detail: `${leaderOverlapCount} insider row${leaderOverlapCount === 1 ? " aligns" : "s align"} with ${analystLeader.analyst}'s current leadership basket.`,
+        tone: "cyan",
+      });
+    }
+
+    return nextFlags;
+  }, [analystLeader, leaderOverlapCount, orderedRows]);
 
   return (
     <section className="rounded-[28px] border border-white/10 bg-black/30 p-5 shadow-[0_0_28px_rgba(255,255,255,0.03)]">
@@ -222,7 +338,7 @@ export default function InsiderTradesPanel({ selectedSector = "All" }: { selecte
             <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-200/80">
               SIGI Summary
             </div>
-            <p className="mt-2 text-sm leading-6 text-white/80">{buildSigiSummary(rows)}</p>
+            <p className="mt-2 text-sm leading-6 text-white/80">{buildSigiSummary(orderedRows)}</p>
           </div>
 
           {flags.length > 0 ? (
@@ -241,7 +357,10 @@ export default function InsiderTradesPanel({ selectedSector = "All" }: { selecte
             </div>
           ) : null}
 
-          {rows.map((row) => (
+          {orderedRows.map((row) => {
+            const leaderMatchLabel = getAnalystLeaderMatchLabel(row, analystLeader ?? null);
+
+            return (
             <article
               key={`${row.symbol}-${row.purchaserName}-${row.transactionDate}`}
               className="rounded-2xl border border-white/10 bg-white/3 p-4"
@@ -257,9 +376,26 @@ export default function InsiderTradesPanel({ selectedSector = "All" }: { selecte
                     </div>
                     <div className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200/80">
                       {row.symbol}
-                      {row.sector ? ` · ${row.sector}` : ""}
                     </div>
                   </Link>
+
+                  {getRowToneChips(row).length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {leaderMatchLabel ? (
+                        <span className="rounded-full border border-cyan-300/30 bg-cyan-300/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100">
+                          {leaderMatchLabel}
+                        </span>
+                      ) : null}
+                      {getRowToneChips(row).map((chip) => (
+                        <span
+                          key={`${row.symbol}-${chip.label}`}
+                          className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${chip.className}`}
+                        >
+                          {chip.label}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
@@ -297,7 +433,8 @@ export default function InsiderTradesPanel({ selectedSector = "All" }: { selecte
                 ) : null}
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>

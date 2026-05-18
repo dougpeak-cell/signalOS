@@ -1,6 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+export type SigiAnalystLeader = {
+  analyst: string;
+  firm: string;
+  sector: string;
+  successRate: string;
+  avgReturn: string;
+  coveredNames: string[];
+  mostRecentPick: string;
+  strongestCall: string;
+  reason: string;
+  risk: string;
+};
 
 const sectors = [
   "Technology",
@@ -16,7 +29,7 @@ const sectors = [
   "Basic Materials",
 ];
 
-const mockLeaders: Record<string, any> = {
+const mockLeaders: Record<string, SigiAnalystLeader> = {
   Technology: {
     analyst: "Sigi AI Leader",
     firm: "SigiOS Analyst Flow",
@@ -47,13 +60,19 @@ const mockLeaders: Record<string, any> = {
   },
 };
 
-export default function SigiAnalystLeaders() {
+export default function SigiAnalystLeaders({
+  selectedSector,
+  onLeaderChange,
+}: {
+  selectedSector?: string;
+  onLeaderChange?: (leader: SigiAnalystLeader | null) => void;
+}) {
   const [activeSector, setActiveSector] = useState("Technology");
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [aiLeader, setAiLeader] = useState<any | null>(null);
+  const [aiLeader, setAiLeader] = useState<SigiAnalystLeader | null>(null);
 
-  const fallbackLeader = {
+  const fallbackLeader: SigiAnalystLeader = {
     analyst: "Sigi AI Leader",
     firm: "SigiOS Analyst Flow",
     sector: activeSector,
@@ -70,6 +89,19 @@ export default function SigiAnalystLeaders() {
   const leader = useMemo(() => {
     return aiLeader ?? mockLeaders[activeSector] ?? fallbackLeader;
   }, [activeSector, aiLeader]);
+
+  useEffect(() => {
+    onLeaderChange?.(leader);
+  }, [leader, onLeaderChange]);
+
+  useEffect(() => {
+    if (!selectedSector || selectedSector === "All" || selectedSector === activeSector) {
+      return;
+    }
+
+    setInput(selectedSector);
+    void requestAnalystLeader(selectedSector);
+  }, [activeSector, selectedSector]);
 
   const displayAnalyst = isDisclosureHidden(leader.analyst)
     ? "Sigi Sector Leader"
@@ -103,8 +135,9 @@ export default function SigiAnalystLeaders() {
       });
 
       const data = await res.json();
+      const nextLeader = (data.intelligence ?? data.thesis ?? data) as SigiAnalystLeader;
 
-      setAiLeader(data.intelligence ?? data.thesis ?? data);
+      setAiLeader(nextLeader);
     } catch (error) {
       console.error("Sigi analyst leader error:", error);
       setAiLeader(null);

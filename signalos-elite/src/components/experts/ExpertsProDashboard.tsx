@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import ActiveExpertSignals from "@/components/experts/ActiveExpertSignals";
 import InsiderTradesPanel from "@/components/experts/InsiderTradesPanel";
-import SigiAnalystLeaders from "@/components/experts/SigiAnalystLeaders";
+import SigiAnalystLeaders, { type SigiAnalystLeader } from "@/components/experts/SigiAnalystLeaders";
 
 type ExpertConviction = {
   ticker: string;
@@ -511,6 +511,7 @@ export default function ExpertsPage() {
   const [fmpLoadError, setFmpLoadError] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [selectedExpertSector, setSelectedExpertSector] = useState("All");
+  const [currentAnalystLeader, setCurrentAnalystLeader] = useState<SigiAnalystLeader | null>(null);
 
   const expertSectorTabs = ["All", ...Object.keys(fmpSectorRows)];
   const modelRows = useMemo(
@@ -840,11 +841,17 @@ export default function ExpertsPage() {
               </div>
 
               <div id="sigi-analyst-leaders" className="mt-6 scroll-mt-28">
-                <SigiAnalystLeaders />
+                <SigiAnalystLeaders
+                  selectedSector={selectedExpertSector}
+                  onLeaderChange={setCurrentAnalystLeader}
+                />
               </div>
 
               <div className="mt-6">
-                <InsiderTradesPanel selectedSector={selectedExpertSector} />
+                <InsiderTradesPanel
+                  selectedSector={selectedExpertSector}
+                  analystLeader={currentAnalystLeader}
+                />
               </div>
             </div>
           </div>
