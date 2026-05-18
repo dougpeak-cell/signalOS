@@ -357,7 +357,7 @@ function ShellLayoutContent({
                 >
                   <div className="min-w-0 flex-1">{children}</div>
                   {!hideShellRightRail && !shouldUseCompactShell ? (
-                    <div className="hidden md:block md:pl-2 xl:pl-3">
+                    <div className="hidden md:block md:pl-3 xl:pl-4">
                       <ContextAwareRightRail />
                     </div>
                   ) : null}
