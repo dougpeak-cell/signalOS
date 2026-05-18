@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
@@ -54,6 +54,8 @@ export default function CryptoPortfolioPageClient() {
   const [quantity, setQuantity] = useState("1");
   const [entryPrice, setEntryPrice] = useState("");
   const [error, setError] = useState("");
+  const formPanelRef = useRef<HTMLDivElement | null>(null);
+  const symbolInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const sync = () => setHoldings(readCryptoPortfolio());
@@ -184,6 +186,29 @@ export default function CryptoPortfolioPageClient() {
     setError("");
   };
 
+  const startEditing = (row: {
+    symbol: string;
+    quantity: number;
+    entryPrice: number;
+  }) => {
+    setSymbol(row.symbol);
+    setQuantity(String(row.quantity));
+    setEntryPrice(String(row.entryPrice));
+    setError("");
+
+    window.requestAnimationFrame(() => {
+      formPanelRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+
+      window.setTimeout(() => {
+        symbolInputRef.current?.focus();
+        symbolInputRef.current?.select();
+      }, 180);
+    });
+  };
+
   if (!canUseCrypto) {
     return <LockedCryptoExperience />;
   }
@@ -223,11 +248,12 @@ export default function CryptoPortfolioPageClient() {
           </div>
 
           <div className={isMobilePreview ? "mt-4 space-y-3" : "mt-5 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]"}>
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+            <div ref={formPanelRef} className="rounded-2xl border border-white/10 bg-black/25 p-4">
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300/78">Add Or Update Position</div>
               <div className="mt-3 grid gap-3 md:grid-cols-[1fr_120px_140px_auto]">
                 <div className="relative">
                   <input
+                    ref={symbolInputRef}
                     value={symbol}
                     onChange={(event) => setSymbol(event.target.value)}
                     onKeyDown={(event) => {
@@ -371,12 +397,7 @@ export default function CryptoPortfolioPageClient() {
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button
-                        onClick={() => {
-                          setSymbol(row.symbol);
-                          setQuantity(String(row.quantity));
-                          setEntryPrice(String(row.entryPrice));
-                          setError("");
-                        }}
+                        onClick={() => startEditing(row)}
                         className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
                       >
                         Edit
