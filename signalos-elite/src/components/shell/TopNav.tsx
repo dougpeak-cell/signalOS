@@ -333,7 +333,7 @@ export default function TopNav({
                   : "border-white/10 bg-white/4 text-white/70 hover:bg-white/8 hover:text-white",
               ].join(" ")}
             >
-              {isMobilePreviewEnabled ? "Desktop Preview" : "Mobile Preview"}
+              {isMobilePreviewEnabled ? "Mobile Preview On" : "Mobile Preview Off"}
             </button>
           ) : null}
 
