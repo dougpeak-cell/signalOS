@@ -691,6 +691,10 @@ function isActiveCryptoAttachment(
 function buildCryptoModel(
   route: Extract<RouteContext, { page: "crypto" }>
 ): RightRailContextModel {
+  const boardActive = route.section === "front";
+  const watchlistActive = route.section === "watchlist";
+  const portfolioActive = route.section === "portfolio";
+
   return {
     eyebrow: "SigiOS",
     title: "Command Rail",
@@ -699,25 +703,25 @@ function buildCryptoModel(
         title: "Quick Access",
         items: [
           {
-            label: "Today",
-            value: "Front page",
-            tone: "accent",
-            statusDot: "accent",
-            href: "/",
+            label: "Crypto",
+            value: "Main board",
+            tone: boardActive ? "accent" : "default",
+            statusDot: boardActive ? "accent" : "default",
+            href: "/crypto",
           },
           {
             label: "Watchlist",
-            value: "Tracked names",
-            tone: "default",
-            statusDot: "default",
-            href: "/watchlist",
+            value: "Tracked coins",
+            tone: watchlistActive ? "accent" : "default",
+            statusDot: watchlistActive ? "accent" : "default",
+            href: "/crypto/watchlist",
           },
           {
             label: "Portfolio",
-            value: "Risk + P/L",
-            tone: "default",
-            statusDot: "default",
-            href: "/portfolio",
+            value: "Holdings + P/L",
+            tone: portfolioActive ? "accent" : "default",
+            statusDot: portfolioActive ? "accent" : "default",
+            href: "/crypto/portfolio",
           },
         ],
       },
@@ -898,11 +902,11 @@ export function buildRightRailShellModel(route: RouteContext): RightRailContextM
       sections: [
         {
           title: "Quick Access",
-          items: buildShellItems(["Today", "Watchlist", "Portfolio"]),
+          items: buildShellItems(["Crypto", "Watchlist", "Portfolio"]),
         },
         {
           title: "Page Attachments",
-          items: buildShellItems(["Crypto", "Meme", "DeFi", "RWA"]),
+          items: buildShellItems(["Crypto", "News", "Meme", "DeFi", "RWA"]),
         },
       ],
     };

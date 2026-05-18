@@ -27,7 +27,7 @@ export type RouteContext =
     }
   | {
       page: "crypto";
-      section: "front" | "news" | "meme" | "defi" | "rwa";
+      section: "front" | "news" | "meme" | "defi" | "rwa" | "watchlist" | "portfolio";
       ticker?: string;
     }
   | {
@@ -57,12 +57,14 @@ function normalizeRegime(value: string | null | undefined): "bullish" | "neutral
 
 function normalizeCryptoSection(
   value: string | null | undefined
-): "front" | "news" | "meme" | "defi" | "rwa" {
+): "front" | "news" | "meme" | "defi" | "rwa" | "watchlist" | "portfolio" {
   const v = normalizeLower(value);
   if (v === "/crypto/news" || v === "news") return "news";
   if (v === "/crypto/meme" || v === "meme") return "meme";
   if (v === "/crypto/defi" || v === "defi") return "defi";
   if (v === "/crypto/rwa" || v === "rwa") return "rwa";
+  if (v === "/crypto/watchlist" || v === "watchlist") return "watchlist";
+  if (v === "/crypto/portfolio" || v === "portfolio") return "portfolio";
   return "front";
 }
 
@@ -89,20 +91,6 @@ export function useRouteContext(): RouteContext {
       };
     }
 
-    if (path.includes("/watchlist")) {
-      return {
-        page: "watchlist" as const,
-        view: normalize(searchParams.get("view")),
-      };
-    }
-
-    if (path.includes("/portfolio")) {
-      return {
-        page: "portfolio" as const,
-        view: normalize(searchParams.get("view")),
-      };
-    }
-
     if (path.includes("/experts")) {
       return {
         page: "experts" as const,
@@ -123,10 +111,38 @@ export function useRouteContext(): RouteContext {
       };
     }
 
+    if (path === "/crypto/watchlist") {
+      return {
+        page: "crypto" as const,
+        section: "watchlist",
+      };
+    }
+
+    if (path === "/crypto/portfolio") {
+      return {
+        page: "crypto" as const,
+        section: "portfolio",
+      };
+    }
+
     if (path === "/crypto/meme" || path === "/crypto/defi" || path === "/crypto/rwa") {
       return {
         page: "crypto" as const,
         section: normalize(path.split("/")[2]) as "meme" | "defi" | "rwa",
+      };
+    }
+
+    if (path.includes("/watchlist")) {
+      return {
+        page: "watchlist" as const,
+        view: normalize(searchParams.get("view")),
+      };
+    }
+
+    if (path.includes("/portfolio")) {
+      return {
+        page: "portfolio" as const,
+        view: normalize(searchParams.get("view")),
       };
     }
 

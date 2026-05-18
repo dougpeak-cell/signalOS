@@ -7,6 +7,10 @@ import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiv
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { useCryptoStream } from "@/hooks/useCryptoStream";
+import {
+  addCryptoWatchlistSymbol,
+  upsertCryptoPortfolioHolding,
+} from "@/lib/crypto/storage";
 import { MARKET_TIME_ABBR, formatMarketClockTimeMs } from "@/lib/marketTime";
 
 type Candle = {
@@ -772,19 +776,23 @@ const CRYPTO_IDENTITY: Record<
   },
 };
 
-function normalizeCryptoSource(value: string | null): "/crypto" | "/crypto/news" | "/crypto/meme" | "/crypto/defi" | "/crypto/rwa" {
+function normalizeCryptoSource(value: string | null): "/crypto" | "/crypto/news" | "/crypto/meme" | "/crypto/defi" | "/crypto/rwa" | "/crypto/watchlist" | "/crypto/portfolio" {
   if (value === "/crypto/news") return "/crypto/news";
   if (value === "/crypto/meme") return "/crypto/meme";
   if (value === "/crypto/defi") return "/crypto/defi";
   if (value === "/crypto/rwa") return "/crypto/rwa";
+  if (value === "/crypto/watchlist") return "/crypto/watchlist";
+  if (value === "/crypto/portfolio") return "/crypto/portfolio";
   return "/crypto";
 }
 
-function buildCryptoBackLabel(sourcePath: "/crypto" | "/crypto/news" | "/crypto/meme" | "/crypto/defi" | "/crypto/rwa") {
+function buildCryptoBackLabel(sourcePath: "/crypto" | "/crypto/news" | "/crypto/meme" | "/crypto/defi" | "/crypto/rwa" | "/crypto/watchlist" | "/crypto/portfolio") {
   if (sourcePath === "/crypto/news") return "Back to Crypto News";
   if (sourcePath === "/crypto/meme") return "Back to Meme Board";
   if (sourcePath === "/crypto/defi") return "Back to DeFi Board";
   if (sourcePath === "/crypto/rwa") return "Back to RWA Board";
+  if (sourcePath === "/crypto/watchlist") return "Back to Crypto Watchlist";
+  if (sourcePath === "/crypto/portfolio") return "Back to Crypto Portfolio";
   return "Back to Crypto";
 }
 
@@ -1453,6 +1461,7 @@ export default function CryptoDetailPage() {
   const [interval, setIntervalValue] = useState<CryptoIntervalKey>("5m");
   const [liveMode, setLiveMode] = useState(false);
   const [feed, setFeed] = useState<Trade[]>([]);
+  const [actionFeedback, setActionFeedback] = useState<string>("");
 
   const selectedInterval =
     CRYPTO_INTERVAL_OPTIONS.find((option) => option.key === interval) ?? CRYPTO_INTERVAL_OPTIONS[1];
@@ -1525,6 +1534,34 @@ export default function CryptoDetailPage() {
   const flow = orderFlowHeat(feed);
   const spike = volumeSpike(feed);
   const direction = spikeDirection(feed);
+
+  const showActionFeedback = (message: string) => {
+    setActionFeedback(message);
+    window.setTimeout(() => {
+      setActionFeedback((current) => (current === message ? "" : current));
+    }, 1800);
+  };
+
+  const addToWatchlist = () => {
+    addCryptoWatchlistSymbol(ticker);
+    showActionFeedback("Added to crypto watchlist");
+  };
+
+  const addToPortfolio = () => {
+    const entryPrice = displayPrice ?? snapshot?.price ?? null;
+    if (entryPrice == null || entryPrice <= 0) {
+      showActionFeedback("Live price required");
+      return;
+    }
+
+    upsertCryptoPortfolioHolding({
+      symbol: ticker,
+      name: identity?.name ?? snapshot?.name ?? ticker,
+      quantity: 1,
+      entryPrice,
+    });
+    showActionFeedback("Added to crypto portfolio");
+  };
 
   if (!canUseCrypto) {
     return (
@@ -1602,6 +1639,27 @@ export default function CryptoDetailPage() {
             </p>
 
             <CryptoIdentityPanel identity={identity} ticker={ticker} compact={isMobilePreview} />
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={addToWatchlist}
+                className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-white/78 transition hover:bg-white/8"
+              >
+                Add to Crypto Watchlist
+              </button>
+              <button
+                type="button"
+                onClick={addToPortfolio}
+                className="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
+              >
+                Add to Crypto Portfolio
+              </button>
+            </div>
+
+            {actionFeedback ? (
+              <div className="mt-3 text-xs font-semibold text-cyan-200">{actionFeedback}</div>
+            ) : null}
           </div>
 
           <div className={[

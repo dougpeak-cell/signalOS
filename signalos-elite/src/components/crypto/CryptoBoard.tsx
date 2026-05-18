@@ -8,6 +8,10 @@ import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiv
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import type { CryptoBoardConfig } from "@/lib/crypto/catalog";
+import {
+  addCryptoWatchlistSymbol,
+  upsertCryptoPortfolioHolding,
+} from "@/lib/crypto/storage";
 import { buildSparklinePath } from "@/lib/market/sparkline";
 
 type CryptoRow = {
@@ -121,6 +125,7 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
   const [customTickers, setCustomTickers] = useState<string[]>([]);
   const [sortMode, setSortMode] = useState<CryptoBoardSortMode>("default");
   const [filterMode, setFilterMode] = useState<CryptoBoardFilterMode>("all");
+  const [actionFeedback, setActionFeedback] = useState<Record<string, string>>({});
   const [leaderSparks, setLeaderSparks] = useState<CryptoSparklineMap>(
     () => ({ ...cryptoLeaderSparkCache })
   );
@@ -343,6 +348,39 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
     return `/crypto/${symbol}?${params.toString()}`;
   };
 
+  const setFeedback = (symbol: string, message: string) => {
+    setActionFeedback((current) => ({ ...current, [symbol]: message }));
+
+    window.setTimeout(() => {
+      setActionFeedback((current) => {
+        if (current[symbol] !== message) return current;
+        const next = { ...current };
+        delete next[symbol];
+        return next;
+      });
+    }, 1800);
+  };
+
+  const addToCryptoWatchlist = (symbol: string) => {
+    addCryptoWatchlistSymbol(symbol);
+    setFeedback(symbol, "Added to crypto watchlist");
+  };
+
+  const addToCryptoPortfolio = (row: CryptoRow) => {
+    if (row.price == null || row.price <= 0) {
+      setFeedback(row.symbol, "Live price required");
+      return;
+    }
+
+    upsertCryptoPortfolioHolding({
+      symbol: row.symbol,
+      name: row.name,
+      quantity: 1,
+      entryPrice: row.price,
+    });
+    setFeedback(row.symbol, "Added to crypto portfolio");
+  };
+
   if (!canUseCrypto) {
     return <LockedCryptoExperience />;
   }
@@ -470,15 +508,14 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
             const sparkPath = buildSparklinePath(leaderSparks[row.symbol] ?? [], 240, 56);
 
             return (
-              <Link
+              <article
                 key={row.ticker}
-                href={buildCryptoHref(row.symbol)}
-                className={`block rounded-3xl border border-white/10 bg-linear-to-br from-[#0b1220] to-[#05080f] p-5 shadow-[0_0_30px_rgba(0,255,200,0.05)] transition hover:border-cyan-400/30 ${glow}`}
+                className={`rounded-3xl border border-white/10 bg-linear-to-br from-[#0b1220] to-[#05080f] p-5 shadow-[0_0_30px_rgba(0,255,200,0.05)] transition hover:border-cyan-400/30 ${glow}`}
               >
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="text-xs uppercase tracking-[0.18em] text-white/40">{row.name}</div>
-                    <div className="mt-1 text-2xl font-semibold">{row.symbol}</div>
+                    <Link href={buildCryptoHref(row.symbol)} className="mt-1 block text-2xl font-semibold text-white transition hover:text-cyan-100">{row.symbol}</Link>
                   </div>
 
                   <div
@@ -536,7 +573,31 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
                   <span>Vol {volume(row.volume)}</span>
                   <span>{sigiRead(row)}</span>
                 </div>
-              </Link>
+
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => addToCryptoWatchlist(row.symbol)}
+                    className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-white/78 transition hover:bg-white/8"
+                  >
+                    Add to Watchlist
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => addToCryptoPortfolio(row)}
+                    className="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
+                  >
+                    Add to Portfolio
+                  </button>
+                  <Link href={buildCryptoHref(row.symbol)} className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20">
+                    Open
+                  </Link>
+                </div>
+
+                {actionFeedback[row.symbol] ? (
+                  <div className="mt-3 text-xs font-semibold text-cyan-200">{actionFeedback[row.symbol]}</div>
+                ) : null}
+              </article>
             );
           })}
         </section>
@@ -787,11 +848,31 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
                     <span className="rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs text-white/65">
                       {sigiRead(row)}
                     </span>
+                  </div>
 
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => addToCryptoWatchlist(row.symbol)}
+                      className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-semibold text-white/78 transition hover:bg-white/8"
+                    >
+                      Add to Watchlist
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => addToCryptoPortfolio(row)}
+                      className="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
+                    >
+                      Add to Portfolio
+                    </button>
                     <Link href={buildCryptoHref(row.symbol)} className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20">
                       Open
                     </Link>
                   </div>
+
+                  {actionFeedback[row.symbol] ? (
+                    <div className="mt-3 text-xs font-semibold text-cyan-200">{actionFeedback[row.symbol]}</div>
+                  ) : null}
                 </div>
               );
             })}
@@ -809,7 +890,7 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
                     <th className="px-4 py-3 text-right">High</th>
                     <th className="px-4 py-3 text-right">Low</th>
                     <th className="px-4 py-3 text-left">Sigi Read</th>
-                    <th className="px-4 py-3 text-right">Chart</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
 
@@ -836,9 +917,28 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
                           </span>
                         </td>
                         <td className="px-4 py-4 text-right">
-                          <Link href={buildCryptoHref(row.symbol)} className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20">
-                            Open
-                          </Link>
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => addToCryptoWatchlist(row.symbol)}
+                              className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-semibold text-white/78 transition hover:bg-white/8"
+                            >
+                              Watchlist
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => addToCryptoPortfolio(row)}
+                              className="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
+                            >
+                              Portfolio
+                            </button>
+                            <Link href={buildCryptoHref(row.symbol)} className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20">
+                              Open
+                            </Link>
+                          </div>
+                          {actionFeedback[row.symbol] ? (
+                            <div className="mt-2 text-xs font-semibold text-cyan-200">{actionFeedback[row.symbol]}</div>
+                          ) : null}
                         </td>
                       </tr>
                     );
