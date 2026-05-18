@@ -392,7 +392,7 @@ export default function ContextAwareRightRail() {
   }, [cryptoNewsPreview, liveSparklines, model, route.page]);
 
   return (
-    <aside className="w-75 max-w-full space-y-2.5 xl:w-80 2xl:w-83">
+    <aside className="space-y-2.5">
       <section className="rounded-3xl border border-white/10 bg-white/3 p-3 shadow-[0_10px_36px_rgba(0,0,0,0.22)] backdrop-blur-xl">
         <div className="text-[9px] uppercase tracking-[0.2em] text-white/35">
           {enhancedModel.eyebrow}
