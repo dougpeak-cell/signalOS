@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import ActiveExpertSignals from "@/components/experts/ActiveExpertSignals";
+import InsiderTradesPanel from "@/components/experts/InsiderTradesPanel";
 import SigiAnalystLeaders from "@/components/experts/SigiAnalystLeaders";
 
 type ExpertConviction = {
@@ -840,6 +841,10 @@ export default function ExpertsPage() {
 
               <div id="sigi-analyst-leaders" className="mt-6 scroll-mt-28">
                 <SigiAnalystLeaders />
+              </div>
+
+              <div className="mt-6">
+                <InsiderTradesPanel />
               </div>
             </div>
           </div>
