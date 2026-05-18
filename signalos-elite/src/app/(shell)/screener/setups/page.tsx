@@ -592,7 +592,10 @@ export default async function SetupsPage({
           </div>
         ) : null}
 
-        {view === "top" && session === "regular" && usingRegularTopFallback ? (
+        {view === "top" &&
+        session === "regular" &&
+        usingRegularTopFallback &&
+        direction === "bearish" ? (
           <div className="mt-4 rounded-2xl border border-amber-400/18 bg-amber-400/8 px-4 py-3 text-sm text-amber-50 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.05)]">
             No strict top setups cleared today. Showing ranked watch ideas for buy-the-dip, turnaround, and demand-zone monitoring instead.
           </div>
