@@ -1459,13 +1459,11 @@ export default function CryptoDetailPage() {
   const [candles, setCandles] = useState<Candle[]>([]);
   const [snapshot, setSnapshot] = useState<SnapshotRow | null>(null);
   const [interval, setIntervalValue] = useState<CryptoIntervalKey>("5m");
-  const [liveMode, setLiveMode] = useState(false);
   const [feed, setFeed] = useState<Trade[]>([]);
   const [actionFeedback, setActionFeedback] = useState<string>("");
 
   const selectedInterval =
     CRYPTO_INTERVAL_OPTIONS.find((option) => option.key === interval) ?? CRYPTO_INTERVAL_OPTIONS[1];
-  const activeInterval = liveMode ? CRYPTO_INTERVAL_OPTIONS[0] : selectedInterval;
 
   useEffect(() => {
     let alive = true;
@@ -1473,7 +1471,7 @@ export default function CryptoDetailPage() {
     async function load() {
       const [candleRes, snapshotRes, tradesRes] = await Promise.all([
         fetch(
-          `/api/crypto/candles?ticker=${ticker}&multiplier=${activeInterval.multiplier}&timespan=${activeInterval.timespan}&lookbackDays=${activeInterval.lookbackDays}`,
+          `/api/crypto/candles?ticker=${ticker}&multiplier=${selectedInterval.multiplier}&timespan=${selectedInterval.timespan}&lookbackDays=${selectedInterval.lookbackDays}`,
           {
           cache: "no-store",
           }
@@ -1515,13 +1513,13 @@ export default function CryptoDetailPage() {
 
     load();
 
-    const timer = window.setInterval(load, liveMode ? 1_000 : 30_000);
+    const timer = window.setInterval(load, 30_000);
 
     return () => {
       alive = false;
       window.clearInterval(timer);
     };
-  }, [activeInterval, liveMode, ticker]);
+  }, [selectedInterval, ticker]);
 
   const latest = candles.at(-1);
   const latestFeedPrice = feed.find((entry) => typeof entry.price === "number")?.price ?? null;
@@ -1644,7 +1642,7 @@ export default function CryptoDetailPage() {
               <button
                 type="button"
                 onClick={addToWatchlist}
-                className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-white/78 transition hover:bg-white/8"
+                className="rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs font-semibold text-white/78 transition hover:bg-white/8"
               >
                 Add to Crypto Watchlist
               </button>
@@ -1666,38 +1664,15 @@ export default function CryptoDetailPage() {
             "flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/4 p-2",
             isMobilePreview ? "w-full" : "",
           ].join(" ")}>
-            <button
-              onClick={() => {
-                setLiveMode(true);
-                setIntervalValue("1m");
-              }}
-              className={[
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition",
-                liveMode
-                  ? "bg-cyan-400/90 text-black shadow-[0_0_24px_rgba(34,211,238,0.35)]"
-                  : "text-white/70 hover:bg-white/10 hover:text-white",
-              ].join(" ")}
-            >
-              <span
-                className={[
-                  "h-2.5 w-2.5 rounded-full",
-                  liveMode
-                    ? "bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.9)] animate-pulse"
-                    : "bg-white/35",
-                ].join(" ")}
-              />
-              LIVE
-            </button>
             {CRYPTO_INTERVAL_OPTIONS.map((option) => (
               <button
                 key={option.key}
                 onClick={() => {
-                  setLiveMode(false);
                   setIntervalValue(option.key);
                 }}
                 className={[
                   "rounded-xl px-4 py-2 text-sm font-semibold transition",
-                  !liveMode && interval === option.key
+                  interval === option.key
                     ? "bg-cyan-400 text-black"
                     : "text-white/60 hover:bg-white/10 hover:text-white",
                 ].join(" ")}
