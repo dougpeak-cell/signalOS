@@ -631,6 +631,51 @@ function MetricCard({
   );
 }
 
+function buildTopMatchSummary(
+  rows: Array<{
+    ticker: string;
+    sector?: string | null;
+    masterScore?: number;
+    conviction?: number | null;
+    hasSignal?: boolean;
+  }>,
+  limit = 3
+): string {
+  const sortedRows = [...rows]
+    .filter((row) => row.hasSignal)
+    .sort(
+      (left, right) =>
+        (right.masterScore ?? right.conviction ?? 0) -
+        (left.masterScore ?? left.conviction ?? 0)
+    );
+
+  const seenSectors = new Set<string>();
+  const pickedTickers: string[] = [];
+
+  for (const row of sortedRows) {
+    const sector = (row.sector ?? "").trim().toLowerCase();
+    if (!sector || seenSectors.has(sector)) continue;
+
+    seenSectors.add(sector);
+    pickedTickers.push(row.ticker.toUpperCase());
+
+    if (pickedTickers.length >= limit) {
+      return pickedTickers.join(", ");
+    }
+  }
+
+  for (const row of sortedRows) {
+    const ticker = row.ticker.toUpperCase();
+    if (pickedTickers.includes(ticker)) continue;
+
+    pickedTickers.push(ticker);
+
+    if (pickedTickers.length >= limit) break;
+  }
+
+  return pickedTickers.join(", ");
+}
+
 export default async function ScreenerPage({
   searchParams,
 }: ScreenerPageProps) {
@@ -946,11 +991,17 @@ export default async function ScreenerPage({
   const eliteCount = allStocks.filter((row) => row.masterLabel === "Elite").length;
   const strongCount = allStocks.filter((row) => row.masterLabel === "Strong").length;
   const riskCount = allStocks.filter((row) => row.masterLabel === "Risk").length;
-  const filteredMatchTickers = filteredRows.map((row) => row.ticker.toUpperCase());
   const filteredMatchSummary =
-    filteredMatchTickers.length === 1
-      ? filteredMatchTickers[0]
-      : filteredMatchTickers.slice(0, 3).join(", ");
+    filteredRows.length === 1
+      ? filteredRows[0]?.ticker.toUpperCase() ?? ""
+      : buildTopMatchSummary(
+          allStocks.filter((row) =>
+            filteredRows.some(
+              (filteredRow) =>
+                filteredRow.ticker.toUpperCase() === row.ticker.toUpperCase()
+            )
+          )
+        );
 
   const avgScore =
     allStocks.length > 0
