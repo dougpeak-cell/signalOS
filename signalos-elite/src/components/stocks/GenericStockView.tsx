@@ -458,7 +458,7 @@ export default async function GenericStockView({
       thesis: null,
       catalysts: null,
       risks: null,
-      tier: "Signal",
+      tier: "Unrated",
       as_of_date: null,
       created_at: null,
       peRatio: null,
@@ -785,7 +785,7 @@ export default async function GenericStockView({
                   <div className="mt-3 text-sm text-white/70">
                     {row.tier
                       ? `${row.tier.charAt(0).toUpperCase() + row.tier.slice(1)}-tier`
-                      : "Signal"}{" "}
+                      : "Unrated"}{" "}
                     {row.sector ? row.sector.toLowerCase() : "company"} leader with
                     strong AI infrastructure demand.
                   </div>

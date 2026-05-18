@@ -58,7 +58,7 @@ function buildFallbackRow(ticker: string): SignalDetailRow {
       "No internal signal row yet. This workspace is rendering from live market data fallback.",
     catalysts: null,
     risks: null,
-    tier: "Signal",
+    tier: "Unrated",
     as_of_date: null,
     created_at: null,
   };

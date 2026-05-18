@@ -851,7 +851,7 @@ export default function StockTradingWorkspace({ data }: Props) {
               toneClassName={percentTone(initialChangePct)}
             />
             <WorkspaceMetric label="Conviction" value={`${normalizedConviction}%`} />
-            <WorkspaceMetric label="Signal Tier" value={row.tier ?? "Signal"} />
+            <WorkspaceMetric label="Signal Tier" value={row.tier ?? "Unrated"} />
           </div>
 
           <div className="mt-4 text-sm text-white/48">{modeMeta.description}</div>
