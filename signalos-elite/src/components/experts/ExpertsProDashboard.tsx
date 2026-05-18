@@ -844,7 +844,7 @@ export default function ExpertsPage() {
               </div>
 
               <div className="mt-6">
-                <InsiderTradesPanel />
+                <InsiderTradesPanel selectedSector={selectedExpertSector} />
               </div>
             </div>
           </div>

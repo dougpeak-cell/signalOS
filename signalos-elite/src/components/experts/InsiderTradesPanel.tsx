@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type InsiderTradeRow = {
   symbol: string;
   companyName: string;
+  sector: string | null;
   amountPurchased: number | null;
   sharesPurchased: number | null;
   transactionDate: string | null;
@@ -14,6 +16,12 @@ type InsiderTradeRow = {
   transactionType: string;
   securityName: string | null;
   filingUrl: string | null;
+};
+
+type SigiFlag = {
+  label: string;
+  detail: string;
+  tone: "cyan" | "emerald" | "amber";
 };
 
 function buildSigiSummary(rows: InsiderTradeRow[]) {
@@ -32,6 +40,61 @@ function buildSigiSummary(rows: InsiderTradeRow[]) {
   const leadingDate = formatDate(highestConvictionRow.transactionDate ?? highestConvictionRow.filingDate);
 
   return `Sigi is showing the 5 most recent insider purchases first. The most meaningful disclosed buy in this recent window is ${highestConvictionRow.companyName} (${highestConvictionRow.symbol}) by ${leadingBuyer} on ${leadingDate} because it carries the largest visible dollar commitment at ${leadingAmount}. Across this window, insider buying touched ${uniqueSymbols.length} company${uniqueSymbols.length === 1 ? "" : "ies"} starting ${formatDate(mostRecentDate)}.`;
+}
+
+function buildSigiFlags(rows: InsiderTradeRow[]) {
+  const flags: SigiFlag[] = [];
+
+  const companyCounts = new Map<string, number>();
+  const buyerCounts = new Map<string, number>();
+
+  for (const row of rows) {
+    companyCounts.set(row.symbol, (companyCounts.get(row.symbol) ?? 0) + 1);
+    buyerCounts.set(row.purchaserName, (buyerCounts.get(row.purchaserName) ?? 0) + 1);
+  }
+
+  const clusterEntry = [...companyCounts.entries()].find(([, count]) => count > 1);
+  if (clusterEntry) {
+    flags.push({
+      label: "Cluster Buying",
+      detail: `${clusterEntry[1]} recent insider purchases were filed in ${clusterEntry[0]}.`,
+      tone: "cyan",
+    });
+  }
+
+  const repeatBuyerEntry = [...buyerCounts.entries()].find(([, count]) => count > 1);
+  if (repeatBuyerEntry) {
+    flags.push({
+      label: "Repeat Buyer",
+      detail: `${repeatBuyerEntry[0]} appears ${repeatBuyerEntry[1]} times in the current window.`,
+      tone: "emerald",
+    });
+  }
+
+  const largePurchase = [...rows].sort(
+    (left, right) => (right.amountPurchased ?? -1) - (left.amountPurchased ?? -1)
+  )[0];
+  if (largePurchase?.amountPurchased != null && largePurchase.amountPurchased >= 1_000_000) {
+    flags.push({
+      label: "Large Purchase",
+      detail: `${largePurchase.symbol} shows the largest disclosed buy at ${formatCurrency(largePurchase.amountPurchased)}.`,
+      tone: "amber",
+    });
+  }
+
+  return flags;
+}
+
+function flagClasses(tone: SigiFlag["tone"]) {
+  if (tone === "emerald") {
+    return "border-emerald-400/20 bg-emerald-400/8 text-emerald-100";
+  }
+
+  if (tone === "amber") {
+    return "border-amber-300/20 bg-amber-300/8 text-amber-100";
+  }
+
+  return "border-cyan-400/20 bg-cyan-400/8 text-cyan-100";
 }
 
 function formatCurrency(value: number | null) {
@@ -66,7 +129,7 @@ function formatDate(value: string | null) {
   }).format(new Date(parsed));
 }
 
-export default function InsiderTradesPanel() {
+export default function InsiderTradesPanel({ selectedSector = "All" }: { selectedSector?: string }) {
   const [rows, setRows] = useState<InsiderTradeRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +142,15 @@ export default function InsiderTradesPanel() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch("/api/experts/insiders", { cache: "no-store" });
+        const params = new URLSearchParams();
+        if (selectedSector && selectedSector !== "All") {
+          params.set("sector", selectedSector);
+        }
+
+        const response = await fetch(
+          `/api/experts/insiders${params.toString() ? `?${params.toString()}` : ""}`,
+          { cache: "no-store" }
+        );
         const data = (await response.json()) as {
           ok?: boolean;
           error?: string;
@@ -108,7 +179,9 @@ export default function InsiderTradesPanel() {
       alive = false;
       window.clearInterval(timer);
     };
-  }, []);
+  }, [selectedSector]);
+
+  const flags = buildSigiFlags(rows);
 
   return (
     <section className="rounded-[28px] border border-white/10 bg-black/30 p-5 shadow-[0_0_28px_rgba(255,255,255,0.03)]">
@@ -118,7 +191,9 @@ export default function InsiderTradesPanel() {
             Insider Trading
           </div>
           <p className="mt-1 max-w-2xl text-[14px] leading-6 text-white/48">
-            The 5 most recent reported insider stock purchases, with SIGI highlighting the strongest disclosed buy in the current window.
+            {selectedSector === "All"
+              ? "The 5 most recent reported insider stock purchases, with SIGI highlighting the strongest disclosed buy in the current window."
+              : `The 5 most recent reported insider stock purchases aligned to ${selectedSector}, with SIGI highlighting the strongest disclosed buy in the current window.`}
           </p>
         </div>
 
@@ -137,7 +212,9 @@ export default function InsiderTradesPanel() {
         </div>
       ) : rows.length === 0 ? (
         <div className="mt-4 rounded-2xl border border-white/8 bg-white/4 px-4 py-6 text-sm text-white/55">
-          No recent insider purchase filings were available.
+          {selectedSector === "All"
+            ? "No recent insider purchase filings were available."
+            : `No recent insider purchase filings were available for ${selectedSector}.`}
         </div>
       ) : (
         <div className="mt-4 space-y-3">
@@ -148,6 +225,22 @@ export default function InsiderTradesPanel() {
             <p className="mt-2 text-sm leading-6 text-white/80">{buildSigiSummary(rows)}</p>
           </div>
 
+          {flags.length > 0 ? (
+            <div className="grid gap-3 xl:grid-cols-3">
+              {flags.map((flag) => (
+                <div
+                  key={`${flag.label}-${flag.detail}`}
+                  className={`rounded-2xl border px-4 py-3 ${flagClasses(flag.tone)}`}
+                >
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-current/80">
+                    {flag.label}
+                  </div>
+                  <div className="mt-2 text-sm leading-6 text-current">{flag.detail}</div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
           {rows.map((row) => (
             <article
               key={`${row.symbol}-${row.purchaserName}-${row.transactionDate}`}
@@ -155,12 +248,18 @@ export default function InsiderTradesPanel() {
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="wrap-break-word text-base font-semibold text-white">
-                    {row.companyName}
-                  </div>
-                  <div className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200/80">
-                    {row.symbol}
-                  </div>
+                  <Link
+                    href={`/stocks/${encodeURIComponent(row.symbol)}`}
+                    className="block transition hover:text-cyan-200"
+                  >
+                    <div className="wrap-break-word text-base font-semibold text-white">
+                      {row.companyName}
+                    </div>
+                    <div className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200/80">
+                      {row.symbol}
+                      {row.sector ? ` · ${row.sector}` : ""}
+                    </div>
+                  </Link>
                 </div>
 
                 <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
@@ -177,7 +276,15 @@ export default function InsiderTradesPanel() {
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-white/45">
                 <span>{row.transactionType}</span>
-                <span>Filed {formatDate(row.filingDate)}</span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span>Filed {formatDate(row.filingDate)}</span>
+                  <Link
+                    href={`/today?ticker=${encodeURIComponent(row.symbol)}`}
+                    className="font-semibold text-emerald-200 transition hover:text-emerald-100"
+                  >
+                    Analyze with SIGI →
+                  </Link>
+                </div>
                 {row.filingUrl ? (
                   <a
                     href={row.filingUrl}

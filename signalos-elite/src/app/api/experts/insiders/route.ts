@@ -4,9 +4,11 @@ import { loadFmpInsiderTradesFeed } from "@/lib/experts/fmpInsiders";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const feed = await loadFmpInsiderTradesFeed();
+    const { searchParams } = new URL(request.url);
+    const sector = searchParams.get("sector");
+    const feed = await loadFmpInsiderTradesFeed(sector);
 
     return NextResponse.json({
       ok: true,
