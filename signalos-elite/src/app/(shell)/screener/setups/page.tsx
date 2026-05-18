@@ -3,7 +3,10 @@ import type { ReactElement } from "react";
 
 import SetupsSessionAutoSync from "@/components/screener/SetupsSessionAutoSync";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
-import { getSetupDiscoveryData } from "@/lib/today/setupDiscoveryData";
+import {
+  getSetupDiscoveryData,
+  type SetupDiscoveryData,
+} from "@/lib/today/setupDiscoveryData";
 import {
   buildPreMarketTopSetups,
   buildRenderablePreMarketEmergingSetups,
@@ -12,7 +15,10 @@ import {
   type TodaySetupSession,
 } from "@/lib/today/pageData";
 import { isPreMarketNow } from "@/lib/today/marketPhase";
-import type { RankedSetupItem } from "@/lib/today/setupDiscovery";
+import {
+  rankSetupCandidates,
+  type RankedSetupItem,
+} from "@/lib/today/setupDiscovery";
 
 type SetupsPageProps = {
   searchParams?: Promise<{
@@ -177,6 +183,36 @@ function filterPillClass(isActive: boolean): string {
   return isActive
     ? "inline-flex items-center rounded-full border border-cyan-400/30 bg-cyan-400/14 px-3.5 py-1.5 text-xs font-medium text-cyan-200 transition"
     : "inline-flex items-center rounded-full border border-white/10 bg-black/20 px-3.5 py-1.5 text-xs font-medium text-white/60 transition hover:border-cyan-400/20 hover:text-cyan-100";
+}
+
+function buildRegularSessionTopFallbackSetups(
+  setupDiscovery: SetupDiscoveryData
+): RankedSetupItem[] {
+  const topTickers = new Set(setupDiscovery.top.map((item) => item.ticker));
+
+  return rankSetupCandidates(
+    setupDiscovery.candidates.filter((candidate) => {
+      const ticker = candidate.ticker.trim().toUpperCase();
+      const price = Number(candidate.price ?? 0);
+      const volume = Number(candidate.volume ?? 0);
+      const move = Math.abs(Number(candidate.changePercent ?? 0));
+      const hasCatalyst = Boolean(
+        candidate.hasNews ||
+          candidate.hasEarnings ||
+          candidate.hasAnalystAction ||
+          candidate.hasSectorTailwind
+      );
+
+      return (
+        Boolean(ticker) &&
+        !topTickers.has(ticker) &&
+        price >= 2 &&
+        volume >= 300_000 &&
+        (move >= 1 || hasCatalyst)
+      );
+    }),
+    "watch"
+  ).slice(0, 8);
 }
 
 function renderFilterControls({
@@ -373,11 +409,19 @@ export default async function SetupsPage({
     setupUniverseLimit: 40,
   });
 
+  const regularTopFallbackRows =
+    view === "top" && session === "regular" && setupDiscovery.top.length === 0
+      ? buildRegularSessionTopFallbackSetups(setupDiscovery)
+      : [];
+  const usingRegularTopFallback = regularTopFallbackRows.length > 0;
+
   const sourceRows =
     view === "top"
       ? session === "pre"
         ? buildPreMarketTopSetups(setupDiscovery)
-        : setupDiscovery.top
+        : setupDiscovery.top.length > 0
+          ? setupDiscovery.top
+          : regularTopFallbackRows
       : session === "pre"
         ? buildRenderablePreMarketEmergingSetups(setupDiscovery, { limit: undefined })
         : setupDiscovery.emerging;
@@ -548,6 +592,12 @@ export default async function SetupsPage({
           </div>
         ) : null}
 
+        {view === "top" && session === "regular" && usingRegularTopFallback ? (
+          <div className="mt-4 rounded-2xl border border-amber-400/18 bg-amber-400/8 px-4 py-3 text-sm text-amber-50 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.05)]">
+            No strict top setups cleared today. Showing ranked watch ideas for buy-the-dip, turnaround, and demand-zone monitoring instead.
+          </div>
+        ) : null}
+
         <div className={`overflow-hidden rounded-3xl border border-white/8 bg-black/20 ${isMobilePreview ? "mt-4" : "mt-5"}`}>
           {isMobilePreview ? (
             <div className="divide-y divide-white/6">
@@ -648,7 +698,9 @@ export default async function SetupsPage({
                   ? "Pre-market is active, but no top setups matched the current filters."
                   : "Pre-market is active. Signals are limited right now — try lowering filters or check Top Movers."
                 : view === "top"
-                  ? "No top setups matched the current filters."
+                  ? usingRegularTopFallback
+                    ? "No strict top setups or fallback watch ideas matched the current filters."
+                    : "No top setups matched the current filters."
                   : "No setups matched the current filters."}
             </div>
           ) : null}
