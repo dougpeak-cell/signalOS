@@ -522,7 +522,7 @@ const CHART_LINE_META: Record<
 };
 
 const COMPACT_TOOLBAR_INTERVALS: ReadonlyArray<{
-  label: ChartInterval;
+  label: string;
   interval: ChartInterval;
   range: ChartRange;
 }> = [
@@ -533,8 +533,8 @@ const COMPACT_TOOLBAR_INTERVALS: ReadonlyArray<{
   { label: "10m", interval: "10m", range: "1D" },
   { label: "15m", interval: "15m", range: "1D" },
   { label: "1h", interval: "1h", range: "5D" },
-  { label: "1d", interval: "1d", range: "1Y" },
-  { label: "1w", interval: "1w", range: "5Y" },
+  { label: "Day", interval: "1d", range: "6M" },
+  { label: "Week", interval: "1w", range: "5Y" },
 ];
 
 const COMPACT_TOOLBAR_LEVELS: ReadonlyArray<{

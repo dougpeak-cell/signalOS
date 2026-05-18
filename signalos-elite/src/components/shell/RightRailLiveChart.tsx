@@ -245,7 +245,10 @@ export default function RightRailLiveChart({
 
           <div className="mt-4 flex flex-wrap gap-2">
             <div className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">
-              1m
+              Day
+            </div>
+            <div className="rounded-full border border-white/10 bg-white/4 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60">
+              Week
             </div>
             <div className="rounded-full border border-white/10 bg-white/4 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60">
               Day Open

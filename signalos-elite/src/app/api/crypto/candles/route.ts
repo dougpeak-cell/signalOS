@@ -21,11 +21,16 @@ export async function GET(req: Request) {
   const ticker = searchParams.get("ticker") ?? "BTC";
   const multiplier = searchParams.get("multiplier") ?? "5";
   const timespan = searchParams.get("timespan") ?? "minute";
+  const requestedLookbackDays = Number(searchParams.get("lookbackDays") ?? "1");
 
   const polygonTicker = normalizeCryptoTicker(ticker);
 
   const to = new Date();
-  const from = new Date(to.getTime() - 1000 * 60 * 60 * 24);
+  const lookbackDays =
+    Number.isFinite(requestedLookbackDays) && requestedLookbackDays > 0
+      ? Math.min(Math.floor(requestedLookbackDays), 3650)
+      : 1;
+  const from = new Date(to.getTime() - lookbackDays * 24 * 60 * 60 * 1000);
 
   const fromDate = from.toISOString().slice(0, 10);
   const toDate = to.toISOString().slice(0, 10);

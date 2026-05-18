@@ -1,5 +1,6 @@
 "use client";
 
+import { CRYPTO_PAGE_ATTACHMENTS } from "@/lib/crypto/catalog";
 import type { RouteContext } from "@/lib/routing/useRouteContext";
 
 type WatchlistItem =
@@ -51,6 +52,8 @@ export type RightRailStatusTone =
 export type RightRailItem = {
   label: string;
   value: string;
+  detail?: string;
+  meta?: string;
   tone?: RightRailStatusTone;
   href?: string;
   statusDot?: RightRailStatusTone;
@@ -677,6 +680,65 @@ function buildExpertsModel(): RightRailContextModel {
   };
 }
 
+function isActiveCryptoAttachment(
+  route: Extract<RouteContext, { page: "crypto" }>,
+  href: string
+): boolean {
+  if (href === "/crypto") return route.section === "front";
+  return href.endsWith(`/${route.section}`);
+}
+
+function buildCryptoModel(
+  route: Extract<RouteContext, { page: "crypto" }>
+): RightRailContextModel {
+  return {
+    eyebrow: "SigiOS",
+    title: "Command Rail",
+    sections: [
+      {
+        title: "Quick Access",
+        items: [
+          {
+            label: "Today",
+            value: "Front page",
+            tone: "accent",
+            statusDot: "accent",
+            href: "/",
+          },
+          {
+            label: "Watchlist",
+            value: "Tracked names",
+            tone: "default",
+            statusDot: "default",
+            href: "/watchlist",
+          },
+          {
+            label: "Portfolio",
+            value: "Risk + P/L",
+            tone: "default",
+            statusDot: "default",
+            href: "/portfolio",
+          },
+        ],
+      },
+      {
+        title: "Page Attachments",
+        items: CRYPTO_PAGE_ATTACHMENTS.map((item) => {
+          const active = isActiveCryptoAttachment(route, item.href);
+
+          return {
+            label: item.label,
+            value: item.value,
+            tone: active ? "accent" : "default",
+            statusDot: active ? "accent" : "default",
+            href: item.href,
+          };
+        }),
+      },
+    ],
+  };
+}
+
 function buildStockModel(
   route: Extract<RouteContext, { page: "stock" }>
 ): RightRailContextModel {
@@ -829,6 +891,23 @@ export function buildRightRailShellModel(route: RouteContext): RightRailContextM
     };
   }
 
+  if (route.page === "crypto") {
+    return {
+      eyebrow: "SigiOS",
+      title: "Command Rail",
+      sections: [
+        {
+          title: "Quick Access",
+          items: buildShellItems(["Today", "Watchlist", "Portfolio"]),
+        },
+        {
+          title: "Page Attachments",
+          items: buildShellItems(["Crypto", "Meme", "DeFi", "RWA"]),
+        },
+      ],
+    };
+  }
+
   return {
     eyebrow: "SigiOS",
     title: "Command Rail",
@@ -848,6 +927,7 @@ export function buildRightRailContextModel(route: RouteContext): RightRailContex
   if (route.page === "screener") return buildScreenerModel(route);
   if (route.page === "stock") return buildStockModel(route);
   if (route.page === "experts") return buildExpertsModel();
+  if (route.page === "crypto") return buildCryptoModel(route);
 
   return {
     eyebrow: "SigiOS",

@@ -38,6 +38,23 @@ type Trade = {
   exchange: number | string | null;
 };
 
+type CryptoIntervalKey = "1m" | "5m" | "15m" | "1h" | "1d" | "1w";
+
+const CRYPTO_INTERVAL_OPTIONS: ReadonlyArray<{
+  key: CryptoIntervalKey;
+  label: string;
+  multiplier: string;
+  timespan: "minute" | "hour" | "day" | "week";
+  lookbackDays: number;
+}> = [
+  { key: "1m", label: "1m", multiplier: "1", timespan: "minute", lookbackDays: 1 },
+  { key: "5m", label: "5m", multiplier: "5", timespan: "minute", lookbackDays: 1 },
+  { key: "15m", label: "15m", multiplier: "15", timespan: "minute", lookbackDays: 2 },
+  { key: "1h", label: "1H", multiplier: "1", timespan: "hour", lookbackDays: 14 },
+  { key: "1d", label: "Day", multiplier: "1", timespan: "day", lookbackDays: 180 },
+  { key: "1w", label: "Week", multiplier: "1", timespan: "week", lookbackDays: 730 },
+];
+
 const CRYPTO_IDENTITY: Record<
   string,
   {
@@ -260,12 +277,528 @@ const CRYPTO_IDENTITY: Record<
     website: "https://shibatoken.com",
     explorer: "https://etherscan.io/token/0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE",
   },
+  PEPE: {
+    name: "Pepe",
+    category: "Meme / Community Token",
+    chain: "Ethereum",
+    description:
+      "A meme-driven Ethereum token built around internet-native community attention, speculative trading, and social momentum.",
+    website: "https://www.pepe.vip",
+    explorer: "https://etherscan.io/token/0x6982508145454ce325ddbe47a25d4ec3d2311933",
+  },
+  BONK: {
+    name: "Bonk",
+    category: "Meme / Community Token",
+    chain: "Solana",
+    description:
+      "A Solana-native meme token centered on community distribution, social trading activity, and ecosystem participation.",
+    website: "https://bonkcoin.com",
+    explorer: "https://solscan.io/token/DezXAZ8z7PnrnRJjz3wXBoRgixCa6ZqfT1pPB263h3Q",
+  },
+  FLOKI: {
+    name: "Floki",
+    category: "Meme / Community Token",
+    chain: "Ethereum",
+    description:
+      "A meme-driven token ecosystem built around the Floki community, with branding across utility, gaming, and social trading narratives.",
+    website: "https://floki.com",
+    explorer: "https://etherscan.io/token/0xcf0c122c6b73f14e024acbcbf1d512b4beddfd25",
+  },
+  WIF: {
+    name: "dogwifhat",
+    category: "Meme / Community Token",
+    chain: "Solana",
+    description:
+      "A Solana-native meme coin centered on internet culture, social momentum, and highly speculative community trading flows.",
+    website: "https://dogwifcoin.org",
+    explorer: "https://solscan.io/token/EKpQGSJtjMFqKZJ9uZgMDYf4M4sT4kD4Bq8R9Y1w5nP",
+  },
+  POPCAT: {
+    name: "Popcat",
+    category: "Meme / Community Token",
+    chain: "Solana",
+    description:
+      "A social-first Solana meme coin tied to internet-native community participation and momentum trading behavior.",
+    website: "https://www.popcatsol.com",
+    explorer: "https://solscan.io/token/7GCihgDB8fe6KNw3QYDT1Q4uQkYHhYf8c92uYzLxgRkW",
+  },
+  MOG: {
+    name: "Mog Coin",
+    category: "Meme / Community Token",
+    chain: "Ethereum",
+    description:
+      "An Ethereum meme token shaped by social virality, internet culture, and high-beta speculative trading flows.",
+    website: "https://mogcoin.xyz",
+    explorer: "https://etherscan.io/token/0xaaeE88e859dF4eB5A4A031c21fA4eF15eeF1D9A8",
+  },
+  TRUMP: {
+    name: "Official Trump",
+    category: "Meme / Political Token",
+    chain: "Solana",
+    description:
+      "A politically themed meme asset driven by headline attention, community activity, and event-sensitive speculative flows.",
+    website: "https://gettrumpmemes.com",
+    explorer: "https://solscan.io/token/6p6xgHyF7Ae3Tz7kRXKuX3sX5Yucs5cjox96D65V6pZe",
+  },
+  SPX: {
+    name: "SPX6900",
+    category: "Meme / Community Token",
+    chain: "Ethereum",
+    description:
+      "A meme coin built around parody market branding, community identity, and speculative social trading momentum.",
+    website: "https://www.spx6900.com",
+    explorer: "https://etherscan.io/token/0xe0f63A87B5E8D0B0a0E4D0c687C2b4c56F8D4c82",
+  },
+  TURBO: {
+    name: "Turbo",
+    category: "Meme / Community Token",
+    chain: "Ethereum",
+    description:
+      "A meme asset known for AI-era branding, community-led distribution, and high-volatility retail trading behavior.",
+    website: "https://www.turbotoken.io",
+    explorer: "https://etherscan.io/token/0xa35923162c49cf95e6bf26623385eb431ad920d3",
+  },
+  NEIRO: {
+    name: "Neiro",
+    category: "Meme / Community Token",
+    chain: "Ethereum",
+    description:
+      "A community-led meme token driven by social attention, narrative rotation, and fast-moving speculative flows.",
+  },
+  GOAT: {
+    name: "Goatseus Maximus",
+    category: "Meme / Community Token",
+    chain: "Solana",
+    description:
+      "A meme token shaped by internet culture, community momentum, and rapid social-trading participation.",
+  },
+  GIGA: {
+    name: "Gigachad",
+    category: "Meme / Community Token",
+    chain: "Solana",
+    description:
+      "A high-volatility meme asset powered by branding, online identity, and community-driven trading interest.",
+  },
+  MEW: {
+    name: "cat in a dogs world",
+    category: "Meme / Community Token",
+    chain: "Solana",
+    description:
+      "A cat-themed meme token built around social virality and fast-moving retail crypto attention.",
+  },
+  PNUT: {
+    name: "Peanut the Squirrel",
+    category: "Meme / Community Token",
+    chain: "Solana",
+    description:
+      "A culture-driven meme asset whose trading activity is largely shaped by headline momentum and community participation.",
+  },
+  MOODENG: {
+    name: "Moo Deng",
+    category: "Meme / Community Token",
+    chain: "Solana",
+    description:
+      "A viral meme token tied to internet-native attention cycles, social sentiment, and speculative rotation.",
+  },
+  APU: {
+    name: "Apu Apustaja",
+    category: "Meme / Community Token",
+    chain: "Ethereum",
+    description:
+      "A meme coin centered on long-running internet culture, community identity, and high-beta social trading flows.",
+  },
+  MELANIA: {
+    name: "Melania Meme",
+    category: "Meme / Political Token",
+    chain: "Solana",
+    description:
+      "A politically themed meme token driven by headline attention, social volatility, and event-sensitive retail trading flows.",
+  },
+  PONKE: {
+    name: "Ponke",
+    category: "Meme / Community Token",
+    chain: "Solana",
+    description:
+      "A Solana meme asset shaped by internet culture, trader attention cycles, and speculative community participation.",
+  },
+  FWOG: {
+    name: "Fwog",
+    category: "Meme / Community Token",
+    chain: "Solana",
+    description:
+      "A frog-themed meme token powered by social virality, community momentum, and high-beta rotation across meme traders.",
+  },
+  MEME: {
+    name: "Memecoin",
+    category: "Meme / Community Token",
+    chain: "Ethereum",
+    description:
+      "A meme-native token built around creator culture, social participation, and broad speculative trading interest.",
+    website: "https://www.memecoin.org",
+  },
+  LDO: {
+    name: "Lido DAO",
+    category: "DeFi / Liquid Staking",
+    chain: "Ethereum",
+    description:
+      "The governance token for Lido's liquid staking ecosystem, closely tied to staked-asset liquidity and DeFi collateral usage.",
+    website: "https://lido.fi",
+    docs: "https://docs.lido.fi",
+  },
+  RUNE: {
+    name: "THORChain",
+    category: "DeFi / Cross-chain Liquidity",
+    chain: "THORChain",
+    description:
+      "A cross-chain liquidity network designed for native asset swaps without wrapped intermediaries.",
+    website: "https://thorchain.org",
+    docs: "https://dev.thorchain.org",
+  },
+  PENDLE: {
+    name: "Pendle",
+    category: "DeFi / Yield Markets",
+    chain: "Ethereum",
+    description:
+      "A DeFi protocol focused on tokenized yield trading and interest-rate positioning across on-chain assets.",
+    website: "https://www.pendle.finance",
+    docs: "https://docs.pendle.finance",
+  },
+  DYDX: {
+    name: "dYdX",
+    category: "DeFi / Perpetuals",
+    chain: "dYdX Chain",
+    description:
+      "A decentralized derivatives ecosystem centered on perpetual futures and active on-chain trading infrastructure.",
+    website: "https://dydx.trade",
+    docs: "https://docs.dydx.xyz",
+  },
+  JUP: {
+    name: "Jupiter",
+    category: "DeFi / Aggregation",
+    chain: "Solana",
+    description:
+      "A Solana DeFi token linked to one of the ecosystem's largest routing and liquidity aggregation layers.",
+    website: "https://jup.ag",
+  },
+  ENA: {
+    name: "Ethena",
+    category: "DeFi / Synthetic Dollar",
+    chain: "Ethereum",
+    description:
+      "The governance token around Ethena's synthetic-dollar infrastructure and delta-neutral yield design.",
+    website: "https://www.ethena.fi",
+    docs: "https://docs.ethena.fi",
+  },
+  "1INCH": {
+    name: "1inch",
+    category: "DeFi / Aggregation",
+    chain: "Ethereum",
+    description:
+      "A decentralized exchange aggregator token used across routing, liquidity access, and multi-venue DeFi execution.",
+    website: "https://1inch.io",
+    docs: "https://docs.1inch.io",
+  },
+  CVX: {
+    name: "Convex Finance",
+    category: "DeFi / Yield Optimization",
+    chain: "Ethereum",
+    description:
+      "A DeFi token tied to Convex's yield optimization layer around Curve liquidity and governance flows.",
+    website: "https://www.convexfinance.com",
+  },
+  GMX: {
+    name: "GMX",
+    category: "DeFi / Perpetuals",
+    chain: "Arbitrum",
+    description:
+      "A decentralized perpetuals and spot trading protocol centered on on-chain derivatives liquidity.",
+    website: "https://gmx.io",
+    docs: "https://docs.gmx.io",
+  },
+  BAL: {
+    name: "Balancer",
+    category: "DeFi / Automated Market Maker",
+    chain: "Ethereum",
+    description:
+      "A DeFi token tied to Balancer's programmable liquidity pools and automated market-making infrastructure.",
+    website: "https://balancer.fi",
+    docs: "https://docs.balancer.fi",
+  },
+  KNC: {
+    name: "Kyber Network",
+    category: "DeFi / Liquidity Infrastructure",
+    chain: "Ethereum",
+    description:
+      "A liquidity protocol token connected to routing, aggregation, and on-chain market-making infrastructure.",
+    website: "https://kyberswap.com",
+    docs: "https://docs.kyberswap.com",
+  },
+  ZRX: {
+    name: "0x",
+    category: "DeFi / Exchange Infrastructure",
+    chain: "Ethereum",
+    description:
+      "A protocol token for decentralized exchange infrastructure and liquidity routing across on-chain markets.",
+    website: "https://0x.org",
+    docs: "https://docs.0x.org",
+  },
+  COW: {
+    name: "CoW Protocol",
+    category: "DeFi / Aggregation",
+    chain: "Ethereum",
+    description:
+      "A DeFi token linked to batch auction trading, MEV-aware routing, and solver-based execution.",
+    website: "https://cow.fi",
+    docs: "https://docs.cow.fi",
+  },
+  MORPHO: {
+    name: "Morpho",
+    category: "DeFi / Lending",
+    chain: "Ethereum",
+    description:
+      "A lending protocol token focused on optimizing borrowing and lending efficiency across DeFi credit markets.",
+    website: "https://morpho.org",
+    docs: "https://docs.morpho.org",
+  },
+  AERO: {
+    name: "Aerodrome",
+    category: "DeFi / Exchange",
+    chain: "Base",
+    description:
+      "A Base ecosystem liquidity and exchange token centered on emissions-driven trading and pool incentives.",
+    website: "https://aerodrome.finance",
+  },
+  LQTY: {
+    name: "Liquity",
+    category: "DeFi / Stablecoin Infrastructure",
+    chain: "Ethereum",
+    description:
+      "A DeFi token around Liquity's borrowing and decentralized stablecoin infrastructure.",
+    website: "https://www.liquity.org",
+    docs: "https://docs.liquity.org",
+  },
+  ACH: {
+    name: "Alchemy Pay",
+    category: "DeFi / Payments Infrastructure",
+    chain: "Ethereum",
+    description:
+      "A payments-oriented token bridging crypto rails, merchant access, and broader digital asset settlement flows.",
+    website: "https://alchemypay.org",
+  },
+  BNT: {
+    name: "Bancor",
+    category: "DeFi / Liquidity",
+    chain: "Ethereum",
+    description:
+      "A DeFi token linked to Bancor's automated liquidity and single-sided exposure infrastructure.",
+    website: "https://www.bancor.network",
+  },
+  FXS: {
+    name: "Frax Share",
+    category: "DeFi / Stablecoin Infrastructure",
+    chain: "Ethereum",
+    description:
+      "The governance and value-accrual token around the Frax ecosystem's stablecoin and DeFi infrastructure stack.",
+    website: "https://frax.finance",
+    docs: "https://docs.frax.finance",
+  },
+  COMP: {
+    name: "Compound",
+    category: "DeFi / Lending",
+    chain: "Ethereum",
+    description:
+      "The governance token of the Compound money-market protocol, used across decentralized lending and borrowing markets.",
+    website: "https://compound.finance",
+    explorer: "https://etherscan.io/token/0xc00e94cb662c3520282e6f5717214004a7f26888",
+    docs: "https://docs.compound.finance",
+  },
+  CRV: {
+    name: "Curve DAO",
+    category: "DeFi / Liquidity",
+    chain: "Ethereum",
+    description:
+      "The governance token for Curve, a DeFi liquidity protocol focused on stable asset and efficient swap markets.",
+    website: "https://curve.fi",
+    explorer: "https://etherscan.io/token/0xD533a949740bb3306d119CC777fa900bA034cd52",
+    docs: "https://resources.curve.finance",
+  },
+  SUSHI: {
+    name: "Sushi",
+    category: "DeFi / Exchange",
+    chain: "Ethereum",
+    description:
+      "A DeFi token tied to the Sushi ecosystem, spanning decentralized exchange liquidity, routing, and on-chain trading infrastructure.",
+    website: "https://www.sushi.com",
+    explorer: "https://etherscan.io/token/0x6b3595068778dd592e39a122f4f5a5cf09c90fe2",
+    docs: "https://docs.sushi.com",
+  },
+  SNX: {
+    name: "Synthetix",
+    category: "DeFi / Synthetic Assets",
+    chain: "Ethereum",
+    description:
+      "A protocol token for the Synthetix ecosystem, which powers on-chain synthetic asset issuance and derivatives infrastructure.",
+    website: "https://www.synthetix.io",
+    explorer: "https://etherscan.io/token/0xC011A72400E58ecD99Ee497CF89E3775d4bd732F",
+    docs: "https://docs.synthetix.io",
+  },
+  ONDO: {
+    name: "Ondo",
+    category: "RWA / Tokenized Finance",
+    chain: "Ethereum",
+    description:
+      "An RWA-focused token connected to Ondo's tokenized finance infrastructure and blockchain access to traditional yield products.",
+    website: "https://ondo.finance",
+    explorer: "https://etherscan.io/token/0xfAbA6f8e4a5E8Ab82F62fe7C39859FA577269BE3",
+    docs: "https://docs.ondo.finance",
+  },
+  CFG: {
+    name: "Centrifuge",
+    category: "RWA / Credit Infrastructure",
+    chain: "Centrifuge",
+    description:
+      "A real-world-asset protocol focused on bringing private credit and structured financing rails on chain.",
+    website: "https://centrifuge.io",
+    explorer: "https://assethub-polkadot.subscan.io",
+    docs: "https://docs.centrifuge.io",
+  },
+  GFI: {
+    name: "Goldfinch",
+    category: "RWA / Private Credit",
+    chain: "Ethereum",
+    description:
+      "A DeFi credit protocol with real-world lending exposure, designed to connect on-chain capital to off-chain borrowers.",
+    website: "https://goldfinch.finance",
+    explorer: "https://etherscan.io/token/0xdab396cCF3d84Cf2D07C4454e10C8A6F5b008D2b",
+    docs: "https://docs.goldfinch.finance",
+  },
+  PAXG: {
+    name: "PAX Gold",
+    category: "RWA / Tokenized Gold",
+    chain: "Ethereum",
+    description:
+      "A tokenized gold product backed by physical bullion, designed to track spot gold exposure on chain.",
+    website: "https://paxos.com/paxgold",
+    explorer: "https://etherscan.io/token/0x45804880De22913dAFE09f4980848ECE6EcbAf78",
+  },
+  XAUT: {
+    name: "Tether Gold",
+    category: "RWA / Tokenized Gold",
+    chain: "Ethereum",
+    description:
+      "A tokenized gold asset issued by Tether that provides blockchain-traded exposure to vaulted physical gold.",
+    website: "https://gold.tether.to",
+    explorer: "https://etherscan.io/token/0x68749665FF8D2d112Fa859AA293F07A622782F38",
+  },
+  TRU: {
+    name: "TrueFi",
+    category: "RWA / Credit Markets",
+    chain: "Ethereum",
+    description:
+      "A token tied to on-chain unsecured lending and credit-market infrastructure bridging DeFi with real-world borrowers.",
+    website: "https://truefi.io",
+  },
+  PRO: {
+    name: "Propy",
+    category: "RWA / Real Estate",
+    chain: "Ethereum",
+    description:
+      "A real-estate tokenization and digital property transaction platform focused on bringing property workflows on chain.",
+    website: "https://propy.com",
+  },
+  CPOOL: {
+    name: "Clearpool",
+    category: "RWA / Credit Infrastructure",
+    chain: "Ethereum",
+    description:
+      "A decentralized credit marketplace designed to connect institutional borrowers and on-chain capital pools.",
+    website: "https://clearpool.finance",
+  },
+  HBAR: {
+    name: "Hedera",
+    category: "RWA / Enterprise Infrastructure",
+    chain: "Hedera",
+    description:
+      "An enterprise-oriented distributed ledger network frequently positioned around tokenization, compliance, and real-world business infrastructure.",
+    website: "https://hedera.com",
+  },
+  XLM: {
+    name: "Stellar",
+    category: "RWA / Payments Infrastructure",
+    chain: "Stellar",
+    description:
+      "A payments and issuance network with strong alignment to stable-value assets, cross-border settlement, and tokenized financial rails.",
+    website: "https://stellar.org",
+  },
+  ALGO: {
+    name: "Algorand",
+    category: "RWA / Tokenization Infrastructure",
+    chain: "Algorand",
+    description:
+      "A blockchain ecosystem often used in tokenization and institutional-grade asset infrastructure discussions.",
+    website: "https://algorand.co",
+  },
+  VET: {
+    name: "VeChain",
+    category: "RWA / Enterprise Traceability",
+    chain: "VeChainThor",
+    description:
+      "An enterprise-focused blockchain built around supply chain data, provenance, and real-world commercial workflows.",
+    website: "https://www.vechain.org",
+  },
+  XDC: {
+    name: "XDC Network",
+    category: "RWA / Trade Finance",
+    chain: "XDC Network",
+    description:
+      "An enterprise-focused blockchain with strong positioning around trade finance, tokenization, and real-world business rails.",
+    website: "https://xinfin.org",
+  },
+  LCX: {
+    name: "LCX",
+    category: "RWA / Tokenization Infrastructure",
+    chain: "Ethereum",
+    description:
+      "A digital asset and tokenization platform with a focus on compliant issuance, custody, and real-world asset access.",
+    website: "https://www.lcx.com",
+  },
+  QNT: {
+    name: "Quant",
+    category: "RWA / Enterprise Connectivity",
+    chain: "Ethereum",
+    description:
+      "An interoperability-focused token with strong enterprise and institutional connectivity themes relevant to tokenized asset infrastructure.",
+    website: "https://quant.network",
+  },
 };
+
+function normalizeCryptoSource(value: string | null): "/crypto" | "/crypto/news" | "/crypto/meme" | "/crypto/defi" | "/crypto/rwa" {
+  if (value === "/crypto/news") return "/crypto/news";
+  if (value === "/crypto/meme") return "/crypto/meme";
+  if (value === "/crypto/defi") return "/crypto/defi";
+  if (value === "/crypto/rwa") return "/crypto/rwa";
+  return "/crypto";
+}
+
+function buildCryptoBackLabel(sourcePath: "/crypto" | "/crypto/news" | "/crypto/meme" | "/crypto/defi" | "/crypto/rwa") {
+  if (sourcePath === "/crypto/news") return "Back to Crypto News";
+  if (sourcePath === "/crypto/meme") return "Back to Meme Board";
+  if (sourcePath === "/crypto/defi") return "Back to DeFi Board";
+  if (sourcePath === "/crypto/rwa") return "Back to RWA Board";
+  return "Back to Crypto";
+}
 
 function money(value: number | null | undefined) {
   if (value === null || value === undefined) return "—";
+
+  const maximumFractionDigits =
+    value >= 100 ? 2 :
+    value >= 1 ? 4 :
+    value >= 0.01 ? 6 :
+    8;
+
   return `$${value.toLocaleString(undefined, {
-    maximumFractionDigits: value >= 100 ? 2 : 5,
+    maximumFractionDigits,
   })}`;
 }
 
@@ -905,6 +1438,9 @@ export default function CryptoDetailPage() {
   const { tier } = useSigiTier();
   const ticker = String(params.ticker ?? "BTC").toUpperCase();
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
+  const sourcePath = normalizeCryptoSource(searchParams.get("source"));
+  const sourceHref = isMobilePreview ? `${sourcePath}?mobilePreview=1` : sourcePath;
+  const backLabel = buildCryptoBackLabel(sourcePath);
   const mobilePreviewFrame = useResponsiveMobilePreviewFrame(isMobilePreview);
   const plan = tier ?? "free";
   const canUseCrypto = plan === "smart" || plan === "pro";
@@ -914,20 +1450,25 @@ export default function CryptoDetailPage() {
 
   const [candles, setCandles] = useState<Candle[]>([]);
   const [snapshot, setSnapshot] = useState<SnapshotRow | null>(null);
-  const [interval, setIntervalValue] = useState("5");
+  const [interval, setIntervalValue] = useState<CryptoIntervalKey>("5m");
   const [liveMode, setLiveMode] = useState(false);
   const [feed, setFeed] = useState<Trade[]>([]);
 
-  const candleMultiplier = liveMode ? "1" : interval;
+  const selectedInterval =
+    CRYPTO_INTERVAL_OPTIONS.find((option) => option.key === interval) ?? CRYPTO_INTERVAL_OPTIONS[1];
+  const activeInterval = liveMode ? CRYPTO_INTERVAL_OPTIONS[0] : selectedInterval;
 
   useEffect(() => {
     let alive = true;
 
     async function load() {
       const [candleRes, snapshotRes, tradesRes] = await Promise.all([
-        fetch(`/api/crypto/candles?ticker=${ticker}&multiplier=${candleMultiplier}`, {
+        fetch(
+          `/api/crypto/candles?ticker=${ticker}&multiplier=${activeInterval.multiplier}&timespan=${activeInterval.timespan}&lookbackDays=${activeInterval.lookbackDays}`,
+          {
           cache: "no-store",
-        }),
+          }
+        ),
         fetch(`/api/crypto/snapshot?tickers=${ticker}`, {
           cache: "no-store",
         }),
@@ -971,7 +1512,7 @@ export default function CryptoDetailPage() {
       alive = false;
       window.clearInterval(timer);
     };
-  }, [ticker, candleMultiplier, liveMode]);
+  }, [activeInterval, liveMode, ticker]);
 
   const latest = candles.at(-1);
   const latestFeedPrice = feed.find((entry) => typeof entry.price === "number")?.price ?? null;
@@ -989,8 +1530,8 @@ export default function CryptoDetailPage() {
     return (
       <LockedCryptoExperience
         ticker={ticker}
-        backHref={isMobilePreview ? "/crypto?mobilePreview=1" : "/crypto"}
-        backLabel="Back to Crypto"
+        backHref={sourceHref}
+        backLabel={backLabel}
       />
     );
   }
@@ -1033,10 +1574,10 @@ export default function CryptoDetailPage() {
 
         <div className="mb-6">
           <Link
-            href={isMobilePreview ? "/crypto?mobilePreview=1" : "/crypto"}
+            href={sourceHref}
             className="text-sm font-semibold text-cyan-300"
           >
-            ← Back to Crypto
+            ← {backLabel}
           </Link>
         </div>
 
@@ -1070,7 +1611,7 @@ export default function CryptoDetailPage() {
             <button
               onClick={() => {
                 setLiveMode(true);
-                setIntervalValue("1");
+                setIntervalValue("1m");
               }}
               className={[
                 "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition",
@@ -1089,21 +1630,21 @@ export default function CryptoDetailPage() {
               />
               LIVE
             </button>
-            {["1", "5", "15", "60"].map((value) => (
+            {CRYPTO_INTERVAL_OPTIONS.map((option) => (
               <button
-                key={value}
+                key={option.key}
                 onClick={() => {
                   setLiveMode(false);
-                  setIntervalValue(value);
+                  setIntervalValue(option.key);
                 }}
                 className={[
                   "rounded-xl px-4 py-2 text-sm font-semibold transition",
-                  !liveMode && interval === value
+                  !liveMode && interval === option.key
                     ? "bg-cyan-400 text-black"
                     : "text-white/60 hover:bg-white/10 hover:text-white",
                 ].join(" ")}
               >
-                {value === "60" ? "1H" : `${value}m`}
+                {option.label}
               </button>
             ))}
           </div>

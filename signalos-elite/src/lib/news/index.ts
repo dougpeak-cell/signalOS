@@ -35,10 +35,12 @@ export {
   fetchFreeNewsForWatchlist,
   fetchUnifiedFreeNews,
   fetchTopFreeMarketNews,
+  fetchTopFreeCryptoNews,
 } from "@/lib/news/fetchFreeNews";
 
 export {
   fetchFreeNewsForWatchlist as fetchNewsForWatchlist,
   fetchUnifiedFreeNews as fetchUnifiedNews,
   fetchTopFreeMarketNews as fetchTopMarketNews,
+  fetchTopFreeCryptoNews as fetchCryptoNews,
 } from "@/lib/news/fetchFreeNews";

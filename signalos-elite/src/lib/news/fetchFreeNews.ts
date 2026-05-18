@@ -1,10 +1,12 @@
+import { CRYPTO_DIRECTORY } from "@/lib/crypto/catalog";
 import type { NewsCategory, NewsItem, NewsTone } from "@/lib/news";
 import { toSignalNewsItem } from "@/lib/news/freeNewsSignalItems";
 import { detectNewsImpact, scoreNewsItem } from "@/lib/news/scoreNewsHeaderItems";
 
 type FreeNewsSource = string;
 
-const ARTICLE_IMAGE_LOOKUP_LIMIT = 8;
+const ARTICLE_IMAGE_LOOKUP_LIMIT = 4;
+const ARTICLE_IMAGE_FETCH_TIMEOUT_MS = 2500;
 
 type FreeRssItem = {
   id: string;
@@ -33,6 +35,45 @@ const COMMON_WORDS = new Set([
   "FED",
   "SEC",
 ]);
+
+const CRYPTO_NEWS_DEFAULT_SYMBOLS = [
+  "BTC",
+  "ETH",
+  "SOL",
+  "XRP",
+  "DOGE",
+  "AVAX",
+  "LINK",
+  "UNI",
+  "AAVE",
+  "ONDO",
+  "PEPE",
+  "SHIB",
+];
+
+const CRYPTO_NEWS_NAME_ALIASES: Record<string, string[]> = {
+  BTC: ["bitcoin"],
+  ETH: ["ethereum", "ether"],
+  SOL: ["solana"],
+  XRP: ["xrp", "ripple"],
+  DOGE: ["dogecoin"],
+  ADA: ["cardano"],
+  AVAX: ["avalanche"],
+  LINK: ["chainlink"],
+  MATIC: ["polygon", "matic"],
+  UNI: ["uniswap"],
+  AAVE: ["aave"],
+  ONDO: ["ondo"],
+  SHIB: ["shiba inu", "shib"],
+  PEPE: ["pepe"],
+  BONK: ["bonk"],
+  FLOKI: ["floki"],
+  WIF: ["dogwifhat"],
+  HBAR: ["hedera"],
+  XLM: ["stellar"],
+  ALGO: ["algorand"],
+  QNT: ["quant"],
+};
 
 function cleanHtml(value: string = ""): string {
   return value
@@ -161,11 +202,17 @@ function normalizeNewsImage(raw: {
 
 async function fetchArticleImageUrl(articleUrl: string): Promise<string | null> {
   try {
+    const supportsAbortTimeout =
+      typeof AbortSignal !== "undefined" &&
+      typeof AbortSignal.timeout === "function";
     const response = await fetch(articleUrl, {
       method: "GET",
       headers: {
         accept: "text/html,application/xhtml+xml,*/*",
       },
+      signal: supportsAbortTimeout
+        ? AbortSignal.timeout(ARTICLE_IMAGE_FETCH_TIMEOUT_MS)
+        : undefined,
       next: { revalidate: 900 },
     });
 
@@ -264,6 +311,42 @@ function extractRssItems(
 
 function normalizeTicker(value: string): string {
   return value.trim().toUpperCase();
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function extractCryptoTickersFromText(
+  text: string,
+  preferredSymbols: string[] = CRYPTO_NEWS_DEFAULT_SYMBOLS
+): string[] {
+  const normalizedPreferred = Array.from(
+    new Set(preferredSymbols.map(normalizeTicker).filter(Boolean))
+  );
+  const symbolMatches = extractTickersFromText(text, normalizedPreferred);
+  const lower = text.toLowerCase();
+  const aliasMatches: string[] = [];
+
+  for (const symbol of normalizedPreferred) {
+    const directoryItem = CRYPTO_DIRECTORY.find((item) => item.symbol === symbol);
+    const aliases = Array.from(
+      new Set([
+        ...(directoryItem && directoryItem.name.length >= 4 ? [directoryItem.name] : []),
+        ...(CRYPTO_NEWS_NAME_ALIASES[symbol] ?? []),
+      ])
+    );
+
+    if (
+      aliases.some((alias) =>
+        new RegExp(`(^|\\W)${escapeRegExp(alias.toLowerCase())}(?=\\W|$)`, "i").test(lower)
+      )
+    ) {
+      aliasMatches.push(symbol);
+    }
+  }
+
+  return Array.from(new Set([...symbolMatches, ...aliasMatches]));
 }
 
 export function extractTickersFromText(text: string, knownTickers: string[] = []): string[] {
@@ -383,6 +466,56 @@ function mapFreeRssItemToNewsItem(item: FreeRssItem, knownTickers: string[] = []
       tickers.length > 0
         ? `${tickers[0]} is referenced in fresh market news.`
         : "This headline may affect market sentiment or sector leadership.",
+  };
+
+  const signalItem = toSignalNewsItem(draftItem);
+  const score = scoreNewsItem(signalItem, {
+    mode: "market",
+    now: new Date(),
+  });
+  const impact = detectNewsImpact(signalItem, {
+    mode: "market",
+    now: new Date(),
+  });
+
+  return {
+    ...draftItem,
+    importance: Math.max(baseImportance, Math.min(100, Math.round(score))),
+    impact,
+    score: Math.max(0, Math.round(score)),
+  };
+}
+
+function mapFreeRssItemToCryptoNewsItem(
+  item: FreeRssItem,
+  preferredSymbols: string[] = CRYPTO_NEWS_DEFAULT_SYMBOLS
+): NewsItem {
+  const text = `${item.title} ${item.summary ?? ""}`;
+  const tickers = extractCryptoTickersFromText(text, preferredSymbols);
+  const tone = detectNewsTone(text);
+  const image = normalizeNewsImage(item);
+  const baseImportance = tickers.length > 0 ? 72 : 58;
+
+  const draftItem: NewsItem = {
+    id: item.id,
+    title: item.title,
+    headline: item.title,
+    source: item.source,
+    publishedAt: formatAgeLabel(item.publishedAt),
+    rawPublishedAt: item.publishedAt,
+    url: item.link,
+    summary: item.summary ?? "No summary available.",
+    tone,
+    category: "sector",
+    tickers,
+    importance: baseImportance,
+    impact: "Low",
+    image,
+    imageUrl: image,
+    whyItMatters:
+      tickers.length > 0
+        ? `${tickers.join(" / ")} is showing up in fresh crypto headline flow.`
+        : "This headline may influence broad crypto sentiment, rotation, or token-specific momentum.",
   };
 
   const signalItem = toSignalNewsItem(draftItem);
@@ -543,6 +676,47 @@ export async function fetchUnifiedFreeNews(options?: {
     0,
     limit
   );
+}
+
+export async function fetchTopFreeCryptoNews(options?: {
+  tickers?: string[];
+  limit?: number;
+  lookbackHours?: number;
+}): Promise<NewsItem[]> {
+  const preferredSymbols = Array.from(
+    new Set((options?.tickers ?? CRYPTO_NEWS_DEFAULT_SYMBOLS).map(normalizeTicker).filter(Boolean))
+  );
+  const limit = options?.limit ?? 18;
+  const lookbackHours = options?.lookbackHours ?? 48;
+  const symbolQuery = preferredSymbols.slice(0, 6).join(" OR ");
+  const aliasQuery = preferredSymbols
+    .slice(0, 6)
+    .map((symbol) => `"${CRYPTO_DIRECTORY.find((item) => item.symbol === symbol)?.name ?? symbol}"`)
+    .join(" OR ");
+
+  const feeds = await Promise.all([
+    fetchRss(
+      googleNewsSearchUrl("(crypto OR cryptocurrency OR bitcoin OR ethereum OR solana) when:2d"),
+      "Google News"
+    ),
+    fetchRss(
+      googleNewsSearchUrl(`(${symbolQuery} OR ${aliasQuery}) crypto market when:2d`),
+      "Google News"
+    ),
+    fetchRss(
+      googleNewsSearchUrl("(crypto ETF OR stablecoin OR meme coin OR defi OR rwa OR blockchain regulation) when:2d"),
+      "Google News"
+    ),
+  ]);
+
+  return sortByPublishedDesc(
+    dedupeNewsItems(
+      feeds
+        .flat()
+        .filter((item) => isWithinLookbackHours(item.publishedAt, lookbackHours))
+        .map((item) => mapFreeRssItemToCryptoNewsItem(item, preferredSymbols))
+    )
+  ).slice(0, limit);
 }
 
 export async function fetchFreeNewsForWatchlist(

@@ -26,6 +26,11 @@ export type RouteContext =
       page: "experts";
     }
   | {
+      page: "crypto";
+      section: "front" | "news" | "meme" | "defi" | "rwa";
+      ticker?: string;
+    }
+  | {
       page: "stock";
       ticker: string;
       focus: string;
@@ -48,6 +53,17 @@ function normalizeRegime(value: string | null | undefined): "bullish" | "neutral
   if (v === "neutral") return "neutral";
   if (v === "risk off" || v === "risk-off" || v === "riskoff") return "riskoff";
   return "";
+}
+
+function normalizeCryptoSection(
+  value: string | null | undefined
+): "front" | "news" | "meme" | "defi" | "rwa" {
+  const v = normalizeLower(value);
+  if (v === "/crypto/news" || v === "news") return "news";
+  if (v === "/crypto/meme" || v === "meme") return "meme";
+  if (v === "/crypto/defi" || v === "defi") return "defi";
+  if (v === "/crypto/rwa" || v === "rwa") return "rwa";
+  return "front";
 }
 
 export function useRouteContext(): RouteContext {
@@ -90,6 +106,37 @@ export function useRouteContext(): RouteContext {
     if (path.includes("/experts")) {
       return {
         page: "experts" as const,
+      };
+    }
+
+    if (path === "/crypto") {
+      return {
+        page: "crypto" as const,
+        section: "front",
+      };
+    }
+
+    if (path === "/crypto/news") {
+      return {
+        page: "crypto" as const,
+        section: "news",
+      };
+    }
+
+    if (path === "/crypto/meme" || path === "/crypto/defi" || path === "/crypto/rwa") {
+      return {
+        page: "crypto" as const,
+        section: normalize(path.split("/")[2]) as "meme" | "defi" | "rwa",
+      };
+    }
+
+    if (path.startsWith("/crypto/")) {
+      const ticker = normalize(path.split("/")[2]).toUpperCase();
+
+      return {
+        page: "crypto" as const,
+        section: normalizeCryptoSection(searchParams.get("source")),
+        ticker,
       };
     }
 

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { CRYPTO_NAME_BY_SYMBOL } from "@/lib/crypto/catalog";
+
 export const dynamic = "force-dynamic";
 
 const API_KEY = process.env.MASSIVE_API_KEY;
@@ -27,20 +29,7 @@ function cleanSymbol(value: string) {
 }
 
 function cryptoName(symbol: string) {
-  const names: Record<string, string> = {
-    BTC: "Bitcoin",
-    ETH: "Ethereum",
-    SOL: "Solana",
-    XRP: "XRP",
-    DOGE: "Dogecoin",
-    ADA: "Cardano",
-    AVAX: "Avalanche",
-    LINK: "Chainlink",
-    MATIC: "Polygon",
-    LTC: "Litecoin",
-  };
-
-  return names[symbol] ?? symbol;
+  return CRYPTO_NAME_BY_SYMBOL[symbol] ?? symbol;
 }
 
 export async function GET(req: Request) {

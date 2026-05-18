@@ -106,6 +106,8 @@ function Sparkline({
 function RailItemCard({
   label,
   value,
+  detail,
+  meta,
   href,
   tone = "default",
   statusDot = "default",
@@ -115,6 +117,8 @@ function RailItemCard({
 }: {
   label: string;
   value: string;
+  detail?: string;
+  meta?: string;
   href?: string;
   tone?: RightRailStatusTone;
   statusDot?: RightRailStatusTone;
@@ -146,6 +150,18 @@ function RailItemCard({
           <div className="mt-1 truncate text-[13px] font-semibold leading-tight">
             {value || "—"}
           </div>
+
+          {detail ? (
+            <div className="mt-1 line-clamp-2 text-[11px] leading-4 text-white/58">
+              {detail}
+            </div>
+          ) : null}
+
+          {meta ? (
+            <div className="mt-1 truncate text-[10px] uppercase tracking-[0.12em] text-white/35">
+              {meta}
+            </div>
+          ) : null}
         </div>
 
         <Sparkline points={sparkline} tone={tone} isLive={isLive} />
@@ -176,6 +192,12 @@ export default function ContextAwareRightRail() {
   const searchParams = useSearchParams();
   const { watchlistTickers } = useStoredWatchlistTickers();
   const [mounted, setMounted] = useState(false);
+  const [cryptoNewsPreview, setCryptoNewsPreview] = useState<{
+    headline: string;
+    source: string;
+    publishedAt: string;
+    tone: RightRailStatusTone;
+  } | null>(null);
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
 
   const [model, setModel] = useState<RightRailContextModel>(() =>
@@ -228,6 +250,56 @@ export default function ContextAwareRightRail() {
     };
   }, [mounted, routeKey, route, watchlistKey]);
 
+  useEffect(() => {
+    if (!mounted || route.page !== "crypto") {
+      setCryptoNewsPreview(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadCryptoNewsPreview() {
+      try {
+        const response = await fetch("/api/crypto/news?limit=1", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          if (!cancelled) setCryptoNewsPreview(null);
+          return;
+        }
+
+        const json = await response.json();
+        const preview = Array.isArray(json.items) ? json.items[0] : null;
+
+        if (cancelled || !preview) {
+          if (!cancelled) setCryptoNewsPreview(null);
+          return;
+        }
+
+        setCryptoNewsPreview({
+          headline: String(preview.headline ?? preview.title ?? "").trim(),
+          source: String(preview.source ?? "Crypto News").trim(),
+          publishedAt: String(preview.publishedAt ?? "now").trim(),
+          tone:
+            preview.tone === "bullish"
+              ? "success"
+              : preview.tone === "bearish"
+                ? "danger"
+                : "accent",
+        });
+      } catch {
+        if (!cancelled) setCryptoNewsPreview(null);
+      }
+    }
+
+    void loadCryptoNewsPreview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted, route.page, routeKey]);
+
   const visibleTickers = useMemo(
     () =>
       model.sections.flatMap((section) =>
@@ -277,6 +349,21 @@ export default function ContextAwareRightRail() {
       sections: model.sections.map((section) => ({
         ...section,
         items: section.items.map((item) => {
+          if (
+            route.page === "crypto" &&
+            item.href === "/crypto/news" &&
+            cryptoNewsPreview
+          ) {
+            return {
+              ...item,
+              detail: cryptoNewsPreview.headline,
+              meta: `${cryptoNewsPreview.source} • ${cryptoNewsPreview.publishedAt}`,
+              tone: item.tone === "accent" ? item.tone : cryptoNewsPreview.tone,
+              statusDot:
+                item.statusDot === "accent" ? item.statusDot : cryptoNewsPreview.tone,
+            };
+          }
+
           if (!item.ticker) return item;
 
           const live = liveSparklines[item.ticker];
@@ -302,10 +389,10 @@ export default function ContextAwareRightRail() {
         }),
       })),
     };
-  }, [liveSparklines, model]);
+  }, [cryptoNewsPreview, liveSparklines, model, route.page]);
 
   return (
-    <aside className="space-y-2.5">
+    <aside className="w-75 max-w-full space-y-2.5 xl:w-80 2xl:w-83">
       <section className="rounded-3xl border border-white/10 bg-white/3 p-3 shadow-[0_10px_36px_rgba(0,0,0,0.22)] backdrop-blur-xl">
         <div className="text-[9px] uppercase tracking-[0.2em] text-white/35">
           {enhancedModel.eyebrow}
@@ -331,6 +418,8 @@ export default function ContextAwareRightRail() {
                 key={`${section.title}-${item.label}-${item.value}-${item.href ?? ""}-${item.ticker ?? ""}-${index}`}
                 label={item.label}
                 value={item.value}
+                detail={item.detail}
+                meta={item.meta}
                 href={item.href}
                 preserveMobilePreview={isMobilePreview}
                 tone={item.tone}
