@@ -3,7 +3,7 @@ import {
   fetchSignalsForTickers,
   type SignalDetailRow,
 } from "@/lib/queries/signals";
-import { getQuotePrice } from "@/lib/market/quotes";
+import { fetchServerQuoteMap } from "@/lib/market/serverQuote";
 import {
   getIndexFlags,
   isMajorIndexMember,
@@ -158,6 +158,12 @@ export async function getSetupDiscoveryData(
     ]);
 
     const combinedSetupUniverse = [...marketSetupUniverse, ...preMarketSetupUniverse];
+    const quoteUniverse = Array.from(
+      new Set([
+        ...signalRows.map((row) => normalizeTicker(row.ticker)),
+        ...combinedSetupUniverse.map((row) => normalizeTicker(row.ticker)),
+      ].filter(Boolean))
+    );
 
     const fundamentalsTickerLimit = Math.max(
       signalLimit,
@@ -172,7 +178,7 @@ export async function getSetupDiscoveryData(
       ])
     );
 
-    const [marketSetupSignalRows, fundamentalsEntries] = await Promise.all([
+    const [marketSetupSignalRows, fundamentalsEntries, serverQuoteMap] = await Promise.all([
       time(
         "setupDiscovery.marketSetupSignals",
         fetchSignalsForTickers(combinedSetupUniverse.map((item) => item.ticker))
@@ -186,6 +192,7 @@ export async function getSetupDiscoveryData(
           ] as const)
         )
       ),
+      time("setupDiscovery.serverQuotes", fetchServerQuoteMap(quoteUniverse)),
     ]);
 
     const marketSetupSignalMap = new Map(
@@ -204,7 +211,9 @@ export async function getSetupDiscoveryData(
 
       const indexFlags = getIndexFlags(ticker);
       const fundamentals = fundamentalsMap.get(ticker);
-      const livePrice = getQuotePrice(ticker) ?? row.price ?? null;
+      const quote = serverQuoteMap[ticker];
+      const livePrice = quote?.price ?? row.price ?? null;
+      const liveChangePercent = quote?.changePct ?? null;
       const tone = signalToneFromRow(row, livePrice);
       const signal = tone === "bullish" ? "Bullish" : tone === "bearish" ? "Bearish" : "Neutral";
       const catalystFlags = inferCatalystFlags(row);
@@ -219,7 +228,7 @@ export async function getSetupDiscoveryData(
           name: row.company_name ?? fundamentals?.name ?? ticker,
           sector: row.sector ?? null,
           price: livePrice,
-          changePercent: null,
+          changePercent: liveChangePercent,
           volume,
           avgVolume,
           rvol,
@@ -250,8 +259,9 @@ export async function getSetupDiscoveryData(
       const indexFlags = getIndexFlags(ticker);
       const signalRow = marketSetupSignalMap.get(ticker);
       const fundamentals = fundamentalsMap.get(ticker);
-      const livePrice = item.price ?? getQuotePrice(ticker) ?? signalRow?.price ?? null;
-      const changePercent = item.changePct ?? null;
+      const quote = serverQuoteMap[ticker];
+      const livePrice = item.price ?? quote?.price ?? signalRow?.price ?? null;
+      const changePercent = item.changePct ?? quote?.changePct ?? null;
       const isPreMarketSession = item.session === "pre-market";
       const tone = signalRow
         ? signalToneFromRow(signalRow, livePrice)

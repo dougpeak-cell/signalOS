@@ -26,6 +26,18 @@ type DirectStockSnapshot = {
   };
 };
 
+type YahooQuoteResponse = {
+  chart?: {
+    result?: Array<{
+      meta?: {
+        regularMarketPrice?: unknown;
+        chartPreviousClose?: unknown;
+        regularMarketPreviousClose?: unknown;
+      };
+    }>;
+  };
+};
+
 function toNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
@@ -37,6 +49,59 @@ function toNumber(value: unknown): number | null {
 
 function isDirectStockTicker(ticker: string) {
   return !ticker.startsWith("^") && !ticker.startsWith("I:");
+}
+
+async function fetchYahooServerQuoteState(
+  ticker: string
+): Promise<ServerQuoteState | null> {
+  if (!isDirectStockTicker(ticker)) {
+    return null;
+  }
+
+  try {
+    const res = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`,
+      {
+        method: "GET",
+        cache: "no-store",
+      }
+    );
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const payload = (await res.json()) as YahooQuoteResponse;
+    const meta = payload.chart?.result?.[0]?.meta;
+
+    if (!meta) {
+      return null;
+    }
+
+    const price = toNumber(meta.regularMarketPrice);
+    if (price == null || price <= 0) {
+      return null;
+    }
+
+    const prevClose =
+      toNumber(meta.regularMarketPreviousClose) ??
+      toNumber(meta.chartPreviousClose);
+    const change = prevClose != null ? price - prevClose : null;
+    const changePct =
+      change != null && prevClose != null && prevClose !== 0
+        ? (change / prevClose) * 100
+        : null;
+
+    return {
+      price,
+      prevClose,
+      change,
+      changePct,
+      source: "api",
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function fetchDirectServerQuoteState(
@@ -148,6 +213,7 @@ export async function fetchServerQuoteMap(
       normalizedTickers.map(async (ticker) => ({
         ticker,
         directQuote: await fetchDirectServerQuoteState(ticker),
+        yahooQuote: await fetchYahooServerQuoteState(ticker),
         routeQuote: await resolveMassiveQuote(ticker, {
           includePoints: false,
           includeFundamentals: false,
@@ -161,19 +227,23 @@ export async function fetchServerQuoteMap(
 
       const price =
         row.directQuote?.price ??
+        row.yahooQuote?.price ??
         toNumber(row.routeQuote?.price);
       if (price == null) continue;
 
       const prevClose =
         row.directQuote?.prevClose ??
+        row.yahooQuote?.prevClose ??
         toNumber(row.routeQuote?.prevClose) ??
         null;
       const change =
         row.directQuote?.change ??
+        row.yahooQuote?.change ??
         toNumber(row.routeQuote?.change) ??
         (prevClose != null && prevClose !== 0 ? price - prevClose : null);
       const changePct =
         row.directQuote?.changePct ??
+        row.yahooQuote?.changePct ??
         toNumber(row.routeQuote?.changePct) ??
         (change != null && prevClose != null && prevClose !== 0
           ? (change / prevClose) * 100
@@ -214,22 +284,26 @@ export async function fetchServerQuoteState(
 
   try {
     const directQuote = await fetchDirectServerQuoteState(normalizedTicker);
-    const payload = directQuote
+    const yahooQuote = directQuote ? null : await fetchYahooServerQuoteState(normalizedTicker);
+    const payload = directQuote || yahooQuote
       ? null
       : await resolveMassiveQuote(normalizedTicker, {
           includePoints: false,
           includeFundamentals: false,
         });
-    const price = directQuote?.price ?? toNumber(payload?.price);
+    const price = directQuote?.price ?? yahooQuote?.price ?? toNumber(payload?.price);
 
     if (price != null) {
-      const prevClose = directQuote?.prevClose ?? toNumber(payload?.prevClose);
+      const prevClose =
+        directQuote?.prevClose ?? yahooQuote?.prevClose ?? toNumber(payload?.prevClose);
       const change =
         directQuote?.change ??
+        yahooQuote?.change ??
         toNumber(payload?.change) ??
         (prevClose != null && prevClose !== 0 ? price - prevClose : null);
       const changePct =
         directQuote?.changePct ??
+        yahooQuote?.changePct ??
         toNumber(payload?.changePct) ??
         (change != null && prevClose != null && prevClose !== 0
           ? (change / prevClose) * 100
