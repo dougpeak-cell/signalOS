@@ -3,14 +3,15 @@
 import Link from "next/link";
 import type { ReactElement } from "react";
 
-type CryptoPageTabKey = "market" | "watchlist" | "portfolio";
+type CryptoPageTabKey = "market" | "news" | "watchlist" | "portfolio";
 
 const CRYPTO_PAGE_TABS: ReadonlyArray<{
   key: CryptoPageTabKey;
   label: string;
-  href: "/crypto" | "/crypto/watchlist" | "/crypto/portfolio";
+  href: "/crypto" | "/crypto/news" | "/crypto/watchlist" | "/crypto/portfolio";
 }> = [
   { key: "market", label: "Market", href: "/crypto" },
+  { key: "news", label: "News", href: "/crypto/news" },
   { key: "watchlist", label: "Watchlist", href: "/crypto/watchlist" },
   { key: "portfolio", label: "Portfolio", href: "/crypto/portfolio" },
 ];
