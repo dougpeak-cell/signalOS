@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import CryptoPageTabs from "@/components/crypto/CryptoPageTabs";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
@@ -236,7 +237,7 @@ export default function CryptoPortfolioPageClient() {
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.08),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(16,185,129,0.08),transparent_36%)]" />
       <div className="relative z-10 mx-auto max-w-6xl space-y-6">
-        <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 shadow-[0_10px_36px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+        <section className="rounded-3xl border border-white/10 bg-white/3 p-5 shadow-[0_10px_36px_rgba(0,0,0,0.22)] backdrop-blur-xl">
           <div className={isMobilePreview ? "pr-28" : ""}>
             <div className="inline-flex rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">
               Sigi Crypto
@@ -245,6 +246,12 @@ export default function CryptoPortfolioPageClient() {
             <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
               A compact crypto position view for holdings, market value, and live P/L without crossing into the stock portfolio workflow.
             </p>
+
+            <CryptoPageTabs
+              active="portfolio"
+              isMobilePreview={isMobilePreview}
+              className="mt-4"
+            />
           </div>
 
           <div className={isMobilePreview ? "mt-4 space-y-3" : "mt-5 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]"}>
@@ -260,7 +267,7 @@ export default function CryptoPortfolioPageClient() {
                       if (event.key === "Enter") submit();
                     }}
                     placeholder="BTC, ETH, SOL..."
-                    className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
+                    className="w-full rounded-2xl border border-white/10 bg-white/3 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
                   />
                   {suggestions.length > 0 ? (
                     <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl border border-cyan-400/20 bg-black shadow-2xl">
@@ -291,14 +298,14 @@ export default function CryptoPortfolioPageClient() {
                   value={quantity}
                   onChange={(event) => setQuantity(event.target.value)}
                   placeholder="Qty"
-                  className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
+                  className="rounded-2xl border border-white/10 bg-white/3 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
                 />
 
                 <input
                   value={entryPrice}
                   onChange={(event) => setEntryPrice(event.target.value)}
                   placeholder="Entry"
-                  className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
+                  className="rounded-2xl border border-white/10 bg-white/3 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
                 />
 
                 <button
@@ -328,7 +335,7 @@ export default function CryptoPortfolioPageClient() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 shadow-[0_10px_36px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+        <section className="rounded-3xl border border-white/10 bg-white/3 p-5 shadow-[0_10px_36px_rgba(0,0,0,0.22)] backdrop-blur-xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300/78">Held Positions</div>
@@ -363,19 +370,19 @@ export default function CryptoPortfolioPageClient() {
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-3">
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <div className="rounded-2xl border border-white/10 bg-white/3 px-3 py-2">
                         <div className="text-[10px] uppercase tracking-[0.16em] text-white/35">Quantity</div>
                         <div className="mt-1 text-sm font-semibold text-white">{row.quantity.toLocaleString()}</div>
                       </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <div className="rounded-2xl border border-white/10 bg-white/3 px-3 py-2">
                         <div className="text-[10px] uppercase tracking-[0.16em] text-white/35">Entry</div>
                         <div className="mt-1 text-sm font-semibold text-white">{money(row.entryPrice)}</div>
                       </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <div className="rounded-2xl border border-white/10 bg-white/3 px-3 py-2">
                         <div className="text-[10px] uppercase tracking-[0.16em] text-white/35">Last</div>
                         <div className="mt-1 text-sm font-semibold text-white">{money(row.currentPrice)}</div>
                       </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <div className="rounded-2xl border border-white/10 bg-white/3 px-3 py-2">
                         <div className="text-[10px] uppercase tracking-[0.16em] text-white/35">Value</div>
                         <div className="mt-1 text-sm font-semibold text-white">{money(row.marketValue)}</div>
                       </div>
@@ -404,7 +411,7 @@ export default function CryptoPortfolioPageClient() {
                       </button>
                       <button
                         onClick={() => removeCryptoPortfolioHolding(row.symbol)}
-                        className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-white/72 transition hover:bg-white/8"
+                        className="rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs font-semibold text-white/72 transition hover:bg-white/8"
                       >
                         Remove
                       </button>

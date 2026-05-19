@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import CryptoPageTabs from "@/components/crypto/CryptoPageTabs";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
@@ -442,6 +443,12 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
             </h1>
 
             <p className={["max-w-2xl text-sm leading-6 text-white/55", isMobilePreview ? "mt-2" : "mt-3"].join(" ")}>{config.description}</p>
+
+            <CryptoPageTabs
+              active="market"
+              isMobilePreview={isMobilePreview}
+              className={isMobilePreview ? "mt-4" : "mt-5"}
+            />
           </div>
 
           <div

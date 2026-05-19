@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import CryptoPageTabs from "@/components/crypto/CryptoPageTabs";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
@@ -1635,6 +1636,12 @@ export default function CryptoDetailPage() {
             <p className="mt-3 text-sm text-white/50">
               Real-time crypto chart, momentum read, range context, and volume activity.
             </p>
+
+            <CryptoPageTabs
+              active="market"
+              isMobilePreview={isMobilePreview}
+              className="mt-4"
+            />
 
             <CryptoIdentityPanel identity={identity} ticker={ticker} compact={isMobilePreview} />
 

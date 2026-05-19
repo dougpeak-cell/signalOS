@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import CryptoPageTabs from "@/components/crypto/CryptoPageTabs";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
@@ -178,6 +179,12 @@ export default function CryptoWatchlistPageClient() {
             <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">
               A condensed crypto-only watchlist for names you want to monitor separately from stock tracking.
             </p>
+
+            <CryptoPageTabs
+              active="watchlist"
+              isMobilePreview={isMobilePreview}
+              className="mt-4"
+            />
           </div>
 
           <div className={isMobilePreview ? "mt-4 space-y-3" : "mt-5 flex flex-wrap items-center gap-3"}>
