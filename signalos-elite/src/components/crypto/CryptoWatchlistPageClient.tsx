@@ -219,7 +219,7 @@ export default function CryptoWatchlistPageClient() {
               ) : null}
             </div>
 
-            <div className={isMobilePreview ? "grid grid-cols-3 gap-3" : "ml-auto grid min-w-[320px] grid-cols-3 gap-3"}>
+            <div className={isMobilePreview ? "grid grid-cols-2 gap-3" : "ml-auto grid min-w-[320px] grid-cols-3 gap-3"}>
               <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Tracked</div>
                 <div className="mt-2 text-2xl font-semibold text-white">{rows.length}</div>
@@ -228,7 +228,7 @@ export default function CryptoWatchlistPageClient() {
                 <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Advancers</div>
                 <div className="mt-2 text-2xl font-semibold text-emerald-300">{positiveCount}</div>
               </div>
-              <div className="rounded-2xl border border-rose-400/20 bg-rose-400/8 px-4 py-3">
+              <div className={`rounded-2xl border border-rose-400/20 bg-rose-400/8 px-4 py-3 ${isMobilePreview ? "col-span-2" : ""}`}>
                 <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Decliners</div>
                 <div className="mt-2 text-2xl font-semibold text-rose-300">{negativeCount}</div>
               </div>
