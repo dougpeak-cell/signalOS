@@ -1,6 +1,6 @@
 import { Suspense, type ReactElement } from "react";
 import LiveAccessStrip from "@/components/access/LiveAccessStrip";
-import TodayActionRow from "@/components/today/TodayActionRow";
+import TodayActionRowClient from "@/components/today/TodayActionRowClient";
 import TodayBottomIntelRail from "@/components/today/TodayBottomIntelRail";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
 import TodayHeroRow from "@/components/today/TodayHeroRow";
@@ -17,6 +17,7 @@ import {
 	multiCardRowClass,
 	todayPageStackClass,
 } from "@/components/today/TodayLayoutPrimitives";
+import { getTodayActionRowMetrics } from "@/lib/today/actionRow";
 import type { TodayPageData } from "@/lib/today/pageData";
 
 type TodayPageShellProps = Pick<
@@ -51,7 +52,7 @@ type TodayPageShellProps = Pick<
 	isDevMobilePreview?: boolean;
 };
 
-export default function TodayPageShell({
+export default async function TodayPageShell({
 	defaultSetupSession,
 	topSetups,
 	preMarketTopSetups,
@@ -79,11 +80,12 @@ export default function TodayPageShell({
 	hasSigiSmart,
 	hasSigiPro,
 	isDevMobilePreview = false,
-}: TodayPageShellProps): ReactElement {
+}: TodayPageShellProps): Promise<ReactElement> {
 	const catalystItems = [...topSetups, ...emergingSetups];
 	const sigiMovers = [...commandCenterGainers, ...commandCenterLosers];
 	const shouldUseMobileTodayHome = isDevMobilePreview;
 	const shouldRenderDesktopTodayLayout = !shouldUseMobileTodayHome;
+	const actionRowMetrics = await getTodayActionRowMetrics();
 
 	return (
 		<div className="min-h-screen bg-black text-white">
@@ -105,13 +107,12 @@ export default function TodayPageShell({
 						highVolumeRows={defaultSetupSession === "pre" ? preMarketRows : regularMostTradedRows}
 						watchlistRows={watchlistMovers}
 						defaultSetupSession={defaultSetupSession}
+						initialActionRowMetrics={actionRowMetrics}
 						forceVisible={shouldUseMobileTodayHome}
 					/>
 				</Suspense>
 
 				<div className={`${shouldRenderDesktopTodayLayout ? "hidden md:block md:space-y-6" : "hidden"}`}>
-					<TodayActionRow />
-					<LiveAccessStrip />
 					<TodayHeroRow
 						hasSigiSmart={hasSigiSmart}
 						hasSigiPro={hasSigiPro}
@@ -120,6 +121,8 @@ export default function TodayPageShell({
 						news={commandCenterNews}
 						watchlistRows={watchlistMovers}
 					/>
+					<TodayActionRowClient initialMetrics={actionRowMetrics} />
+					<LiveAccessStrip />
 
 					<TodaySecondaryIntelRow
 						catalystItems={catalystItems}

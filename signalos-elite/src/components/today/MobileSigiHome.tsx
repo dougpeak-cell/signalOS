@@ -12,6 +12,7 @@ import { openMobileSigiSheet } from "@/components/shell/mobileSigiSheetEvents";
 import { setMobileSigiSheetDefaultContext } from "@/components/shell/mobileSigiSheetEvents";
 import SigiOnboarding from "@/components/sigi/SigiOnboarding";
 import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
+import TodayActionRowClient from "@/components/today/TodayActionRowClient";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
 import TodayTrendingNewsPanel from "@/components/today/TodayTrendingNewsPanel";
@@ -41,6 +42,7 @@ import type {
   TodaySetupSession,
   TodayWatchlistMoverRow,
 } from "@/lib/today/pageData";
+import type { TodayActionRowMetrics } from "@/lib/today/actionRow";
 
 type MobileSigiHomeProps = {
   hasSigiSmart: boolean;
@@ -56,6 +58,7 @@ type MobileSigiHomeProps = {
   highVolumeRows: TodayMostTradedRow[];
   watchlistRows: TodayWatchlistMoverRow[];
   defaultSetupSession: TodaySetupSession;
+  initialActionRowMetrics: TodayActionRowMetrics;
   forceVisible?: boolean;
 };
 
@@ -145,6 +148,7 @@ export default function MobileSigiHome({
   highVolumeRows,
   watchlistRows,
   defaultSetupSession,
+  initialActionRowMetrics,
   forceVisible = false,
 }: MobileSigiHomeProps): ReactElement {
   const { effectiveTicker, heroStory, stockContext } = useTodayHeroContext();
@@ -833,6 +837,8 @@ export default function MobileSigiHome({
           </div>
         </div>
       </div>
+
+      <TodayActionRowClient initialMetrics={initialActionRowMetrics} />
 
       <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,30,0.96),rgba(3,7,18,0.9))] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
         <div className="flex items-start justify-between gap-3">

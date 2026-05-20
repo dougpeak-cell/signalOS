@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactElement } from "react";
 import MobileSigiHome from "@/components/today/MobileSigiHome";
 import TodayLoadingScreen from "@/components/today/TodayLoadingScreen";
 import { TodayHeroProvider } from "@/components/today/TodayHeroContext";
+import type { TodayActionRowMetrics } from "@/lib/today/actionRow";
 import type { RankedSetupItem } from "@/lib/today/setupDiscovery";
 import type {
   TodayCommandCenterNewsRow,
@@ -28,6 +29,7 @@ type TodayMobileHomeSlotProps = {
   highVolumeRows: TodayMostTradedRow[];
   watchlistRows: TodayWatchlistMoverRow[];
   defaultSetupSession: TodaySetupSession;
+  initialActionRowMetrics: TodayActionRowMetrics;
   forceVisible?: boolean;
   preMarketTopSetups: TodaySetupItem[];
 };
@@ -45,6 +47,7 @@ export default function TodayMobileHomeSlot({
   highVolumeRows,
   watchlistRows,
   defaultSetupSession,
+  initialActionRowMetrics,
   forceVisible = false,
   preMarketTopSetups,
 }: TodayMobileHomeSlotProps): ReactElement | null {
@@ -89,6 +92,7 @@ export default function TodayMobileHomeSlot({
         highVolumeRows={highVolumeRows}
         watchlistRows={watchlistRows}
         defaultSetupSession={defaultSetupSession}
+        initialActionRowMetrics={initialActionRowMetrics}
         forceVisible={forceVisible}
       />
     </TodayHeroProvider>
