@@ -335,8 +335,6 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
     .slice(0, 3);
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const mobilePreviewFrame = useResponsiveMobilePreviewFrame(isMobilePreview);
-  const plan = tier ?? "free";
-  const canUseCryptoWorkspace = plan === "pro";
   const sourcePath = pathname || "/crypto";
   const buildCryptoHref = (symbol: string) => {
     const params = new URLSearchParams();
@@ -419,16 +417,6 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
             isMobilePreview ? "mb-6 gap-4" : "md:flex-row md:items-end",
           ].join(" ")}
         >
-          {!canUseCryptoWorkspace && plan === "smart" ? (
-            <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4">
-              <p className="text-sm font-bold text-amber-100">Pro Crypto Workspace Coming Soon</p>
-
-              <p className="mt-1 text-sm text-slate-300">
-                Advanced operator tools, elite setup scoring, and multi-timeframe crypto intelligence are currently in development.
-              </p>
-            </div>
-          ) : null}
-
           <div className={isMobilePreview ? "pr-28" : ""}>
             <div className={["inline-flex rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200", isMobilePreview ? "mb-2" : "mb-3"].join(" ")}>
               {config.eyebrow}
