@@ -1,4 +1,5 @@
 import GenericStockView from "@/components/stocks/GenericStockView";
+import StockPremiumAccessGate from "@/components/access/StockPremiumAccessGate";
 
 type PageProps = {
   params: Promise<{
@@ -12,5 +13,9 @@ export default async function StockDetailPage({ params, searchParams }: PageProp
   const resolvedSearchParams = (await searchParams) ?? {};
   const isMobilePreview = resolvedSearchParams.mobilePreview === "1";
 
-  return <GenericStockView ticker={ticker} isMobilePreview={isMobilePreview} />;
+  return (
+    <StockPremiumAccessGate ticker={ticker}>
+      <GenericStockView ticker={ticker} isMobilePreview={isMobilePreview} />
+    </StockPremiumAccessGate>
+  );
 }

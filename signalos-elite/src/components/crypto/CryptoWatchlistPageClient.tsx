@@ -9,6 +9,7 @@ import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiv
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { CRYPTO_DIRECTORY } from "@/lib/crypto/catalog";
+import { getPremiumAccess } from "@/lib/premiumAccess";
 import {
   addCryptoWatchlistSymbol,
   readCryptoWatchlist,
@@ -47,7 +48,7 @@ export default function CryptoWatchlistPageClient() {
   const { tier } = useSigiTier();
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const mobilePreviewFrame = useResponsiveMobilePreviewFrame(isMobilePreview);
-  const canUseCrypto = tier === "smart" || tier === "pro";
+  const canUseCrypto = getPremiumAccess({ tier, feature: "crypto" });
 
   const [entries, setEntries] = useState<CryptoWatchlistEntry[]>([]);
   const [quotes, setQuotes] = useState<Record<string, SnapshotRow>>({});

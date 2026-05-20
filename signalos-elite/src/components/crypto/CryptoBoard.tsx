@@ -9,6 +9,7 @@ import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiv
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import type { CryptoBoardConfig } from "@/lib/crypto/catalog";
+import { getPremiumAccess } from "@/lib/premiumAccess";
 import {
   addCryptoWatchlistSymbol,
   upsertCryptoPortfolioHolding,
@@ -119,6 +120,7 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { tier } = useSigiTier();
+  const canUseCrypto = getPremiumAccess({ tier, feature: "crypto" });
   const [rows, setRows] = useState<CryptoRow[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -334,7 +336,6 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const mobilePreviewFrame = useResponsiveMobilePreviewFrame(isMobilePreview);
   const plan = tier ?? "free";
-  const canUseCrypto = plan === "smart" || plan === "pro";
   const canUseCryptoWorkspace = plan === "pro";
   const sourcePath = pathname || "/crypto";
   const buildCryptoHref = (symbol: string) => {
@@ -585,7 +586,7 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
                   <button
                     type="button"
                     onClick={() => addToCryptoWatchlist(row.symbol)}
-                    className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-white/78 transition hover:bg-white/8"
+                    className="rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs font-semibold text-white/78 transition hover:bg-white/8"
                   >
                     Add to Watchlist
                   </button>
@@ -861,7 +862,7 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
                     <button
                       type="button"
                       onClick={() => addToCryptoWatchlist(row.symbol)}
-                      className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-semibold text-white/78 transition hover:bg-white/8"
+                      className="rounded-full border border-white/10 bg-white/3 px-3 py-1 text-xs font-semibold text-white/78 transition hover:bg-white/8"
                     >
                       Add to Watchlist
                     </button>
@@ -928,7 +929,7 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
                             <button
                               type="button"
                               onClick={() => addToCryptoWatchlist(row.symbol)}
-                              className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-semibold text-white/78 transition hover:bg-white/8"
+                              className="rounded-full border border-white/10 bg-white/3 px-3 py-1 text-xs font-semibold text-white/78 transition hover:bg-white/8"
                             >
                               Watchlist
                             </button>

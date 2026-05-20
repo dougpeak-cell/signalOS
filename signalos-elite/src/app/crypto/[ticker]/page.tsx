@@ -8,6 +8,7 @@ import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiv
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { useCryptoStream } from "@/hooks/useCryptoStream";
+import { getPremiumAccess } from "@/lib/premiumAccess";
 import {
   addCryptoWatchlistSymbol,
   upsertCryptoPortfolioHolding,
@@ -1452,7 +1453,7 @@ export default function CryptoDetailPage() {
   const backLabel = buildCryptoBackLabel(sourcePath);
   const mobilePreviewFrame = useResponsiveMobilePreviewFrame(isMobilePreview);
   const plan = tier ?? "free";
-  const canUseCrypto = plan === "smart" || plan === "pro";
+  const canUseCrypto = getPremiumAccess({ tier: plan, feature: "crypto" });
   const canUseCryptoWorkspace = plan === "pro";
   const identity = CRYPTO_IDENTITY[ticker];
   const livePrice = useCryptoStream(ticker);

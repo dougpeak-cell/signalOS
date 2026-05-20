@@ -1,4 +1,7 @@
 import { Suspense, type ReactElement } from "react";
+import CryptoWeekendAccess from "@/components/access/CryptoWeekendAccess";
+import FeaturedPremiumStock from "@/components/access/FeaturedPremiumStock";
+import SmartPreviewStarter from "@/components/access/SmartPreviewStarter";
 import TodayActionRow from "@/components/today/TodayActionRow";
 import TodayBottomIntelRail from "@/components/today/TodayBottomIntelRail";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
@@ -124,6 +127,12 @@ export default function TodayPageShell({
 						trendingNews={trendingNews}
 						watchlistMovers={watchlistMovers}
 					/>
+
+					<section className="grid gap-4 md:grid-cols-3">
+						<FeaturedPremiumStock />
+						<CryptoWeekendAccess />
+						<SmartPreviewStarter />
+					</section>
 
 					<section className={`${multiCardRowClass} grid-cols-1 xl:grid-cols-[1.1fr_0.9fr]`}>
 						<TodayTopSetupsPanel
