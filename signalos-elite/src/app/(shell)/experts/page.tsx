@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Brain,
   Briefcase,
@@ -11,6 +12,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import tradingWorkspaceScreenshot from "../../../public/Images/Chart/Screenshot 2026-05-20 175534.png";
 import ExpertsProDashboard from "@/components/experts/ExpertsProDashboard";
 import { getSigiSettingsViewForCurrentUser } from "@/lib/sigi/settings";
 
@@ -213,6 +215,38 @@ export default async function ExpertsPage({
               title="Sector Tabs"
               text="Use sector tabs to drill into the top analyst-ranked names inside each market group."
             />
+          </div>
+
+          <div className={isMobilePreview ? "mt-6" : "mt-8"}>
+            <div className="overflow-hidden rounded-4xl border border-cyan-400/20 bg-[linear-gradient(180deg,rgba(6,13,24,0.95),rgba(2,8,18,0.98))] p-3 shadow-[0_0_55px_rgba(34,211,238,0.08)] md:p-4">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-[0.32em] text-cyan-300">
+                    Pro Trading Workspace
+                  </div>
+                  <h3 className={isMobilePreview ? "mt-2 text-xl font-bold text-white" : "mt-2 text-2xl font-bold text-white md:text-3xl"}>
+                    See the full trading screen Pro unlocks.
+                  </h3>
+                  <p className={isMobilePreview ? "mt-2 text-sm leading-6 text-slate-300" : "mt-2 max-w-3xl text-sm leading-7 text-slate-300 md:text-base"}>
+                    Live chart structure, levels, indicators, and workspace controls stay visible in one execution-ready terminal.
+                  </p>
+                </div>
+
+                <div className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-cyan-100">
+                  Full Workspace View
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-[28px] border border-cyan-400/18 bg-black/40">
+                <Image
+                  src={tradingWorkspaceScreenshot}
+                  alt="Sigi Pro Trading Workspace screenshot showing the full chart, levels, indicators, and control rail"
+                  priority
+                  sizes="(min-width: 1536px) 1400px, (min-width: 1280px) 1200px, (min-width: 768px) 92vw, 100vw"
+                  className="h-auto w-full"
+                />
+              </div>
+            </div>
           </div>
         </section>
 
