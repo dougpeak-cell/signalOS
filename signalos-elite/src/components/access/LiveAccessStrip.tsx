@@ -13,14 +13,18 @@ import {
 
 export default function LiveAccessStrip({
   compact = false,
+  hasPaidCryptoAccess = false,
 }: {
   compact?: boolean;
+  hasPaidCryptoAccess?: boolean;
 }) {
   const [previewActive, setPreviewActive] = useState(false);
   const [remainingMs, setRemainingMs] = useState(0);
 
   const featuredTicker = getTodayFeaturedStock();
   const cryptoOpen = isWeekendCryptoOpen();
+  const cryptoUnlocked = hasPaidCryptoAccess || previewActive || cryptoOpen;
+  const showCryptoCard = cryptoUnlocked || shouldShowCryptoTeaser();
 
   useEffect(() => {
     function refresh() {
@@ -42,7 +46,7 @@ export default function LiveAccessStrip({
 
   return (
     <section className={compact ? "w-full py-1" : "mx-auto w-full max-w-7xl px-4 py-3"}>
-      <div className={`grid border border-cyan-400/20 bg-black/70 shadow-[0_0_30px_rgba(34,211,238,0.12)] backdrop-blur md:grid-cols-3 ${compact ? "gap-2 rounded-3xl p-2.5" : "gap-3 rounded-3xl p-3"}`}>
+      <div className={`grid border border-cyan-400/20 bg-black/70 shadow-[0_0_30px_rgba(34,211,238,0.12)] backdrop-blur ${showCryptoCard ? "md:grid-cols-3" : "md:grid-cols-2"} ${compact ? "gap-2 rounded-3xl p-2.5" : "gap-3 rounded-3xl p-3"}`}>
         <Link
           href={`/stocks/${featuredTicker}`}
           className={`group rounded-2xl border border-cyan-400/25 bg-cyan-400/10 transition hover:border-cyan-300/60 hover:bg-cyan-400/15 ${compact ? "px-3 py-2.5" : "px-4 py-3"}`}
@@ -86,22 +90,34 @@ export default function LiveAccessStrip({
           )}
         </div>
 
-        {(cryptoOpen || shouldShowCryptoTeaser()) && (
+        {showCryptoCard && (
           <Link
             href="/crypto"
-            className={`group rounded-2xl border border-purple-400/25 bg-purple-400/10 transition hover:border-purple-300/60 hover:bg-purple-400/15 ${compact ? "px-3 py-2.5" : "px-4 py-3"}`}
+            className={`group rounded-2xl border transition hover:border-purple-300/60 hover:bg-purple-400/15 ${cryptoUnlocked ? "border-purple-300/35 bg-purple-400/14 shadow-[0_0_24px_rgba(216,180,254,0.12)]" : "border-purple-400/25 bg-purple-400/10"} ${compact ? "px-3 py-2.5" : "px-4 py-3"}`}
           >
             <div className={`flex items-center gap-2 font-bold uppercase text-purple-300 ${compact ? "text-[11px] tracking-[0.16em]" : "text-xs tracking-[0.22em]"}`}>
-              <span className="h-2 w-2 rounded-full bg-purple-300 shadow-[0_0_12px_rgba(216,180,254,0.9)]" />
+              <span className={`h-2 w-2 rounded-full ${cryptoUnlocked ? "bg-purple-200 shadow-[0_0_14px_rgba(216,180,254,0.95)]" : "bg-purple-300 shadow-[0_0_12px_rgba(216,180,254,0.9)]"}`} />
               Crypto Access
             </div>
 
             <div className={`mt-1 font-semibold text-white ${compact ? "text-[13px]" : "text-sm"}`}>
-              {cryptoOpen ? "Crypto open this weekend" : "Crypto opens soon"}
+              {hasPaidCryptoAccess
+                ? "Crypto unlocked now"
+                : previewActive
+                  ? "Crypto open in Smart Preview"
+                  : cryptoOpen
+                    ? "Crypto open this weekend"
+                    : "Crypto opens soon"}
             </div>
 
             <div className="text-xs text-slate-400">
-              {cryptoOpen ? "Preview Sigi Crypto Intelligence" : "Weekend access for free users"}
+              {hasPaidCryptoAccess
+                ? "Included in your current Sigi access"
+                : previewActive
+                  ? "Opened through your active Smart Preview"
+                  : cryptoOpen
+                    ? "Preview Sigi Crypto Intelligence"
+                    : "Weekend access for free users"}
             </div>
           </Link>
         )}
