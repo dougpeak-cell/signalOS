@@ -1,6 +1,8 @@
 export type UserTier = "free" | "smart" | "pro";
 
 export const SMART_PREVIEW_STARTED_EVENT = "signalos:smart-preview-started";
+const SMART_PREVIEW_STORAGE_KEY = "sigi_smart_preview_started";
+const SMART_PREVIEW_WINDOW_MS = 30 * 60 * 1000;
 
 const FEATURED_STOCKS = ["NVDA", "TSLA", "PLTR", "AAPL", "MSFT", "AMD", "META"];
 
@@ -18,20 +20,29 @@ export function isWeekendCryptoOpen() {
 export function startSmartPreview() {
   if (typeof window === "undefined") return;
 
-  localStorage.setItem("sigi_smart_preview_started", Date.now().toString());
+  localStorage.setItem(SMART_PREVIEW_STORAGE_KEY, Date.now().toString());
   window.dispatchEvent(new Event(SMART_PREVIEW_STARTED_EVENT));
 }
 
 export function isSmartPreviewActive() {
   if (typeof window === "undefined") return false;
 
-  const started = localStorage.getItem("sigi_smart_preview_started");
+  const started = localStorage.getItem(SMART_PREVIEW_STORAGE_KEY);
   if (!started) return false;
 
   const startedAt = Number(started);
-  const oneHour = 60 * 60 * 1000;
+  if (!Number.isFinite(startedAt)) {
+    localStorage.removeItem(SMART_PREVIEW_STORAGE_KEY);
+    return false;
+  }
 
-  return Date.now() - startedAt < oneHour;
+  const active = Date.now() - startedAt < SMART_PREVIEW_WINDOW_MS;
+
+  if (!active) {
+    localStorage.removeItem(SMART_PREVIEW_STORAGE_KEY);
+  }
+
+  return active;
 }
 
 export function getPremiumAccess({
@@ -67,12 +78,21 @@ export function getPremiumAccess({
 export function getSmartPreviewRemainingMs() {
   if (typeof window === "undefined") return 0;
 
-  const started = localStorage.getItem("sigi_smart_preview_started");
+  const started = localStorage.getItem(SMART_PREVIEW_STORAGE_KEY);
   if (!started) return 0;
 
   const startedAt = Number(started);
-  const oneHour = 60 * 60 * 1000;
-  const remaining = oneHour - (Date.now() - startedAt);
+  if (!Number.isFinite(startedAt)) {
+    localStorage.removeItem(SMART_PREVIEW_STORAGE_KEY);
+    return 0;
+  }
+
+  const remaining = SMART_PREVIEW_WINDOW_MS - (Date.now() - startedAt);
+
+  if (remaining <= 0) {
+    localStorage.removeItem(SMART_PREVIEW_STORAGE_KEY);
+    return 0;
+  }
 
   return Math.max(0, remaining);
 }

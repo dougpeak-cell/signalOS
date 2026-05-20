@@ -8,17 +8,20 @@ import {
   getTodayFeaturedStock,
   isSmartPreviewActive,
   isWeekendCryptoOpen,
+  SMART_PREVIEW_STARTED_EVENT,
   startSmartPreview,
+  type UserTier,
 } from "@/lib/premiumAccess";
 
 export default function LiveAccessStrip({
   compact = false,
   hasPaidCryptoAccess = false,
+  tier = "free",
 }: {
   compact?: boolean;
   hasPaidCryptoAccess?: boolean;
+  tier?: UserTier;
 }) {
-  const tier = "pro";
   const [previewActive, setPreviewActive] = useState(false);
   const [remainingMs, setRemainingMs] = useState(0);
 
@@ -36,7 +39,16 @@ export default function LiveAccessStrip({
     refresh();
 
     const timer = setInterval(refresh, 30000);
-    return () => clearInterval(timer);
+    window.addEventListener("focus", refresh);
+    window.addEventListener("storage", refresh);
+    window.addEventListener(SMART_PREVIEW_STARTED_EVENT, refresh);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener(SMART_PREVIEW_STARTED_EVENT, refresh);
+    };
   }, []);
 
   function handleStartPreview() {
@@ -136,7 +148,7 @@ export default function LiveAccessStrip({
               onClick={handleStartPreview}
               className={`mt-2 rounded-xl bg-emerald-300 text-xs font-bold text-black transition hover:bg-emerald-200 ${compact ? "px-3.5 py-2" : "px-4 py-2"}`}
             >
-              Start 1-Hour Preview
+              Start 30-Minute Preview
             </button>
           )}
         </div>

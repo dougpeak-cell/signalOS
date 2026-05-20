@@ -217,14 +217,7 @@ export default function SigiDecisionPanel({
   movers,
   news,
   watchlistRows,
-}: {
-  hasSigiSmart: boolean;
-  hasSigiPro: boolean;
-  topSetups: TodaySetupItem[];
-  movers: TodayCommandCenterMoverRow[];
-  news: TodayCommandCenterNewsRow[];
-  watchlistRows: TodayWatchlistMoverRow[];
-}): ReactElement {
+}: SigiDecisionPanelProps): ReactElement {
   const { tier } = useSigiTier();
   const effectiveHasSigiSmart = hasSigiSmart || tier === "smart" || tier === "pro";
 
@@ -236,6 +229,33 @@ export default function SigiDecisionPanel({
     );
   }
 
+  return (
+    <SigiDecisionPanelContent
+      hasSigiPro={hasSigiPro}
+      topSetups={topSetups}
+      movers={movers}
+      news={news}
+      watchlistRows={watchlistRows}
+    />
+  );
+}
+
+type SigiDecisionPanelProps = {
+  hasSigiSmart: boolean;
+  hasSigiPro: boolean;
+  topSetups: TodaySetupItem[];
+  movers: TodayCommandCenterMoverRow[];
+  news: TodayCommandCenterNewsRow[];
+  watchlistRows: TodayWatchlistMoverRow[];
+};
+
+function SigiDecisionPanelContent({
+  hasSigiPro,
+  topSetups,
+  movers,
+  news,
+  watchlistRows,
+}: Omit<SigiDecisionPanelProps, "hasSigiSmart">): ReactElement {
   const router = useRouter();
   const { effectiveTicker, loadHeroStory, stockContext } = useTodayHeroContext();
   const { activeTicker, setActiveTicker, setSigiAction, sigiActionNonce } = useSelectedTicker();
