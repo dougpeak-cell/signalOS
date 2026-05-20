@@ -18,6 +18,7 @@ export default function LiveAccessStrip({
   compact?: boolean;
   hasPaidCryptoAccess?: boolean;
 }) {
+  const tier = "pro";
   const [previewActive, setPreviewActive] = useState(false);
   const [remainingMs, setRemainingMs] = useState(0);
 
@@ -42,6 +43,56 @@ export default function LiveAccessStrip({
     startSmartPreview();
     setPreviewActive(true);
     setRemainingMs(getSmartPreviewRemainingMs());
+  }
+
+  if (tier === "pro") {
+    return (
+      <section className="mx-auto w-full max-w-7xl px-4 py-3">
+        <div className="grid gap-3 rounded-3xl border border-cyan-400/20 bg-black/70 p-3 md:grid-cols-3">
+          <div className="rounded-2xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-3">
+            <div className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">
+              PRO INTELLIGENCE
+            </div>
+
+            <div className="mt-1 text-sm font-semibold text-white">
+              All systems unlocked
+            </div>
+
+            <div className="text-xs text-slate-400">
+              Elite Sigi intelligence active
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3">
+            <div className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-300">
+              SIGI STATUS
+            </div>
+
+            <div className="mt-1 text-sm font-semibold text-white">
+              Live intelligence running
+            </div>
+
+            <div className="text-xs text-slate-400">
+              Market systems operational
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-purple-400/25 bg-purple-400/10 px-4 py-3">
+            <div className="text-xs font-bold uppercase tracking-[0.22em] text-purple-300">
+              CRYPTO COMMAND
+            </div>
+
+            <div className="mt-1 text-sm font-semibold text-white">
+              Crypto intelligence enabled
+            </div>
+
+            <div className="text-xs text-slate-400">
+              Real-time crypto systems active
+            </div>
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (
