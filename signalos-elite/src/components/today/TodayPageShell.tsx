@@ -122,7 +122,7 @@ export default async function TodayPageShell({
 						watchlistRows={watchlistMovers}
 					/>
 					<TodayActionRowClient initialMetrics={actionRowMetrics} />
-					<LiveAccessStrip hasPaidCryptoAccess={hasSigiSmart || hasSigiPro} tier={hasSigiPro ? "pro" : hasSigiSmart ? "smart" : "free"} />
+					<LiveAccessStrip hasPaidCryptoAccess={hasSigiPro} tier={hasSigiPro ? "pro" : hasSigiSmart ? "smart" : "free"} />
 
 					<TodaySecondaryIntelRow
 						catalystItems={catalystItems}

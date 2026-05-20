@@ -107,6 +107,62 @@ export default function LiveAccessStrip({
     );
   }
 
+  if (tier === "smart") {
+    return (
+      <section className={compact ? "w-full py-1" : "mx-auto w-full max-w-7xl px-4 py-3"}>
+        <div className={`grid gap-3 rounded-3xl border border-cyan-400/20 bg-black/70 ${compact ? "p-2.5" : "p-3"} md:grid-cols-3`}>
+          <Link
+            href={`/stocks/${featuredTicker}`}
+            className={`rounded-2xl border border-cyan-400/25 bg-cyan-400/10 transition hover:border-cyan-300/60 hover:bg-cyan-400/15 ${compact ? "px-3 py-2.5" : "px-4 py-3"}`}
+          >
+            <div className={`text-cyan-300 ${compact ? "text-[11px] tracking-[0.16em]" : "text-xs tracking-[0.22em]"} font-bold uppercase`}>
+              FEATURED ACCESS
+            </div>
+
+            <div className={`mt-1 font-semibold text-white ${compact ? "text-[13px]" : "text-sm"}`}>
+              {featuredTicker} unlocked today
+            </div>
+
+            <div className="text-xs text-slate-400">
+              Open premium stock intelligence
+            </div>
+          </Link>
+
+          <div className={`rounded-2xl border border-emerald-400/25 bg-emerald-400/10 ${compact ? "px-3 py-2.5" : "px-4 py-3"}`}>
+            <div className={`text-emerald-300 ${compact ? "text-[11px] tracking-[0.16em]" : "text-xs tracking-[0.22em]"} font-bold uppercase`}>
+              SMART STATUS
+            </div>
+
+            <div className={`mt-1 font-semibold text-white ${compact ? "text-[13px]" : "text-sm"}`}>
+              Smart intelligence active
+            </div>
+
+            <div className="text-xs text-slate-400">
+              Sigi assistant and live tools unlocked
+            </div>
+          </div>
+
+          <Link
+            href="/auth/upgrade?plan=pro&returnTo=/today"
+            className={`rounded-2xl border border-purple-400/25 bg-purple-400/10 transition hover:border-purple-300/60 hover:bg-purple-400/15 ${compact ? "px-3 py-2.5" : "px-4 py-3"}`}
+          >
+            <div className={`text-purple-300 ${compact ? "text-[11px] tracking-[0.16em]" : "text-xs tracking-[0.22em]"} font-bold uppercase`}>
+              CRYPTO COMMAND
+            </div>
+
+            <div className={`mt-1 font-semibold text-white ${compact ? "text-[13px]" : "text-sm"}`}>
+              Unlock Crypto with Pro Upgrade
+            </div>
+
+            <div className="text-xs text-slate-400">
+              Real-time crypto systems reserved for Pro
+            </div>
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className={compact ? "w-full py-1" : "mx-auto w-full max-w-7xl px-4 py-3"}>
       <div className={`grid border border-cyan-400/20 bg-black/70 shadow-[0_0_30px_rgba(34,211,238,0.12)] backdrop-blur ${showCryptoCard ? "md:grid-cols-3" : "md:grid-cols-2"} ${compact ? "gap-2 rounded-3xl p-2.5" : "gap-3 rounded-3xl p-3"}`}>
