@@ -88,6 +88,7 @@ export default function MarketThesisHero({
   }, [heroStory]);
 
   const [heroCandidateIndex, setHeroCandidateIndex] = useState(0);
+  const [useExpandedHeroImage, setUseExpandedHeroImage] = useState(false);
 
   useEffect(() => {
     setHeroCandidateIndex(0);
@@ -110,6 +111,10 @@ export default function MarketThesisHero({
       : "Stock Market Today: Active tape overview");
   const href = selectedCandidate?.url || null;
   const heroImage = selectedCandidate?.image || heroStory?.image?.trim() || null;
+
+  useEffect(() => {
+    setUseExpandedHeroImage(false);
+  }, [heroImage, heroCandidateIndex]);
 
   const narrative =
     selectedCandidate?.whyItMatters ||
@@ -149,19 +154,13 @@ export default function MarketThesisHero({
   };
 
   const handleHeroImageLoad = (event: SyntheticEvent<HTMLImageElement>) => {
-    if (!hasAnotherCandidate) {
-      return;
-    }
-
     const image = event.currentTarget;
     if (!image.naturalWidth || !image.naturalHeight) {
       return;
     }
 
     const aspectRatio = image.naturalWidth / image.naturalHeight;
-    if (aspectRatio < MIN_BANNER_IMAGE_ASPECT_RATIO) {
-      advanceHeroCandidate();
-    }
+    setUseExpandedHeroImage(aspectRatio < MIN_BANNER_IMAGE_ASPECT_RATIO);
   };
 
   return (
@@ -236,7 +235,13 @@ export default function MarketThesisHero({
           unavailableBehavior="collapse"
           onImageLoad={handleHeroImageLoad}
           onImageError={advanceHeroCandidate}
-          className="mt-6 aspect-video h-full overflow-hidden rounded-3xl border border-white/10 bg-black/25"
+          className={[
+            "mt-6 overflow-hidden rounded-3xl border border-white/10 bg-black/25 md:-mx-3 lg:-mx-4 xl:-mx-6",
+            useExpandedHeroImage
+              ? "aspect-video md:aspect-auto md:h-105 xl:h-125 md:p-4"
+              : "aspect-video h-full",
+          ].join(" ")}
+          imageClassName={useExpandedHeroImage ? "object-cover md:object-contain" : "object-cover"}
         />
       </div>
     </section>

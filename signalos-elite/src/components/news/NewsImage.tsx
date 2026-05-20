@@ -9,6 +9,7 @@ type NewsImageProps = {
   alt?: string;
   variant?: "banner" | "thumbnail";
   className?: string;
+  imageClassName?: string;
   fallbackClassName?: string;
   unavailableBehavior?: "fallback" | "collapse";
   onImageLoad?: (event: React.SyntheticEvent<HTMLImageElement>) => void;
@@ -91,6 +92,7 @@ export default function NewsImage({
   alt,
   variant = "thumbnail",
   className = "",
+  imageClassName = "",
   fallbackClassName = "",
   unavailableBehavior = "fallback",
   onImageLoad,
@@ -127,7 +129,10 @@ export default function NewsImage({
           setFailed(true);
           onImageError?.();
         }}
-        className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
+        className={[
+          "h-full w-full object-cover transition duration-500 hover:scale-[1.03]",
+          imageClassName,
+        ].join(" ")}
       />
       <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/25 to-transparent" />
     </div>
