@@ -832,8 +832,13 @@ export default function ExpertsPage() {
                       <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
                         Active Basket
                       </div>
-                      <div className="mt-1 text-sm font-semibold text-white">
-                        {selectedModelRow.tickers.join(" GÇó ")}
+                      <div className="mt-1 flex flex-wrap justify-end gap-x-2 gap-y-1 text-sm font-semibold text-white">
+                        {selectedModelRow.tickers.map((ticker, index) => (
+                          <span key={ticker} className="inline-flex items-center gap-2">
+                            {index > 0 ? <span className="text-white/35">/</span> : null}
+                            <span>{ticker}</span>
+                          </span>
+                        ))}
                       </div>
                     </div>
                   ) : null}
