@@ -1,5 +1,7 @@
 export type UserTier = "free" | "smart" | "pro";
 
+export const SMART_PREVIEW_STARTED_EVENT = "signalos:smart-preview-started";
+
 const FEATURED_STOCKS = ["NVDA", "TSLA", "PLTR", "AAPL", "MSFT", "AMD", "META"];
 
 export function getTodayFeaturedStock() {
@@ -16,10 +18,8 @@ export function isWeekendCryptoOpen() {
 export function startSmartPreview() {
   if (typeof window === "undefined") return;
 
-  const existing = localStorage.getItem("sigi_smart_preview_started");
-  if (!existing) {
-    localStorage.setItem("sigi_smart_preview_started", Date.now().toString());
-  }
+  localStorage.setItem("sigi_smart_preview_started", Date.now().toString());
+  window.dispatchEvent(new Event(SMART_PREVIEW_STARTED_EVENT));
 }
 
 export function isSmartPreviewActive() {

@@ -1,10 +1,21 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, type ReactNode } from "react";
 import { Brain, Lock, Sparkles, Zap } from "lucide-react";
+import { startSmartPreview } from "@/lib/premiumAccess";
 
 export default function UpgradeSigiSmartCard() {
+	const router = useRouter();
+	const [isStartingPreview, setIsStartingPreview] = useState(false);
+
+	function handleStartPreview() {
+		setIsStartingPreview(true);
+		startSmartPreview();
+		router.refresh();
+	}
+
 	return (
 		<div className="rounded-[28px] border border-cyan-400/25 bg-slate-950/80 p-6 shadow-[0_0_40px_rgba(6,182,212,0.12)]">
 			<div className="mb-4 flex items-center gap-3">
@@ -34,11 +45,19 @@ export default function UpgradeSigiSmartCard() {
 				<Feature icon={<Sparkles />} text="Today’s best setups and risks" />
 			</div>
 
+			<button
+				type="button"
+				onClick={handleStartPreview}
+				className="block w-full rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-5 py-3 text-center text-sm font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-400/25"
+			>
+				{isStartingPreview ? "Opening Smart Preview..." : "Start Smart Preview"}
+			</button>
+
 			<Link
 				href="/auth/upgrade?plan=smart&returnTo=/today"
-				className="block rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-5 py-3 text-center text-sm font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-400/25"
+				className="mt-3 block text-center text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200/80 transition hover:text-cyan-100"
 			>
-				Upgrade to Smart
+				Upgrade instead
 			</Link>
 
 			<p className="mt-3 text-center text-xs text-slate-400">

@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  isSmartPreviewActive,
+  SMART_PREVIEW_STARTED_EVENT,
+} from "@/lib/premiumAccess";
 import type { SigiTier } from "@/lib/sigi/gates";
 
 export type SigiPlanSummary = {
@@ -71,6 +75,27 @@ function readCachedPlanSummary(): SigiPlanSummary | null {
 
 export function useSigiTier() {
   const [planSummary, setPlanSummaryState] = useState<SigiPlanSummary | null>(null);
+  const [previewActive, setPreviewActive] = useState(false);
+
+  useEffect(() => {
+    const syncPreview = () => {
+      setPreviewActive(isSmartPreviewActive());
+    };
+
+    syncPreview();
+
+    const intervalId = window.setInterval(syncPreview, 30000);
+    window.addEventListener("focus", syncPreview);
+    window.addEventListener("storage", syncPreview);
+    window.addEventListener(SMART_PREVIEW_STARTED_EVENT, syncPreview);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", syncPreview);
+      window.removeEventListener("storage", syncPreview);
+      window.removeEventListener(SMART_PREVIEW_STARTED_EVENT, syncPreview);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,9 +143,31 @@ export function useSigiTier() {
     }
   }
 
+  const effectiveTier: SigiTier =
+    previewActive && (planSummary?.currentTier ?? "free") === "free"
+      ? "smart"
+      : planSummary?.currentTier ?? "free";
+
+  const effectivePlanSummary = planSummary
+    ? {
+        ...planSummary,
+        currentTier: effectiveTier,
+        nextTier:
+          effectiveTier === "free"
+            ? "smart"
+            : effectiveTier === "smart"
+              ? "pro"
+              : null,
+        hasSmartFeatures: effectiveTier === "smart" || effectiveTier === "pro",
+        hasProFeatures: effectiveTier === "pro",
+      }
+    : previewActive
+      ? buildPreviewPlanSummary("smart")
+      : null;
+
   return {
-    tier: planSummary?.currentTier ?? "free",
-    planSummary,
+    tier: effectiveTier,
+    planSummary: effectivePlanSummary,
     setPlanSummary,
   };
 }

@@ -13,6 +13,7 @@ import { renderTickerParagraphs } from "@/components/sigi/renderTickerText";
 import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
 import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
+import { useSigiTier } from "@/hooks/useSigiTier";
 import type { SigiStockContext } from "@/hooks/useSigi";
 import type {
   TodayCommandCenterNewsRow,
@@ -224,7 +225,10 @@ export default function SigiDecisionPanel({
   news: TodayCommandCenterNewsRow[];
   watchlistRows: TodayWatchlistMoverRow[];
 }): ReactElement {
-  if (!hasSigiSmart) {
+  const { tier } = useSigiTier();
+  const effectiveHasSigiSmart = hasSigiSmart || tier === "smart" || tier === "pro";
+
+  if (!effectiveHasSigiSmart) {
     return (
       <section id="sigi-command-panel">
         <UpgradeSigiSmartCard />

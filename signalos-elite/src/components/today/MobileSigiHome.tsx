@@ -17,6 +17,7 @@ import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPane
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
 import TodayTrendingNewsPanel from "@/components/today/TodayTrendingNewsPanel";
 import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
+import { useSigiTier } from "@/hooks/useSigiTier";
 import type { SigiTodayContext } from "@/hooks/useSigi";
 import {
   clearSigiProfile,
@@ -151,6 +152,8 @@ export default function MobileSigiHome({
   initialActionRowMetrics,
   forceVisible = false,
 }: MobileSigiHomeProps): ReactElement {
+  const { tier } = useSigiTier();
+  const effectiveHasSigiSmart = hasSigiSmart || tier === "smart" || tier === "pro";
   const { effectiveTicker, heroStory, stockContext } = useTodayHeroContext();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -270,7 +273,7 @@ export default function MobileSigiHome({
   const greeting = sigiName
     ? `Hi ${sigiName}, what do you want to know today?`
     : "Sigi is ready.";
-  const commandCenterGreeting = hasSigiSmart
+  const commandCenterGreeting = effectiveHasSigiSmart
     ? greeting
     : "Sigi Command Center";
   const leadHeadline = news[0]?.headline ?? "Sigi is watching setups, movers, and market headlines for you.";
@@ -656,7 +659,7 @@ export default function MobileSigiHome({
 
   function handleAnalyze() {
     const nextPrompt = prompt.trim();
-    if (hasSigiSmart) {
+    if (effectiveHasSigiSmart) {
       openSigiRead(nextPrompt || undefined);
     } else {
       openUpgradePrompt(nextPrompt || undefined);
@@ -683,14 +686,14 @@ export default function MobileSigiHome({
       <MobileMarketThesisHero intelligence={mobileIntelligence} />
       <LiveAccessStrip compact />
 
-      <div className={`relative overflow-hidden rounded-[28px] border border-cyan-400/24 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.18),rgba(3,7,18,0.96)_58%)] shadow-[0_0_40px_rgba(34,211,238,0.16)] ${sigiName && hasSigiSmart ? "p-5" : "p-4"}`}>
+      <div className={`relative overflow-hidden rounded-[28px] border border-cyan-400/24 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.18),rgba(3,7,18,0.96)_58%)] shadow-[0_0_40px_rgba(34,211,238,0.16)] ${sigiName && effectiveHasSigiSmart ? "p-5" : "p-4"}`}>
         <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(8,47,73,0.22),transparent_42%,rgba(8,145,178,0.08))]" />
         <div className="absolute -right-10 top-6 h-28 w-28 rounded-full bg-cyan-400/10 blur-2xl" />
         <div className="absolute -left-8 bottom-6 h-24 w-24 rounded-full bg-sky-500/10 blur-2xl" />
 
-        <div className={`relative z-10 flex items-start ${sigiName && hasSigiSmart ? "gap-4" : "gap-3"}`}>
-          <div className={`shrink-0 rounded-3xl border border-cyan-400/20 bg-cyan-400/8 shadow-[0_0_26px_rgba(34,211,238,0.12)] ${sigiName && hasSigiSmart ? "p-2" : "p-1.5"}`}>
-            <SigiSignalIcon size={sigiName && hasSigiSmart ? 72 : 50} />
+        <div className={`relative z-10 flex items-start ${sigiName && effectiveHasSigiSmart ? "gap-4" : "gap-3"}`}>
+          <div className={`shrink-0 rounded-3xl border border-cyan-400/20 bg-cyan-400/8 shadow-[0_0_26px_rgba(34,211,238,0.12)] ${sigiName && effectiveHasSigiSmart ? "p-2" : "p-1.5"}`}>
+            <SigiSignalIcon size={sigiName && effectiveHasSigiSmart ? 72 : 50} />
           </div>
 
           <div className="min-w-0">
@@ -698,7 +701,7 @@ export default function MobileSigiHome({
               <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/84">
                 Mobile Sigi Command Center
               </div>
-              {hasSigiSmart && sigiName ? (
+              {effectiveHasSigiSmart && sigiName ? (
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <button
                     type="button"
@@ -725,17 +728,17 @@ export default function MobileSigiHome({
                 SIGI watchlist: {sigiWatchlistSource}
               </div>
             ) : null}
-            <h1 className={`mt-2 font-black leading-[1.05] text-white ${sigiName && hasSigiSmart ? "text-[30px]" : "text-[24px]"}`}>
+            <h1 className={`mt-2 font-black leading-[1.05] text-white ${sigiName && effectiveHasSigiSmart ? "text-[30px]" : "text-[24px]"}`}>
               {commandCenterGreeting}
             </h1>
-            <p className={`text-sm text-white/68 ${sigiName && hasSigiSmart ? "mt-2 leading-6" : "mt-1.5 leading-5"}`}>
-              {hasSigiSmart
+            <p className={`text-sm text-white/68 ${sigiName && effectiveHasSigiSmart ? "mt-2 leading-6" : "mt-1.5 leading-5"}`}>
+              {effectiveHasSigiSmart
                 ? sigiName
                   ? leadHeadline
                   : "Enter your name below to personalize answers. You can update sectors any time."
                 : "Ask for a ticker read, market pulse, or setup check. Smart unlocks the full answer flow and command center analysis."}
             </p>
-            {hasSigiSmart && sigiName ? (
+            {effectiveHasSigiSmart && sigiName ? (
               <>
                 <div className="mt-3 text-[10px] uppercase tracking-[0.16em] text-white/35">
                   Updated {lastUpdatedLabel}
@@ -754,7 +757,7 @@ export default function MobileSigiHome({
           </div>
         </div>
         <div className="relative z-10 mt-4 space-y-3">
-          {!sigiName && hasSigiSmart ? (
+          {!sigiName && effectiveHasSigiSmart ? (
             <SigiOnboarding
               initialProfile={sigiProfile}
               onComplete={(profile) => {
@@ -772,7 +775,7 @@ export default function MobileSigiHome({
             />
           ) : null}
 
-          {sigiName && hasSigiSmart && showProfileEditor ? (
+          {sigiName && effectiveHasSigiSmart && showProfileEditor ? (
             <SigiOnboarding
               initialProfile={sigiProfile}
               mode="interests"
@@ -788,7 +791,7 @@ export default function MobileSigiHome({
               <button
                 key={item.label}
                 type="button"
-                onClick={() => (hasSigiSmart ? openSigiRead(item.prompt) : openUpgradePrompt(item.prompt))}
+                onClick={() => (effectiveHasSigiSmart ? openSigiRead(item.prompt) : openUpgradePrompt(item.prompt))}
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:border-cyan-300/28 hover:bg-cyan-400/8"
               >
                 <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/76">
@@ -804,7 +807,7 @@ export default function MobileSigiHome({
               <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/76">
                 Mobile Sigi Input
               </div>
-              {!hasSigiSmart ? (
+              {!effectiveHasSigiSmart ? (
                 <Link
                   href={upgradeHref}
                   className="text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100/80 hover:text-cyan-50"
@@ -823,7 +826,7 @@ export default function MobileSigiHome({
                     handleAnalyze();
                   }
                 }}
-                placeholder={hasSigiSmart ? "Stock/Ticker?" : "Ask about NVDA, TSLA, AAPL..."}
+                placeholder={effectiveHasSigiSmart ? "Stock/Ticker?" : "Ask about NVDA, TSLA, AAPL..."}
                 className="min-h-12 min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none placeholder:text-white/34 focus:border-cyan-300/40"
               />
               <button
@@ -831,7 +834,7 @@ export default function MobileSigiHome({
                 onClick={handleAnalyze}
                 className="min-h-12 shrink-0 rounded-2xl border border-cyan-300/30 bg-cyan-400/15 px-4 text-sm font-semibold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/25"
               >
-                {hasSigiSmart ? "Analyze" : "Unlock Smart"}
+                {effectiveHasSigiSmart ? "Analyze" : "Unlock Smart"}
               </button>
             </div>
           </div>
@@ -914,7 +917,7 @@ export default function MobileSigiHome({
         defaultSession={defaultSetupSession}
       />
 
-      {hasSigiSmart ? null : <UpgradeSigiSmartCard />}
+      {effectiveHasSigiSmart ? null : <UpgradeSigiSmartCard />}
 
       <TodayTrendingNewsPanel items={trendingNews} />
 
