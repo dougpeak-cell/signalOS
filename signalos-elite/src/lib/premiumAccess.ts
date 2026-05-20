@@ -63,3 +63,29 @@ export function getPremiumAccess({
 
   return false;
 }
+
+export function getSmartPreviewRemainingMs() {
+  if (typeof window === "undefined") return 0;
+
+  const started = localStorage.getItem("sigi_smart_preview_started");
+  if (!started) return 0;
+
+  const startedAt = Number(started);
+  const oneHour = 60 * 60 * 1000;
+  const remaining = oneHour - (Date.now() - startedAt);
+
+  return Math.max(0, remaining);
+}
+
+export function formatRemainingTime(ms: number) {
+  const totalMinutes = Math.ceil(ms / 60000);
+
+  if (totalMinutes <= 0) return "Expired";
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours > 0) return `${hours}h ${minutes}m left`;
+
+  return `${minutes}m left`;
+}

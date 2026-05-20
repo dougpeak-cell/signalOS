@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactElement } from "react";
+import LiveAccessStrip from "@/components/access/LiveAccessStrip";
 import MobileMarketThesisHero, { type SigiIntelligence } from "@/components/mobile/MobileMarketThesisHero";
 import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
 import { useOptionalMarketData } from "@/components/providers/MarketDataProvider";
@@ -676,6 +677,7 @@ export default function MobileSigiHome({
   return (
     <section id="sigi-command-panel" className={forceVisible ? "space-y-4" : "space-y-4 md:hidden"}>
       <MobileMarketThesisHero intelligence={mobileIntelligence} />
+      <LiveAccessStrip compact />
 
       <div className={`relative overflow-hidden rounded-[28px] border border-cyan-400/24 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.18),rgba(3,7,18,0.96)_58%)] shadow-[0_0_40px_rgba(34,211,238,0.16)] ${sigiName && hasSigiSmart ? "p-5" : "p-4"}`}>
         <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(8,47,73,0.22),transparent_42%,rgba(8,145,178,0.08))]" />

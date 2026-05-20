@@ -1,7 +1,5 @@
 import { Suspense, type ReactElement } from "react";
-import CryptoWeekendAccess from "@/components/access/CryptoWeekendAccess";
-import FeaturedPremiumStock from "@/components/access/FeaturedPremiumStock";
-import SmartPreviewStarter from "@/components/access/SmartPreviewStarter";
+import LiveAccessStrip from "@/components/access/LiveAccessStrip";
 import TodayActionRow from "@/components/today/TodayActionRow";
 import TodayBottomIntelRail from "@/components/today/TodayBottomIntelRail";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
@@ -112,6 +110,8 @@ export default function TodayPageShell({
 				</Suspense>
 
 				<div className={`${shouldRenderDesktopTodayLayout ? "hidden md:block md:space-y-6" : "hidden"}`}>
+					<TodayActionRow />
+					<LiveAccessStrip />
 					<TodayHeroRow
 						hasSigiSmart={hasSigiSmart}
 						hasSigiPro={hasSigiPro}
@@ -120,19 +120,12 @@ export default function TodayPageShell({
 						news={commandCenterNews}
 						watchlistRows={watchlistMovers}
 					/>
-					<TodayActionRow />
 
 					<TodaySecondaryIntelRow
 						catalystItems={catalystItems}
 						trendingNews={trendingNews}
 						watchlistMovers={watchlistMovers}
 					/>
-
-					<section className="grid gap-4 md:grid-cols-3">
-						<FeaturedPremiumStock />
-						<CryptoWeekendAccess />
-						<SmartPreviewStarter />
-					</section>
 
 					<section className={`${multiCardRowClass} grid-cols-1 xl:grid-cols-[1.1fr_0.9fr]`}>
 						<TodayTopSetupsPanel
