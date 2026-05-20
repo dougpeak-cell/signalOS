@@ -259,7 +259,7 @@ export default async function ExpertsPage({
             </Link>
           </div>
 
-          <div className={["mt-8 grid gap-5", isMobilePreview ? "grid-cols-1" : "lg:grid-cols-2"].join(" ")}>
+          <div className={["mt-8 grid gap-5", isMobilePreview ? "grid-cols-1" : "xl:grid-cols-2"].join(" ")}>
             {PRO_PREVIEW_CARDS.map((card) => (
               <ProPreviewCard
                 key={card.title}
@@ -660,7 +660,13 @@ function ProPreviewCard({
 
       <div className="relative border-t border-white/8 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.08),transparent_45%)] p-3 md:p-4">
         <div className="pointer-events-none select-none overflow-hidden rounded-[26px] opacity-95">
-          {preview}
+          <div className="h-105 overflow-hidden md:h-125 xl:h-135">
+            <div className="origin-top-left scale-[0.56] sm:scale-[0.64] lg:scale-[0.74] xl:scale-[0.68]">
+              <div className="w-180 *:w-full">
+                {preview}
+              </div>
+            </div>
+          </div>
         </div>
         <div className="absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-[#020817] via-[#020817]/82 to-transparent" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,8,23,0.02),rgba(2,8,23,0.22))]" />
