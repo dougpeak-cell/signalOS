@@ -235,10 +235,367 @@ export default async function ExpertsPage({
             Open Pro Desk
           </Link>
         </section>
+
+        <section className={isMobilePreview ? "rounded-3xl border border-cyan-400/20 bg-slate-950/90 p-4" : "rounded-3xl border border-cyan-400/20 bg-slate-950/90 p-6 md:p-8"}>
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
+                Inside The Pro Desk
+              </div>
+              <h2 className={isMobilePreview ? "mt-2 text-2xl font-bold leading-tight" : "mt-3 text-3xl font-bold"}>
+                Preview the Pro experience before you unlock Experts.
+              </h2>
+              <p className={isMobilePreview ? "mt-3 max-w-none text-sm leading-6 text-slate-300" : "mt-3 max-w-4xl text-sm leading-7 text-slate-300 md:text-base"}>
+                These locked previews show the type of analyst command views, model baskets,
+                market-wide rankings, and insider conviction panels available inside Sigi Pro.
+              </p>
+            </div>
+
+            <Link
+              href={PRO_DASHBOARD_HREF}
+              className="inline-flex rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-5 py-3 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/20"
+            >
+              Unlock The Experts Desk
+            </Link>
+          </div>
+
+          <div className={["mt-8 grid gap-5", isMobilePreview ? "grid-cols-1" : "lg:grid-cols-2"].join(" ")}>
+            {PRO_PREVIEW_CARDS.map((card) => (
+              <ProPreviewCard
+                key={card.title}
+                compact={isMobilePreview}
+                title={card.title}
+                eyebrow={card.eyebrow}
+                description={card.description}
+                badge={card.badge}
+                tone={card.tone}
+                preview={card.preview}
+              />
+            ))}
+          </div>
+        </section>
       </div>
     </main>
   );
 }
+
+type ProPreviewTone = "cyan" | "emerald" | "amber";
+
+type ProPreviewCardConfig = {
+  title: string;
+  eyebrow: string;
+  description: string;
+  badge: string;
+  tone: ProPreviewTone;
+  preview: ReactNode;
+};
+
+const PRO_PREVIEW_CARDS: ProPreviewCardConfig[] = [
+  {
+    title: "Analyst Sector Command",
+    eyebrow: "Sigi Analyst Command",
+    description:
+      "Sector-by-sector analyst leadership with strongest call tracking, covered names, and Sigi reasoning.",
+    badge: "Pro",
+    tone: "cyan",
+    preview: (
+      <div className="rounded-[30px] border border-cyan-400/20 bg-[#020817] p-5 shadow-[0_0_50px_rgba(34,211,238,0.08)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.32em] text-emerald-300">
+              Sigi Analyst Command
+            </div>
+            <div className="mt-2 text-3xl font-black text-white">Analysts Picks by Sector</div>
+            <div className="mt-2 max-w-xl text-sm leading-6 text-slate-400">
+              Sector-ranked analyst leadership, strongest calls, and why Sigi selected the lead.
+            </div>
+          </div>
+          <div className="rounded-full border border-cyan-300/30 bg-cyan-300/12 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-cyan-100">
+            Ask Sigi
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          {[
+            "Technology",
+            "Healthcare",
+            "Financial Services",
+            "Industrials",
+            "Energy",
+          ].map((item, index) => (
+            <span
+              key={item}
+              className={`rounded-full border px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] ${index === 0 ? "border-cyan-300/50 bg-cyan-300/12 text-cyan-100" : "border-white/10 bg-white/5 text-slate-400"}`}
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-[26px] border border-cyan-400/18 bg-cyan-400/6 p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-300">Sigi Pick</div>
+                <div className="mt-3 text-3xl font-black text-white">Sigi AI Leader</div>
+                <div className="mt-1 text-sm text-slate-400">SigiOS Analyst Flow · Technology</div>
+              </div>
+              <div className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100">
+                Pro
+              </div>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <PreviewStat label="Success Rate" value="78%" />
+              <PreviewStat label="Avg Return" value="+26.7%" />
+              <div className="sm:col-span-2">
+                <PreviewStat label="Strongest Call" value="NVDA" />
+              </div>
+            </div>
+            <PreviewBox className="mt-4" label="Most Recent Visible Pick" value="NVDA · Buy (+17.4%)" />
+            <div className="mt-4 flex flex-wrap gap-2">
+              {[
+                "NVDA",
+                "MSFT",
+                "AAPL",
+                "AVGO",
+              ].map((ticker) => (
+                <span key={ticker} className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-bold text-cyan-100">
+                  {ticker}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[26px] border border-white/10 bg-white/4 p-5">
+            <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-300">Why Sigi Selected This</div>
+            <div className="mt-4 text-sm leading-7 text-slate-300">
+              Technology calls show strong AI infrastructure alignment, high conviction,
+              and consistent upside capture across the dominant mega-cap names.
+            </div>
+            <div className="mt-6 rounded-2xl border border-orange-300/20 bg-orange-300/6 p-4">
+              <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-orange-200">Risk Note</div>
+              <div className="mt-2 text-sm leading-6 text-slate-300">
+                Leadership can crowd quickly. Watch earnings reaction, valuation stretch,
+                and rate pressure against the next rotation.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    title: "Model Basket Command",
+    eyebrow: "Sigi Model Command",
+    description:
+      "Cross-checked Pro baskets ranked by hit rate, return quality, alignment, and live theme leadership.",
+    badge: "Ranked",
+    tone: "emerald",
+    preview: (
+      <div className="rounded-[30px] border border-emerald-400/20 bg-[linear-gradient(180deg,#03291d_0%,#041510_100%)] p-5 shadow-[0_0_50px_rgba(16,185,129,0.08)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.32em] text-emerald-300">Sigi Model Command</div>
+            <div className="mt-2 max-w-2xl text-sm leading-6 text-emerald-50/70">
+              Proprietary baskets cross-checked against live analyst flow, hit-rate consistency, and sector leadership.
+            </div>
+          </div>
+          <div className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100">
+            Ranked
+          </div>
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <PreviewMetricCard tone="emerald" label="Avg 30D Hit" value="78%" text="Across model baskets" />
+          <PreviewMetricCard tone="emerald" label="Avg 90D Return" value="+21.7%" text="Basket-level forward bias" />
+          <PreviewMetricCard tone="emerald" label="Bullish Alignment" value="4/4" text="Models favoring upside flow" />
+        </div>
+        <div className="mt-5 space-y-4">
+          {[
+            ["Technology Growth Desk", "Technology leaders", "78%", "+21.2%", ["NVDA", "AAPL", "MSFT"]],
+            ["Large Cap AI Basket", "AI / software", "78%", "+20.4%", ["NVDA", "GOOGL", "NFLX"]],
+            ["Institutional Conviction Basket", "Mega-cap tech", "78%", "+20.4%", ["NVDA", "GOOGL", "NFLX"]],
+          ].map(([name, style, hit, avg, tickers]) => (
+            <div key={String(name)} className="rounded-[26px] border border-emerald-400/12 bg-black/18 p-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className="text-2xl font-black text-white">{name}</div>
+                    <span className="rounded-full border border-emerald-400/25 bg-emerald-400/12 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-100">
+                      Bullish
+                    </span>
+                  </div>
+                  <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.22em] text-white/35">{style}</div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <PreviewStat label="Style" value={String(style)} subdued />
+                    <PreviewStat label="30D Hit" value={String(hit)} subdued />
+                    <PreviewStat label="Avg 90D" value={String(avg)} subdued />
+                  </div>
+                </div>
+                <div className="w-full max-w-sm rounded-3xl border border-emerald-400/12 bg-black/16 p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/35">Basket Names</div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(tickers as string[]).map((ticker) => (
+                      <span key={ticker} className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[11px] font-bold text-cyan-100">{ticker}</span>
+                    ))}
+                  </div>
+                  <div className="mt-4 h-1.5 rounded-full bg-white/10">
+                    <div className="h-full w-3/4 rounded-full bg-[linear-gradient(90deg,rgba(16,185,129,1),rgba(103,232,249,0.9))]" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    title: "Market-Wide Analyst Rankings",
+    eyebrow: "Analyst Top Picks Across The Market",
+    description:
+      "Fresh calls weighted highest with upside, rating quality, recency, and sector balance layered into the ranking model.",
+    badge: "Live",
+    tone: "cyan",
+    preview: (
+      <div className="rounded-[30px] border border-cyan-400/18 bg-black p-5 shadow-[0_0_45px_rgba(6,182,212,0.06)]">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.32em] text-amber-300">Analyst Top Picks Across The Market</div>
+            <div className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+              Diversified analyst signals ranked with fresh calls weighted highest, then upside, rating quality, recency, and sector balance.
+            </div>
+          </div>
+          <div className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100">
+            Live
+          </div>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-2">
+          {[
+            "All",
+            "Technology",
+            "Healthcare",
+            "Financial Services",
+            "Industrials",
+          ].map((item, index) => (
+            <span key={item} className={`rounded-full border px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] ${index === 0 ? "border-cyan-300/45 bg-cyan-300/10 text-cyan-100" : "border-white/10 bg-white/5 text-slate-400"}`}>
+              {item}
+            </span>
+          ))}
+        </div>
+        <PreviewBox className="mt-5" label="Showing diversified top picks from a broader 30-name consensus pool." value="12 ranked picks" inverse />
+        <div className="mt-5 space-y-4">
+          {[
+            ["NVDA", "NVIDIA Corporation", "$223.33", "+25.2%", "$279.5", "$140", "191", "Buy from HSBC. Low confidence setup in Technology."],
+            ["GE", "GE Aerospace", "$300.17", "+26.9%", "$381", "$355", "191", "Outperform from RBC Capital. High confidence setup in Industrials."],
+          ].map(([ticker, name, price, change, target, low, score, summary]) => (
+            <div key={String(ticker)} className="rounded-[28px] border border-emerald-400/20 bg-emerald-950/18 p-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-4xl font-black text-white">{ticker}</div>
+                    <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-100">
+                      Bullish
+                    </span>
+                  </div>
+                  <div className="mt-2 text-sm text-slate-400">{name}</div>
+                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-300">
+                    <span className="rounded-full border border-cyan-400/20 bg-cyan-400/8 px-2 py-1 text-cyan-100">Fresh</span>
+                    <span>Buy</span>
+                    <span>Technology</span>
+                    <span>2026-05-19</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-black text-white">{price}</div>
+                  <div className="mt-2 text-xl font-bold text-emerald-300">{change}</div>
+                </div>
+              </div>
+              <div className="mt-5 grid gap-3 md:grid-cols-3">
+                <PreviewStat label="Target" value={String(target)} />
+                <PreviewStat label="Low" value={String(low)} />
+                <PreviewStat label="Score" value={String(score)} />
+              </div>
+              <div className="mt-4 text-sm leading-7 text-slate-200">{summary}</div>
+              <div className="mt-5 h-2 rounded-full bg-white/10">
+                <div className="h-full w-3/5 rounded-full bg-[linear-gradient(90deg,rgba(16,185,129,1),rgba(103,232,249,0.9))]" />
+              </div>
+              <div className="mt-5 flex items-center justify-between gap-3">
+                <span className="rounded-2xl border border-emerald-400/20 bg-black/25 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-emerald-100">Open Chart</span>
+                <span className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white/60">Open Workspace</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    title: "Insider Conviction View",
+    eyebrow: "Insider Trading",
+    description:
+      "Recent insider purchases ranked into a tighter conviction read with buyer identity, dollar size, and filing context.",
+    badge: "Live Filings",
+    tone: "amber",
+    preview: (
+      <div className="rounded-[30px] border border-amber-400/18 bg-black p-5 shadow-[0_0_45px_rgba(251,191,36,0.06)]">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.32em] text-amber-300">Insider Trading</div>
+            <div className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+              The 5 most recent reported insider stock purchases, with SIGI highlighting the strongest disclosed buy in the current window.
+            </div>
+          </div>
+          <div className="rounded-full border border-amber-300/25 bg-amber-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-100">
+            Live Filings
+          </div>
+        </div>
+        <div className="mt-5 rounded-3xl border border-cyan-400/18 bg-cyan-400/8 p-4">
+          <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-cyan-100">Sigi Summary</div>
+          <div className="mt-2 text-sm leading-7 text-slate-200">
+            Sigi is showing the 5 most recent insider purchases first and highlighting the largest visible dollar commitment across the latest filings.
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <PreviewMetricCard tone="cyan" label="Cluster Buying" value="2 recent buys" text="Filed in HRTG" />
+          <PreviewMetricCard tone="emerald" label="Repeat Buyer" value="Whiting Paul L" text="Appears twice in window" />
+        </div>
+        <div className="mt-5 space-y-4">
+          {[
+            ["Heritage Insurance Holdings, Inc.", "HRTG", "$352,500", "15,000", "May 18, 2026", "WHITING PAUL L · director"],
+            ["Latham Group, Inc.", "SWIM", "$242,000", "50,000", "May 18, 2026", "Cline James E · director"],
+          ].map(([name, ticker, purchased, shares, tradeDate, buyer]) => (
+            <div key={String(ticker)} className="rounded-[28px] border border-white/10 bg-white/3 p-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <div className="text-3xl font-black text-white">{name}</div>
+                  <div className="mt-2 text-lg font-black text-cyan-300">{ticker}</div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-cyan-400/20 bg-cyan-400/8 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-100">Financial Services</span>
+                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/8 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-100">Director</span>
+                  </div>
+                </div>
+                <div className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-4 py-2 text-sm font-black text-emerald-100">
+                  {purchased}
+                </div>
+              </div>
+              <div className="mt-5 grid gap-3 md:grid-cols-4">
+                <PreviewStat label="Purchased" value={String(purchased)} />
+                <PreviewStat label="Shares" value={String(shares)} />
+                <PreviewStat label="Trade Date" value={String(tradeDate)} />
+                <PreviewStat label="Buyer" value={String(buyer)} />
+              </div>
+              <div className="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-slate-400">
+                <span>P-Purchase</span>
+                <span>Analyze with SIGI →</span>
+                <span>SEC filing ↗</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+];
 
 function FeatureCard({
   icon,
@@ -264,6 +621,135 @@ function FeatureCard({
       <div className={gold ? "text-amber-300" : "text-cyan-300"}>{icon}</div>
       <h3 className={compact ? "mt-3 text-base font-bold" : "mt-4 text-lg font-bold"}>{title}</h3>
       <p className={compact ? "mt-2 text-sm leading-6 text-slate-300" : "mt-3 text-sm leading-6 text-slate-300"}>{text}</p>
+    </div>
+  );
+}
+
+function ProPreviewCard({
+  title,
+  eyebrow,
+  description,
+  badge,
+  tone,
+  preview,
+  compact = false,
+}: ProPreviewCardConfig & { compact?: boolean }) {
+  const toneClass =
+    tone === "emerald"
+      ? "border-emerald-400/25 bg-emerald-400/6 text-emerald-200"
+      : tone === "amber"
+        ? "border-amber-400/25 bg-amber-400/6 text-amber-200"
+        : "border-cyan-400/25 bg-cyan-400/6 text-cyan-200";
+
+  return (
+    <div className="overflow-hidden rounded-[30px] border border-white/10 bg-black/35">
+      <div className={compact ? "p-4" : "p-5 md:p-6"}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">
+              {eyebrow}
+            </div>
+            <h3 className="mt-2 text-xl font-black text-white md:text-2xl">{title}</h3>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">{description}</p>
+          </div>
+          <div className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${toneClass}`}>
+            {badge}
+          </div>
+        </div>
+      </div>
+
+      <div className="relative border-t border-white/8 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.08),transparent_45%)] p-3 md:p-4">
+        <div className="pointer-events-none select-none overflow-hidden rounded-[26px] opacity-95">
+          {preview}
+        </div>
+        <div className="absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-[#020817] via-[#020817]/82 to-transparent" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,8,23,0.02),rgba(2,8,23,0.22))]" />
+        <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between gap-3 rounded-2xl border border-amber-300/20 bg-black/72 px-4 py-3 backdrop-blur">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-amber-300">Pro Access</div>
+            <div className="mt-1 text-sm font-semibold text-white">Unlock the full Experts desk to open this view.</div>
+          </div>
+          <Link
+            href={PRO_DASHBOARD_HREF}
+            className="shrink-0 rounded-xl border border-amber-300/30 bg-amber-400/12 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-amber-100 transition hover:bg-amber-400/18"
+          >
+            Open Pro
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PreviewStat({
+  label,
+  value,
+  subdued = false,
+}: {
+  label: string;
+  value: string;
+  subdued?: boolean;
+}) {
+  return (
+    <div className={`min-w-0 rounded-2xl border p-4 ${subdued ? "border-white/10 bg-black/20" : "border-white/10 bg-black/25"}`}>
+      <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500">{label}</div>
+      <div className="mt-2 wrap-break-word text-base font-black leading-tight text-white sm:text-lg">{value}</div>
+    </div>
+  );
+}
+
+function PreviewBox({
+  label,
+  value,
+  className = "",
+  inverse = false,
+}: {
+  label: string;
+  value: string;
+  className?: string;
+  inverse?: boolean;
+}) {
+  return (
+    <div className={`rounded-2xl border p-4 ${inverse ? "border-white/10 bg-white/3" : "border-white/10 bg-black/25"} ${className}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500">{label}</div>
+        {inverse ? <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">{value}</div> : null}
+      </div>
+      {!inverse ? <div className="mt-2 text-sm font-semibold text-white">{value}</div> : null}
+    </div>
+  );
+}
+
+function PreviewMetricCard({
+  tone,
+  label,
+  value,
+  text,
+}: {
+  tone: ProPreviewTone;
+  label: string;
+  value: string;
+  text: string;
+}) {
+  const toneClasses =
+    tone === "emerald"
+      ? "border-emerald-400/20 bg-emerald-400/8"
+      : tone === "amber"
+        ? "border-amber-300/20 bg-amber-300/8"
+        : "border-cyan-400/20 bg-cyan-400/8";
+
+  const valueClasses =
+    tone === "emerald"
+      ? "text-emerald-300"
+      : tone === "amber"
+        ? "text-amber-200"
+        : "text-cyan-300";
+
+  return (
+    <div className={`rounded-[22px] border p-4 ${toneClasses}`}>
+      <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/35">{label}</div>
+      <div className={`mt-3 text-4xl font-black ${valueClasses}`}>{value}</div>
+      <div className="mt-2 text-xs text-white/45">{text}</div>
     </div>
   );
 }
