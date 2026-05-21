@@ -143,30 +143,13 @@ export function useSigiTier() {
     }
   }
 
-  const effectiveTier: SigiTier =
-    previewActive && (planSummary?.currentTier ?? "free") === "free"
-      ? "smart"
-      : planSummary?.currentTier ?? "free";
+  const effectiveTier: SigiTier = planSummary?.currentTier ?? "free";
 
-  const effectivePlanSummary = planSummary
-    ? {
-        ...planSummary,
-        currentTier: effectiveTier,
-        nextTier:
-          effectiveTier === "free"
-            ? "smart"
-            : effectiveTier === "smart"
-              ? "pro"
-              : null,
-        hasSmartFeatures: effectiveTier === "smart" || effectiveTier === "pro",
-        hasProFeatures: effectiveTier === "pro",
-      }
-    : previewActive
-      ? buildPreviewPlanSummary("smart")
-      : null;
+  const effectivePlanSummary = planSummary ?? null;
 
   return {
     tier: effectiveTier,
+    previewActive,
     planSummary: effectivePlanSummary,
     setPlanSummary,
   };

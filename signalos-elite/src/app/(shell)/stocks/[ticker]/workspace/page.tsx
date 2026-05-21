@@ -4,6 +4,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
 import { getDevPreviewTier } from "@/lib/sigi/devPreview";
+import {
+  getFeaturedPreviewTicker,
+  isSmartPreviewTimestampActive,
+  SMART_PREVIEW_COOKIE_KEY,
+} from "@/lib/premiumAccess";
 import { getStockWorkspaceData } from "@/lib/workspace/stockWorkspaceData";
 
 async function createSupabaseServerClient() {
@@ -30,6 +35,7 @@ export default async function StockWorkspacePage({
   params: Promise<{ ticker: string }>;
 }) {
   const { ticker } = await params;
+  const cookieStore = await cookies();
   const supabase = await createSupabaseServerClient();
   const previewTier = await getDevPreviewTier();
   const {
@@ -53,7 +59,12 @@ export default async function StockWorkspacePage({
   }
 
   const effectivePlan = previewTier || plan;
-  const canUseTradingWorkspace = effectivePlan === "pro";
+  const previewStartedAt = cookieStore.get(SMART_PREVIEW_COOKIE_KEY)?.value ?? null;
+  const canUsePreviewWorkspace =
+    effectivePlan === "free" &&
+    ticker.trim().toUpperCase() === getFeaturedPreviewTicker() &&
+    isSmartPreviewTimestampActive(previewStartedAt);
+  const canUseTradingWorkspace = effectivePlan === "pro" || canUsePreviewWorkspace;
 
   if (!canUseTradingWorkspace) {
     redirect("/auth/upgrade?plan=pro&feature=trading-workspace");

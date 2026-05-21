@@ -27,7 +27,7 @@ export default function LiveAccessStrip({
 
   const featuredTicker = getTodayFeaturedStock();
   const cryptoOpen = isWeekendCryptoOpen();
-  const cryptoUnlocked = hasPaidCryptoAccess || previewActive || cryptoOpen;
+  const cryptoUnlocked = hasPaidCryptoAccess || cryptoOpen;
   const showCryptoCard = cryptoUnlocked || shouldShowCryptoTeaser();
 
   useEffect(() => {
@@ -193,10 +193,10 @@ export default function LiveAccessStrip({
           {previewActive ? (
             <>
               <div className={`mt-1 font-semibold text-white ${compact ? "text-[13px]" : "text-sm"}`}>
-                Preview active
+                {featuredTicker} preview active
               </div>
               <div className="text-xs text-slate-400">
-                {formatRemainingTime(remainingMs)}
+                {formatRemainingTime(remainingMs)} • Live chart + workspace only
               </div>
             </>
           ) : (
@@ -222,9 +222,7 @@ export default function LiveAccessStrip({
             <div className={`mt-1 font-semibold text-white ${compact ? "text-[13px]" : "text-sm"}`}>
               {hasPaidCryptoAccess
                 ? "Crypto unlocked now"
-                : previewActive
-                  ? "Crypto open in Smart Preview"
-                  : cryptoOpen
+                : cryptoOpen
                     ? "Crypto open this weekend"
                     : "Crypto opens soon"}
             </div>
@@ -232,9 +230,7 @@ export default function LiveAccessStrip({
             <div className="text-xs text-slate-400">
               {hasPaidCryptoAccess
                 ? "Included in your current Sigi access"
-                : previewActive
-                  ? "Opened through your active Smart Preview"
-                  : cryptoOpen
+                : cryptoOpen
                     ? "Preview Sigi Crypto Intelligence"
                     : "Weekend access for free users"}
             </div>

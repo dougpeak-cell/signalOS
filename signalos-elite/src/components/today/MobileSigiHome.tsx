@@ -19,6 +19,7 @@ import TodayTrendingNewsPanel from "@/components/today/TodayTrendingNewsPanel";
 import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import type { SigiTodayContext } from "@/hooks/useSigi";
+import { getFeaturedPreviewTicker } from "@/lib/premiumAccess";
 import {
   clearSigiProfile,
   getSigiProfile,
@@ -152,8 +153,10 @@ export default function MobileSigiHome({
   initialActionRowMetrics,
   forceVisible = false,
 }: MobileSigiHomeProps): ReactElement {
-  const { tier } = useSigiTier();
-  const effectiveHasSigiSmart = hasSigiSmart || tier === "smart" || tier === "pro";
+  const { tier, previewActive } = useSigiTier();
+  const previewTicker = getFeaturedPreviewTicker();
+  const isFeaturedPreview = previewActive && tier === "free";
+  const effectiveHasSigiSmart = hasSigiSmart || tier === "smart" || tier === "pro" || isFeaturedPreview;
   const { effectiveTicker, heroStory, stockContext } = useTodayHeroContext();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -623,7 +626,7 @@ export default function MobileSigiHome({
   }
 
   function openSigiRead(nextPrompt?: string) {
-    const normalizedPrompt = nextPrompt?.trim() ?? "";
+    const normalizedPrompt = isFeaturedPreview ? `Analyze ${previewTicker}` : nextPrompt?.trim() ?? "";
 
     if (!normalizedPrompt) {
       openSheetWithContext();
@@ -826,7 +829,13 @@ export default function MobileSigiHome({
                     handleAnalyze();
                   }
                 }}
-                placeholder={effectiveHasSigiSmart ? "Stock/Ticker?" : "Ask about NVDA, TSLA, AAPL..."}
+                placeholder={
+                  isFeaturedPreview
+                    ? `MSFT preview active`
+                    : effectiveHasSigiSmart
+                      ? "Stock/Ticker?"
+                      : "Ask about NVDA, TSLA, AAPL..."
+                }
                 className="min-h-12 min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none placeholder:text-white/34 focus:border-cyan-300/40"
               />
               <button

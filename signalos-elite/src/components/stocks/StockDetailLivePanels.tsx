@@ -11,6 +11,7 @@ import TechnicalIntelligenceCard from "@/components/stocks/TechnicalIntelligence
 import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
 import { useOptionalMarketData } from "@/components/providers/MarketDataProvider";
 import { useSigiTier } from "@/hooks/useSigiTier";
+import { getFeaturedPreviewTicker } from "@/lib/premiumAccess";
 import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
 import { computeMasterSignalScore } from "@/lib/analysis/masterSignalScore";
 import { buildExecutionModel } from "@/lib/engines/executionModel";
@@ -189,7 +190,7 @@ export default function StockDetailLivePanels({
   fallbackMessage,
 }: StockDetailLivePanelsProps) {
   const searchParams = useSearchParams();
-  const { tier } = useSigiTier();
+  const { tier, previewActive } = useSigiTier();
   const liveMarket = useOptionalLiveMarket();
   const marketData = useOptionalMarketData();
   const liveTicker = row.ticker.toUpperCase();
@@ -212,8 +213,10 @@ export default function StockDetailLivePanels({
   const isTracked = watchlistTickerSet.has(liveTicker);
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const plan = tier ?? "free";
-  const canUseLiveChart = plan === "smart" || plan === "pro";
-  const canUseTradingWorkspace = plan === "pro";
+  const previewTicker = getFeaturedPreviewTicker();
+  const isFeaturedPreviewTicker = previewActive && plan === "free" && liveTicker === previewTicker;
+  const canUseLiveChart = plan === "smart" || plan === "pro" || isFeaturedPreviewTicker;
+  const canUseTradingWorkspace = plan === "pro" || isFeaturedPreviewTicker;
 
   function buildPreviewHref(href: string) {
     if (searchParams.get("mobilePreview") !== "1") {
@@ -227,9 +230,7 @@ export default function StockDetailLivePanels({
   }
 
   const workspaceHref = buildPreviewHref(`/stocks/${liveTicker.toLowerCase()}/workspace`);
-  const workspaceUpgradeHref = buildPreviewHref(
-    "/auth/upgrade?plan=pro&feature=trading-workspace"
-  );
+  const workspaceUpgradeHref = buildPreviewHref("/auth/upgrade?plan=pro&feature=trading-workspace");
 
   useEffect(() => {
     if (!liveMarket) return;

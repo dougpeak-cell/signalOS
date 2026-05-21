@@ -34,9 +34,9 @@ export default function UpgradeSigiSmartCard() {
 			</div>
 
 			<p className="mb-5 text-sm leading-6 text-slate-300">
-				You are seeing the market thesis preview. Upgrade to unlock
-				ticker-by-ticker intelligence, risk alerts, Smart setups, and command
-				center analysis.
+				You are seeing the market thesis preview. Start a free MSFT preview to
+				open live candles and the trading workspace for Microsoft only, or
+				upgrade to unlock ticker-by-ticker intelligence across the platform.
 			</p>
 
 			<div className="mb-6 space-y-3">
@@ -50,7 +50,7 @@ export default function UpgradeSigiSmartCard() {
 				onClick={handleStartPreview}
 				className="block w-full rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-5 py-3 text-center text-sm font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-400/25"
 			>
-				{isStartingPreview ? "Opening Smart Preview..." : "Start Smart Preview"}
+				{isStartingPreview ? "Opening MSFT Preview..." : "Start Free MSFT Preview"}
 			</button>
 
 			<Link

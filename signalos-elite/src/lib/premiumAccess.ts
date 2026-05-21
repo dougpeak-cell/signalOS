@@ -1,15 +1,40 @@
 export type UserTier = "free" | "smart" | "pro";
 
 export const SMART_PREVIEW_STARTED_EVENT = "signalos:smart-preview-started";
+export const SMART_PREVIEW_COOKIE_KEY = "sigi_smart_preview_started";
 const SMART_PREVIEW_STORAGE_KEY = "sigi_smart_preview_started";
 const SMART_PREVIEW_WINDOW_MS = 30 * 60 * 1000;
+const FEATURED_PREVIEW_TICKER = "MSFT";
 
-const FEATURED_STOCKS = ["NVDA", "TSLA", "PLTR", "AAPL", "MSFT", "AMD", "META"];
+function syncSmartPreviewCookie(startedAt: number | null) {
+  if (typeof document === "undefined") return;
+
+  if (startedAt == null) {
+    document.cookie = `${SMART_PREVIEW_COOKIE_KEY}=; Max-Age=0; Path=/; SameSite=Lax`;
+    return;
+  }
+
+  const remainingSeconds = Math.max(0, Math.ceil((SMART_PREVIEW_WINDOW_MS - (Date.now() - startedAt)) / 1000));
+
+  if (remainingSeconds <= 0) {
+    document.cookie = `${SMART_PREVIEW_COOKIE_KEY}=; Max-Age=0; Path=/; SameSite=Lax`;
+    return;
+  }
+
+  document.cookie = `${SMART_PREVIEW_COOKIE_KEY}=${startedAt}; Max-Age=${remainingSeconds}; Path=/; SameSite=Lax`;
+}
+
+export function isSmartPreviewTimestampActive(value: string | number | null | undefined) {
+  const startedAt = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(startedAt) && Date.now() - startedAt < SMART_PREVIEW_WINDOW_MS;
+}
 
 export function getTodayFeaturedStock() {
-  const today = new Date();
-  const dayIndex = today.getDay();
-  return FEATURED_STOCKS[dayIndex] ?? "NVDA";
+  return FEATURED_PREVIEW_TICKER;
+}
+
+export function getFeaturedPreviewTicker() {
+  return FEATURED_PREVIEW_TICKER;
 }
 
 export function isWeekendCryptoOpen() {
@@ -20,7 +45,9 @@ export function isWeekendCryptoOpen() {
 export function startSmartPreview() {
   if (typeof window === "undefined") return;
 
-  localStorage.setItem(SMART_PREVIEW_STORAGE_KEY, Date.now().toString());
+  const startedAt = Date.now();
+  localStorage.setItem(SMART_PREVIEW_STORAGE_KEY, startedAt.toString());
+  syncSmartPreviewCookie(startedAt);
   window.dispatchEvent(new Event(SMART_PREVIEW_STARTED_EVENT));
 }
 
@@ -33,13 +60,17 @@ export function isSmartPreviewActive() {
   const startedAt = Number(started);
   if (!Number.isFinite(startedAt)) {
     localStorage.removeItem(SMART_PREVIEW_STORAGE_KEY);
+    syncSmartPreviewCookie(null);
     return false;
   }
 
-  const active = Date.now() - startedAt < SMART_PREVIEW_WINDOW_MS;
+  const active = isSmartPreviewTimestampActive(startedAt);
 
   if (!active) {
     localStorage.removeItem(SMART_PREVIEW_STORAGE_KEY);
+    syncSmartPreviewCookie(null);
+  } else {
+    syncSmartPreviewCookie(startedAt);
   }
 
   return active;
@@ -59,13 +90,11 @@ export function getPremiumAccess({
 
   if (tier === "pro") return true;
 
-  if (isSmartPreviewActive()) return true;
+  if (feature === "expert") return false;
 
   if (feature === "crypto" && isWeekendCryptoOpen()) return true;
 
   if (feature === "stock" && normalizedTicker === featuredStock) return true;
-
-  if (feature === "expert") return false;
 
   if (tier === "smart") {
     if (feature === "pro") return false;
@@ -84,6 +113,7 @@ export function getSmartPreviewRemainingMs() {
   const startedAt = Number(started);
   if (!Number.isFinite(startedAt)) {
     localStorage.removeItem(SMART_PREVIEW_STORAGE_KEY);
+    syncSmartPreviewCookie(null);
     return 0;
   }
 
@@ -91,8 +121,11 @@ export function getSmartPreviewRemainingMs() {
 
   if (remaining <= 0) {
     localStorage.removeItem(SMART_PREVIEW_STORAGE_KEY);
+    syncSmartPreviewCookie(null);
     return 0;
   }
+
+  syncSmartPreviewCookie(startedAt);
 
   return Math.max(0, remaining);
 }

@@ -15,6 +15,7 @@ import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import type { SigiStockContext } from "@/hooks/useSigi";
+import { getFeaturedPreviewTicker } from "@/lib/premiumAccess";
 import type {
   TodayCommandCenterNewsRow,
   TodayCommandCenterMoverRow,
@@ -218,8 +219,8 @@ export default function SigiDecisionPanel({
   news,
   watchlistRows,
 }: SigiDecisionPanelProps): ReactElement {
-  const { tier } = useSigiTier();
-  const effectiveHasSigiSmart = hasSigiSmart || tier === "smart" || tier === "pro";
+  const { tier, previewActive } = useSigiTier();
+  const effectiveHasSigiSmart = hasSigiSmart || tier === "smart" || tier === "pro" || (previewActive && tier === "free");
 
   if (!effectiveHasSigiSmart) {
     return (
@@ -259,8 +260,10 @@ function SigiDecisionPanelContent({
   const router = useRouter();
   const { effectiveTicker, loadHeroStory, stockContext } = useTodayHeroContext();
   const { activeTicker, setActiveTicker, setSigiAction, sigiActionNonce } = useSelectedTicker();
+  const { tier, previewActive } = useSigiTier();
   const { ensureQuotes, quoteMap } = useLiveMarket();
   const lastHandledSigiActionNonceRef = useRef(sigiActionNonce);
+  const previewBootstrapRef = useRef(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [profile, setProfile] = useState<SigiProfile | null>(null);
   const [sigiInput, setSigiInput] = useState("");
@@ -274,6 +277,9 @@ function SigiDecisionPanelContent({
   const [intelligenceResetKey, setIntelligenceResetKey] = useState(() =>
     getSigiIntelligenceResetKey()
   );
+  const previewTicker = getFeaturedPreviewTicker();
+  const isFeaturedPreview = previewActive && tier === "free";
+  const previewErrorMessage = `Featured access is limited to ${previewTicker} during free preview.`;
   const suggestions = searchTickers(sigiInput);
   const watchlistTickers = useMemo(
     () => watchlistRows.map((item) => item.ticker).filter(Boolean),
@@ -447,6 +453,28 @@ function SigiDecisionPanelContent({
     }
   }, [lastInteraction]);
 
+  useEffect(() => {
+    if (!isFeaturedPreview) {
+      previewBootstrapRef.current = false;
+      return;
+    }
+
+    if (previewBootstrapRef.current) {
+      return;
+    }
+
+    if (activeTicker !== previewTicker || isAnalyzing) {
+      return;
+    }
+
+    previewBootstrapRef.current = true;
+    void runSigiAnalysis({
+      type: "ticker",
+      ticker: previewTicker,
+      source: "trusted",
+    });
+  }, [activeTicker, isAnalyzing, isFeaturedPreview, previewTicker]);
+
   async function runSigiAnalysis({
     type,
     ticker,
@@ -457,13 +485,12 @@ function SigiDecisionPanelContent({
     source: "trusted" | "type";
   }) {
     const normalizedTicker = ticker.trim().toUpperCase();
+    const targetTicker = isFeaturedPreview ? previewTicker : normalizedTicker;
 
-    if (!normalizedTicker || isAnalyzing) return;
+    if (!targetTicker || isAnalyzing) return;
 
-    if (!shouldAllowTicker(normalizedTicker, source)) {
-      setError(
-        "Want a stock analysis? Try NVDA or TSLA. Or ask me what stock is strongest today."
-      );
+    if (!shouldAllowTicker(targetTicker, source)) {
+      setError(isFeaturedPreview ? previewErrorMessage : "Want a stock analysis? Try NVDA or TSLA. Or ask me what stock is strongest today.");
       setResponse(null);
       return;
     }
@@ -471,15 +498,15 @@ function SigiDecisionPanelContent({
     setLastInteraction(source === "type" ? "type" : "click");
 
     setIsAnalyzing(true);
-    setFocusedTicker(normalizedTicker);
-    setActiveTicker(normalizedTicker);
+    setFocusedTicker(targetTicker);
+    setActiveTicker(targetTicker);
     setError(null);
     setResponse(null);
 
-    setSigiInput(normalizedTicker);
+    setSigiInput(targetTicker);
 
     try {
-      await loadHeroStory(normalizedTicker);
+      await loadHeroStory(targetTicker);
       setSigiAction("setup");
       if (source === "type") {
         setSigiInput("");
@@ -541,7 +568,7 @@ function SigiDecisionPanelContent({
     }
 
     const parsed = buildSigiPromptLabel(sigiInput);
-    const tickerToAnalyze = resolveSigiTicker({
+    const tickerToAnalyze = isFeaturedPreview ? previewTicker : resolveSigiTicker({
       explicitTicker: parsed.ticker,
       message: sigiInput,
       fallbackTicker: effectiveTicker,
@@ -551,9 +578,7 @@ function SigiDecisionPanelContent({
     if (!tickerToAnalyze || isAnalyzing) {
       if (!isAnalyzing && sigiInput.trim()) {
         if (needsTicker) {
-          setError(
-            "Want a stock analysis? Try NVDA or TSLA. Or ask me what stock is strongest today."
-          );
+          setError(isFeaturedPreview ? previewErrorMessage : "Want a stock analysis? Try NVDA or TSLA. Or ask me what stock is strongest today.");
           setResponse(null);
         } else {
           setError(null);
@@ -627,7 +652,7 @@ function SigiDecisionPanelContent({
     const parsed = buildSigiPromptLabel(trimmed);
     const needsTicker = !NON_TICKER_INTENTS.has(intent.type);
     const fallbackTickerForPrompt = needsTicker ? fallbackTicker : null;
-    const resolvedTicker = resolveSigiTicker({
+    const resolvedTicker = isFeaturedPreview ? previewTicker : resolveSigiTicker({
       explicitTicker: parsed.ticker,
       message: trimmed,
       fallbackTicker: fallbackTickerForPrompt,
@@ -645,9 +670,7 @@ function SigiDecisionPanelContent({
 
     if (!resolvedTicker) {
       if (needsTicker) {
-        setError(
-          "Want a stock analysis? Try NVDA or TSLA. Or ask me what stock is strongest today."
-        );
+        setError(isFeaturedPreview ? previewErrorMessage : "Want a stock analysis? Try NVDA or TSLA. Or ask me what stock is strongest today.");
         setResponse(null);
       } else {
         setError(null);
@@ -937,9 +960,9 @@ function SigiDecisionPanelContent({
         <div className="mt-4">
           <SigiResponseCard
             response={response}
-            onTickerClick={(ticker) => router.push(buildStockLiveUrl(ticker))}
+            onTickerClick={(ticker) => router.push(buildStockLiveUrl(isFeaturedPreview ? previewTicker : ticker))}
             onAction={focusedTicker
-              ? () => router.push(buildStockLiveUrl(focusedTicker))
+              ? () => router.push(buildStockLiveUrl(isFeaturedPreview ? previewTicker : focusedTicker))
               : null}
           />
         </div>

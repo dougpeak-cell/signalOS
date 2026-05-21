@@ -38,7 +38,7 @@ export default function SmartPreviewStarter() {
   if (active) {
     return (
       <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4 text-sm text-emerald-200">
-        Smart Preview Active — premium tools are unlocked for this session.
+        MSFT Preview Active — live chart and workspace access are open for Microsoft during this session.
       </div>
     );
   }
@@ -48,7 +48,7 @@ export default function SmartPreviewStarter() {
       onClick={handleStartPreview}
       className="rounded-2xl bg-cyan-400 px-5 py-3 font-semibold text-black shadow-lg hover:bg-cyan-300"
     >
-      Start 30-Minute Smart Preview
+      Start 30-Minute MSFT Preview
     </button>
   );
 }
