@@ -4,9 +4,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
 import { getDevPreviewTier } from "@/lib/sigi/devPreview";
-import {
-  getFeaturedPreviewTicker,
-} from "@/lib/premiumAccess";
+import { getPremiumAccess } from "@/lib/premiumAccess";
+import { normalizeTicker } from "@/lib/tickerAliases";
 import { getStockWorkspaceData } from "@/lib/workspace/stockWorkspaceData";
 
 async function createSupabaseServerClient() {
@@ -57,10 +56,14 @@ export default async function StockWorkspacePage({
   }
 
   const effectivePlan = previewTier || plan;
-  const canUsePreviewWorkspace =
-    effectivePlan === "free" &&
-    ticker.trim().toUpperCase() === getFeaturedPreviewTicker();
-  const canUseTradingWorkspace = effectivePlan === "pro" || canUsePreviewWorkspace;
+  const normalizedTicker = normalizeTicker(ticker);
+  const canUseTradingWorkspace =
+    effectivePlan === "pro" ||
+    getPremiumAccess({
+      tier: effectivePlan as "free" | "smart" | "pro",
+      ticker: normalizedTicker,
+      feature: "stock",
+    });
 
   if (!canUseTradingWorkspace) {
     redirect("/auth/upgrade?plan=pro&feature=trading-workspace");

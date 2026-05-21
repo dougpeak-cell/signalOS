@@ -11,12 +11,13 @@ import TechnicalIntelligenceCard from "@/components/stocks/TechnicalIntelligence
 import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
 import { useOptionalMarketData } from "@/components/providers/MarketDataProvider";
 import { useSigiTier } from "@/hooks/useSigiTier";
-import { getFeaturedPreviewTicker } from "@/lib/premiumAccess";
+import { getPremiumAccess } from "@/lib/premiumAccess";
 import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
 import { computeMasterSignalScore } from "@/lib/analysis/masterSignalScore";
 import { buildExecutionModel } from "@/lib/engines/executionModel";
 import { buildTargetEngine } from "@/lib/engines/targetEngine";
 import type { ComputedTechnicals } from "@/lib/market/technicals";
+import { normalizeTicker } from "@/lib/tickerAliases";
 import { addStoredWatchlistTicker } from "@/lib/watchlistStore";
 
 type StockDetailLiveRow = {
@@ -193,7 +194,7 @@ export default function StockDetailLivePanels({
   const { tier } = useSigiTier();
   const liveMarket = useOptionalLiveMarket();
   const marketData = useOptionalMarketData();
-  const liveTicker = row.ticker.toUpperCase();
+  const liveTicker = normalizeTicker(row.ticker);
   const marketDataActions = useMemo(
     () =>
       marketData
@@ -213,10 +214,12 @@ export default function StockDetailLivePanels({
   const isTracked = watchlistTickerSet.has(liveTicker);
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const plan = tier ?? "free";
-  const previewTicker = getFeaturedPreviewTicker();
-  const isFeaturedPreviewTicker = plan === "free" && liveTicker === previewTicker;
-  const canUseLiveChart = plan === "smart" || plan === "pro" || isFeaturedPreviewTicker;
-  const canUseTradingWorkspace = plan === "pro" || isFeaturedPreviewTicker;
+  const canUseLiveChart = getPremiumAccess({
+    tier: plan,
+    ticker: liveTicker,
+    feature: "stock",
+  });
+  const canUseTradingWorkspace = plan === "pro" || canUseLiveChart;
 
   function buildPreviewHref(href: string) {
     if (searchParams.get("mobilePreview") !== "1") {
