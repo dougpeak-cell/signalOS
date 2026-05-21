@@ -44,7 +44,9 @@ export default function TodayPageQueryTickerSync() {
 
     const normalizedTicker = shouldLockToPreviewTicker
       ? previewTicker
-      : normalizeTicker(ticker);
+      : ticker
+        ? normalizeTicker(ticker)
+        : null;
 
     if (!normalizedTicker) {
       return;
