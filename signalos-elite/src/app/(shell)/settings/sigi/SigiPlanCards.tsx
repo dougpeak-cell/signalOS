@@ -87,6 +87,7 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
           const isBusy = pendingPlan === card.tier;
           const isScheduledDowngradeTarget = currentTier === "pro" && card.tier === "smart";
           const hasScheduledDowngrade = pendingTier === "smart";
+          const isIncludedWithPro = currentTier === "pro" && card.tier === "smart";
 
           return (
             <article
@@ -148,26 +149,15 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
                   <span className="inline-flex rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/78">
                     Current plan
                   </span>
-                ) : isScheduledDowngradeTarget ? (
-                  hasScheduledDowngrade ? (
-                    <div>
-                      <span className="inline-flex rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/78">
-                        Downgrades to {getSigiTierCard("smart").name}
-                      </span>
-                      {pendingTierEffectiveLabel ? (
-                        <div className="mt-2 text-xs text-white/52">Scheduled for {pendingTierEffectiveLabel}</div>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => void startDowngrade("smart")}
-                      disabled={pendingPlan !== null}
-                      className="inline-flex w-full justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white/82 transition hover:border-white/18 hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {pendingPlan === "downgrade-smart" ? "Scheduling downgrade" : "Downgrade to Smart next cycle"}
-                    </button>
-                  )
+                ) : isIncludedWithPro ? (
+                  <div>
+                    <span className="inline-flex rounded-2xl border border-emerald-400/18 bg-emerald-400/10 px-4 py-2.5 text-sm font-medium text-emerald-200">
+                      Included with Pro
+                    </span>
+                    {hasScheduledDowngrade && pendingTierEffectiveLabel ? (
+                      <div className="mt-2 text-xs text-white/52">Scheduled for {pendingTierEffectiveLabel}</div>
+                    ) : null}
+                  </div>
                 ) : isPaidTier && paidTier === "smart" ? (
                   <a
                     href="/auth/upgrade?plan=smart"
@@ -197,7 +187,7 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
                     {card.cta}
                   </Link>
                 )}
-                {isPaidTier ? (
+                {isPaidTier && !isIncludedWithPro ? (
                   <div className="mt-2 text-xs text-white/52">Cancel anytime. No commitment.</div>
                 ) : null}
               </div>
