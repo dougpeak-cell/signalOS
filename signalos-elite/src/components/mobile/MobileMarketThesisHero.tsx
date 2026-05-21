@@ -42,7 +42,7 @@ export default function MobileMarketThesisHero({
           href={intelligence.heroArticleUrl}
           title={intelligence.heroTitle}
           variant="banner"
-          className="mt-5 aspect-[16/9] rounded-3xl border border-white/10 bg-black/25"
+          className="mt-5 aspect-video rounded-3xl border border-white/10 bg-black/25"
           fallbackClassName="aspect-[16/9] rounded-3xl border border-white/10"
         />
 
