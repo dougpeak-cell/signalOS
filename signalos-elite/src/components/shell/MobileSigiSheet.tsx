@@ -224,6 +224,17 @@ export default function MobileSigiSheet({
     return buildPreviewHref(baseUrl);
   }
 
+  function buildTodayTickerHref(ticker: string) {
+    const nextParams = new URLSearchParams();
+    nextParams.set("ticker", ticker.trim().toUpperCase());
+
+    if (searchParams.get("mobilePreview") === "1") {
+      nextParams.set("mobilePreview", "1");
+    }
+
+    return `/today?${nextParams.toString()}`;
+  }
+
   useEffect(() => {
     setSigiProfile(getSigiProfile());
 
@@ -435,6 +446,13 @@ export default function MobileSigiSheet({
     }) ?? (looksLikeTicker(question) ? normalizeTickerInput(question) : null);
 
     if (ticker) {
+      if ((effectiveSheetContext?.pathname ?? pathname) === "/today") {
+        setOpen(false);
+        setShowReadFirst(false);
+        router.push(buildTodayTickerHref(ticker));
+        return;
+      }
+
       setMobileSigiAnswer(null);
       setMobileSigiQuestion(question);
       setFocusedTicker(ticker);

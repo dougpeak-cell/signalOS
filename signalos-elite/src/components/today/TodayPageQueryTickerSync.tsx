@@ -59,9 +59,7 @@ export default function TodayPageQueryTickerSync() {
     selectedTicker.setActiveTicker(normalizedTicker);
 
     const timeoutId = window.setTimeout(() => {
-      document
-        .getElementById("sigi-command-panel")
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
     }, 150);
 
     return () => {

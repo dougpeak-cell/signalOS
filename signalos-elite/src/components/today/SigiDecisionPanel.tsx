@@ -508,6 +508,11 @@ function SigiDecisionPanelContent({
     try {
       await loadHeroStory(targetTicker);
       setSigiAction("setup");
+
+      window.setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+      }, 100);
+
       if (source === "type") {
         setSigiInput("");
       }
