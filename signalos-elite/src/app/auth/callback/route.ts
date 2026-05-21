@@ -10,8 +10,22 @@ function getSafePlan(value: string | null): UpgradePlan | null {
   return value === "smart" || value === "pro" ? value : null;
 }
 
-function getCheckoutPathForPlan(plan: UpgradePlan): string {
-  return `/api/stripe/checkout?plan=${plan}`;
+function getSafeReturnTo(value: string | null): string | null {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return null;
+  }
+
+  return value;
+}
+
+function getCheckoutPathForPlan(plan: UpgradePlan, returnTo: string | null): string {
+  const checkoutParams = new URLSearchParams({ plan });
+
+  if (returnTo) {
+    checkoutParams.set("returnTo", returnTo);
+  }
+
+  return `/api/stripe/checkout?${checkoutParams.toString()}`;
 }
 
 function getSafeNextPath(value: string | null): string {
@@ -36,11 +50,20 @@ function getSafeOtpType(value: string | null): EmailOtpType | null {
   }
 }
 
-function buildRetryUrl(requestUrl: URL, nextPath: string, plan: UpgradePlan | null, error: string) {
+function buildRetryUrl(
+  requestUrl: URL,
+  nextPath: string,
+  plan: UpgradePlan | null,
+  returnTo: string | null,
+  error: string
+) {
   const retryUrl = new URL(plan ? "/auth/upgrade" : "/auth", requestUrl.origin);
 
   if (plan) {
     retryUrl.searchParams.set("plan", plan);
+    if (returnTo) {
+      retryUrl.searchParams.set("returnTo", returnTo);
+    }
   }
 
   if (!plan && nextPath !== DEFAULT_AUTH_REDIRECT) {
@@ -54,14 +77,15 @@ function buildRetryUrl(requestUrl: URL, nextPath: string, plan: UpgradePlan | nu
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const plan = getSafePlan(requestUrl.searchParams.get("plan"));
+  const returnTo = getSafeReturnTo(requestUrl.searchParams.get("returnTo"));
   const nextPath = getSafeNextPath(
-    requestUrl.searchParams.get("next") ?? (plan ? getCheckoutPathForPlan(plan) : null)
+    requestUrl.searchParams.get("next") ?? (plan ? getCheckoutPathForPlan(plan, returnTo) : null)
   );
   const returnedError =
     requestUrl.searchParams.get("error_description") ?? requestUrl.searchParams.get("error");
 
   if (returnedError) {
-    return NextResponse.redirect(buildRetryUrl(requestUrl, nextPath, plan, returnedError));
+    return NextResponse.redirect(buildRetryUrl(requestUrl, nextPath, plan, returnTo, returnedError));
   }
 
   const code = requestUrl.searchParams.get("code");
@@ -100,12 +124,12 @@ export async function GET(request: NextRequest) {
     error = result.error;
   } else {
     return NextResponse.redirect(
-      buildRetryUrl(requestUrl, nextPath, plan, "Missing sign-in token.")
+      buildRetryUrl(requestUrl, nextPath, plan, returnTo, "Missing sign-in token.")
     );
   }
 
   if (error) {
-    return NextResponse.redirect(buildRetryUrl(requestUrl, nextPath, plan, error.message));
+    return NextResponse.redirect(buildRetryUrl(requestUrl, nextPath, plan, returnTo, error.message));
   }
 
   return response;
