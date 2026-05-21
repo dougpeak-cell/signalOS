@@ -6,8 +6,6 @@ import { createServerClient } from "@supabase/ssr";
 import { getDevPreviewTier } from "@/lib/sigi/devPreview";
 import {
   getFeaturedPreviewTicker,
-  isSmartPreviewTimestampActive,
-  SMART_PREVIEW_COOKIE_KEY,
 } from "@/lib/premiumAccess";
 import { getStockWorkspaceData } from "@/lib/workspace/stockWorkspaceData";
 
@@ -59,11 +57,9 @@ export default async function StockWorkspacePage({
   }
 
   const effectivePlan = previewTier || plan;
-  const previewStartedAt = cookieStore.get(SMART_PREVIEW_COOKIE_KEY)?.value ?? null;
   const canUsePreviewWorkspace =
     effectivePlan === "free" &&
-    ticker.trim().toUpperCase() === getFeaturedPreviewTicker() &&
-    isSmartPreviewTimestampActive(previewStartedAt);
+    ticker.trim().toUpperCase() === getFeaturedPreviewTicker();
   const canUseTradingWorkspace = effectivePlan === "pro" || canUsePreviewWorkspace;
 
   if (!canUseTradingWorkspace) {

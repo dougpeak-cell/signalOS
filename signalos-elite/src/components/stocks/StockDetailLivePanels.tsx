@@ -190,7 +190,7 @@ export default function StockDetailLivePanels({
   fallbackMessage,
 }: StockDetailLivePanelsProps) {
   const searchParams = useSearchParams();
-  const { tier, previewActive } = useSigiTier();
+  const { tier } = useSigiTier();
   const liveMarket = useOptionalLiveMarket();
   const marketData = useOptionalMarketData();
   const liveTicker = row.ticker.toUpperCase();
@@ -214,7 +214,7 @@ export default function StockDetailLivePanels({
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const plan = tier ?? "free";
   const previewTicker = getFeaturedPreviewTicker();
-  const isFeaturedPreviewTicker = previewActive && plan === "free" && liveTicker === previewTicker;
+  const isFeaturedPreviewTicker = plan === "free" && liveTicker === previewTicker;
   const canUseLiveChart = plan === "smart" || plan === "pro" || isFeaturedPreviewTicker;
   const canUseTradingWorkspace = plan === "pro" || isFeaturedPreviewTicker;
 
