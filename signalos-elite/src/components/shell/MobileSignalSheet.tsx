@@ -91,7 +91,7 @@ export default function MobileSignalSheet({
       />
 
       <div
-        className={`${forceDesktopPreview ? "absolute" : "fixed"} inset-x-0 bottom-0 z-50 min-h-[72vh] overflow-hidden rounded-t-4xl border border-cyan-400/20 bg-slate-950/95 px-5 pb-6 pt-4 shadow-[0_-20px_60px_rgba(34,211,238,0.20)] backdrop-blur-2xl`}
+        className={`${forceDesktopPreview ? "absolute" : "fixed"} inset-x-0 bottom-0 z-50 flex max-h-[92dvh] min-h-[72vh] flex-col overflow-hidden rounded-t-4xl border border-cyan-400/20 bg-slate-950/95 px-5 pb-6 pt-4 shadow-[0_-20px_60px_rgba(34,211,238,0.20)] backdrop-blur-2xl`}
         style={
           {
             paddingTop: "max(1rem, env(safe-area-inset-top))",
@@ -134,11 +134,16 @@ export default function MobileSignalSheet({
 
         <div
           ref={scrollContainerRef}
-          className="signalos-thin-scrollbar overflow-y-auto px-5 py-4"
+          className="signalos-thin-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-4"
           style={
-            forceDesktopPreview
-              ? { maxHeight: `${Math.max(280, mobilePreviewFrame.height - 190)}px` }
-              : undefined
+            {
+              WebkitOverflowScrolling: "touch",
+              overscrollBehaviorY: "contain",
+              touchAction: "pan-y",
+              ...(forceDesktopPreview
+                ? { maxHeight: `${Math.max(280, mobilePreviewFrame.height - 190)}px` }
+                : undefined),
+            }
           }
         >{children}</div>
 
