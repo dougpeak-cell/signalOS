@@ -374,7 +374,7 @@ function ShellLayoutContent({
 
           {!shouldUseCompactShell ? <SigiMiniPanel /> : null}
           <MobileSigiSheet forceDesktopPreview={shouldUseCompactShell} />
-          {shouldShowMobileBottomNav ? <MobileBottomNav forceVisible={shouldUseCompactShell} /> : null}
+          {shouldShowMobileBottomNav ? <MobileBottomNav forceVisible={isDevMobilePreview} /> : null}
           </ShellMarketContextProvider>
         </SigiPanelProvider>
       </LiveMarketProvider>

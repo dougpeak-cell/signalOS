@@ -902,7 +902,7 @@ export default function MobileSigiHome({
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="grid gap-2.5">
               {commandCenterButtons.map((item) => (
                 <button
                   key={item.key}
@@ -913,7 +913,7 @@ export default function MobileSigiHome({
                   <div className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${item.accentClass}`}>
                     {item.label}
                   </div>
-                  <div className="mt-1 text-sm leading-6 text-white/72 line-clamp-3">{item.preview}</div>
+                  <div className="mt-1.5 text-sm leading-6 text-white/72 line-clamp-3">{item.preview}</div>
                 </button>
               ))}
             </div>
