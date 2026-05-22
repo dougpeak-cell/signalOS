@@ -4729,7 +4729,7 @@ const gapFillLabel =
                 <div ref={chartHostRef} className="h-full w-full bg-[#11161c]" />
               </div>
 
-              {showReturnToLive ? (
+              {showReturnToLive && isChartFullscreen ? (
                 <button
                   type="button"
                   onClick={returnToLive}
@@ -4811,6 +4811,18 @@ const gapFillLabel =
                 </div>
               ) : null}
             </div>
+
+            {showReturnToLive && !isChartFullscreen ? (
+              <div className="flex justify-end px-2 pb-2 pt-2 sm:px-0 sm:pb-0 sm:pt-3">
+                <button
+                  type="button"
+                  onClick={returnToLive}
+                  className="z-20 rounded-full border border-white/10 bg-black/80 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur"
+                >
+                  Return to Live
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
 
