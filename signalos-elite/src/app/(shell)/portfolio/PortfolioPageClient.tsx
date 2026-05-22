@@ -70,6 +70,8 @@ type ActionState =
     }
   | null;
 
+const QUICK_VIEW_QUOTE_POLL_MS = 3_000;
+
 const INITIAL_HOLDINGS: Holding[] = [
   {
     ticker: "NVDA",
@@ -916,6 +918,17 @@ function PortfolioPageContent() {
     portfolioTickers,
     refreshQuotesNow,
   ]);
+
+  useEffect(() => {
+    if (!hasLoadedPortfolio || !isQuick || portfolioTickers.length === 0) return;
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void refreshQuotesNow(portfolioTickers);
+    }, QUICK_VIEW_QUOTE_POLL_MS);
+
+    return () => window.clearInterval(interval);
+  }, [hasLoadedPortfolio, isQuick, portfolioTickers, refreshQuotesNow]);
 
   useEffect(() => {
     if (!hasLoadedPortfolio || portfolioTickers.length === 0) {
