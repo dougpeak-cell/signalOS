@@ -966,8 +966,7 @@ export default async function NewsPage({
                   )}
                 </div>
 
-                {!isMobilePreview ? (
-                  <div className="rounded-[20px] border border-white/10 bg-white/3 p-3">
+                <div className="rounded-[20px] border border-white/10 bg-white/3 p-3 sm:p-4">
                     <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">
                       Priority Feed
                     </div>
@@ -989,48 +988,65 @@ export default async function NewsPage({
                             href={item.url}
                             className={`group block rounded-[18px] border p-3 transition hover:bg-white/4.5 ${toneClasses.border} ${toneClasses.bg}`}
                           >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="w-28 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/35">
-                                <NewsImage
-                                  src={item.image ?? item.imageUrl}
-                                  title={item.headline}
-                                  variant="thumbnail"
-                                  className="rounded-none"
-                                  fallbackClassName="rounded-none border-b-0"
-                                />
+                            <div className="space-y-3 sm:space-y-0 sm:flex sm:items-start sm:justify-between sm:gap-3">
+                              <div className="flex flex-wrap items-center gap-2 sm:hidden">
+                                <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${toneClasses.pill}`}>
+                                  {getDriverImpactLabel(impactScore)}
+                                </span>
+                                <span className="inline-flex items-center rounded-full border border-amber-300/30 bg-amber-300/12 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-amber-100 shadow-[0_0_20px_rgba(252,211,77,0.18)]">
+                                  Score {impactScore}
+                                </span>
+                                <span className={`text-[11px] font-semibold ${toneClasses.text}`}>
+                                  {sentimentLabel}
+                                </span>
+                                <span className="text-[10px] uppercase tracking-[0.14em] text-white/48">
+                                  {item.category}
+                                </span>
                               </div>
 
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${toneClasses.pill}`}>
-                                    {getDriverImpactLabel(impactScore)}
-                                  </span>
-                                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/72">
-                                    Score <span className="text-amber-100">{impactScore}</span>
-                                  </span>
+                              <div className="flex items-start gap-3 sm:min-w-0 sm:flex-1">
+                                <div className="w-24 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/35 sm:w-28">
+                                  <NewsImage
+                                    src={item.image ?? item.imageUrl}
+                                    title={item.headline}
+                                    variant="thumbnail"
+                                    className="rounded-none"
+                                    fallbackClassName="rounded-none border-b-0"
+                                  />
                                 </div>
 
-                                <div className="mt-2 flex items-center gap-2">
-                                  <span className={`h-2 w-2 rounded-full ${toneClasses.dot}`} />
-                                  <span className={`text-sm font-semibold uppercase tracking-[0.14em] ${toneClasses.text}`}>
-                                    {getDriverTickerLabel(item)}
-                                  </span>
-                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="hidden flex-wrap items-center gap-2 sm:flex">
+                                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${toneClasses.pill}`}>
+                                      {getDriverImpactLabel(impactScore)}
+                                    </span>
+                                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/72">
+                                      Score <span className="text-amber-100">{impactScore}</span>
+                                    </span>
+                                  </div>
 
-                                <div className="mt-2 line-clamp-2 wrap-anywhere text-sm leading-5 font-medium text-white/88 group-hover:text-cyan-100">
-                                  {item.headline}
-                                </div>
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <span className={`h-2 w-2 rounded-full ${toneClasses.dot}`} />
+                                    <span className={`text-sm font-semibold uppercase tracking-[0.14em] ${toneClasses.text}`}>
+                                      {getDriverTickerLabel(item)}
+                                    </span>
+                                  </div>
 
-                                <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-white/46">
-                                  <span>{getDriverRelevance(item)}</span>
-                                  <span>•</span>
-                                  <NewsSourceMark source={item.source} compact />
-                                  <span>•</span>
-                                  <span>{item.publishedAt}</span>
+                                  <div className="mt-2 line-clamp-3 wrap-anywhere text-[15px] leading-5 font-medium text-white/88 group-hover:text-cyan-100 sm:line-clamp-2 sm:text-sm sm:leading-5">
+                                    {item.headline}
+                                  </div>
+
+                                  <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-white/46">
+                                    <span>{getDriverRelevance(item)}</span>
+                                    <span>•</span>
+                                    <NewsSourceMark source={item.source} compact />
+                                    <span>•</span>
+                                    <span>{item.publishedAt}</span>
+                                  </div>
                                 </div>
                               </div>
 
-                              <div className="shrink-0 text-right">
+                              <div className="hidden shrink-0 text-right sm:block">
                                 <div className={`text-xs font-semibold ${toneClasses.text}`}>
                                   {sentimentLabel}
                                 </div>
@@ -1050,7 +1066,6 @@ export default async function NewsPage({
                       ) : null}
                     </div>
                   </div>
-                ) : null}
               </div>
             </div>
           </section>
