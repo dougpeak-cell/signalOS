@@ -15,7 +15,6 @@ import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
 import TodayActionRowClient from "@/components/today/TodayActionRowClient";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
-import TodayTrendingNewsPanel from "@/components/today/TodayTrendingNewsPanel";
 import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import type { SigiTodayContext } from "@/hooks/useSigi";
@@ -143,7 +142,7 @@ export default function MobileSigiHome({
   emergingSetups,
   preMarketEmergingSetups,
   news,
-  trendingNews,
+  trendingNews: _trendingNews,
   opportunities,
   risks,
   leadershipWatch,
@@ -927,8 +926,6 @@ export default function MobileSigiHome({
       />
 
       {effectiveHasSigiSmart ? null : <UpgradeSigiSmartCard />}
-
-      <TodayTrendingNewsPanel items={trendingNews} />
 
       <div className="grid grid-cols-2 gap-3">
         {pageSnapshots.map((item) => (
