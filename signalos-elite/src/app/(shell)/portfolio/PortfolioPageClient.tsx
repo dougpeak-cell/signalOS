@@ -687,16 +687,21 @@ function QuickPortfolioRowItem({
   ticker,
   name,
   livePrice,
-  pnlPct,
+  dayChangePct,
   href,
 }: {
   ticker: string;
   name: string;
   livePrice: number;
-  pnlPct: number;
+  dayChangePct: number | null;
   href: string;
 }) {
-  const changeTone = pnlPct > 0 ? "text-emerald-300" : pnlPct < 0 ? "text-rose-300" : "text-white/55";
+  const changeTone =
+    typeof dayChangePct === "number" && dayChangePct > 0
+      ? "text-emerald-300"
+      : typeof dayChangePct === "number" && dayChangePct < 0
+        ? "text-rose-300"
+        : "text-white/55";
 
   return (
     <Link
@@ -712,7 +717,9 @@ function QuickPortfolioRowItem({
 
       <div className="text-right">
         <div className="text-lg font-semibold text-white">{formatMoney(livePrice)}</div>
-        <div className={`mt-0.5 text-sm font-semibold ${changeTone}`}>{formatPct(pnlPct)}</div>
+        <div className={`mt-0.5 text-sm font-semibold ${changeTone}`}>
+          {typeof dayChangePct === "number" ? formatPct(dayChangePct) : "—"}
+        </div>
       </div>
     </Link>
   );
@@ -1079,6 +1086,7 @@ function PortfolioPageContent() {
           costBasis,
           pnl,
           pnlPct,
+          dayChangePct: liveQuote?.changePct ?? null,
           derivedConviction,
           updatedAt,
           updatedLabel: formatHoldingUpdatedStatus(updatedAt),
@@ -1893,7 +1901,7 @@ function PortfolioPageContent() {
                           ticker={holding.ticker}
                           name={holding.name}
                           livePrice={holding.livePrice}
-                          pnlPct={holding.pnlPct}
+                          dayChangePct={holding.dayChangePct}
                           href={buildPortfolioHref(`/stocks/${holding.ticker}`)}
                         />
                       );
