@@ -26,7 +26,9 @@ import {
   type SigiProfile,
 } from "@/lib/sigi/sigiProfile";
 import { clearSigiSessionContext } from "@/lib/sigi/sigiSessionContext";
+import { fetchTodayIntelligence } from "@/lib/sigi/fetchTodayIntelligence";
 import { formatMarketClockTimeMs } from "@/lib/marketTime";
+import { getSigiMarketCondition } from "@/lib/sigi/sigiMarketCondition";
 import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
 import {
   readPortfolioHoldings,
@@ -64,6 +66,7 @@ type MobileSigiHomeProps = {
 };
 
 const MOBILE_PULSE_TICKERS = ["SPY", "QQQ", "^VIX"] as const;
+type MobileInsightKey = "marketStructure" | "bestOpportunity" | "mainRisk";
 
 function clampScore(value?: number | null) {
   if (typeof value !== "number" || !Number.isFinite(value)) return 0;
@@ -195,6 +198,12 @@ export default function MobileSigiHome({
   const [localPortfolioLeadTicker, setLocalPortfolioLeadTicker] = useState<string | null>(null);
   const [localPortfolioLeadHolding, setLocalPortfolioLeadHolding] =
     useState<LocalPortfolioHolding | null>(null);
+  const [todayIntel, setTodayIntel] = useState<{
+    marketStructure?: string;
+    bestOpportunity?: string;
+    mainRisk?: string;
+  } | null>(null);
+  const [activeInsightKey, setActiveInsightKey] = useState<MobileInsightKey | null>(null);
 
   useEffect(() => {
     ensureQuotes([...MOBILE_PULSE_TICKERS]);
@@ -332,6 +341,39 @@ export default function MobileSigiHome({
         })
         .slice(0, 5),
     [defaultSetupSession, highVolumeRows]
+  );
+  const marketPulse = useMemo(
+    () => ({
+      spy: quoteMap?.SPY?.changePct ?? null,
+      qqq: quoteMap?.QQQ?.changePct ?? null,
+      iwm: quoteMap?.IWM?.changePct ?? null,
+      dia: quoteMap?.DIA?.changePct ?? null,
+      vix: quoteMap?.VIX?.changePct ?? quoteMap?.["^VIX"]?.changePct ?? null,
+    }),
+    [quoteMap]
+  );
+  const commandCenterWatchlistTickers = useMemo(
+    () => watchlistRows.map((item) => item.ticker).filter(Boolean),
+    [watchlistRows]
+  );
+  const commandCenterCandidates = useMemo(
+    () => [
+      ...activeTopSetups.map((item) => ({ changePct: item.changePercent ?? 0 })),
+      ...watchlistRows.map((item) => ({ changePct: item.changePct ?? 0 })),
+    ],
+    [activeTopSetups, watchlistRows]
+  );
+  const marketCondition = useMemo(
+    () =>
+      getSigiMarketCondition({
+        spyChangePct: marketPulse.spy,
+        qqqChangePct: marketPulse.qqq,
+        iwmChangePct: marketPulse.iwm,
+        vixChangePct: marketPulse.vix,
+        positiveCount: commandCenterCandidates.filter((item) => (item.changePct ?? 0) > 0).length,
+        negativeCount: commandCenterCandidates.filter((item) => (item.changePct ?? 0) < 0).length,
+      }),
+    [commandCenterCandidates, marketPulse]
   );
   const lastUpdatedLabel = useMemo(
     () => buildLastUpdatedLabel(lastRefreshedAt ?? lastUpdatedAt),
@@ -514,29 +556,70 @@ export default function MobileSigiHome({
     ]
   );
 
-  const answerPreviews = useMemo(
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetchTodayIntelligence({
+      marketPulse,
+      topSetups,
+      news,
+      watchlist: commandCenterWatchlistTickers,
+    })
+      .then((nextIntel) => {
+        if (!cancelled) {
+          setTodayIntel(nextIntel);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTodayIntel(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [commandCenterWatchlistTickers, marketPulse, news, topSetups]);
+
+  const commandCenterButtons = useMemo(
     () => [
       {
-        label: "Best stock today",
-        prompt: "What is the best stock today?",
-        preview: leadOpportunity
-          ? `${leadOpportunity.ticker} is leading with ${leadOpportunity.setupLabel ?? "a live setup"}.`
-          : "Sigi is scanning for the top setup now.",
+        key: "marketStructure" as const,
+        label: "Market Structure",
+        prompt: "What is the current market structure right now?",
+        accentClass: "text-cyan-200",
+        preview:
+          todayIntel?.marketStructure ??
+          marketCondition?.summary ??
+          "Reading current market structure...",
       },
       {
-        label: "Downside Setups",
-        prompt: "What dip should I buy?",
-        preview: leadRisk
-          ? "Clearest downside setups right now."
-          : "Downside buy setups are limited right now.",
+        key: "bestOpportunity" as const,
+        label: "Best Opportunity",
+        prompt: "What is the best opportunity right now?",
+        accentClass: "text-emerald-200",
+        preview:
+          todayIntel?.bestOpportunity ??
+          (leadOpportunity
+            ? `${leadOpportunity.ticker} is leading with ${leadOpportunity.setupLabel ?? "a live setup"}.`
+            : "Scanning best opportunity..."),
       },
       {
-        label: "Market news",
-        prompt: "What market news matters right now?",
-        preview: news[0]?.headline ?? "Headline pressure is light right now.",
+        key: "mainRisk" as const,
+        label: "Main Risk",
+        prompt: "What is the main risk on the market right now?",
+        accentClass: "text-rose-200",
+        preview:
+          todayIntel?.mainRisk ??
+          leadRisk?.whyThisSetup ??
+          "Checking current risk...",
       },
     ],
-    [leadOpportunity, leadRisk, news]
+    [leadOpportunity, leadRisk, marketCondition, todayIntel]
+  );
+  const activeInsight = useMemo(
+    () => commandCenterButtons.find((item) => item.key === activeInsightKey) ?? null,
+    [activeInsightKey, commandCenterButtons]
   );
 
   const mobileSigiContext = useMemo<SigiTodayContext>(() => {
@@ -788,21 +871,53 @@ export default function MobileSigiHome({
             />
           ) : null}
 
-          <div className="space-y-3">
-            {answerPreviews.map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => (effectiveHasSigiSmart ? openSigiRead(item.prompt) : openUpgradePrompt(item.prompt))}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:border-cyan-300/28 hover:bg-cyan-400/8"
-              >
-                <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/76">
-                  {item.label}
+          {activeInsight ? (
+            <div className="rounded-3xl border border-cyan-400/18 bg-slate-950/88 p-4 shadow-[0_0_26px_rgba(34,211,238,0.1)]">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${activeInsight.accentClass}`}>
+                    {activeInsight.label}
+                  </div>
+                  <div className="mt-2 text-sm leading-7 text-white/78">
+                    {activeInsight.preview}
+                  </div>
                 </div>
-                <div className="mt-1 text-sm leading-6 text-white/72">{item.preview}</div>
-              </button>
-            ))}
-          </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveInsightKey(null)}
+                  className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/76 transition hover:border-cyan-300/25 hover:bg-cyan-400/8 hover:text-cyan-100"
+                >
+                  Return to Today
+                </button>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => (effectiveHasSigiSmart ? openSigiRead(activeInsight.prompt) : openUpgradePrompt(activeInsight.prompt))}
+                  className="rounded-full border border-cyan-300/30 bg-cyan-400/15 px-4 py-2 text-xs font-semibold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/25"
+                >
+                  Ask Sigi More
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {commandCenterButtons.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setActiveInsightKey(item.key)}
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left shadow-[0_10px_24px_rgba(0,0,0,0.16)] transition hover:border-cyan-300/28 hover:bg-cyan-400/8"
+                >
+                  <div className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${item.accentClass}`}>
+                    {item.label}
+                  </div>
+                  <div className="mt-1 text-sm leading-6 text-white/72 line-clamp-3">{item.preview}</div>
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="rounded-3xl border border-cyan-400/18 bg-slate-950/88 p-4 shadow-[0_0_26px_rgba(34,211,238,0.1)]">
             <div className="flex items-center justify-between gap-3">
