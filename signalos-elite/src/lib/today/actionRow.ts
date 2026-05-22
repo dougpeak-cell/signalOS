@@ -209,25 +209,26 @@ function buildActionableText(
   bullish: number,
   bearish: number,
   total: number,
-  accelerationLabel: string
+  accelerationLabel: string,
+  leader: SectorSummary | null,
+  laggard: SectorSummary | null
 ) {
   const spread = bullish - bearish;
   const phaseLabel = formatPhaseLabel();
   const signalState =
     total >= 12 ? "elevated" : total >= 6 ? "constructive" : "selective";
+  const leaderText = leader?.sector ? `${leader.sector} leadership` : "current leadership";
+  const laggardText = laggard?.sector ? `${laggard.sector} weakness` : "relative weakness";
 
   if (spread >= 3) {
-    return `${formatCount(bullish, "bullish setup")} are active against ${formatCount(bearish, "bearish setup")} in the ${phaseLabel}, and signal participation is ${accelerationLabel} with total count still ${signalState}.`;
+    return `Lean into ${leaderText} during the ${phaseLabel} while keeping risk tight against ${laggardText}. Participation is ${accelerationLabel}, so the long side can still work if follow-through stays ${signalState}.`;
   }
 
   if (spread <= -3) {
-    return `${formatCount(bearish, "bearish setup")} are active against ${formatCount(bullish, "bullish setup")} in the ${phaseLabel}, and signal participation is ${accelerationLabel} while total count stays ${signalState}.`;
+    return `Favor defense into the ${phaseLabel} and respect ${laggardText} pressure, while treating ${leaderText} as the main test of any bounce. Participation is ${accelerationLabel}, so downside moves can still extend while the tape stays ${signalState}.`;
   }
 
-  return `${formatCount(bullish, "bullish setup")} are active, ${formatCount(
-    bearish,
-    "bearish setup"
-  )} ${bearish === 1 ? "is" : "are"} actionable, and signal participation looks ${accelerationLabel} with total count still ${signalState}.`;
+  return `Stay selective in the ${phaseLabel}: work confirmed names tied to ${leaderText}, avoid forcing size into ${laggardText}, and wait for cleaner separation before pressing harder. Participation is ${accelerationLabel} with the overall setup count still ${signalState}.`;
 }
 
 export function buildTodayActionRowMetrics(
@@ -283,7 +284,9 @@ export function buildTodayActionRowMetrics(
       counts.bullish,
       counts.bearish,
       total,
-      acceleration.label
+      acceleration.label,
+      leader,
+      laggard
     ),
     bullishSignals,
     bearishSignals,
