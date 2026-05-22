@@ -449,7 +449,8 @@ export default function MobileSigiSheet({
       if ((effectiveSheetContext?.pathname ?? pathname) === "/today") {
         setOpen(false);
         setShowReadFirst(false);
-        router.push(buildTodayTickerHref(ticker));
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        router.push(buildTodayTickerHref(ticker), { scroll: true });
         return;
       }
 
