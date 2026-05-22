@@ -873,22 +873,23 @@ export default function MobileSigiHome({
 
           {activeInsight ? (
             <div className="rounded-3xl border border-cyan-400/18 bg-slate-950/88 p-4 shadow-[0_0_26px_rgba(34,211,238,0.1)]">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${activeInsight.accentClass}`}>
                     {activeInsight.label}
-                  </div>
-                  <div className="mt-2 text-sm leading-7 text-white/78">
-                    {activeInsight.preview}
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveInsightKey(null)}
-                  className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/76 transition hover:border-cyan-300/25 hover:bg-cyan-400/8 hover:text-cyan-100"
+                  className="self-start rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/76 transition hover:border-cyan-300/25 hover:bg-cyan-400/8 hover:text-cyan-100 sm:shrink-0"
                 >
                   Return to Today
                 </button>
+              </div>
+
+              <div className="mt-3 text-sm leading-7 text-white/78">
+                {activeInsight.preview}
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
