@@ -384,13 +384,8 @@ export default function MobileSigiHome({
       heroStory?.items?.find((item) => item.headline?.trim() === heroStory?.headline?.trim())?.url?.trim() ||
       heroStory?.items?.[0]?.url?.trim() ||
       null;
-    const ticker =
-      effectiveTicker ??
-      heroStory?.ticker?.trim() ??
-      leadOpportunity?.ticker ??
-      leadSetup?.ticker ??
-      leadRisk?.ticker ??
-      null;
+    const focusedTicker = effectiveTicker ?? heroStory?.ticker?.trim() ?? null;
+    const ticker = focusedTicker ?? leadOpportunity?.ticker ?? leadSetup?.ticker ?? leadRisk?.ticker ?? null;
     const catalyst =
       stockContext?.catalyst?.trim() ??
       heroStory?.stage?.replace(/-/g, " ")?.trim() ??
@@ -411,11 +406,11 @@ export default function MobileSigiHome({
       ticker,
       heroTitle:
         heroStory?.headline?.trim() ||
-        (ticker
-          ? `${ticker} is setting the tone for ${defaultSetupSession === "pre" ? "the pre-market" : "today's tape"}`
+        (focusedTicker
+          ? `${focusedTicker} is setting the tone for ${defaultSetupSession === "pre" ? "the pre-market" : "today's tape"}`
           : defaultSetupSession === "pre"
             ? "Pre-market leadership is starting to take shape"
-            : "The tape is showing its clearest market thesis"),
+            : "Market headlines are setting the tone for today's tape"),
       heroSummary:
         heroStory?.whyItMatters?.trim() ||
         heroStory?.summary?.trim() ||
@@ -425,7 +420,7 @@ export default function MobileSigiHome({
       tone,
       badges: [
         defaultSetupSession === "pre" ? "Pre-market live" : "Regular session",
-        ticker ? `Focus: ${ticker}` : null,
+        focusedTicker ? `Focus: ${focusedTicker}` : null,
         leadSetup?.ticker ? `Setup: ${leadSetup.ticker}` : null,
         stockContext?.sector?.trim() ? `Sector: ${stockContext.sector.trim()}` : null,
       ].filter((value): value is string => Boolean(value)),
@@ -436,8 +431,8 @@ export default function MobileSigiHome({
         leadHeadline,
       risk:
         leadRisk?.whyThisSetup ||
-        (ticker
-          ? `${ticker} remains actionable, but keep risk tight if momentum or breadth fades.`
+        (focusedTicker
+          ? `${focusedTicker} remains actionable, but keep risk tight if momentum or breadth fades.`
           : "Respect weak breadth and failed breakouts while the tape is still sorting itself out."),
       catalyst,
       nextStep: leadOpportunity?.ticker
