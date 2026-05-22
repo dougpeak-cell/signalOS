@@ -814,37 +814,6 @@ export default function ExpertsPage() {
                 })()
               ))}
 
-              <div className="mt-4 rounded-3xl border border-cyan-400/15 bg-cyan-400/4 p-4 shadow-[0_0_24px_rgba(34,211,238,0.06)]">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300">
-                  Model Read
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-white/60">
-                      {selectedModel
-                        ? `${selectedModel} is active. Compare its basket against live analyst targets on the right.`
-                        : "Select a model to compare its basket against live analyst targets."}
-                    </p>
-                  </div>
-
-                  {selectedModelRow ? (
-                    <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-right">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                        Active Basket
-                      </div>
-                      <div className="mt-1 flex flex-wrap justify-end gap-x-2 gap-y-1 text-sm font-semibold text-white">
-                        {selectedModelRow.tickers.map((ticker, index) => (
-                          <span key={ticker} className="inline-flex items-center gap-2">
-                            {index > 0 ? <span className="text-white/35">/</span> : null}
-                            <span>{ticker}</span>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
               <div id="sigi-analyst-leaders" className="mt-6 scroll-mt-28">
                 <SigiAnalystLeaders
                   selectedSector={selectedExpertSector}
