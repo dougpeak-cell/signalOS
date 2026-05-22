@@ -972,64 +972,98 @@ export default async function NewsPage({
                   </div>
 
                   <div className="space-y-3">
-                    {liveStream.slice(0, 4).map((item: any, index: number) => (
-                      <Link
-                        key={`${item.url ?? item.id ?? item.headline}-${index}`}
-                        href={item.url}
-                        className={`group block rounded-[18px] border p-3 transition hover:bg-white/4.5 ${getDriverToneClasses(item.tone).border} ${getDriverToneClasses(item.tone).bg}`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className={isMobilePreview ? "w-24 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/35" : "w-28 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/35"}>
-                            <NewsImage
-                              src={item.image ?? item.imageUrl}
-                              title={item.headline}
-                              variant="thumbnail"
-                              className="rounded-none"
-                              fallbackClassName="rounded-none border-b-0"
-                            />
+                    {liveStream.slice(0, 4).map((item: any, index: number) => {
+                      const toneClasses = getDriverToneClasses(item.tone);
+                      const impactScore = getDriverImpactScore(item);
+                      const sentimentLabel =
+                        item.tone === "bullish"
+                          ? "Positive"
+                          : item.tone === "bearish"
+                            ? "Negative"
+                            : "Neutral";
+
+                      return (
+                        <Link
+                          key={`${item.url ?? item.id ?? item.headline}-${index}`}
+                          href={item.url}
+                          className={`group block rounded-[18px] border p-3 transition hover:bg-white/4.5 ${toneClasses.border} ${toneClasses.bg}`}
+                        >
+                          <div className={isMobilePreview ? "space-y-3" : "flex items-start justify-between gap-3"}>
+                            {isMobilePreview ? (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${toneClasses.pill}`}>
+                                  {getDriverImpactLabel(impactScore)}
+                                </span>
+                                <span className="inline-flex items-center rounded-full border border-amber-300/30 bg-amber-300/12 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-amber-100 shadow-[0_0_20px_rgba(252,211,77,0.18)]">
+                                  Score {impactScore}
+                                </span>
+                                <span className={`text-[11px] font-semibold ${toneClasses.text}`}>
+                                  {sentimentLabel}
+                                </span>
+                                <span className="text-[10px] uppercase tracking-[0.14em] text-white/48">
+                                  {item.category}
+                                </span>
+                              </div>
+                            ) : null}
+
+                            <div className={isMobilePreview ? "flex items-start gap-3" : "contents"}>
+                              <div className={isMobilePreview ? "w-24 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/35" : "w-28 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/35"}>
+                                <NewsImage
+                                  src={item.image ?? item.imageUrl}
+                                  title={item.headline}
+                                  variant="thumbnail"
+                                  className="rounded-none"
+                                  fallbackClassName="rounded-none border-b-0"
+                                />
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                {!isMobilePreview ? (
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${toneClasses.pill}`}>
+                                      {getDriverImpactLabel(impactScore)}
+                                    </span>
+                                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/72">
+                                      Score <span className="text-amber-100">{impactScore}</span>
+                                    </span>
+                                  </div>
+                                ) : null}
+
+                                <div className="mt-2 flex items-center gap-2">
+                                  <span className={`h-2 w-2 rounded-full ${toneClasses.dot}`} />
+                                  <span className={`text-sm font-semibold uppercase tracking-[0.14em] ${toneClasses.text}`}>
+                                    {getDriverTickerLabel(item)}
+                                  </span>
+                                </div>
+
+                                <div className={`${isMobilePreview ? "mt-2 line-clamp-3 text-[15px] leading-5" : "mt-2 line-clamp-2 text-sm leading-5"} wrap-anywhere font-medium text-white/88 group-hover:text-cyan-100`}>
+                                  {item.headline}
+                                </div>
+
+                                <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-white/46">
+                                  <span>{getDriverRelevance(item)}</span>
+                                  <span>•</span>
+                                  <NewsSourceMark source={item.source} compact />
+                                  <span>•</span>
+                                  <span>{item.publishedAt}</span>
+                                </div>
+                              </div>
+
+                              {!isMobilePreview ? (
+                                <div className="shrink-0 text-right">
+                                  <div className={`text-xs font-semibold ${toneClasses.text}`}>
+                                    {sentimentLabel}
+                                  </div>
+                                  <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/35">
+                                    {item.category}
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
                           </div>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${getDriverToneClasses(item.tone).pill}`}>
-                                {getDriverImpactLabel(getDriverImpactScore(item))}
-                              </span>
-                              <span className="text-[10px] uppercase tracking-[0.14em] text-white/40">
-                                Score {getDriverImpactScore(item)}
-                              </span>
-                            </div>
-
-                            <div className="mt-2 flex items-center gap-2">
-                              <span className={`h-2 w-2 rounded-full ${getDriverToneClasses(item.tone).dot}`} />
-                              <span className={`text-sm font-semibold uppercase tracking-[0.14em] ${getDriverToneClasses(item.tone).text}`}>
-                                {getDriverTickerLabel(item)}
-                              </span>
-                            </div>
-
-                            <div className="mt-2 line-clamp-2 wrap-anywhere text-sm leading-5 text-white/88 group-hover:text-cyan-100">
-                              {item.headline}
-                            </div>
-
-                            <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-white/40">
-                              <span>{getDriverRelevance(item)}</span>
-                              <span>•</span>
-                              <NewsSourceMark source={item.source} compact />
-                              <span>•</span>
-                              <span>{item.publishedAt}</span>
-                            </div>
-                          </div>
-
-                          <div className="shrink-0 text-right">
-                            <div className={`text-xs font-semibold ${getDriverToneClasses(item.tone).text}`}>
-                              {item.tone === "bullish" ? "Positive" : item.tone === "bearish" ? "Negative" : "Neutral"}
-                            </div>
-                            <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/35">
-                              {item.category}
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
+                        </Link>
+                      );
+                    })}
 
                     {liveStream.length <= 1 ? (
                       <div className="rounded-[18px] border border-white/10 bg-black/30 p-4 text-sm text-white/45">
