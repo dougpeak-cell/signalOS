@@ -877,7 +877,7 @@ export default function MobileSigiHome({
                 <button
                   type="button"
                   onClick={() => setActiveInsightKey(null)}
-                  className="self-start rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/76 transition hover:border-cyan-300/25 hover:bg-cyan-400/8 hover:text-cyan-100 sm:shrink-0"
+                  className="self-start rounded-full border border-cyan-300/35 bg-cyan-400/16 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-50 shadow-[0_0_18px_rgba(34,211,238,0.18)] transition hover:border-cyan-200/50 hover:bg-cyan-400/24 hover:text-white sm:shrink-0"
                 >
                   Return to Today
                 </button>
