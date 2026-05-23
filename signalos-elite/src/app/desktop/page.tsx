@@ -25,52 +25,31 @@ const desktopSteps = [
   "Access your complete desktop workspace",
 ];
 
-const desktopHighlights = [
-  {
-    eyebrow: "Trading Workspace",
-    title: "Expanded chart layouts",
-    description:
-      "Open the full chart stack with levels, signal overlays, and tactical controls visible at the same time.",
-  },
-  {
-    eyebrow: "Multi-Panel Flow",
-    title: "Side-by-side intelligence",
-    description:
-      "Keep analyst context, workspace notes, and live market structure pinned beside the chart.",
-  },
-  {
-    eyebrow: "Analyst Intelligence",
-    title: "Research with conviction",
-    description:
-      "Move from analyst flow, rankings, and sector reads into action-ready setups without leaving the desktop workflow.",
-  },
-];
-
 const desktopGallery = [
   {
     title: "Trading workspace overview",
     caption: "A full command center layout with live chart context and workspace actions.",
-    image: tradingWorkspaceScreenshot2,
+    image: tradingWorkspaceScreenshot6,
   },
   {
     title: "Live chart focus",
     caption: "Keep the tactical chart front and center with levels and overlays pinned in view.",
-    image: tradingWorkspaceScreenshot3,
+    image: tradingWorkspaceScreenshot2,
   },
   {
     title: "Split workspace layout",
     caption: "Balance the chart with a persistent intelligence rail and saved workspace controls.",
-    image: tradingWorkspaceScreenshot4,
+    image: tradingWorkspaceScreenshot3,
   },
   {
     title: "Watchlist desktop rail",
     caption: "Monitor scored names, context rails, and breakout candidates in one screen.",
-    image: tradingWorkspaceScreenshot5,
+    image: tradingWorkspaceScreenshot4,
   },
   {
     title: "Experts desktop board",
     caption: "Open expert flow, ranked picks, and side context panels together on desktop.",
-    image: tradingWorkspaceScreenshot6,
+    image: tradingWorkspaceScreenshot5,
   },
 ];
 
@@ -79,46 +58,6 @@ export const metadata: Metadata = {
   description:
     "Directions for opening the full SigiOS desktop command center using your existing membership.",
 };
-
-function PreviewCard({
-  eyebrow,
-  title,
-  description,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <article className="rounded-[26px] border border-cyan-400/15 bg-slate-950/80 p-4 shadow-[0_18px_60px_rgba(4,12,24,0.45)]">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-300/75">
-        {eyebrow}
-      </div>
-      <h3 className="mt-3 text-lg font-black text-white">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-slate-300">{description}</p>
-      <div className="mt-4 rounded-2xl border border-white/8 bg-black/70 p-3">
-        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">
-          <span className="h-2 w-2 rounded-full bg-cyan-300" />
-          Desktop Preview
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/8 p-3">
-            <div className="h-2 w-12 rounded-full bg-cyan-300/80" />
-            <div className="mt-4 h-16 rounded-lg border border-cyan-400/15 bg-slate-900/90" />
-          </div>
-          <div className="rounded-xl border border-white/8 bg-slate-900/90 p-3">
-            <div className="h-2 w-10 rounded-full bg-white/30" />
-            <div className="mt-4 h-16 rounded-lg border border-white/8 bg-black/70" />
-          </div>
-          <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/8 p-3">
-            <div className="h-2 w-9 rounded-full bg-emerald-300/70" />
-            <div className="mt-4 h-16 rounded-lg border border-emerald-400/15 bg-slate-950/80" />
-          </div>
-        </div>
-      </div>
-    </article>
-  );
-}
 
 function ScreenshotCard({
   title,
@@ -319,38 +258,7 @@ export default function DesktopDirectionsPage() {
         </section>
 
         <section>
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
-                Desktop Workflow Highlights
-              </p>
-              <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
-                Preview the desktop command center
-              </h2>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-4 lg:grid-cols-3">
-            {desktopHighlights.map((highlight) => (
-              <PreviewCard key={highlight.title} {...highlight} />
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
-              Desktop Screens
-            </p>
-            <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
-              Directions with real desktop views
-            </h2>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-              These are the distinct desktop screens available with your membership. Each image below appears only once.
-            </p>
-          </div>
-
-          <div className="mt-5 grid gap-5 lg:grid-cols-2">
+          <div className="grid gap-5 lg:grid-cols-2">
             {desktopGallery.map((screen) => (
               <ScreenshotCard key={screen.title} {...screen} />
             ))}
