@@ -13,6 +13,7 @@ import TodaySectorHeatmapPanel from "@/components/today/TodaySectorHeatmapPanel"
 import TodayTopSetupsPanel from "@/components/today/TodayTopSetupsPanel";
 import TodayLoadingScreen from "@/components/today/TodayLoadingScreen";
 import TodayMobileHomeSlot from "@/components/today/TodayMobileHomeSlot";
+import { getHeroStoryPayload } from "@/lib/news/heroStory";
 import {
 	multiCardRowClass,
 	todayPageStackClass,
@@ -86,6 +87,7 @@ export default async function TodayPageShell({
 	const shouldUseMobileTodayHome = isDevMobilePreview;
 	const shouldRenderDesktopTodayLayout = !shouldUseMobileTodayHome;
 	const actionRowMetrics = await getTodayActionRowMetrics();
+	const initialHeroStory = await getHeroStoryPayload();
 
 	return (
 		<div className="min-h-screen bg-black text-white">
@@ -108,6 +110,7 @@ export default async function TodayPageShell({
 						watchlistRows={watchlistMovers}
 						defaultSetupSession={defaultSetupSession}
 						initialActionRowMetrics={actionRowMetrics}
+						initialHeroStory={initialHeroStory}
 						forceVisible={shouldUseMobileTodayHome}
 					/>
 				</Suspense>
@@ -120,6 +123,7 @@ export default async function TodayPageShell({
 						movers={sigiMovers}
 						news={commandCenterNews}
 						watchlistRows={watchlistMovers}
+						initialHeroStory={initialHeroStory}
 					/>
 					<TodayActionRowClient initialMetrics={actionRowMetrics} />
 					<LiveAccessStrip hasPaidCryptoAccess={hasSigiPro} tier={hasSigiPro ? "pro" : hasSigiSmart ? "smart" : "free"} />
