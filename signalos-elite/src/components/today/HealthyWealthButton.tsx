@@ -153,8 +153,17 @@ export default function HealthyWealthButton() {
 
       {open ? (
         <div className="absolute left-0 z-50 mt-3 w-90 max-w-[calc(100vw-2rem)] rounded-3xl border border-emerald-400/25 bg-slate-950/95 p-5 shadow-2xl backdrop-blur">
-          <div className="mb-2 text-xs uppercase tracking-[0.24em] text-emerald-300/80">
-            Daily Scripture
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <div className="text-xs uppercase tracking-[0.24em] text-emerald-300/80">
+              Daily Scripture
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/10 hover:text-white"
+            >
+              Back to Today
+            </button>
           </div>
           <div className="text-lg font-bold text-white">{daily.reference}</div>
           <p className="mt-3 text-sm leading-6 text-slate-200">&ldquo;{daily.verse}&rdquo;</p>
@@ -207,8 +216,17 @@ export function MobileHealthyWealthButton() {
             className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[1px]"
           />
           <div className="fixed inset-x-3 top-14 z-60 max-h-[calc(100vh-4.5rem)] overflow-y-auto rounded-3xl border border-emerald-400/25 bg-slate-950/95 p-5 shadow-2xl backdrop-blur">
-            <div className="mb-2 text-xs uppercase tracking-[0.24em] text-emerald-300/80">
-              Daily Scripture
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <div className="text-xs uppercase tracking-[0.24em] text-emerald-300/80">
+                Daily Scripture
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/10 hover:text-white"
+              >
+                Back to Today
+              </button>
             </div>
             <div className="text-lg font-bold text-white">{daily.reference}</div>
             <p className="mt-3 text-sm leading-6 text-slate-200">&ldquo;{daily.verse}&rdquo;</p>
