@@ -609,9 +609,18 @@ export default function ExpertsPage() {
       : fmpSectorRows[selectedExpertSector] ?? [];
 
   return (
-    <main className="min-h-screen w-full bg-black text-white">
-      <div className="w-full space-y-4 md:space-y-6 xl:space-y-7">
-        <div className="space-y-2">
+    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#020617] text-white">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[#020617]" />
+        <div className="absolute left-[-18%] top-[-10%] h-275 w-275 rounded-full bg-cyan-500/10 blur-[180px]" />
+        <div className="absolute right-[-18%] top-[18%] h-237.5 w-237.5 rounded-full bg-blue-500/10 blur-[190px]" />
+        <div className="absolute bottom-[-25%] left-[18%] h-250 w-250 rounded-full bg-emerald-500/5 blur-[220px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(0,0,0,0.55)_100%)]" />
+      </div>
+
+      <section className="relative z-10">
+        <div className="w-full space-y-4 md:space-y-6 xl:space-y-7">
+          <div className="space-y-2">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">
@@ -1061,7 +1070,8 @@ export default function ExpertsPage() {
         </section>
 
         <ActiveExpertSignals rows={activeSignals} />
-      </div>
+        </div>
+      </section>
     </main>
   );
 }

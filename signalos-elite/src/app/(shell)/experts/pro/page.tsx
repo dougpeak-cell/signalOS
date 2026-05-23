@@ -13,8 +13,17 @@ export default async function ExpertsProPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white md:px-8">
-      <div className="mx-auto max-w-5xl rounded-4xl border border-amber-400/20 bg-[linear-gradient(180deg,rgba(15,11,19,0.99),rgba(7,8,14,0.99))] p-6 shadow-[0_0_0_1px_rgba(250,204,21,0.06),0_20px_48px_rgba(0,0,0,0.28)] md:p-8">
+    <main className="relative min-h-screen overflow-x-hidden bg-[#020617] px-4 py-8 text-white md:px-8">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[#020617]" />
+        <div className="absolute left-[-18%] top-[-10%] h-275 w-275 rounded-full bg-cyan-500/10 blur-[180px]" />
+        <div className="absolute right-[-18%] top-[18%] h-237.5 w-237.5 rounded-full bg-blue-500/10 blur-[190px]" />
+        <div className="absolute bottom-[-25%] left-[18%] h-250 w-250 rounded-full bg-emerald-500/5 blur-[220px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(0,0,0,0.55)_100%)]" />
+      </div>
+
+      <section className="relative z-10">
+        <div className="mx-auto max-w-5xl rounded-4xl border border-amber-400/20 bg-[linear-gradient(180deg,rgba(15,11,19,0.99),rgba(7,8,14,0.99))] p-6 shadow-[0_0_0_1px_rgba(250,204,21,0.06),0_20px_48px_rgba(0,0,0,0.28)] md:p-8">
         <div className="inline-flex items-center gap-2 rounded-full border border-amber-200/18 bg-amber-200/8 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-100/78">
           <Lock className="h-3.5 w-3.5 text-amber-200" />
           <span>Pro Only</span>
@@ -93,7 +102,8 @@ export default async function ExpertsProPage() {
             Back to Experts Overview
           </Link>
         </div>
-      </div>
+        </div>
+      </section>
     </main>
   );
 }

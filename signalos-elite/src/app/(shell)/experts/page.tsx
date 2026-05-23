@@ -33,8 +33,17 @@ export default async function ExpertsPage({
   }
 
   return (
-    <main className={isMobilePreview ? "min-h-screen bg-[#020817] px-3 py-6 text-white" : "min-h-screen bg-[#020817] px-4 py-8 text-white md:px-8"}>
-      <div className={isMobilePreview ? "mx-auto max-w-xl space-y-6" : "mx-auto max-w-7xl space-y-8"}>
+    <main className={isMobilePreview ? "relative min-h-screen overflow-x-hidden bg-[#020617] px-3 py-6 text-white" : "relative min-h-screen overflow-x-hidden bg-[#020617] px-4 py-8 text-white md:px-8"}>
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[#020617]" />
+        <div className="absolute left-[-18%] top-[-10%] h-275 w-275 rounded-full bg-cyan-500/10 blur-[180px]" />
+        <div className="absolute right-[-18%] top-[18%] h-237.5 w-237.5 rounded-full bg-blue-500/10 blur-[190px]" />
+        <div className="absolute bottom-[-25%] left-[18%] h-250 w-250 rounded-full bg-emerald-500/5 blur-[220px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(0,0,0,0.55)_100%)]" />
+      </div>
+
+      <section className="relative z-10">
+        <div className={isMobilePreview ? "mx-auto max-w-xl space-y-6" : "mx-auto max-w-7xl space-y-8"}>
         <section className={isMobilePreview ? "rounded-3xl border border-cyan-400/20 bg-cyan-950/20 p-4 shadow-[0_0_40px_rgba(34,211,238,0.08)]" : "rounded-3xl border border-cyan-400/20 bg-cyan-950/20 p-6 shadow-[0_0_40px_rgba(34,211,238,0.08)] md:p-8"}>
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
             SigiOS Access
@@ -308,7 +317,8 @@ export default async function ExpertsPage({
             ))}
           </div>
         </section>
-      </div>
+        </div>
+      </section>
     </main>
   );
 }
