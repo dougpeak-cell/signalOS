@@ -39,6 +39,9 @@ export default function TodayPageQueryTickerSync() {
     }
 
     if (!shouldLockToPreviewTicker && !ticker) {
+      if (selectedTicker.activeTicker !== null) {
+        selectedTicker.setActiveTicker(null);
+      }
       return;
     }
 
