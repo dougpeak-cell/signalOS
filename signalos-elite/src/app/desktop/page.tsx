@@ -97,7 +97,7 @@ const cryptoGallery = [
 export const metadata: Metadata = {
   title: "Desktop Directions | SigiOS Elite",
   description:
-    "Directions for opening the full SigiOS desktop command center using your existing membership.",
+    "Directions for opening the full SigiOS desktop command center using your existing membership and desktop workflow.",
 };
 
 function getReturnHref(returnTo?: string | string[]) {
