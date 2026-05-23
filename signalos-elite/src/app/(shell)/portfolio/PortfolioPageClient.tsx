@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
+import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
 import PortfolioSigiStrip from "@/components/portfolio/PortfolioSigiStrip";
 import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import { useSigiTier } from "@/hooks/useSigiTier";
@@ -1742,6 +1743,8 @@ function PortfolioPageContent() {
                 </div>
                 </div>
               ) : null}
+
+              <SigiDesktopCTA />
 
               {isDetail ? (
                 <PortfolioSigiStrip

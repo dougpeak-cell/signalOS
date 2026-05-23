@@ -1,5 +1,6 @@
 "use client";
 
+import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
 import StockAskSigiCard from "@/components/sigi/StockAskSigiCard";
 import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import FloatingSigiButton from "@/components/shell/FloatingSigiButton";
@@ -201,6 +202,8 @@ export default function StockLiveClient({
             onPriceUpdate={handlePriceUpdate}
             onSignalRailData={handleSignalRailData}
           />
+
+          <SigiDesktopCTA compact />
         </div>
 
         <aside className="min-w-0 xl:block space-y-6">

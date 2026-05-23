@@ -12,6 +12,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
 import tradingWorkspaceScreenshot from "../../../public/Images/Chart/Screenshot 2026-05-20 175534.png";
 import ExpertsProDashboard from "@/components/experts/ExpertsProDashboard";
 import { getSigiSettingsViewForCurrentUser } from "@/lib/sigi/settings";
@@ -60,6 +61,8 @@ export default async function ExpertsPage({
             Experts and Screener.
           </p>
         </section>
+
+        <SigiDesktopCTA />
 
         <section className={isMobilePreview ? "rounded-3xl border border-slate-700/70 bg-slate-950/70 p-4" : "rounded-3xl border border-slate-700/70 bg-slate-950/70 p-6"}>
           <div className="flex items-center gap-3">

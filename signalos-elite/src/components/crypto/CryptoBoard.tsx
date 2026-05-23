@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import CryptoPageTabs from "@/components/crypto/CryptoPageTabs";
+import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
@@ -486,6 +487,8 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
             ) : null}
           </div>
         </div>
+
+        <SigiDesktopCTA compact />
 
         <section className={["mb-8 grid gap-4", isMobilePreview ? "" : "md:grid-cols-3"].join(" ")}>
           {leaders.map((row) => {

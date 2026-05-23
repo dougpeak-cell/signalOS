@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
+import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
 import { useShellMarketContext } from "@/components/shell/ShellMarketContext";
 import TickerActionButton from "@/components/sigi/TickerActionButton";
 import SignalOSScoreV2 from "@/components/stocks/SignalOSScoreV2";
@@ -1455,6 +1456,8 @@ export default function WatchlistPage() {
                 </div>
                 </section>
               )}
+
+              <SigiDesktopCTA />
 
               {isDetail ? (
               <div className="mt-5 grid gap-3 md:grid-cols-3">
