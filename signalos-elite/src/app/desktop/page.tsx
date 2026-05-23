@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import tradingWorkspaceScreenshot from "../../public/Images/Chart/Screenshot 2026-05-20 175534.png";
+import chartContextScreenshot from "../../public/Images/Chart/Chart context.png";
 import tradingWorkspaceScreenshot2 from "../../public/Images/Chart/Screenshot 2026-05-23 094419.png";
 import tradingWorkspaceScreenshot3 from "../../public/Images/Chart/Screenshot 2026-05-23 094727.png";
 import tradingWorkspaceScreenshot4 from "../../public/Images/Chart/Screenshot 2026-05-23 095603.png";
@@ -29,7 +30,7 @@ const desktopGallery = [
   {
     title: "Trading workspace overview",
     caption: "A full command center layout with live chart context and workspace actions.",
-    image: tradingWorkspaceScreenshot6,
+    image: chartContextScreenshot,
   },
   {
     title: "Live chart focus",
@@ -50,6 +51,7 @@ const desktopGallery = [
     title: "Experts desktop board",
     caption: "Open expert flow, ranked picks, and side context panels together on desktop.",
     image: tradingWorkspaceScreenshot5,
+    secondaryImage: tradingWorkspaceScreenshot6,
   },
 ];
 
@@ -59,14 +61,26 @@ export const metadata: Metadata = {
     "Directions for opening the full SigiOS desktop command center using your existing membership.",
 };
 
+function getReturnHref(returnTo?: string | string[]) {
+  const value = Array.isArray(returnTo) ? returnTo[0] : returnTo;
+
+  if (!value || !value.startsWith("/")) {
+    return "/today";
+  }
+
+  return value;
+}
+
 function ScreenshotCard({
   title,
   caption,
   image,
+  secondaryImage,
 }: {
   title: string;
   caption: string;
   image: typeof tradingWorkspaceScreenshot;
+  secondaryImage?: typeof tradingWorkspaceScreenshot;
 }) {
   return (
     <article className="overflow-hidden rounded-[28px] border border-cyan-400/14 bg-slate-950/85 shadow-[0_20px_70px_rgba(2,8,20,0.42)]">
@@ -81,36 +95,42 @@ function ScreenshotCard({
         <div className="overflow-hidden rounded-[22px] border border-cyan-400/10 bg-black">
           <Image src={image} alt={title} className="h-auto w-full" />
         </div>
+        {secondaryImage ? (
+          <div className="mt-3 overflow-hidden rounded-[22px] border border-cyan-400/10 bg-black">
+            <Image
+              src={secondaryImage}
+              alt={`${title} secondary view`}
+              className="h-auto w-full"
+            />
+          </div>
+        ) : null}
       </div>
     </article>
   );
 }
 
-export default function DesktopDirectionsPage() {
+export default async function DesktopDirectionsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ returnTo?: string | string[] }>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const returnHref = getReturnHref(resolvedSearchParams?.returnTo);
+
   return (
     <main className="min-h-screen overflow-hidden bg-black text-white">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.16),transparent_38%),linear-gradient(180deg,rgba(3,7,18,0.96),rgba(2,6,23,1))]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-105 bg-[linear-gradient(90deg,rgba(34,211,238,0.05)_0,rgba(34,211,238,0.02)_18%,transparent_18%,transparent_40%,rgba(34,211,238,0.03)_40%,rgba(34,211,238,0.01)_58%,transparent_58%,transparent_100%)] opacity-70" />
 
       <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-14 pt-6 sm:px-6 lg:px-8 lg:pt-10">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
           <Link
-            href="/today"
+            href={returnHref}
             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 transition hover:border-cyan-300/40 hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Mobile SigiOS
           </Link>
-
-          <a
-            href="https://sigios.com"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/15"
-          >
-            Go to Sigios.com
-            <ArrowUpRight className="h-4 w-4" />
-          </a>
         </div>
 
         <section className="rounded-4xl border border-cyan-400/20 bg-slate-950/80 p-5 shadow-[0_24px_80px_rgba(2,8,20,0.48)] backdrop-blur-xl sm:p-7 lg:p-8">
@@ -153,23 +173,6 @@ export default function DesktopDirectionsPage() {
                 ))}
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-3">
-                <a
-                  href="https://sigios.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200"
-                >
-                  Continue to Sigios.com
-                  <ArrowUpRight className="h-4 w-4" />
-                </a>
-                <Link
-                  href="/today"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white/85 transition hover:border-white/20 hover:bg-white/8"
-                >
-                  Return to Mobile App
-                </Link>
-              </div>
             </div>
 
             <div className="rounded-[28px] border border-cyan-400/15 bg-[linear-gradient(180deg,rgba(8,15,31,0.96),rgba(2,6,23,0.92))] p-5">
@@ -264,6 +267,18 @@ export default function DesktopDirectionsPage() {
             ))}
           </div>
         </section>
+
+        <div className="flex justify-center pt-2">
+          <a
+            href="https://sigios.com"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-2xl border border-cyan-300/25 bg-cyan-400/10 px-5 py-3 text-sm font-black text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/15"
+          >
+            Go to Sigios.com
+            <ArrowUpRight className="h-4 w-4" />
+          </a>
+        </div>
       </div>
     </main>
   );

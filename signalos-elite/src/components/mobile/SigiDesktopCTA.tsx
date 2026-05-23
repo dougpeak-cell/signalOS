@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ArrowRight, Monitor, Sparkles } from "lucide-react";
 
 export default function SigiDesktopCTA({
@@ -8,6 +9,11 @@ export default function SigiDesktopCTA({
 }: {
   compact?: boolean;
 }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
+  const returnTo = `${pathname}${search ? `?${search}` : ""}`;
+
   return (
     <div
       className={[
@@ -38,7 +44,7 @@ export default function SigiDesktopCTA({
           </p>
 
           <Link
-            href="/desktop"
+            href={`/desktop?returnTo=${encodeURIComponent(returnTo)}`}
             className={[
               "inline-flex items-center gap-2 rounded-xl bg-cyan-300 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-cyan-200",
               compact ? "mt-3" : "mt-4",
