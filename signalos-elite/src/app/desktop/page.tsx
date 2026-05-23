@@ -300,6 +300,14 @@ export default async function DesktopDirectionsPage({
         </section>
 
         <section>
+          <div className="grid gap-5 lg:grid-cols-2">
+            {desktopGallery.map((screen) => (
+              <ScreenshotCard key={screen.title} {...screen} />
+            ))}
+          </div>
+        </section>
+
+        <section>
           <div className="mb-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
               Crypto Desktop Views
@@ -308,20 +316,12 @@ export default async function DesktopDirectionsPage({
               Crypto examples on desktop
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-              Below the stock information, these desktop examples show how crypto boards, watchlists, and category views expand on a larger screen.
+              These desktop examples show how crypto boards, watchlists, and category views expand on a larger screen.
             </p>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
             {cryptoGallery.map((screen) => (
-              <ScreenshotCard key={screen.title} {...screen} />
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <div className="grid gap-5 lg:grid-cols-2">
-            {desktopGallery.map((screen) => (
               <ScreenshotCard key={screen.title} {...screen} />
             ))}
           </div>
