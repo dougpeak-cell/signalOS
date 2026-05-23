@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import NewsImage from "@/components/news/NewsImage";
+import { MobileHealthyWealthButton } from "@/components/today/HealthyWealthButton";
 
 export type SigiIntelligence = {
   ticker?: string | null;
@@ -47,6 +48,7 @@ export default function MobileMarketThesisHero({
         />
 
         <div className="mt-4 flex flex-wrap gap-2">
+          <MobileHealthyWealthButton />
           {intelligence.badges?.slice(0, 4).map((badge) => (
             <span
               key={badge}
