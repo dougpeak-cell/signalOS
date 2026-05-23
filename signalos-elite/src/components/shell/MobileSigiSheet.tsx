@@ -96,6 +96,13 @@ function formatTodayResponseSummary(summary: string, bullets: string[]) {
   return sections.join("\n\n");
 }
 
+function stripTrailingReadQuestion(text: string) {
+  return text
+    .replace(/\s+(What (?:stock|ticker)[^?]*\?)\s*$/i, "")
+    .replace(/\s+(Which [^?]*\?)\s*$/i, "")
+    .trim();
+}
+
 const QUICK_PROMPTS = [
   "What matters right now?",
   "Best setup today",
@@ -424,8 +431,11 @@ export default function MobileSigiSheet({
           question,
           title: "Sigi Read",
           summary:
-            sectorReply ||
-            intent.quickReply ||
+            stripTrailingReadQuestion(
+              sectorReply ||
+              intent.quickReply ||
+              "Ask for sector strength, weakness, leadership, or a ticker inside that theme."
+            ) ||
             "Ask for sector strength, weakness, leadership, or a ticker inside that theme.",
           ticker: null,
           actionLabel: null,

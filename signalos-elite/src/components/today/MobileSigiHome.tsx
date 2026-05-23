@@ -893,7 +893,7 @@ export default function MobileSigiHome({
                   onClick={() => (effectiveHasSigiSmart ? openSigiRead(activeInsight.prompt) : openUpgradePrompt(activeInsight.prompt))}
                   className="rounded-full border border-cyan-300/30 bg-cyan-400/15 px-4 py-2 text-xs font-semibold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/25"
                 >
-                  Ask Sigi More
+                  Sigi Read
                 </button>
               </div>
             </div>
