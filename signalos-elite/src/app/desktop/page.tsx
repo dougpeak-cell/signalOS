@@ -13,6 +13,12 @@ import {
 
 import tradingWorkspaceScreenshot from "../../public/Images/Chart/Screenshot 2026-05-20 175534.png";
 import chartContextScreenshot from "../../public/Images/Chart/Chart context.png";
+import cryptoBoardScreenshot from "../../public/Images/Chart/Crypto board.png";
+import cryptoCommandCenterScreenshot from "../../public/Images/Chart/Crypto Command Center.png";
+import cryptoWatchlistScreenshot from "../../public/Images/Chart/Cypto Watchlist.png";
+import defiBoardScreenshot from "../../public/Images/Chart/Defi board.png";
+import memeBoardScreenshot from "../../public/Images/Chart/Meme Board.png";
+import rwaBoardScreenshot from "../../public/Images/Chart/RWA Board.png";
 import tradingWorkspaceScreenshot2 from "../../public/Images/Chart/Screenshot 2026-05-23 094419.png";
 import tradingWorkspaceScreenshot3 from "../../public/Images/Chart/Screenshot 2026-05-23 094727.png";
 import tradingWorkspaceScreenshot4 from "../../public/Images/Chart/Screenshot 2026-05-23 095603.png";
@@ -52,6 +58,39 @@ const desktopGallery = [
     caption: "Open expert flow, ranked picks, and side context panels together on desktop.",
     image: tradingWorkspaceScreenshot5,
     secondaryImage: tradingWorkspaceScreenshot6,
+  },
+];
+
+const cryptoGallery = [
+  {
+    title: "Crypto command center",
+    caption: "Scan the broader crypto market with boards, tabs, and quick-actions in one desktop surface.",
+    image: cryptoCommandCenterScreenshot,
+  },
+  {
+    title: "Crypto board",
+    caption: "Work through core crypto assets with ranked rows, board filters, and live action buttons.",
+    image: cryptoBoardScreenshot,
+  },
+  {
+    title: "DeFi board",
+    caption: "Review DeFi protocols with sector-specific screens and the same desktop workflow controls.",
+    image: defiBoardScreenshot,
+  },
+  {
+    title: "Meme coin board",
+    caption: "Track community-driven names with a separate desktop board for faster rotation monitoring.",
+    image: memeBoardScreenshot,
+  },
+  {
+    title: "RWA board",
+    caption: "Open real-world-asset names in a dedicated desktop board with category filtering and quick actions.",
+    image: rwaBoardScreenshot,
+  },
+  {
+    title: "Crypto watchlist",
+    caption: "Monitor tracked coins in a smaller desktop watchlist view without opening the full board.",
+    image: cryptoWatchlistScreenshot,
   },
 ];
 
@@ -258,6 +297,26 @@ export default async function DesktopDirectionsPage({
               ))}
             </div>
           </article>
+        </section>
+
+        <section>
+          <div className="mb-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
+              Crypto Desktop Views
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
+              Crypto examples on desktop
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
+              Below the stock information, these desktop examples show how crypto boards, watchlists, and category views expand on a larger screen.
+            </p>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            {cryptoGallery.map((screen) => (
+              <ScreenshotCard key={screen.title} {...screen} />
+            ))}
+          </div>
         </section>
 
         <section>
