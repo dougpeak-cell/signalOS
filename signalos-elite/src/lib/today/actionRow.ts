@@ -26,10 +26,6 @@ export type TodayActionRowMetrics = {
   };
 };
 
-function formatCount(value: number, label: string) {
-  return `${value} ${label}${value === 1 ? "" : "s"}`;
-}
-
 function normalizeSector(value?: string | null) {
   return String(value ?? "").trim();
 }
@@ -37,10 +33,6 @@ function normalizeSector(value?: string | null) {
 function normalizeConviction(value: number | null | undefined) {
   if (value == null || !Number.isFinite(value)) return null;
   return value <= 1 ? value * 100 : value;
-}
-
-function normalizeTicker(value?: string | null) {
-  return String(value ?? "").trim().toUpperCase();
 }
 
 function inferUniverseTone(changePct?: number | null) {
@@ -235,19 +227,13 @@ export function buildTodayActionRowMetrics(
   rows: SignalRows,
   setupUniverse: SetupUniverseRows
 ): TodayActionRowMetrics {
-  const signalMap = new Map(rows.map((row) => [normalizeTicker(row.ticker), row]));
   const countableRows =
-    setupUniverse.length > 0
-      ? setupUniverse.map((item) => {
-          const linkedSignal = signalMap.get(normalizeTicker(item.ticker));
-          const tone = linkedSignal
-            ? signalToneFromRow(linkedSignal, item.price ?? linkedSignal.price)
-            : inferUniverseTone(item.changePct);
-
-          return { tone };
-        })
-      : rows.map((row) => ({
+    rows.length > 0
+      ? rows.map((row) => ({
           tone: signalToneFromRow(row, row.price),
+        }))
+      : setupUniverse.map((item) => ({
+          tone: inferUniverseTone(item.changePct),
         }));
 
   const counts = countableRows.reduce(
