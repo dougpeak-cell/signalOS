@@ -58,7 +58,7 @@ export default async function ExpertsPage({
             Current users get Quick View access to Watchlist and Portfolio.
             Smart unlocks Sigi Personal Assistant, Watchlist intelligence, and
             Portfolio Read. Pro unlocks total Sigi Intelligence, including
-            Experts and Screener.
+            Experts, Screener, and full everyday Crypto access.
           </p>
         </section>
 
@@ -136,6 +136,7 @@ export default async function ExpertsPage({
               "Everything in Smart",
               "Sigi Experts",
               "Sigi Screener",
+              "Full everyday Crypto access",
               "Analyst Top Picks Across the Market",
               "Institutional ownership trends",
             ]}

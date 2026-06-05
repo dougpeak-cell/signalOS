@@ -1,5 +1,5 @@
 import { SIGI_PRICING } from "@/lib/billing/pricing";
-import { gate, normalizeSigiTier, type SigiTier } from "@/lib/sigi/gates";
+import { gate, type SigiTier } from "@/lib/sigi/gates";
 
 export type SigiFeatureKey =
   | "basicRail"
@@ -66,7 +66,7 @@ export const SIGI_TIER_CARDS: SigiTierCard[] = [
     bullets: [
       "Pro Research Mode for deeper analysis",
       "Proactive prompts before you ask",
-      "Automation actions and premium rail presence",
+      "Automation actions, premium rail presence, and everyday Crypto access",
     ],
   },
 ];
@@ -153,7 +153,7 @@ export function getRailUpgradeCopy(tier: SigiTier) {
     return {
       targetTier: "pro" as SigiTier,
       headline: "Go Pro with Sigi",
-      body: "Unlock Research Mode, proactive ideas, and action tools with Sigi Pro.",
+      body: "Unlock Research Mode, proactive ideas, action tools, and full everyday Crypto access with Sigi Pro.",
       cta: "Become a Pro user",
       accent: "pro" as const,
     };
