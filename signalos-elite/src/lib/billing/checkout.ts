@@ -425,6 +425,10 @@ export async function createCheckoutSessionForPlan(
       }
 
       if (getTierRank(tier) < getTierRank(currentTier)) {
+        if (tier !== "smart") {
+          throw new Error("Only Pro subscriptions can be scheduled to downgrade to Smart.");
+        }
+
         await scheduleSubscriptionDowngrade({
           userId: user.id,
           subscription: existingSubscription,
