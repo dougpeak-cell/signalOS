@@ -172,7 +172,7 @@ async function getUserSettingsRow(userId: string): Promise<StoredSigiSettingsRow
   return (data as StoredSigiSettingsRow | null) ?? null;
 }
 
-const getUserProfileRowCached = cache(async (userId: string): Promise<StoredProfileRow | null> => {
+async function getUserProfileRow(userId: string): Promise<StoredProfileRow | null> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("profiles")
@@ -188,7 +188,9 @@ const getUserProfileRowCached = cache(async (userId: string): Promise<StoredProf
   }
 
   return (data as StoredProfileRow | null) ?? null;
-});
+}
+
+const getUserProfileRowCached = cache(getUserProfileRow);
 
 function resolveCurrentTier(
   profile: StoredProfileRow | null,
@@ -327,7 +329,9 @@ function toViewModel(
   };
 }
 
-export async function getSigiSettingsViewForCurrentUser(): Promise<SigiUserSettingsView> {
+export async function getSigiSettingsViewForCurrentUser(options?: {
+  bypassProfileCache?: boolean;
+}): Promise<SigiUserSettingsView> {
   const auth = await getAuthContext();
   const previewTier = await getDevPreviewTier();
 
@@ -337,7 +341,7 @@ export async function getSigiSettingsViewForCurrentUser(): Promise<SigiUserSetti
 
   const [row, profile] = await Promise.all([
     getUserSettingsRow(auth.userId),
-    getUserProfileRowCached(auth.userId),
+    options?.bypassProfileCache ? getUserProfileRow(auth.userId) : getUserProfileRowCached(auth.userId),
   ]);
   return toViewModel(row, profile, auth.userId, previewTier);
 }

@@ -41,6 +41,74 @@ export function getSafeReturnTo(value: string | null | undefined): string | null
   return trimmed;
 }
 
+export async function reconcileStripeSubscriptionStateForCurrentUser(
+  expectedTier?: PlanKey | null
+): Promise<PlanKey | null> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("user_id, stripe_customer_id, stripe_subscription_id, stripe_subscription_status, stripe_price_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const billingProfile = (profile as ProfileBillingRow | null) ?? null;
+  const customerId = billingProfile?.stripe_customer_id ?? null;
+
+  if (!customerId) {
+    return null;
+  }
+
+  const stripe = getStripeServer();
+  let subscription: Stripe.Subscription | null = null;
+
+  if (billingProfile?.stripe_subscription_id) {
+    try {
+      const existingSubscription = await stripe.subscriptions.retrieve(
+        billingProfile.stripe_subscription_id,
+        { expand: ["items.data.price", "schedule"] }
+      );
+
+      if (isStripeSubscriptionActive(existingSubscription.status)) {
+        subscription = existingSubscription;
+      }
+    } catch (error) {
+      console.warn("Unable to retrieve Stripe subscription during welcome reconciliation", error);
+    }
+  }
+
+  if (!subscription) {
+    subscription = await findExistingActiveSubscription(customerId);
+  }
+
+  if (!subscription || !isStripeSubscriptionActive(subscription.status)) {
+    return null;
+  }
+
+  const resolvedTier = coercePaidSigiTier(getTierFromStripeSubscription(subscription));
+
+  if (!resolvedTier) {
+    return null;
+  }
+
+  await persistStripeSubscriptionState({
+    userId: user.id,
+    customerId,
+    subscription,
+    tier: resolvedTier,
+    clearPending: expectedTier == null || resolvedTier === expectedTier,
+  });
+
+  return resolvedTier;
+}
+
 async function persistStripeCustomerId(userId: string, customerId: string) {
   const supabase = await createSupabaseServerClient();
   await supabase.from("profiles").upsert(

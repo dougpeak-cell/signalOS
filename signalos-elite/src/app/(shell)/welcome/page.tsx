@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CheckCircle2, Sparkles } from "lucide-react";
 import { redirect } from "next/navigation";
+import { reconcileStripeSubscriptionStateForCurrentUser } from "@/lib/billing/checkout";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import { getSigiTierCard } from "@/lib/sigi/plans";
 import { getSigiSettingsViewForCurrentUser } from "@/lib/sigi/settings";
@@ -55,22 +56,44 @@ function getContinueLabel(returnTo: string | null): string {
   return "Continue into SigiOS";
 }
 
+function getTierRank(value: UpgradePlan | "free"): number {
+  if (value === "pro") {
+    return 2;
+  }
+
+  if (value === "smart") {
+    return 1;
+  }
+
+  return 0;
+}
+
 export default async function WelcomePage({ searchParams }: WelcomePageProps) {
-  const settings = await getSigiSettingsViewForCurrentUser();
+  const query = (await searchParams) ?? {};
+  const requestedPlan = getSafePlan(getSingleParam(query.plan));
+  const returnTo = getSafeReturnTo(getSingleParam(query.returnTo));
+  const isCheckoutSuccess = getSingleParam(query.checkout) === "success";
+
+  let settings = await getSigiSettingsViewForCurrentUser();
 
   if (!settings.isSignedIn) {
     redirect("/auth?next=/welcome");
   }
 
-  const query = (await searchParams) ?? {};
-  const requestedPlan = getSafePlan(getSingleParam(query.plan));
-  const returnTo = getSafeReturnTo(getSingleParam(query.returnTo));
+  if (
+    isCheckoutSuccess &&
+    requestedPlan &&
+    getTierRank(settings.currentTier) < getTierRank(requestedPlan)
+  ) {
+    await reconcileStripeSubscriptionStateForCurrentUser(requestedPlan);
+    settings = await getSigiSettingsViewForCurrentUser({ bypassProfileCache: true });
+  }
+
   const activeTier = requestedPlan ?? (settings.currentTier === "smart" || settings.currentTier === "pro" ? settings.currentTier : null);
   const tierCard = getSigiTierCard(activeTier ?? settings.currentTier);
   const continueHref = returnTo ?? "/today";
   const continueLabel = getContinueLabel(returnTo);
   const planLabel = activeTier ? tierCard.name : "SigiOS";
-  const isCheckoutSuccess = getSingleParam(query.checkout) === "success";
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-16 pt-2 md:px-6 xl:px-8">
