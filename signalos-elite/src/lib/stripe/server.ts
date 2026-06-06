@@ -100,10 +100,6 @@ export function getStripeCheckoutSuccessUrl(options?: {
   returnTo?: string | null;
   plan?: string | null;
 }): string {
-  if (process.env.STRIPE_CHECKOUT_SUCCESS_URL?.trim()) {
-    return process.env.STRIPE_CHECKOUT_SUCCESS_URL.trim();
-  }
-
   return buildCheckoutWelcomePath(options?.plan, options?.returnTo);
 }
 
