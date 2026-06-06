@@ -36,6 +36,28 @@ function getSafeNextPath(value: string | null): string {
   return value;
 }
 
+function getSafeRedirectTo(value: string | null, requestUrl: URL): string | null {
+  if (!value) {
+    return null;
+  }
+
+  if (value.startsWith("/")) {
+    return value.startsWith("//") ? null : value;
+  }
+
+  try {
+    const redirectUrl = new URL(value);
+
+    if (redirectUrl.origin !== requestUrl.origin) {
+      return null;
+    }
+
+    return `${redirectUrl.pathname}${redirectUrl.search}${redirectUrl.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 function getSafeOtpType(value: string | null): EmailOtpType | null {
   switch (value) {
     case "signup":
@@ -78,8 +100,9 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const plan = getSafePlan(requestUrl.searchParams.get("plan"));
   const returnTo = getSafeReturnTo(requestUrl.searchParams.get("returnTo"));
+  const redirectTo = getSafeRedirectTo(requestUrl.searchParams.get("redirect_to"), requestUrl);
   const nextPath = getSafeNextPath(
-    requestUrl.searchParams.get("next") ?? (plan ? getCheckoutPathForPlan(plan, returnTo) : null)
+    redirectTo ?? requestUrl.searchParams.get("next") ?? (plan ? getCheckoutPathForPlan(plan, returnTo) : null)
   );
   const returnedError =
     requestUrl.searchParams.get("error_description") ?? requestUrl.searchParams.get("error");
