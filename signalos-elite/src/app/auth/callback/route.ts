@@ -58,12 +58,13 @@ function getSafeRedirectTo(value: string | null, requestUrl: URL): string | null
   }
 }
 
-function mergeCheckoutRedirectPath(
+function mergeRedirectPathQuery(
   redirectPath: string | null,
+  requestUrl: URL,
   plan: UpgradePlan | null,
   returnTo: string | null
 ): string | null {
-  if (!redirectPath?.startsWith("/welcome")) {
+  if (!redirectPath?.startsWith("/")) {
     return redirectPath;
   }
 
@@ -75,6 +76,26 @@ function mergeCheckoutRedirectPath(
 
   if (returnTo && !nextUrl.searchParams.get("returnTo")) {
     nextUrl.searchParams.set("returnTo", returnTo);
+  }
+
+  for (const [key, value] of requestUrl.searchParams.entries()) {
+    if (
+      key === "code" ||
+      key === "token_hash" ||
+      key === "type" ||
+      key === "redirect_to" ||
+      key === "error" ||
+      key === "error_description" ||
+      key === "plan" ||
+      key === "returnTo" ||
+      key === "next"
+    ) {
+      continue;
+    }
+
+    if (!nextUrl.searchParams.has(key)) {
+      nextUrl.searchParams.set(key, value);
+    }
   }
 
   return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
@@ -122,8 +143,9 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const plan = getSafePlan(requestUrl.searchParams.get("plan"));
   const returnTo = getSafeReturnTo(requestUrl.searchParams.get("returnTo"));
-  const redirectTo = mergeCheckoutRedirectPath(
+  const redirectTo = mergeRedirectPathQuery(
     getSafeRedirectTo(requestUrl.searchParams.get("redirect_to"), requestUrl),
+    requestUrl,
     plan,
     returnTo
   );

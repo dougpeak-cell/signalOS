@@ -143,7 +143,7 @@ export default function LiveAccessStrip({
           </div>
 
           <Link
-            href="/auth/upgrade?plan=pro&returnTo=/today"
+            href="/auth/upgrade?plan=pro"
             className={`rounded-2xl border border-purple-400/25 bg-purple-400/10 transition hover:border-purple-300/60 hover:bg-purple-400/15 ${compact ? "px-3 py-2.5" : "px-4 py-3"}`}
           >
             <div className={`text-purple-300 ${compact ? "text-[11px] tracking-[0.16em]" : "text-xs tracking-[0.22em]"} font-bold uppercase`}>

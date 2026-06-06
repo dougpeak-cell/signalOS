@@ -292,7 +292,7 @@ export default function MobileSigiHome({
   const chartHref = todaySnapshotTicker
     ? `/stocks/${todaySnapshotTicker}/live?source=%2Ftoday&session=${defaultSetupSession}`
     : `/screener/setups?session=${defaultSetupSession}`;
-  const upgradeHref = buildPreviewHref("/auth/upgrade?plan=smart&returnTo=/today");
+  const upgradeHref = buildPreviewHref("/auth/upgrade?plan=smart");
 
   function buildPreviewHref(href: string) {
     if (searchParams.get("mobilePreview") !== "1") {

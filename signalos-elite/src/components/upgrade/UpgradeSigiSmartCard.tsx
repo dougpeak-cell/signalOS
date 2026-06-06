@@ -54,7 +54,7 @@ export default function UpgradeSigiSmartCard() {
 			</button>
 
 			<Link
-				href="/auth/upgrade?plan=smart&returnTo=/today"
+				href="/auth/upgrade?plan=smart"
 				className="mt-3 block text-center text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200/80 transition hover:text-cyan-100"
 			>
 				Upgrade instead
