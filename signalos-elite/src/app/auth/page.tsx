@@ -10,7 +10,7 @@ export default function AuthPage() {
       footerMessage="Use the same email every time. If the account does not exist yet, SigiOS will create it and bring you back automatically."
       backHref="/"
       backLabel="Back to SigiOS"
-      defaultNextPath="/settings/sigi#profile"
+      defaultNextPath="/welcome"
     />
   );
 }
