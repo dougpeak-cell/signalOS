@@ -3,8 +3,21 @@ import { PENDING_CHECKOUT_PLAN_COOKIE, parsePendingCheckoutCookie } from "@/lib/
 import { DEV_PREVIEW_PLAN_COOKIE } from "@/lib/sigi/devPreview";
 
 const VALID_PREVIEW_PLANS = new Set(["free", "smart", "pro"]);
+const LEGACY_PRODUCTION_HOST = "signalos-live.vercel.app";
+const CANONICAL_PRODUCTION_HOST = "sigios.com";
 
 export function middleware(request: NextRequest) {
+  if (
+    process.env.NODE_ENV === "production" &&
+    request.nextUrl.hostname === LEGACY_PRODUCTION_HOST
+  ) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.hostname = CANONICAL_PRODUCTION_HOST;
+    redirectUrl.port = "";
+    redirectUrl.protocol = "https:";
+    return NextResponse.redirect(redirectUrl);
+  }
+
   const pendingCheckoutPlan = parsePendingCheckoutCookie(
     request.cookies.get(PENDING_CHECKOUT_PLAN_COOKIE)?.value
   );
