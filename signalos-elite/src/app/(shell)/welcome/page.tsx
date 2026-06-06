@@ -77,7 +77,23 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
   let settings = await getSigiSettingsViewForCurrentUser();
 
   if (!settings.isSignedIn) {
-    redirect("/auth?next=/welcome");
+    const authUrl = new URL("/auth", "http://localhost");
+    const nextUrl = new URL("/welcome", "http://localhost");
+
+    if (isCheckoutSuccess) {
+      nextUrl.searchParams.set("checkout", "success");
+    }
+
+    if (requestedPlan) {
+      nextUrl.searchParams.set("plan", requestedPlan);
+    }
+
+    if (returnTo) {
+      nextUrl.searchParams.set("returnTo", returnTo);
+    }
+
+    authUrl.searchParams.set("next", `${nextUrl.pathname}${nextUrl.search}`);
+    redirect(`${authUrl.pathname}${authUrl.search}`);
   }
 
   if (

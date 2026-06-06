@@ -58,6 +58,28 @@ function getSafeRedirectTo(value: string | null, requestUrl: URL): string | null
   }
 }
 
+function mergeCheckoutRedirectPath(
+  redirectPath: string | null,
+  plan: UpgradePlan | null,
+  returnTo: string | null
+): string | null {
+  if (!redirectPath?.startsWith("/welcome")) {
+    return redirectPath;
+  }
+
+  const nextUrl = new URL(redirectPath, "http://localhost");
+
+  if (plan && !nextUrl.searchParams.get("plan")) {
+    nextUrl.searchParams.set("plan", plan);
+  }
+
+  if (returnTo && !nextUrl.searchParams.get("returnTo")) {
+    nextUrl.searchParams.set("returnTo", returnTo);
+  }
+
+  return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
+}
+
 function getSafeOtpType(value: string | null): EmailOtpType | null {
   switch (value) {
     case "signup":
@@ -100,7 +122,11 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const plan = getSafePlan(requestUrl.searchParams.get("plan"));
   const returnTo = getSafeReturnTo(requestUrl.searchParams.get("returnTo"));
-  const redirectTo = getSafeRedirectTo(requestUrl.searchParams.get("redirect_to"), requestUrl);
+  const redirectTo = mergeCheckoutRedirectPath(
+    getSafeRedirectTo(requestUrl.searchParams.get("redirect_to"), requestUrl),
+    plan,
+    returnTo
+  );
   const nextPath = getSafeNextPath(
     redirectTo ?? requestUrl.searchParams.get("next") ?? (plan ? getCheckoutPathForPlan(plan, returnTo) : null)
   );
