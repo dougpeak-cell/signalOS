@@ -1,5 +1,7 @@
 import Stripe from "stripe";
 
+type UpgradePlan = "smart" | "pro";
+
 function requireEnv(...names: string[]): string {
   for (const name of names) {
     const value = process.env[name]?.trim();
@@ -48,6 +50,28 @@ function normalizeReturnPath(value: string | null | undefined): string | null {
   return trimmed;
 }
 
+function normalizeUpgradePlan(value: string | null | undefined): UpgradePlan | null {
+  return value === "smart" || value === "pro" ? value : null;
+}
+
+function buildCheckoutWelcomePath(plan?: string | null, returnTo?: string | null): string {
+  const welcomeUrl = new URL("/welcome", `${getSiteUrl()}/`);
+  const safePlan = normalizeUpgradePlan(plan);
+  const safeReturnTo = normalizeReturnPath(returnTo);
+
+  welcomeUrl.searchParams.set("checkout", "success");
+
+  if (safePlan) {
+    welcomeUrl.searchParams.set("plan", safePlan);
+  }
+
+  if (safeReturnTo) {
+    welcomeUrl.searchParams.set("returnTo", safeReturnTo);
+  }
+
+  return welcomeUrl.toString();
+}
+
 let stripeServer: Stripe | null = null;
 
 export function getStripeServer(): Stripe {
@@ -72,20 +96,15 @@ export function getStripePortalReturnUrl(): string {
   return process.env.STRIPE_PORTAL_RETURN_URL?.trim() || buildAppUrl("/settings/sigi");
 }
 
-export function getStripeCheckoutSuccessUrl(returnTo?: string | null): string {
+export function getStripeCheckoutSuccessUrl(options?: {
+  returnTo?: string | null;
+  plan?: string | null;
+}): string {
   if (process.env.STRIPE_CHECKOUT_SUCCESS_URL?.trim()) {
     return process.env.STRIPE_CHECKOUT_SUCCESS_URL.trim();
   }
 
-  const safeReturnTo = normalizeReturnPath(returnTo);
-
-  if (!safeReturnTo) {
-    return buildAppUrl("/settings/sigi?checkout=success");
-  }
-
-  const successUrl = new URL(safeReturnTo, `${getSiteUrl()}/`);
-  successUrl.searchParams.set("checkout", "success");
-  return successUrl.toString();
+  return buildCheckoutWelcomePath(options?.plan, options?.returnTo);
 }
 
 export function getStripeCheckoutCancelUrl(): string {

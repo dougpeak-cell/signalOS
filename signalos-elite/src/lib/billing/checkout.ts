@@ -381,7 +381,7 @@ export async function createCheckoutSessionForPlan(
 
       if (currentTier === tier) {
         return {
-          url: getStripeCheckoutSuccessUrl(getSafeReturnTo(returnTo)),
+          url: getStripeCheckoutSuccessUrl({ returnTo: getSafeReturnTo(returnTo), plan: tier }),
           plan: tier,
         };
       }
@@ -419,7 +419,7 @@ export async function createCheckoutSessionForPlan(
         });
 
         return {
-          url: getStripeCheckoutSuccessUrl(getSafeReturnTo(returnTo)),
+          url: getStripeCheckoutSuccessUrl({ returnTo: getSafeReturnTo(returnTo), plan: tier }),
           plan: tier,
         };
       }
@@ -436,7 +436,7 @@ export async function createCheckoutSessionForPlan(
         });
 
         return {
-          url: getStripeCheckoutSuccessUrl(getSafeReturnTo(returnTo)),
+          url: getStripeCheckoutSuccessUrl({ returnTo: getSafeReturnTo(returnTo), plan: tier }),
           plan: tier,
         };
       }
@@ -449,7 +449,7 @@ export async function createCheckoutSessionForPlan(
     client_reference_id: user.id,
     line_items: [{ price: priceId, quantity: 1 }],
     allow_promotion_codes: true,
-    success_url: getStripeCheckoutSuccessUrl(getSafeReturnTo(returnTo)),
+    success_url: getStripeCheckoutSuccessUrl({ returnTo: getSafeReturnTo(returnTo), plan: tier }),
     cancel_url: getStripeCheckoutCancelUrl(),
     metadata: {
       supabase_user_id: user.id,
