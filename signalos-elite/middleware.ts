@@ -1,9 +1,40 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { PENDING_CHECKOUT_PLAN_COOKIE, parsePendingCheckoutCookie } from "@/lib/billing/pendingCheckout";
 import { DEV_PREVIEW_PLAN_COOKIE } from "@/lib/sigi/devPreview";
 
 const VALID_PREVIEW_PLANS = new Set(["free", "smart", "pro"]);
 
 export function middleware(request: NextRequest) {
+  const pendingCheckoutPlan = parsePendingCheckoutCookie(
+    request.cookies.get(PENDING_CHECKOUT_PLAN_COOKIE)?.value
+  );
+
+  if (pendingCheckoutPlan) {
+    if (request.nextUrl.pathname === "/today" || request.nextUrl.pathname === "/") {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/welcome";
+      redirectUrl.search = "";
+      redirectUrl.searchParams.set("checkout", "success");
+      redirectUrl.searchParams.set("plan", pendingCheckoutPlan);
+
+      const response = NextResponse.redirect(redirectUrl);
+      response.cookies.set(PENDING_CHECKOUT_PLAN_COOKIE, "", {
+        path: "/",
+        expires: new Date(0),
+      });
+      return response;
+    }
+
+    if (request.nextUrl.pathname === "/welcome") {
+      const response = NextResponse.next();
+      response.cookies.set(PENDING_CHECKOUT_PLAN_COOKIE, "", {
+        path: "/",
+        expires: new Date(0),
+      });
+      return response;
+    }
+  }
+
   if (process.env.NODE_ENV === "production") {
     return NextResponse.next();
   }

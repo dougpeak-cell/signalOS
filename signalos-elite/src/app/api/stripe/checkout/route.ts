@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createCheckoutSessionForPlan, getSafeReturnTo } from "@/lib/billing/checkout";
 import { coercePaidSigiTier } from "@/lib/billing/tiers";
+import { PENDING_CHECKOUT_PLAN_COOKIE } from "@/lib/billing/pendingCheckout";
 
 type CheckoutRequestBody = {
   plan?: "smart" | "pro";
@@ -44,7 +45,13 @@ export async function GET(request: Request) {
 
   try {
     const session = await createCheckoutSessionForPlan(plan, returnTo);
-    return NextResponse.redirect(session.url);
+    const response = NextResponse.redirect(session.url);
+    response.cookies.set(PENDING_CHECKOUT_PLAN_COOKIE, session.plan, {
+      path: "/",
+      sameSite: "lax",
+      maxAge: 10 * 60,
+    });
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create checkout session";
     if (message === "You must be signed in to upgrade.") {
@@ -71,7 +78,13 @@ export async function POST(request: Request) {
       body.plan ?? body.tier,
       getSafeReturnTo(body.returnTo)
     );
-    return NextResponse.json(session);
+    const response = NextResponse.json(session);
+    response.cookies.set(PENDING_CHECKOUT_PLAN_COOKIE, session.plan, {
+      path: "/",
+      sameSite: "lax",
+      maxAge: 10 * 60,
+    });
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create checkout session";
     const status =
