@@ -83,9 +83,18 @@ export default async function LegalPage({ params }: LegalPageProps) {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-4xl px-6 py-16">
       <section className="w-full rounded-3xl border border-cyan-400/20 bg-[#071018]/80 p-8 text-white shadow-[0_0_30px_rgba(34,211,238,0.08)]">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
-          SigiOS Legal
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">
+            SigiOS Legal
+          </p>
+
+          <Link
+            href="/settings/sigi#profile"
+            className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-500/10 px-5 py-2 text-sm font-semibold text-cyan-200 transition hover:border-cyan-300/60 hover:bg-cyan-400/15"
+          >
+            Back to Account
+          </Link>
+        </div>
 
         <h1 className="mt-4 text-4xl font-semibold tracking-tight">{page.title}</h1>
 
@@ -113,6 +122,14 @@ export default async function LegalPage({ params }: LegalPageProps) {
             AI Disclosure
           </Link>
         </nav>
+        <div className="mt-8">
+          <Link
+            href="/settings/sigi#profile"
+            className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-500/10 px-5 py-2 text-sm font-semibold text-cyan-200 transition hover:border-cyan-300/60 hover:bg-cyan-400/15"
+          >
+            Return to Account
+          </Link>
+        </div>
       </section>
     </main>
   );
