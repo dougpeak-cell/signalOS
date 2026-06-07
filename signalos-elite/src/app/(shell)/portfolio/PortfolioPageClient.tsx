@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
@@ -841,6 +841,8 @@ function PortfolioPageContent() {
   const [actionState, setActionState] = useState<ActionState>(null);
   const [editingTicker, setEditingTicker] = useState<string | null>(null);
   const [showAddStock, setShowAddStock] = useState(false);
+  const createPanelRef = useRef<HTMLDivElement | null>(null);
+  const createTickerInputRef = useRef<HTMLInputElement | null>(null);
   const plan = tier ?? "free";
   const canUseDetail = plan === "smart" || plan === "pro";
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
@@ -1069,6 +1071,26 @@ function PortfolioPageContent() {
 
     openCreatePosition();
   }, [actionState?.mode, showAddStock]);
+
+  useEffect(() => {
+    if (actionState?.mode !== "create") return;
+
+    const scrollAndFocus = window.requestAnimationFrame(() => {
+      createPanelRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: isMobilePreview ? "start" : "center",
+      });
+
+      window.requestAnimationFrame(() => {
+        createTickerInputRef.current?.focus();
+        createTickerInputRef.current?.select();
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(scrollAndFocus);
+    };
+  }, [actionState?.mode, isMobilePreview]);
 
   const enrichedHoldings = useMemo(
     () =>
@@ -1766,7 +1788,10 @@ function PortfolioPageContent() {
 
                 <div className="space-y-3 p-3 sm:space-y-4 sm:p-4">
                   {actionState?.mode === "create" && (
-                    <div className="rounded-2xl border border-amber-400/16 bg-amber-400/4 p-4">
+                    <div
+                      ref={createPanelRef}
+                      className="rounded-2xl border border-amber-300/30 bg-[linear-gradient(180deg,rgba(56,48,8,0.22),rgba(18,18,8,0.88))] p-4 shadow-[0_0_0_1px_rgba(250,204,21,0.08),0_0_36px_rgba(250,204,21,0.12)] ring-1 ring-amber-300/18"
+                    >
                       <div className="space-y-4">
                         <div className="text-sm font-semibold text-white">
                           New Position
@@ -1778,6 +1803,7 @@ function PortfolioPageContent() {
                               Ticker
                             </label>
                             <input
+                              ref={createTickerInputRef}
                               type="text"
                               value={actionState.ticker}
                               onChange={(e) => {
@@ -1792,7 +1818,7 @@ function PortfolioPageContent() {
                                   name: shouldSyncName ? nextTicker : actionState.name,
                                 });
                               }}
-                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
+                              className="mt-2 w-full rounded-xl border border-amber-300/30 bg-amber-300/8 px-3 py-2 text-sm text-white outline-none shadow-[0_0_18px_rgba(250,204,21,0.10)] transition focus:border-amber-200/60 focus:bg-amber-200/10 focus:shadow-[0_0_24px_rgba(250,204,21,0.18)]"
                             />
                           </div>
 
@@ -1809,7 +1835,7 @@ function PortfolioPageContent() {
                                   name: e.target.value,
                                 })
                               }
-                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
+                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none transition focus:border-amber-200/35 focus:bg-white/6"
                             />
                           </div>
 
@@ -1828,7 +1854,7 @@ function PortfolioPageContent() {
                                   currentPrice: e.target.value,
                                 })
                               }
-                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
+                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none transition focus:border-amber-200/35 focus:bg-white/6"
                             />
                             <div className="mt-1 text-[11px] text-white/38">
                               Used as the live price reference for gain and loss.
@@ -1850,7 +1876,7 @@ function PortfolioPageContent() {
                                   shares: e.target.value,
                                 })
                               }
-                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
+                              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none transition focus:border-amber-200/35 focus:bg-white/6"
                             />
                             <div className="mt-1 text-[11px] text-white/38">
                               Enter how many shares you bought for this position.
