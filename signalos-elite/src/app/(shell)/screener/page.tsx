@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FinancialDisclaimer } from "@/components/FinancialDisclaimer";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import ScreenerFilterBar from "@/components/screener/ScreenerFilterBar";
@@ -627,6 +628,7 @@ function MetricCard({
         {value}
       </div>
       <div className="mt-1.5 text-xs text-white/55 sm:mt-2 sm:text-sm">{sublabel}</div>
+      <FinancialDisclaimer />
     </div>
   );
 }

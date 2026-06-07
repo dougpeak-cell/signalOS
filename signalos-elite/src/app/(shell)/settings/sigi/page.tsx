@@ -40,6 +40,42 @@ export default async function SigiSettingsPage() {
         pendingTier={settings.pendingTier}
         pendingTierEffectiveLabel={settings.pendingTierEffectiveLabel}
       />
+
+      <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,13,21,0.98),rgba(5,9,16,0.98))] p-5 md:p-6">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/75">
+          Legal
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-3 text-sm text-cyan-100">
+          <Link
+            href="/legal/terms-of-use"
+            className="rounded-2xl border border-white/10 bg-black/20 px-4 py-2.5 transition hover:bg-black/30"
+          >
+            Terms of Use
+          </Link>
+
+          <Link
+            href="/legal/privacy-policy"
+            className="rounded-2xl border border-white/10 bg-black/20 px-4 py-2.5 transition hover:bg-black/30"
+          >
+            Privacy Policy
+          </Link>
+
+          <Link
+            href="/legal/financial-disclosure"
+            className="rounded-2xl border border-white/10 bg-black/20 px-4 py-2.5 transition hover:bg-black/30"
+          >
+            Financial & Investment Disclosure
+          </Link>
+
+          <Link
+            href="/legal/ai-disclosure"
+            className="rounded-2xl border border-white/10 bg-black/20 px-4 py-2.5 transition hover:bg-black/30"
+          >
+            AI Disclosure
+          </Link>
+        </div>
+      </section>
     </main>
   );
 }

@@ -7,6 +7,7 @@ import { SIGI_PRICING } from "@/lib/billing/pricing";
 import type { SigiTier } from "@/lib/sigi/gates";
 import { getSigiTierCard } from "@/lib/sigi/plans";
 import type { SigiTierCard } from "@/lib/sigi/plans";
+import { UpgradeAgreement } from "./UpgradeAgreement";
 
 type Props = {
   cards: SigiTierCard[];
@@ -158,27 +159,21 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
                       <div className="mt-2 text-xs text-white/52">Scheduled for {pendingTierEffectiveLabel}</div>
                     ) : null}
                   </div>
-                ) : isPaidTier && paidTier === "smart" ? (
-                  <a
-                    href="/auth/upgrade?plan=smart"
-                    className="inline-flex w-full justify-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-5 py-3 text-sm font-bold text-cyan-200 transition hover:bg-cyan-400/20"
-                  >
-                    {paidTierIdentityCta}
-                  </a>
-                ) : isPaidTier ? (
-                  <button
-                    type="button"
-                    onClick={() => paidTier && void startUpgrade(paidTier)}
-                    disabled={pendingPlan !== null}
-                    className={[
-                      "inline-flex rounded-2xl px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60",
-                      isRecommended
-                        ? "border border-cyan-400/18 bg-cyan-400/8 text-cyan-100 hover:border-cyan-300/28 hover:bg-cyan-400/12"
-                        : "border border-amber-200/18 bg-amber-200/8 text-amber-50 hover:border-amber-100/30 hover:bg-amber-200/12",
-                    ].join(" ")}
-                  >
-                    {isBusy ? "Starting checkout" : paidTierIdentityCta}
-                  </button>
+                ) : isPaidTier && paidTier ? (
+                  <div className="grid gap-3">
+                    <div
+                      className={[
+                        "text-sm font-medium",
+                        isRecommended ? "text-cyan-100" : "text-amber-50",
+                      ].join(" ")}
+                    >
+                      {paidTierIdentityCta}
+                    </div>
+                    <UpgradeAgreement
+                      onUpgrade={() => void startUpgrade(paidTier)}
+                      busy={isBusy}
+                    />
+                  </div>
                 ) : (
                   <Link
                     href="/"

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import LegalAcknowledgementModal from "@/components/LegalAcknowledgementModal";
 import ShellLayoutClient from "@/components/shell/ShellLayoutClient";
 import { getStoredMarketContext } from "@/lib/intelligence/contextStore";
 
@@ -42,6 +43,7 @@ export default async function ShellLayout({
         storedMarketContext.portfolio.map(getPortfolioTicker)
       )}
     >
+      <LegalAcknowledgementModal />
       {children}
     </ShellLayoutClient>
   );

@@ -12,6 +12,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { FinancialDisclaimer } from "@/components/FinancialDisclaimer";
 import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
 import tradingWorkspaceScreenshot from "../../../public/Images/Chart/Screenshot 2026-05-20 175534.png";
 import ExpertsProDashboard from "@/components/experts/ExpertsProDashboard";
@@ -321,6 +322,7 @@ export default async function ExpertsPage({
             ))}
           </div>
         </section>
+          <FinancialDisclaimer />
         </div>
       </section>
     </main>

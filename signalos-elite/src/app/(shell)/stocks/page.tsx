@@ -1,6 +1,7 @@
 import StocksPageClient, {
   type StockIdea,
 } from "@/components/stocks/StocksPageClient";
+import { FinancialDisclaimer } from "@/components/FinancialDisclaimer";
 import { fetchFreeTickerPulses } from "@/lib/news/fetchFreeTickerPulses";
 import type { TickerNewsPulse } from "@/lib/news/tickerNewsPulse";
 import { getSetupDiscoveryData } from "@/lib/today/setupDiscoveryData";
@@ -307,5 +308,10 @@ export default async function StocksPage() {
         }))),
   ];
 
-  return <StocksPageClient ideas={ideas} />;
+  return (
+    <div className="space-y-6">
+      <StocksPageClient ideas={ideas} />
+      <FinancialDisclaimer />
+    </div>
+  );
 }
