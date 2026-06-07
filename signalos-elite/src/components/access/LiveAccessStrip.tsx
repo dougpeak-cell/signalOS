@@ -180,7 +180,7 @@ export default function LiveAccessStrip({
           </div>
 
           <div className="text-xs text-slate-400">
-            Open premium stock intelligence
+            Open premium stock intelligence (Demo $24/mo Sigi-Pro)
           </div>
         </Link>
 
@@ -200,12 +200,17 @@ export default function LiveAccessStrip({
               </div>
             </>
           ) : (
-            <button
-              onClick={handleStartPreview}
-              className={`mt-2 rounded-xl bg-emerald-300 text-xs font-bold text-black transition hover:bg-emerald-200 ${compact ? "px-3.5 py-2" : "px-4 py-2"}`}
-            >
-              Start 30-Minute Preview
-            </button>
+            <>
+              <button
+                onClick={handleStartPreview}
+                className={`mt-2 rounded-xl bg-emerald-300 text-xs font-bold text-black transition hover:bg-emerald-200 ${compact ? "px-3.5 py-2" : "px-4 py-2"}`}
+              >
+                Start 30-Minute Preview
+              </button>
+              <div className="mt-2 text-xs text-slate-400">
+                Demo $9/mo Sigi-Smart
+              </div>
+            </>
           )}
         </div>
 
@@ -231,7 +236,7 @@ export default function LiveAccessStrip({
               {hasPaidCryptoAccess
                 ? "Included in your current Sigi access"
                 : cryptoOpen
-                    ? "Preview Sigi Crypto Intelligence"
+                    ? "Preview Sigi Crypto Intelligence (Everyday access included with Pro)"
                     : "Weekend access for free users"}
             </div>
           </Link>
