@@ -74,7 +74,9 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
                 : null;
           const urgencyCopy =
             card.tier === "smart"
-              ? "Upgrade now to unlock this instantly"
+              ? isCurrent
+                ? null
+                : "Upgrade now to unlock this instantly"
               : card.tier === "pro"
                 ? "Available immediately with Sigi Pro"
                 : null;
