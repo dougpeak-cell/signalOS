@@ -465,6 +465,9 @@ export async function createCheckoutSessionForPlan(
 
         const updatedSubscription = await stripe.subscriptions.update(existingSubscription.id, {
           cancel_at_period_end: false,
+          automatic_tax: {
+            enabled: true,
+          },
           proration_behavior: "always_invoice",
           items: [{
             id: currentItem.id,
@@ -516,6 +519,9 @@ export async function createCheckoutSessionForPlan(
     customer: customerId,
     client_reference_id: user.id,
     line_items: [{ price: priceId, quantity: 1 }],
+    automatic_tax: {
+      enabled: true,
+    },
     allow_promotion_codes: true,
     success_url: getStripeCheckoutSuccessUrl({ returnTo: getSafeReturnTo(returnTo), plan: tier }),
     cancel_url: getStripeCheckoutCancelUrl(),
