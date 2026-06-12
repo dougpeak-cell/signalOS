@@ -725,14 +725,12 @@ function QuickPortfolioRowItem({
   name,
   livePrice,
   dayChangePct,
-  dayChangeAmount,
   href,
 }: {
   ticker: string;
   name: string;
   livePrice: number;
   dayChangePct: number | null;
-  dayChangeAmount: number | null;
   href: string;
 }) {
   const changeTone =
@@ -754,16 +752,10 @@ function QuickPortfolioRowItem({
         </div>
       </div>
 
-      <div className="flex items-end justify-end gap-3 text-right">
-        <div className={`text-sm font-semibold ${dayChangeAmount == null ? "text-white/35" : changeTone}`}>
-          {formatSignedMoney(dayChangeAmount)}
-        </div>
-
-        <div>
-          <div className="text-lg font-semibold text-white">{formatMoney(livePrice)}</div>
-          <div className={`mt-0.5 text-sm font-semibold ${changeTone}`}>
-            {typeof dayChangePct === "number" ? formatPct(dayChangePct) : "—"}
-          </div>
+      <div className="text-right">
+        <div className="text-lg font-semibold text-white">{formatMoney(livePrice)}</div>
+        <div className={`mt-0.5 text-sm font-semibold ${changeTone}`}>
+          {typeof dayChangePct === "number" ? formatPct(dayChangePct) : "—"}
         </div>
       </div>
     </Link>
@@ -794,7 +786,7 @@ function CurrentQuoteMetric({
         Current
       </div>
       <div className="mt-1 flex items-end justify-between gap-3">
-        <div className={`text-sm font-semibold ${dayChangeAmount == null ? "text-white/35" : changeTone}`}>
+        <div className={`hidden xl:block text-sm font-semibold ${dayChangeAmount == null ? "text-white/35" : changeTone}`}>
           {formatSignedMoney(dayChangeAmount)}
         </div>
 
@@ -2028,7 +2020,6 @@ function PortfolioPageContent() {
                           name={holding.name}
                           livePrice={holding.livePrice}
                           dayChangePct={holding.dayChangePct}
-                          dayChangeAmount={holding.dayChangeAmount}
                           href={buildPortfolioHref(`/stocks/${holding.ticker}`)}
                         />
                       );

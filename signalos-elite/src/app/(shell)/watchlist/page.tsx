@@ -726,7 +726,7 @@ function WatchlistRowItem({
         </div>
       ) : null}
       <div className="grid gap-3">
-        <div className="grid gap-3 xl:grid-cols-[140px_92px_minmax(240px,1fr)_76px] xl:items-center">
+        <div className="grid gap-3 xl:grid-cols-[140px_136px_minmax(240px,1fr)_76px] xl:items-center">
           <div className="min-w-0 pr-2">
             <div className="flex flex-wrap items-center gap-2">
               <TickerActionButton
@@ -756,16 +756,16 @@ function WatchlistRowItem({
             <div className="mt-1 text-sm text-white/60">{row.name}</div>
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 pl-1">
             <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
               Price
             </div>
-            <div className="mt-1 flex items-end justify-between gap-3 whitespace-nowrap">
+            <div className="mt-1 flex items-end gap-4 whitespace-nowrap">
               <div className={`text-sm font-semibold ${dayChangeAmount == null ? "text-white/35" : changeClasses(dayChangeAmount)}`}>
                 {hasUsablePrice(row.price) ? formatSignedMoney(dayChangeAmount) : "—"}
               </div>
 
-              <div className="text-right">
+              <div>
                 <div className="text-lg font-semibold text-white">
                   {hasUsablePrice(row.price) ? formatPrice(row.price) : "Awaiting quote"}
                 </div>
@@ -919,8 +919,6 @@ function EmptyWatchlistRowItem() {
 }
 
 function QuickWatchlistRowItem({ row, stockHref }: { row: WatchlistRow; stockHref: string }) {
-  const dayChangeAmount = getDailyDollarChange(row.price, row.changePct);
-
   return (
     <Link
       href={stockHref}
@@ -933,18 +931,12 @@ function QuickWatchlistRowItem({ row, stockHref }: { row: WatchlistRow; stockHre
         </div>
       </div>
 
-      <div className="flex items-end justify-end gap-3 text-right">
-        <div className={`text-sm font-semibold ${dayChangeAmount == null ? "text-white/35" : changeClasses(dayChangeAmount)}`}>
-          {hasUsablePrice(row.price) ? formatSignedMoney(dayChangeAmount) : "—"}
+      <div className="text-right">
+        <div className="text-lg font-semibold text-white">
+          {hasUsablePrice(row.price) ? formatPrice(row.price) : "Awaiting quote"}
         </div>
-
-        <div>
-          <div className="text-lg font-semibold text-white">
-            {hasUsablePrice(row.price) ? formatPrice(row.price) : "Awaiting quote"}
-          </div>
-          <div className={`mt-0.5 text-sm font-semibold ${changeClasses(row.changePct)}`}>
-            {hasUsablePrice(row.price) ? formatPct(row.changePct) : "Live syncing..."}
-          </div>
+        <div className={`mt-0.5 text-sm font-semibold ${changeClasses(row.changePct)}`}>
+          {hasUsablePrice(row.price) ? formatPct(row.changePct) : "Live syncing..."}
         </div>
       </div>
     </Link>
