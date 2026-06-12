@@ -408,6 +408,40 @@ function formatPct(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
+function getDailyDollarChange(price: number | null | undefined, changePct: number | null | undefined) {
+  if (
+    typeof price !== "number" ||
+    !Number.isFinite(price) ||
+    price <= 0 ||
+    typeof changePct !== "number" ||
+    !Number.isFinite(changePct)
+  ) {
+    return null;
+  }
+
+  const changeFactor = 1 + changePct / 100;
+
+  if (changeFactor <= 0) {
+    return null;
+  }
+
+  const previousClose = price / changeFactor;
+  const dayChange = price - previousClose;
+
+  return Number.isFinite(dayChange) ? dayChange : null;
+}
+
+function formatSignedMoney(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return "—";
+
+  const absolute = Math.abs(value).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return `${value >= 0 ? "+" : "-"}$${absolute}`;
+}
+
 function getSignalEntryMid(holding: Holding) {
   if (holding.shares > 0 && holding.entryPrice > 0) {
     return holding.entryPrice;
@@ -691,12 +725,14 @@ function QuickPortfolioRowItem({
   name,
   livePrice,
   dayChangePct,
+  dayChangeAmount,
   href,
 }: {
   ticker: string;
   name: string;
   livePrice: number;
   dayChangePct: number | null;
+  dayChangeAmount: number | null;
   href: string;
 }) {
   const changeTone =
@@ -718,13 +754,60 @@ function QuickPortfolioRowItem({
         </div>
       </div>
 
-      <div className="text-right">
-        <div className="text-lg font-semibold text-white">{formatMoney(livePrice)}</div>
-        <div className={`mt-0.5 text-sm font-semibold ${changeTone}`}>
-          {typeof dayChangePct === "number" ? formatPct(dayChangePct) : "—"}
+      <div className="flex items-end justify-end gap-3 text-right">
+        <div className={`text-sm font-semibold ${dayChangeAmount == null ? "text-white/35" : changeTone}`}>
+          {formatSignedMoney(dayChangeAmount)}
+        </div>
+
+        <div>
+          <div className="text-lg font-semibold text-white">{formatMoney(livePrice)}</div>
+          <div className={`mt-0.5 text-sm font-semibold ${changeTone}`}>
+            {typeof dayChangePct === "number" ? formatPct(dayChangePct) : "—"}
+          </div>
         </div>
       </div>
     </Link>
+  );
+}
+
+function CurrentQuoteMetric({
+  livePrice,
+  dayChangePct,
+  dayChangeAmount,
+  priceTone = "text-white",
+}: {
+  livePrice: number;
+  dayChangePct: number | null;
+  dayChangeAmount: number | null;
+  priceTone?: string;
+}) {
+  const changeTone =
+    typeof dayChangePct === "number" && dayChangePct > 0
+      ? "text-emerald-300"
+      : typeof dayChangePct === "number" && dayChangePct < 0
+        ? "text-rose-300"
+        : "text-white/55";
+
+  return (
+    <div className="rounded-xl border border-white/8 bg-black/25 px-3 py-3">
+      <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+        Current
+      </div>
+      <div className="mt-1 flex items-end justify-between gap-3">
+        <div className={`text-sm font-semibold ${dayChangeAmount == null ? "text-white/35" : changeTone}`}>
+          {formatSignedMoney(dayChangeAmount)}
+        </div>
+
+        <div className="text-right">
+          <div className={`text-lg font-semibold sm:text-xl ${priceTone}`}>
+            {formatMoney(livePrice)}
+          </div>
+          <div className={`mt-0.5 text-sm font-semibold ${changeTone}`}>
+            {typeof dayChangePct === "number" ? formatPct(dayChangePct) : "—"}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1123,6 +1206,7 @@ function PortfolioPageContent() {
           pnl,
           pnlPct,
           dayChangePct: liveQuote?.changePct ?? null,
+          dayChangeAmount: getDailyDollarChange(livePrice, liveQuote?.changePct ?? null),
           derivedConviction,
           updatedAt,
           updatedLabel: formatHoldingUpdatedStatus(updatedAt),
@@ -1944,6 +2028,7 @@ function PortfolioPageContent() {
                           name={holding.name}
                           livePrice={holding.livePrice}
                           dayChangePct={holding.dayChangePct}
+                          dayChangeAmount={holding.dayChangeAmount}
                           href={buildPortfolioHref(`/stocks/${holding.ticker}`)}
                         />
                       );
@@ -2040,16 +2125,16 @@ function PortfolioPageContent() {
                                   value={displaySignalEntry}
                                   tone="neutral"
                                 />
-                                <MetricCell
-                                  label="Current"
-                                  value={formatMoney(holding.livePrice)}
-                                  emphasized
-                                  tone={
+                                <CurrentQuoteMetric
+                                  livePrice={holding.livePrice}
+                                  dayChangePct={holding.dayChangePct}
+                                  dayChangeAmount={holding.dayChangeAmount}
+                                  priceTone={
                                     hasEntry
                                       ? holding.livePrice >= holding.entryPrice
-                                        ? "positive"
-                                        : "negative"
-                                      : "neutral"
+                                        ? "text-emerald-300"
+                                        : "text-rose-300"
+                                      : "text-cyan-200"
                                   }
                                 />
                                 <MetricCell
