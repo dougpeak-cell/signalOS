@@ -2,8 +2,9 @@ export type UserTier = "free" | "smart" | "pro";
 
 export const SMART_PREVIEW_STARTED_EVENT = "signalos:smart-preview-started";
 export const SMART_PREVIEW_COOKIE_KEY = "sigi_smart_preview_started";
+export const SMART_PREVIEW_WINDOW_MINUTES = 10;
 const SMART_PREVIEW_STORAGE_KEY = "sigi_smart_preview_started";
-const SMART_PREVIEW_WINDOW_MS = 30 * 60 * 1000;
+const SMART_PREVIEW_WINDOW_MS = SMART_PREVIEW_WINDOW_MINUTES * 60 * 1000;
 const FEATURED_PREVIEW_TICKER = "MSFT";
 
 function syncSmartPreviewCookie(startedAt: number | null) {
@@ -80,13 +81,16 @@ export function getPremiumAccess({
   tier,
   ticker,
   feature,
+  previewActive = false,
 }: {
   tier: UserTier;
   ticker?: string;
   feature: "smart" | "pro" | "crypto" | "expert" | "stock";
+  previewActive?: boolean;
 }) {
   const featuredStock = getTodayFeaturedStock();
   const normalizedTicker = ticker?.toUpperCase();
+  const hasSmartAccess = tier === "smart" || (previewActive && tier === "free");
 
   if (tier === "pro") return true;
 
@@ -96,7 +100,7 @@ export function getPremiumAccess({
 
   if (feature === "stock" && normalizedTicker === featuredStock) return true;
 
-  if (tier === "smart") {
+  if (hasSmartAccess) {
     if (feature === "pro") return false;
     return true;
   }

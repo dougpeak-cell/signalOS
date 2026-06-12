@@ -13,11 +13,12 @@ export default function StockPremiumAccessGate({
   ticker: string;
   children: ReactNode;
 }) {
-  const { tier } = useSigiTier();
+  const { tier, previewActive } = useSigiTier();
   const allowed = getPremiumAccess({
     tier,
     ticker,
     feature: "stock",
+    previewActive,
   });
 
   if (!allowed) {

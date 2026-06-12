@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   formatRemainingTime,
   getSmartPreviewRemainingMs,
+  SMART_PREVIEW_WINDOW_MINUTES,
   getTodayFeaturedStock,
   isSmartPreviewActive,
   isWeekendCryptoOpen,
@@ -193,10 +194,10 @@ export default function LiveAccessStrip({
           {previewActive ? (
             <>
               <div className={`mt-1 font-semibold text-white ${compact ? "text-[13px]" : "text-sm"}`}>
-                {featuredTicker} preview active
+                Smart preview active
               </div>
               <div className="text-xs text-slate-400">
-                {formatRemainingTime(remainingMs)} • Live chart + workspace only
+                {formatRemainingTime(remainingMs)} • Full Smart access
               </div>
             </>
           ) : (
@@ -205,7 +206,7 @@ export default function LiveAccessStrip({
                 onClick={handleStartPreview}
                 className={`mt-2 rounded-xl bg-emerald-300 text-xs font-bold text-black transition hover:bg-emerald-200 ${compact ? "px-3.5 py-2" : "px-4 py-2"}`}
               >
-                Start 30-Minute Preview
+                Start {SMART_PREVIEW_WINDOW_MINUTES}-Minute Preview
               </button>
               <div className="mt-2 text-xs text-slate-400">
                 Demo $9/mo Sigi-Smart

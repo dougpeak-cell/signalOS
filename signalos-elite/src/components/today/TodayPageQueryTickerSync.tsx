@@ -3,17 +3,12 @@
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useOptionalSelectedTicker } from "@/components/sigi/SelectedTickerContext";
-import { useSigiTier } from "@/hooks/useSigiTier";
-import { getFeaturedPreviewTicker } from "@/lib/premiumAccess";
 import { normalizeTicker } from "@/lib/tickerAliases";
 
 export default function TodayPageQueryTickerSync() {
   const searchParams = useSearchParams();
   const ticker = searchParams.get("ticker");
   const selectedTicker = useOptionalSelectedTicker();
-  const { tier, previewActive } = useSigiTier();
-  const previewTicker = getFeaturedPreviewTicker();
-  const shouldLockToPreviewTicker = previewActive && tier === "free";
 
   useEffect(() => {
     if (ticker) {
@@ -38,18 +33,14 @@ export default function TodayPageQueryTickerSync() {
       return;
     }
 
-    if (!shouldLockToPreviewTicker && !ticker) {
+    if (!ticker) {
       if (selectedTicker.activeTicker !== null) {
         selectedTicker.setActiveTicker(null);
       }
       return;
     }
 
-    const normalizedTicker = shouldLockToPreviewTicker
-      ? previewTicker
-      : ticker
-        ? normalizeTicker(ticker)
-        : null;
+    const normalizedTicker = normalizeTicker(ticker);
 
     if (!normalizedTicker) {
       return;
@@ -70,7 +61,7 @@ export default function TodayPageQueryTickerSync() {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [previewTicker, selectedTicker, shouldLockToPreviewTicker, ticker]);
+  }, [selectedTicker, ticker]);
 
   return null;
 }

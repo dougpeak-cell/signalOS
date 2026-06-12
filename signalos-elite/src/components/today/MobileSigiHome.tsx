@@ -18,7 +18,6 @@ import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
 import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import type { SigiTodayContext } from "@/hooks/useSigi";
-import { getFeaturedPreviewTicker } from "@/lib/premiumAccess";
 import {
   clearSigiProfile,
   getSigiProfile,
@@ -156,9 +155,8 @@ export default function MobileSigiHome({
   forceVisible = false,
 }: MobileSigiHomeProps): ReactElement {
   const { tier, previewActive } = useSigiTier();
-  const previewTicker = getFeaturedPreviewTicker();
-  const isFeaturedPreview = previewActive && tier === "free";
-  const effectiveHasSigiSmart = hasSigiSmart || tier === "smart" || tier === "pro" || isFeaturedPreview;
+  const isSmartPreview = previewActive && tier === "free";
+  const effectiveHasSigiSmart = hasSigiSmart || tier === "smart" || tier === "pro" || isSmartPreview;
   const { effectiveTicker, heroStory, stockContext } = useTodayHeroContext();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -703,7 +701,7 @@ export default function MobileSigiHome({
   }
 
   function openSigiRead(nextPrompt?: string) {
-    const normalizedPrompt = isFeaturedPreview ? `Analyze ${previewTicker}` : nextPrompt?.trim() ?? "";
+    const normalizedPrompt = nextPrompt?.trim() ?? "";
 
     if (!normalizedPrompt) {
       openSheetWithContext();
@@ -940,8 +938,8 @@ export default function MobileSigiHome({
                   }
                 }}
                 placeholder={
-                  isFeaturedPreview
-                    ? `MSFT preview active`
+                  isSmartPreview
+                    ? "Smart preview active"
                     : effectiveHasSigiSmart
                       ? "Stock/Ticker?"
                       : "Ask about NVDA, TSLA, AAPL..."

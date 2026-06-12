@@ -8,8 +8,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useSigiTier } from "@/hooks/useSigiTier";
-import { getFeaturedPreviewTicker } from "@/lib/premiumAccess";
 
 export type SigiAction = "setup" | "volume" | "risk" | "changed";
 
@@ -37,23 +35,16 @@ export function SelectedTickerProvider({
 }: {
   children: ReactNode;
 }) {
-  const { tier, previewActive } = useSigiTier();
   const [activeTicker, setActiveTickerState] = useState<string | null>(null);
   const [sigiAction, setSigiActionState] = useState<SigiAction>("setup");
   const [sigiActionNonce, setSigiActionNonce] = useState(0);
 
   const setActiveTicker = useCallback((ticker: string | null) => {
-    const normalizedTicker = normalizeTicker(ticker);
-    const previewTicker = getFeaturedPreviewTicker();
-    const nextTicker =
-      previewActive && tier === "free" && normalizedTicker && normalizedTicker !== previewTicker
-        ? previewTicker
-        : normalizedTicker;
-
+    const nextTicker = normalizeTicker(ticker);
     setActiveTickerState((currentTicker) =>
       currentTicker === nextTicker ? currentTicker : nextTicker
     );
-  }, [previewActive, tier]);
+  }, []);
 
   const clearActiveTicker = useCallback(() => {
     setActiveTickerState(null);

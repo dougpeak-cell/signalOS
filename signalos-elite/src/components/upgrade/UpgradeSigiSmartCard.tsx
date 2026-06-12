@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Brain, Lock, Sparkles, Zap } from "lucide-react";
-import { startSmartPreview } from "@/lib/premiumAccess";
+import {
+	SMART_PREVIEW_WINDOW_MINUTES,
+	startSmartPreview,
+} from "@/lib/premiumAccess";
 
 export default function UpgradeSigiSmartCard() {
 	const router = useRouter();
@@ -34,9 +37,9 @@ export default function UpgradeSigiSmartCard() {
 			</div>
 
 			<p className="mb-5 text-sm leading-6 text-slate-300">
-				You are seeing the market thesis preview. Start a free MSFT preview to
-				open live candles and the trading workspace for Microsoft only, or
-				upgrade to unlock ticker-by-ticker intelligence across the platform.
+				You are seeing the market thesis preview. Start a free {SMART_PREVIEW_WINDOW_MINUTES}-minute Smart preview to
+				open ticker-by-ticker intelligence across the platform, or upgrade to
+				keep it unlocked full-time.
 			</p>
 
 			<div className="mb-6 space-y-3">
@@ -50,7 +53,7 @@ export default function UpgradeSigiSmartCard() {
 				onClick={handleStartPreview}
 				className="block w-full rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-5 py-3 text-center text-sm font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-400/25"
 			>
-				{isStartingPreview ? "Opening MSFT Preview..." : "Start Free MSFT Preview"}
+				{isStartingPreview ? "Opening Smart Preview..." : `Start Free ${SMART_PREVIEW_WINDOW_MINUTES}-Minute Preview`}
 			</button>
 
 			<Link

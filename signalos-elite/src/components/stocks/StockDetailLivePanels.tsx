@@ -191,7 +191,7 @@ export default function StockDetailLivePanels({
   fallbackMessage,
 }: StockDetailLivePanelsProps) {
   const searchParams = useSearchParams();
-  const { tier } = useSigiTier();
+  const { tier, previewActive } = useSigiTier();
   const liveMarket = useOptionalLiveMarket();
   const marketData = useOptionalMarketData();
   const liveTicker = normalizeTicker(row.ticker);
@@ -218,6 +218,7 @@ export default function StockDetailLivePanels({
     tier: plan,
     ticker: liveTicker,
     feature: "stock",
+    previewActive,
   });
   const canUseTradingWorkspace = plan === "pro" || canUseLiveChart;
 

@@ -4,7 +4,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
 import { getDevPreviewTier } from "@/lib/sigi/devPreview";
-import { getPremiumAccess } from "@/lib/premiumAccess";
+import {
+  getPremiumAccess,
+  isSmartPreviewTimestampActive,
+  SMART_PREVIEW_COOKIE_KEY,
+} from "@/lib/premiumAccess";
 import { normalizeTicker } from "@/lib/tickerAliases";
 import { getStockWorkspaceData } from "@/lib/workspace/stockWorkspaceData";
 
@@ -57,12 +61,15 @@ export default async function StockWorkspacePage({
 
   const effectivePlan = previewTier || plan;
   const normalizedTicker = normalizeTicker(ticker);
+  const smartPreviewStartedAt = cookieStore.get(SMART_PREVIEW_COOKIE_KEY)?.value;
+  const previewActive = isSmartPreviewTimestampActive(smartPreviewStartedAt);
   const canUseTradingWorkspace =
     effectivePlan === "pro" ||
     getPremiumAccess({
       tier: effectivePlan as "free" | "smart" | "pro",
       ticker: normalizedTicker,
       feature: "stock",
+      previewActive,
     });
 
   if (!canUseTradingWorkspace) {
