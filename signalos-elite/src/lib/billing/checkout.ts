@@ -522,6 +522,9 @@ export async function createCheckoutSessionForPlan(
     automatic_tax: {
       enabled: true,
     },
+    customer_update: {
+      address: "auto",
+    },
     allow_promotion_codes: true,
     success_url: getStripeCheckoutSuccessUrl({ returnTo: getSafeReturnTo(returnTo), plan: tier }),
     cancel_url: getStripeCheckoutCancelUrl(),
