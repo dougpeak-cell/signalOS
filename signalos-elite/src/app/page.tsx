@@ -91,9 +91,9 @@ const screenshots = [
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.14),transparent_34%),linear-gradient(180deg,#041017_0%,#071722_45%,#f4efe4_100%)] text-white">
-      <section className="mx-auto max-w-7xl px-6 pb-20 pt-8 sm:px-8 lg:px-10">
-        <div className="rounded-4xl border border-white/10 bg-black/20 px-6 py-5 backdrop-blur-xl sm:px-8">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.18),transparent_36%),linear-gradient(180deg,#041017_0%,#071722_45%,#f4efe4_100%)] text-white">
+      <section className="mx-auto max-w-368 px-4 pb-20 pt-6 sm:px-6 lg:px-8">
+        <div className="rounded-4xl border border-white/12 bg-black/24 px-5 py-5 backdrop-blur-xl sm:px-8 sm:py-7">
           <div className="flex flex-col gap-10">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -161,22 +161,24 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="overflow-hidden rounded-4xl border border-white/10 bg-[#07131d] shadow-[0_30px_100px_rgba(0,0,0,0.45)]">
-                <Image
-                  src="/landing/hero-today.png"
-                  alt="SigiOS market thesis preview"
-                  width={1600}
-                  height={1000}
-                  className="h-full w-full object-cover"
-                  priority
-                />
+              <div className="rounded-4xl border border-white/12 bg-[linear-gradient(180deg,rgba(7,19,29,0.96),rgba(9,24,35,0.96))] p-3 shadow-[0_30px_100px_rgba(0,0,0,0.45)] sm:p-4">
+                <div className="overflow-hidden rounded-[1.6rem] border border-white/8 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.10),transparent_48%),#07131d]">
+                  <Image
+                    src="/landing/hero-today.png"
+                    alt="SigiOS market thesis preview"
+                    width={1600}
+                    height={1000}
+                    className="h-auto w-full object-contain object-center"
+                    priority
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="features" className="mx-auto max-w-7xl px-6 py-12 sm:px-8 lg:px-10">
+      <section id="features" className="mx-auto max-w-368 px-4 py-12 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-200/70">
             What SigiOS Does
@@ -202,24 +204,26 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-12 sm:px-8 lg:px-10">
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <section className="mx-auto max-w-368 px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {screenshots.map((shot) => (
             <article
               key={shot.title}
-              className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(6,17,25,0.9),rgba(11,27,38,0.92))] shadow-[0_20px_60px_rgba(0,0,0,0.28)]"
+              className="overflow-hidden rounded-[1.75rem] border border-white/12 bg-[linear-gradient(180deg,rgba(6,17,25,0.92),rgba(11,27,38,0.96))] shadow-[0_20px_60px_rgba(0,0,0,0.28)]"
             >
-              <div className="aspect-4/3 overflow-hidden border-b border-white/8 bg-slate-900">
-                <Image
-                  src={shot.img}
-                  alt={shot.title}
-                  width={1200}
-                  height={900}
-                  className="h-full w-full object-cover"
-                />
+              <div className="border-b border-white/8 bg-[radial-gradient(circle_at_top,rgba(45,212,191,0.10),transparent_52%),#08131b] p-3 sm:p-4">
+                <div className="overflow-hidden rounded-[1.35rem] border border-white/8 bg-[#07131d]">
+                  <Image
+                    src={shot.img}
+                    alt={shot.title}
+                    width={1200}
+                    height={900}
+                    className="h-auto w-full object-contain object-center"
+                  />
+                </div>
               </div>
 
-              <div className="p-5">
+              <div className="p-6">
                 <h3 className="text-lg font-bold text-white">{shot.title}</h3>
                 <p className="mt-2 text-sm leading-7 text-white/65">{shot.desc}</p>
               </div>
@@ -228,7 +232,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-12 sm:px-8 lg:px-10">
+      <section className="mx-auto max-w-368 px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="rounded-4xl border border-white/10 bg-[#08151d]/90 p-8 text-white shadow-[0_24px_60px_rgba(0,0,0,0.28)]">
             <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-200/70">
@@ -268,20 +272,22 @@ export default function LandingPage() {
                 "Deeper intelligence surfaces",
               ]}
             />
-            <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#08131b] shadow-[0_14px_40px_rgba(0,0,0,0.18)] sm:col-span-2 lg:col-span-1">
-              <Image
-                src="/landing/mission.png"
-                alt="SigiOS founder mission visual"
-                width={1200}
-                height={900}
-                className="h-full w-full object-cover"
-              />
+            <div className="rounded-[1.75rem] border border-white/12 bg-[#08131b] p-3 shadow-[0_14px_40px_rgba(0,0,0,0.18)] sm:col-span-2 lg:col-span-1">
+              <div className="overflow-hidden rounded-[1.35rem] border border-white/8 bg-[radial-gradient(circle_at_top,rgba(45,212,191,0.10),transparent_52%),#07131d]">
+                <Image
+                  src="/landing/mission.png"
+                  alt="SigiOS founder mission visual"
+                  width={1200}
+                  height={900}
+                  className="h-auto w-full object-contain object-center"
+                />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 pb-20 pt-6 sm:px-8 lg:px-10">
+      <section className="mx-auto max-w-368 px-4 pb-20 pt-6 sm:px-6 lg:px-8">
         <div className="rounded-4xl border border-teal-300/20 bg-[linear-gradient(135deg,rgba(20,184,166,0.14),rgba(242,232,201,0.14))] p-8 text-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
