@@ -3,13 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
+import SigiIntelligenceCardView from "@/components/sigi/SigiIntelligenceCard";
 import { renderTickerParagraphs, renderTickerText } from "@/components/sigi/renderTickerText";
 import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import type { SigiStockContext } from "@/hooks/useSigi";
 import { useSigiTier } from "@/hooks/useSigiTier";
+import { fetchSigiIntelligenceCard } from "@/lib/sigi/fetchIntelligenceCard";
 import { resolveSigiTicker } from "@/lib/sigi/resolveTicker";
 import { getVisibleSigiTextFromPayload } from "@/lib/sigi/responseVisibility";
 import { looksLikeTicker, normalizeTickerInput } from "@/lib/sigi/tickerInput";
+import type { SigiIntelligenceCard } from "@/types/sigiIntelligence";
 
 type StockAskSigiCardProps = {
   ticker: string;
@@ -119,6 +122,7 @@ export default function StockAskSigiCard({
   const { setActiveTicker } = useSelectedTicker();
   const [question, setQuestion] = useState("");
   const [response, setResponse] = useState<string | null>(null);
+  const [intelligenceCard, setIntelligenceCard] = useState<SigiIntelligenceCard | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasSigiSmart = tier === "smart" || tier === "pro";
@@ -161,6 +165,7 @@ export default function StockAskSigiCard({
     setLoading(true);
     setError(null);
     setResponse(null);
+    setIntelligenceCard(null);
 
     try {
       if (onResolvedTicker) {
@@ -185,16 +190,36 @@ export default function StockAskSigiCard({
         throw new Error(contextData?.error || "Unable to load stock context.");
       }
 
-      const res = await fetch("/api/sigi", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: withTicker(trimmed, resolvedTicker),
-          stock: contextData?.stock || { ticker: resolvedTicker },
+      const stock = contextData?.stock || { ticker: resolvedTicker };
+      const [res, fetchedCard] = await Promise.all([
+        fetch("/api/sigi", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: withTicker(trimmed, resolvedTicker),
+            stock,
+          }),
         }),
-      });
+        fetchSigiIntelligenceCard({
+          question: trimmed,
+          ticker: resolvedTicker,
+          marketData: {
+            price: stock.price ?? null,
+            changePercent: stock.changePercent ?? null,
+            volume: stock.volume ?? null,
+            sector: stock.sector ?? null,
+            relativeVolume: stock.relativeVolume ?? null,
+            marketCap: stock.marketCap ?? null,
+            support: stock.support ?? null,
+            resistance: stock.resistance ?? null,
+            trend: stock.trend ?? null,
+            setup: stock.setup ?? null,
+            catalyst: stock.catalyst ?? null,
+          },
+        }),
+      ]);
 
       const data = await res.json();
 
@@ -204,8 +229,10 @@ export default function StockAskSigiCard({
 
       const nextResponse = getVisibleSigiTextFromPayload(data);
       setResponse(nextResponse);
+      setIntelligenceCard(fetchedCard ?? data.intelligenceCard ?? null);
       setQuestion("");
     } catch (err) {
+      setIntelligenceCard(null);
       setError(err instanceof Error ? err.message : "Sigi request failed.");
     } finally {
       setLoading(false);
@@ -305,6 +332,11 @@ export default function StockAskSigiCard({
             Sigi Read
           </div>
           <div>
+            {intelligenceCard ? (
+              <div className="mb-4">
+                <SigiIntelligenceCardView card={intelligenceCard} />
+              </div>
+            ) : null}
             {renderSigiReadBlock(response)}
 
             <div className="mt-3 space-y-2 text-sm">

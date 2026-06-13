@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import SigiResponseCards from "@/components/sigi/SigiResponseCards";
 import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import type { SigiStockContext } from "@/hooks/useSigi";
+import { fetchSigiIntelligenceCard } from "@/lib/sigi/fetchIntelligenceCard";
 import { shouldNavigateFromSigi } from "@/lib/sigi/sigiNavigationIntent";
 import {
   buildEducationAnswer,
@@ -16,6 +17,7 @@ import { resolveSigiTicker } from "@/lib/sigi/resolveTicker";
 import { buildStockLiveUrl } from "@/lib/sigi/sigiNavigation";
 import { looksLikeTicker, normalizeTickerInput } from "@/lib/sigi/tickerInput";
 import { getVisibleSigiTextFromPayload } from "@/lib/sigi/responseVisibility";
+import type { SigiIntelligenceCard } from "@/types/sigiIntelligence";
 import {
   buildSigiPromptLabel,
   detectSigiIntent,
@@ -84,6 +86,7 @@ export default function TodayAskSigiCard({
   const [question, setQuestion] = useState("");
   const [focusedTicker, setFocusedTicker] = useState<string | null>(null);
   const [response, setResponse] = useState<string | null>(null);
+  const [intelligenceCard, setIntelligenceCard] = useState<SigiIntelligenceCard | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -116,6 +119,7 @@ export default function TodayAskSigiCard({
 
       setError(null);
       setResponse(buildEducationAnswer(educationEntry, profile?.name || "friend"));
+      setIntelligenceCard(null);
       setQuestion("");
       return;
     }
@@ -139,6 +143,7 @@ export default function TodayAskSigiCard({
 
     if (!resolvedTicker) {
       setError(null);
+      setIntelligenceCard(null);
       setResponse(
         "I can help best when your question includes a ticker, like NVDA, TSLA, AAPL, or INTC. Example: Is INTC a good buy right now?"
       );
@@ -156,19 +161,38 @@ export default function TodayAskSigiCard({
       const finalQuestion = buildPromptWithTicker(parsed.originalQuestion, resolvedTicker);
       const stock = await fetchStockContext(resolvedTicker);
 
-      const res = await fetch("/api/sigi", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: finalQuestion,
-          ticker: resolvedTicker,
-          intent,
-          question: parsed.originalQuestion,
-          stock,
+      const [res, fetchedCard] = await Promise.all([
+        fetch("/api/sigi", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: finalQuestion,
+            ticker: resolvedTicker,
+            intent,
+            question: parsed.originalQuestion,
+            stock,
+          }),
         }),
-      });
+        fetchSigiIntelligenceCard({
+          question: parsed.originalQuestion,
+          ticker: resolvedTicker,
+          marketData: {
+            price: stock.price ?? null,
+            changePercent: stock.changePercent ?? null,
+            volume: stock.volume ?? null,
+            sector: stock.sector ?? null,
+            relativeVolume: stock.relativeVolume ?? null,
+            marketCap: stock.marketCap ?? null,
+            support: stock.support ?? null,
+            resistance: stock.resistance ?? null,
+            trend: stock.trend ?? null,
+            setup: stock.setup ?? null,
+            catalyst: stock.catalyst ?? null,
+          },
+        }),
+      ]);
 
       const data = await res.json();
 
@@ -177,8 +201,10 @@ export default function TodayAskSigiCard({
       }
 
       setResponse(getVisibleSigiTextFromPayload(data));
+      setIntelligenceCard(fetchedCard ?? data.intelligenceCard ?? null);
       setQuestion("");
     } catch (err) {
+      setIntelligenceCard(null);
       setError(err instanceof Error ? err.message : "Sigi request failed.");
     } finally {
       setLoading(false);
@@ -295,7 +321,7 @@ export default function TodayAskSigiCard({
             </div>
           ) : null}
 
-          <SigiResponseCards response={response} />
+          <SigiResponseCards response={response} intelligenceCard={intelligenceCard} />
         </div>
       ) : null}
     </div>

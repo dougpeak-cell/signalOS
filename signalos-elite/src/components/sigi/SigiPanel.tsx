@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import SigiIntelligenceCardView from "@/components/sigi/SigiIntelligenceCard";
 import { renderTickerParagraphs } from "@/components/sigi/renderTickerText";
 import TickerHover from "@/components/sigi/TickerHover";
 import { useSigi, type SigiStockContext } from "@/hooks/useSigi";
@@ -27,12 +28,15 @@ import {
   buildSigiWatchlistIdeas,
   type WatchCandidate,
 } from "@/lib/sigi/sigiWatchlistIntelligence";
+import { fetchSigiIntelligenceCard } from "@/lib/sigi/fetchIntelligenceCard";
 import { getSigiProfile } from "@/lib/sigi/sigiProfile";
 import { looksLikeTicker, normalizeTickerInput } from "@/lib/sigi/tickerInput";
+import type { SigiIntelligenceCard } from "@/types/sigiIntelligence";
 
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
+  intelligenceCard?: SigiIntelligenceCard | null;
 };
 
 const STARTER_PROMPTS = [
@@ -270,7 +274,28 @@ export default function SigiPanel({
           }
         : null;
 
-    const reply = await sendMessage(message, enrichedStock);
+    const [reply, intelligenceCard] = await Promise.all([
+      sendMessage(message, enrichedStock),
+      enrichedStock?.ticker
+        ? fetchSigiIntelligenceCard({
+            question: message,
+            ticker: enrichedStock.ticker,
+            marketData: {
+              price: enrichedStock.price ?? null,
+              changePercent: enrichedStock.changePercent ?? null,
+              volume: enrichedStock.volume ?? null,
+              sector: enrichedStock.sector ?? null,
+              relativeVolume: enrichedStock.relativeVolume ?? null,
+              marketCap: enrichedStock.marketCap ?? null,
+              support: enrichedStock.support ?? null,
+              resistance: enrichedStock.resistance ?? null,
+              trend: enrichedStock.trend ?? null,
+              setup: enrichedStock.setup ?? null,
+              catalyst: enrichedStock.catalyst ?? null,
+            },
+          })
+        : Promise.resolve(null),
+    ]);
     if (!reply) {
       return;
     }
@@ -280,6 +305,7 @@ export default function SigiPanel({
       {
         role: "assistant",
         content: reply || "No response returned.",
+        intelligenceCard,
       },
     ]);
   }
@@ -386,6 +412,12 @@ export default function SigiPanel({
                     ? renderTickerParagraphs(message.content)
                     : message.content}
                 </div>
+
+                {message.role === "assistant" && message.intelligenceCard ? (
+                  <div className="mt-4">
+                    <SigiIntelligenceCardView card={message.intelligenceCard} />
+                  </div>
+                ) : null}
 
                 {message.role === "assistant" &&
                 index === messages.length - 1 &&

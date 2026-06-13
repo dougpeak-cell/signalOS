@@ -14,6 +14,7 @@ import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import { startStripeUpgradeCheckout } from "@/lib/billing/client";
 import { SIGI_PRICING } from "@/lib/billing/pricing";
 import { buildMarketIntel } from "@/lib/intelligence/buildMarketIntel";
+import { fetchSigiIntelligenceCard } from "@/lib/sigi/fetchIntelligenceCard";
 import { gate, hasPro, hasSmart, type SigiTier } from "@/lib/sigi/gates";
 import { addToWatchlist } from "@/lib/watchlist/localWatchlist";
 import {
@@ -24,6 +25,7 @@ import type {
   SigiAssistantResponse,
   SigiTodayContext,
 } from "@/lib/sigi/todayAssistant";
+import type { SigiIntelligenceCard } from "@/types/sigiIntelligence";
 
 type NewsFeedItem = {
   id: string;
@@ -972,6 +974,7 @@ export default function SigiTodayAssistantRail() {
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [command, setCommand] = useState("");
   const [response, setResponse] = useState<SigiAssistantResponse | null>(null);
+    const [intelligenceCard, setIntelligenceCard] = useState<SigiIntelligenceCard | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [headlines, setHeadlines] = useState<NewsFeedItem[]>([]);
@@ -1346,13 +1349,37 @@ export default function SigiTodayAssistantRail() {
 
       if (shouldHideSigiUnavailablePayload(data)) {
         setResponse(null);
+        setIntelligenceCard(null);
         return;
       }
 
-      setResponse(data as SigiAssistantResponse);
+      const responseData = data as SigiAssistantResponse & {
+        citedTickers?: string[];
+        intelligenceCard?: SigiIntelligenceCard | null;
+      };
+      const cardTicker = responseData.citedTickers?.[0] ?? effectiveRailTicker ?? null;
+      const quote = cardTicker
+        ? context.trackedQuotes?.find(
+            (item) => item.ticker?.trim().toUpperCase() === cardTicker.trim().toUpperCase()
+          )
+        : null;
+      const fetchedCard = cardTicker
+        ? await fetchSigiIntelligenceCard({
+            question: trimmed,
+            ticker: cardTicker,
+            marketData: {
+              price: quote?.price ?? null,
+              changePercent: quote?.changePercent ?? null,
+            },
+          })
+        : null;
+
+      setResponse(responseData);
+      setIntelligenceCard(fetchedCard ?? responseData.intelligenceCard ?? null);
       setAnsweredQuestion(trimmed);
       setResponseRevision((current) => current + 1);
     } catch (cause) {
+      setIntelligenceCard(null);
       const message = cause instanceof Error ? cause.message : "Sigi request failed.";
       if (message === "PRO_REQUIRED") {
         openUpgradeModal("pro", options?.mode === "research" ? "research" : "automation");
@@ -1368,6 +1395,7 @@ export default function SigiTodayAssistantRail() {
   function resetConversation() {
     setCommand("");
     setResponse(null);
+    setIntelligenceCard(null);
     setError(null);
     setIsLoading(false);
     setResponseRevision(0);
@@ -1659,7 +1687,7 @@ export default function SigiTodayAssistantRail() {
           <div className="flex-1 overflow-y-auto space-y-3 text-sm pr-1">
             {response ? (
               <div className="mt-4">
-                <SigiResponseCards response={response.summary} />
+                <SigiResponseCards response={response.summary} intelligenceCard={intelligenceCard} />
               </div>
             ) : (
               <div className="text-white/40">

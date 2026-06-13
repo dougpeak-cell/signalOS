@@ -9,6 +9,7 @@ import SigiOnboarding from "@/components/sigi/SigiOnboarding";
 import SigiResponseCard, {
   type SigiResponseCardData,
 } from "@/components/sigi/SigiResponseCard";
+import type { SigiIntelligenceCard } from "@/types/sigiIntelligence";
 import { renderTickerParagraphs } from "@/components/sigi/renderTickerText";
 import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
 import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
@@ -36,6 +37,7 @@ import {
   buildEducationAnswer,
   findEducationEntry,
 } from "@/lib/sigi/sigiEducationLookup";
+import { fetchSigiIntelligenceCard } from "@/lib/sigi/fetchIntelligenceCard";
 import { buildSigiPromptLabel } from "@/lib/sigi/sigiInput";
 import {
   buildSigiProfilePrompt,
@@ -101,6 +103,7 @@ type DesktopSigiApiResponse = {
   risk?: string;
   catalyst?: string;
   nextStep?: string;
+  intelligenceCard?: SigiIntelligenceCard | null;
   intelligence?: {
     tone?: SigiResponseCardData["tone"];
     badges?: string[];
@@ -384,6 +387,7 @@ function SigiDecisionPanelContent({
       risk: options?.risk ?? null,
       catalyst: options?.catalyst ?? null,
       nextStep: options?.nextStep ?? null,
+      intelligenceCard: options?.intelligenceCard ?? null,
     });
   }
 
@@ -712,17 +716,36 @@ function SigiDecisionPanelContent({
         : parsed.ticker
           ? parsed.originalQuestion
           : withTicker(trimmed, resolvedTicker);
-      const response = await fetch("/api/sigi", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: withTicker(question, resolvedTicker),
-          profilePrompt: buildSigiProfilePrompt(profile),
-          stock: context ?? null,
-          context: null,
-          source: "today_desktop",
+      const [response, fetchedCard] = await Promise.all([
+        fetch("/api/sigi", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: withTicker(question, resolvedTicker),
+            profilePrompt: buildSigiProfilePrompt(profile),
+            stock: context ?? null,
+            context: null,
+            source: "today_desktop",
+          }),
         }),
-      });
+        fetchSigiIntelligenceCard({
+          question,
+          ticker: resolvedTicker,
+          marketData: {
+            price: context?.price ?? null,
+            changePercent: context?.changePercent ?? null,
+            volume: context?.volume ?? null,
+            sector: context?.sector ?? null,
+            relativeVolume: context?.relativeVolume ?? null,
+            marketCap: context?.marketCap ?? null,
+            support: context?.support ?? null,
+            resistance: context?.resistance ?? null,
+            trend: context?.trend ?? null,
+            setup: context?.setup ?? null,
+            catalyst: context?.catalyst ?? null,
+          },
+        }),
+      ]);
 
       const data = (await response.json()) as DesktopSigiApiResponse;
 
@@ -751,6 +774,7 @@ function SigiDecisionPanelContent({
         risk: thesis?.risk ?? data.intelligence?.risk ?? data.risk ?? null,
         catalyst: thesis?.catalyst ?? data.intelligence?.catalyst ?? data.catalyst ?? null,
         nextStep: data.intelligence?.nextStep ?? data.nextStep ?? null,
+        intelligenceCard: fetchedCard ?? data.intelligenceCard ?? null,
       });
       setSigiInput("");
     } catch (err) {

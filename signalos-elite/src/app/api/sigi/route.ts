@@ -9,6 +9,7 @@ import {
   getResolvedSigiModelConfigForCurrentUser,
   type SigiResolvedModelConfig,
 } from "@/lib/sigi/settings";
+import type { SigiIntelligenceCard } from "@/types/sigiIntelligence";
 
 async function getResolvedSigiClient() {
   const config = await getResolvedSigiModelConfigForCurrentUser();
@@ -120,6 +121,10 @@ type SigiIntelligence = {
   nextStep: string;
 };
 
+type ParsedSigiPayload = Partial<SigiIntelligence> & {
+  intelligenceCard?: Partial<SigiIntelligenceCard> | null;
+};
+
 type SigiAnalystLeader = {
   analyst: string;
   firm: string;
@@ -155,9 +160,36 @@ Return this exact JSON shape:
   "analysis": "string",
   "risk": "string",
   "catalyst": "string",
-  "nextStep": "string"
+  "nextStep": "string",
+  "intelligenceCard": {
+    "ticker": "string",
+    "companyName": "string",
+    "signalOSScore": 0,
+    "trendDirection": "Bullish | Bearish | Neutral",
+    "momentumStatus": "Strong | Improving | Weakening | Mixed",
+    "sectorStrength": "Strong | Moderate | Weak",
+    "riskMeter": "Low | Medium | High",
+    "analystConfidence": "High | Strong | Moderate | Speculative",
+    "suggestedAction": "Watch | Research | Avoid | Hold | Consider Entry",
+    "keyLevels": {
+      "support": "string",
+      "resistance": "string",
+      "breakout": "string"
+    },
+    "bullCase": ["string"],
+    "bearCase": ["string"],
+    "summary": "string",
+    "disclaimer": "string"
+  }
 }
 `;
+
+const TREND_DIRECTIONS = ["Bullish", "Bearish", "Neutral"] as const;
+const MOMENTUM_STATUSES = ["Strong", "Improving", "Weakening", "Mixed"] as const;
+const SECTOR_STRENGTHS = ["Strong", "Moderate", "Weak"] as const;
+const RISK_METERS = ["Low", "Medium", "High"] as const;
+const ANALYST_CONFIDENCE_LEVELS = ["High", "Strong", "Moderate", "Speculative"] as const;
+const SUGGESTED_ACTIONS = ["Watch", "Research", "Avoid", "Hold", "Consider Entry"] as const;
 
 const SIGI_ANALYST_LEADER_SYSTEM_PROMPT = `
 You are SIGI, the institutional analyst intelligence engine inside SigiOS.
@@ -497,12 +529,14 @@ function buildStructuredJsonResponse({
   mode,
   provider,
   intelligence,
+  intelligenceCard,
   citedTickers,
   updatedAt,
 }: {
   mode: SigiRequestMode;
   provider: string;
   intelligence: SigiIntelligence;
+  intelligenceCard?: SigiIntelligenceCard | null;
   citedTickers: string[];
   updatedAt?: string;
 }) {
@@ -525,6 +559,7 @@ function buildStructuredJsonResponse({
     ticker: intelligence.ticker,
     tone: intelligence.tone,
     badges: intelligence.badges,
+    intelligenceCard: intelligenceCard ?? null,
     analysis: intelligence.analysis,
     risk: intelligence.risk,
     catalyst: intelligence.catalyst,
@@ -933,62 +968,245 @@ function buildFallbackIntelligence(raw: string, ticker: string | null = null): S
   };
 }
 
+function parseSigiPayload(raw: string): ParsedSigiPayload | null {
+  try {
+    return JSON.parse(raw) as ParsedSigiPayload;
+  } catch {
+    return null;
+  }
+}
+
+function coerceEnum<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+  fallback: T
+): T {
+  return typeof value === "string" && allowed.includes(value as T)
+    ? (value as T)
+    : fallback;
+}
+
+function sanitizeStringArray(value: unknown, fallback: string[]): string[] {
+  const normalized = Array.isArray(value)
+    ? value
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 4)
+    : [];
+
+  return normalized.length > 0 ? normalized : fallback;
+}
+
+function deriveFallbackScore(intelligence: SigiIntelligence, stock?: SigiStockContext | null) {
+  const changePercent = stock?.changePercent;
+
+  if (typeof changePercent === "number" && Number.isFinite(changePercent)) {
+    if (changePercent >= 2) return 78;
+    if (changePercent > 0) return 68;
+    if (changePercent <= -2) return 42;
+    if (changePercent < 0) return 52;
+  }
+
+  if (intelligence.tone === "bullish") return 72;
+  if (intelligence.tone === "bearish") return 45;
+  if (intelligence.tone === "caution") return 55;
+  return 60;
+}
+
+function buildFallbackSigiIntelligenceCard(
+  intelligence: SigiIntelligence,
+  stock?: SigiStockContext | null
+): SigiIntelligenceCard {
+  const ticker = intelligence.ticker ?? stock?.ticker?.trim().toUpperCase() ?? "MARKET";
+  const companyName = stock?.name?.trim() || intelligence.heroTitle || ticker;
+  const support = formatPrice(stock?.support);
+  const resistance = formatPrice(stock?.resistance);
+  const breakout =
+    typeof stock?.resistance === "number" && Number.isFinite(stock.resistance)
+      ? formatPrice(Number((stock.resistance * 1.01).toFixed(2)))
+      : resistance !== "n/a"
+        ? `Above ${resistance}`
+        : "Needs confirmation";
+
+  return {
+    ticker,
+    companyName,
+    signalOSScore: deriveFallbackScore(intelligence, stock),
+    trendDirection:
+      stock?.trend?.toLowerCase() === "bullish" || intelligence.tone === "bullish"
+        ? "Bullish"
+        : stock?.trend?.toLowerCase() === "bearish" || intelligence.tone === "bearish"
+          ? "Bearish"
+          : "Neutral",
+    momentumStatus:
+      typeof stock?.changePercent === "number" && Number.isFinite(stock.changePercent)
+        ? stock.changePercent >= 2
+          ? "Strong"
+          : stock.changePercent > 0
+            ? "Improving"
+            : stock.changePercent < 0
+              ? "Weakening"
+              : "Mixed"
+        : "Mixed",
+    sectorStrength: intelligence.tone === "bullish" ? "Strong" : "Moderate",
+    riskMeter:
+      intelligence.tone === "bearish"
+        ? "High"
+        : intelligence.tone === "caution"
+          ? "Medium"
+          : "Low",
+    analystConfidence: intelligence.tone === "bullish" ? "Strong" : "Moderate",
+    suggestedAction:
+      intelligence.tone === "bullish"
+        ? "Research"
+        : intelligence.tone === "bearish"
+          ? "Avoid"
+          : "Watch",
+    keyLevels: {
+      support,
+      resistance,
+      breakout,
+    },
+    bullCase: [intelligence.catalyst || "Positive follow-through improves the setup."],
+    bearCase: [intelligence.risk || "Weak confirmation raises execution risk."],
+    summary: intelligence.heroSummary,
+    disclaimer: "Educational only. Not financial advice.",
+  };
+}
+
 function normalizeIntelligencePayload(
+  payload: ParsedSigiPayload | null,
   raw: string,
   ticker: string | null = null
 ): SigiIntelligence {
-  try {
-    const parsed = JSON.parse(raw) as Partial<SigiIntelligence>;
-
-    return {
-      ticker:
-        typeof parsed.ticker === "string" && parsed.ticker.trim()
-          ? parsed.ticker.trim().toUpperCase()
-          : ticker,
-      heroTitle:
-        typeof parsed.heroTitle === "string" && parsed.heroTitle.trim()
-          ? parsed.heroTitle.trim()
-          : ticker
-            ? `${ticker} Sigi Market Intelligence`
-            : "Sigi Market Intelligence",
-      heroSummary:
-        typeof parsed.heroSummary === "string" && parsed.heroSummary.trim()
-          ? parsed.heroSummary.trim()
-          : raw,
-      tone:
-        parsed.tone === "bullish" ||
-        parsed.tone === "bearish" ||
-        parsed.tone === "neutral" ||
-        parsed.tone === "caution"
-          ? parsed.tone
-          : "neutral",
-      badges: Array.isArray(parsed.badges)
-        ? parsed.badges
-            .filter((value): value is string => typeof value === "string")
-            .map((value) => value.trim())
-            .filter(Boolean)
-            .slice(0, 3)
-        : ["Market Live", "AI Analysis", "Educational"],
-      analysis:
-        typeof parsed.analysis === "string" && parsed.analysis.trim()
-          ? parsed.analysis.trim()
-          : raw,
-      risk:
-        typeof parsed.risk === "string" && parsed.risk.trim()
-          ? parsed.risk.trim()
-          : "Risk depends on market conditions, volatility, and position sizing.",
-      catalyst:
-        typeof parsed.catalyst === "string" && parsed.catalyst.trim()
-          ? parsed.catalyst.trim()
-          : "No specific catalyst detected.",
-      nextStep:
-        typeof parsed.nextStep === "string" && parsed.nextStep.trim()
-          ? parsed.nextStep.trim()
-          : "Review the chart, news, and risk before making decisions.",
-    };
-  } catch {
+  if (!payload) {
     return buildFallbackIntelligence(raw, ticker);
   }
+
+  return {
+    ticker:
+      typeof payload.ticker === "string" && payload.ticker.trim()
+        ? payload.ticker.trim().toUpperCase()
+        : ticker,
+    heroTitle:
+      typeof payload.heroTitle === "string" && payload.heroTitle.trim()
+        ? payload.heroTitle.trim()
+        : ticker
+          ? `${ticker} Sigi Market Intelligence`
+          : "Sigi Market Intelligence",
+    heroSummary:
+      typeof payload.heroSummary === "string" && payload.heroSummary.trim()
+        ? payload.heroSummary.trim()
+        : raw,
+    tone:
+      payload.tone === "bullish" ||
+      payload.tone === "bearish" ||
+      payload.tone === "neutral" ||
+      payload.tone === "caution"
+        ? payload.tone
+        : "neutral",
+    badges: Array.isArray(payload.badges)
+      ? payload.badges
+          .filter((value): value is string => typeof value === "string")
+          .map((value) => value.trim())
+          .filter(Boolean)
+          .slice(0, 3)
+      : ["Market Live", "AI Analysis", "Educational"],
+    analysis:
+      typeof payload.analysis === "string" && payload.analysis.trim()
+        ? payload.analysis.trim()
+        : raw,
+    risk:
+      typeof payload.risk === "string" && payload.risk.trim()
+        ? payload.risk.trim()
+        : "Risk depends on market conditions, volatility, and position sizing.",
+    catalyst:
+      typeof payload.catalyst === "string" && payload.catalyst.trim()
+        ? payload.catalyst.trim()
+        : "No specific catalyst detected.",
+    nextStep:
+      typeof payload.nextStep === "string" && payload.nextStep.trim()
+        ? payload.nextStep.trim()
+        : "Review the chart, news, and risk before making decisions.",
+  };
+}
+
+function normalizeIntelligenceCardPayload(
+  payload: ParsedSigiPayload | null,
+  intelligence: SigiIntelligence,
+  stock?: SigiStockContext | null
+): SigiIntelligenceCard | null {
+  const fallback = buildFallbackSigiIntelligenceCard(intelligence, stock);
+  const card = payload?.intelligenceCard;
+
+  if (!card || typeof card !== "object") {
+    return stock?.ticker || intelligence.ticker ? fallback : null;
+  }
+
+  const keyLevels =
+    card.keyLevels && typeof card.keyLevels === "object" ? card.keyLevels : null;
+
+  return {
+    ticker:
+      typeof card.ticker === "string" && card.ticker.trim()
+        ? card.ticker.trim().toUpperCase()
+        : fallback.ticker,
+    companyName:
+      typeof card.companyName === "string" && card.companyName.trim()
+        ? card.companyName.trim()
+        : fallback.companyName,
+    signalOSScore:
+      typeof card.signalOSScore === "number" && Number.isFinite(card.signalOSScore)
+        ? Math.max(0, Math.min(100, Math.round(card.signalOSScore)))
+        : fallback.signalOSScore,
+    trendDirection: coerceEnum(card.trendDirection, TREND_DIRECTIONS, fallback.trendDirection),
+    momentumStatus: coerceEnum(
+      card.momentumStatus,
+      MOMENTUM_STATUSES,
+      fallback.momentumStatus
+    ),
+    sectorStrength: coerceEnum(
+      card.sectorStrength,
+      SECTOR_STRENGTHS,
+      fallback.sectorStrength
+    ),
+    riskMeter: coerceEnum(card.riskMeter, RISK_METERS, fallback.riskMeter),
+    analystConfidence: coerceEnum(
+      card.analystConfidence,
+      ANALYST_CONFIDENCE_LEVELS,
+      fallback.analystConfidence
+    ),
+    suggestedAction: coerceEnum(
+      card.suggestedAction,
+      SUGGESTED_ACTIONS,
+      fallback.suggestedAction
+    ),
+    keyLevels: {
+      support:
+        typeof keyLevels?.support === "string" && keyLevels.support.trim()
+          ? keyLevels.support.trim()
+          : fallback.keyLevels.support,
+      resistance:
+        typeof keyLevels?.resistance === "string" && keyLevels.resistance.trim()
+          ? keyLevels.resistance.trim()
+          : fallback.keyLevels.resistance,
+      breakout:
+        typeof keyLevels?.breakout === "string" && keyLevels.breakout.trim()
+          ? keyLevels.breakout.trim()
+          : fallback.keyLevels.breakout,
+    },
+    bullCase: sanitizeStringArray(card.bullCase, fallback.bullCase),
+    bearCase: sanitizeStringArray(card.bearCase, fallback.bearCase),
+    summary:
+      typeof card.summary === "string" && card.summary.trim()
+        ? card.summary.trim()
+        : fallback.summary,
+    disclaimer:
+      typeof card.disclaimer === "string" && card.disclaimer.trim()
+        ? card.disclaimer.trim()
+        : fallback.disclaimer,
+  };
 }
 
 function buildFallbackAnalystLeader(sector: string): SigiAnalystLeader {
@@ -1140,13 +1358,18 @@ async function requestOpenAiIntelligence({
   message,
   marketContext,
   ticker = null,
+  stock = null,
 }: {
   client: OpenAI;
   config: SigiResolvedModelConfig;
   message: string;
   marketContext: unknown;
   ticker?: string | null;
-}): Promise<SigiIntelligence> {
+  stock?: SigiStockContext | null;
+}): Promise<{
+  intelligence: SigiIntelligence;
+  intelligenceCard: SigiIntelligenceCard | null;
+}> {
   const completion = await client.chat.completions.create({
     model: getResolvedModel(config),
     temperature: 0.35,
@@ -1167,7 +1390,13 @@ ${JSON.stringify(marketContext ?? {}, null, 2)}
   });
 
   const raw = completion.choices[0]?.message?.content ?? "{}";
-  return normalizeIntelligencePayload(raw, ticker);
+  const payload = parseSigiPayload(raw);
+  const intelligence = normalizeIntelligencePayload(payload, raw, ticker);
+
+  return {
+    intelligence,
+    intelligenceCard: normalizeIntelligenceCardPayload(payload, intelligence, stock),
+  };
 }
 
 async function handleGeneralSigi(message: string, options: SigiRouteOptions) {
@@ -1198,7 +1427,7 @@ async function handleGeneralSigi(message: string, options: SigiRouteOptions) {
 
   const { client, config } = resolved;
 
-  const intelligence = await requestOpenAiIntelligence({
+  const { intelligence, intelligenceCard } = await requestOpenAiIntelligence({
     client,
     config,
     message,
@@ -1216,6 +1445,7 @@ async function handleGeneralSigi(message: string, options: SigiRouteOptions) {
     mode: options.requestMode,
     provider: "openai",
     intelligence,
+    intelligenceCard,
     citedTickers,
   });
 }
@@ -1253,11 +1483,12 @@ async function handleStockRequest(
 
   const { client, config } = resolved;
 
-  const intelligence = await requestOpenAiIntelligence({
+  const { intelligence, intelligenceCard } = await requestOpenAiIntelligence({
     client,
     config,
     message,
     ticker: stock?.ticker?.toUpperCase() ?? ticker,
+    stock,
     marketContext: {
       profilePrompt: options.profilePrompt || null,
       intent: options.intent,
@@ -1274,6 +1505,7 @@ async function handleStockRequest(
     mode: "ticker",
     provider: "openai",
     intelligence,
+    intelligenceCard,
     citedTickers,
   });
 }

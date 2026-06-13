@@ -11,6 +11,7 @@ import SigiOnboarding from "@/components/sigi/SigiOnboarding";
 import SigiResponseCard, {
   type SigiResponseCardData,
 } from "@/components/sigi/SigiResponseCard";
+import type { SigiIntelligenceCard } from "@/types/sigiIntelligence";
 import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
 import {
   useSigi,
@@ -21,6 +22,7 @@ import {
   buildEducationAnswer,
   findEducationEntry,
 } from "@/lib/sigi/sigiEducationLookup";
+import { fetchSigiIntelligenceCard } from "@/lib/sigi/fetchIntelligenceCard";
 import { buildStockLiveUrl } from "@/lib/sigi/sigiNavigation";
 import { shouldNavigateFromSigi } from "@/lib/sigi/sigiNavigationIntent";
 import { shouldHideSigiUnavailablePayload } from "@/lib/sigi/responseVisibility";
@@ -135,6 +137,7 @@ type MobileSigiApiResponse = {
   risk?: string;
   catalyst?: string;
   nextStep?: string;
+  intelligenceCard?: SigiIntelligenceCard | null;
   intelligence?: {
     tone?: SigiResponseCardData["tone"];
     badges?: string[];
@@ -512,6 +515,7 @@ export default function MobileSigiSheet({
           risk: thesis?.risk ?? data.intelligence?.risk ?? data.risk ?? null,
           catalyst: thesis?.catalyst ?? data.intelligence?.catalyst ?? data.catalyst ?? null,
           nextStep: data.intelligence?.nextStep ?? data.nextStep ?? null,
+          intelligenceCard: data.intelligenceCard ?? null,
         });
 
         setMobileSigiInput("");
@@ -586,7 +590,26 @@ export default function MobileSigiSheet({
 
       const stock = resolvedTicker ? await fetchStockContext(resolvedTicker) : null;
       const questionWithTicker = parsed.ticker ? parsed.originalQuestion : `${question} Focus on ${resolvedTicker}.`;
-      const text = await sendMessage(`${questionWithTicker} Focus on ${resolvedTicker}.`, stock, effectiveSheetContext);
+      const [text, fetchedCard] = await Promise.all([
+        sendMessage(`${questionWithTicker} Focus on ${resolvedTicker}.`, stock, effectiveSheetContext),
+        fetchSigiIntelligenceCard({
+          question,
+          ticker: resolvedTicker,
+          marketData: {
+            price: stock?.price ?? null,
+            changePercent: stock?.changePercent ?? null,
+            volume: stock?.volume ?? null,
+            sector: stock?.sector ?? null,
+            relativeVolume: stock?.relativeVolume ?? null,
+            marketCap: stock?.marketCap ?? null,
+            support: stock?.support ?? null,
+            resistance: stock?.resistance ?? null,
+            trend: stock?.trend ?? null,
+            setup: stock?.setup ?? null,
+            catalyst: stock?.catalyst ?? null,
+          },
+        }),
+      ]);
 
       if (!text) {
         setMobileSigiAnswer(null);
@@ -600,6 +623,7 @@ export default function MobileSigiSheet({
         summary: text || "I'm not seeing a clear answer yet.",
         ticker: resolvedTicker,
         actionLabel: resolvedTicker ? "Open Live Chart" : null,
+        intelligenceCard: fetchedCard,
       });
       setMobileSigiInput("");
     } catch (nextError) {
@@ -636,7 +660,9 @@ export default function MobileSigiSheet({
       {!hasSigiSmart ? (
         <UpgradeSigiSmartCard />
       ) : (
-      <div className="relative min-h-[calc(70vh-11rem)] space-y-3 pb-24">
+      <div
+        className={`relative ${showReadFirst ? "min-h-0 space-y-4 pb-6" : "min-h-[calc(70vh-11rem)] space-y-3 pb-24"}`}
+      >
         {showReadFirst && isMobileSigiAnalyzing && !shouldShowReadCard && !error ? (
           <div className="rounded-2xl border border-cyan-400/18 bg-cyan-400/9 px-4 py-4 text-sm text-cyan-100">
             Sigi is building your read now.
@@ -674,22 +700,24 @@ export default function MobileSigiSheet({
         ) : null}
 
         {shouldShowReadCard ? (
-          <SigiResponseCard
-            response={mobileSigiAnswer!}
-            showQuestion={!showReadFirst}
-            onTickerClick={(ticker) => {
-              setOpen(false);
-              setShowReadFirst(false);
-              router.push(buildStockHref(ticker));
-            }}
-            onAction={(mobileSigiAnswer?.ticker ?? null)
-              ? () => {
-                  setOpen(false);
-                  setShowReadFirst(false);
-                  router.push(buildStockHref(mobileSigiAnswer?.ticker ?? ""));
-                }
-              : null}
-          />
+          <div className={showReadFirst ? "-mx-1" : ""}>
+            <SigiResponseCard
+              response={mobileSigiAnswer!}
+              showQuestion={!showReadFirst}
+              onTickerClick={(ticker) => {
+                setOpen(false);
+                setShowReadFirst(false);
+                router.push(buildStockHref(ticker));
+              }}
+              onAction={(mobileSigiAnswer?.ticker ?? null)
+                ? () => {
+                    setOpen(false);
+                    setShowReadFirst(false);
+                    router.push(buildStockHref(mobileSigiAnswer?.ticker ?? ""));
+                  }
+                : null}
+            />
+          </div>
         ) : null}
 
         {sigiProfile && !showReadFirst ? (

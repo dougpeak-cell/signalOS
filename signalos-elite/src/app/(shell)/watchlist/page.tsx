@@ -970,21 +970,43 @@ export default function WatchlistPage() {
     {}
   );
   const [hasLoadedWatchlist, setHasLoadedWatchlist] = useState(false);
+  const [isMobilePhoneView, setIsMobilePhoneView] = useState(false);
   const plan = tier ?? "free";
   const canUseDetail = plan === "smart" || plan === "pro" || previewActive;
+  const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const shouldForceQuickView = searchParams.get("quickView") === "1";
+  const shouldDefaultToQuickView = isMobilePhoneView || isMobilePreview;
   const requestedMode =
     searchParams.get("mode") === "detail"
       ? "detail"
       : searchParams.get("mode") === "quick" || shouldForceQuickView
         ? "quick"
-        : "detail";
+        : shouldDefaultToQuickView
+          ? "quick"
+          : "detail";
   const safeMode = canUseDetail ? requestedMode : "quick";
   const isQuick = safeMode === "quick";
   const isDetail = safeMode === "detail";
+  const detailButtonClass = isDetail
+    ? "border-white/18 bg-white/10 text-white"
+    : isQuick && canUseDetail
+      ? "border-cyan-300/40 bg-cyan-400/14 text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.24)] hover:border-cyan-200/55 hover:bg-cyan-400/20 hover:text-white"
+      : "border-white/10 bg-white/4 text-white/72 hover:border-white/18 hover:bg-white/8 hover:text-white";
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobilePhoneView(mediaQuery.matches);
+
+    sync();
+    mediaQuery.addEventListener("change", sync);
+
+    return () => {
+      mediaQuery.removeEventListener("change", sync);
+    };
+  }, []);
 
   function buildPreviewHref(href: string) {
-    if (searchParams.get("mobilePreview") !== "1") {
+    if (!isMobilePreview) {
       return href;
     }
 
@@ -995,7 +1017,7 @@ export default function WatchlistPage() {
   function buildWatchlistModeHref(mode: "detail" | "quick") {
     const params = new URLSearchParams();
 
-    if (searchParams.get("mobilePreview") === "1") {
+    if (isMobilePreview) {
       params.set("mobilePreview", "1");
     }
 
@@ -1339,11 +1361,7 @@ export default function WatchlistPage() {
                 {canUseDetail ? (
                   <Link
                     href={buildWatchlistModeHref("detail")}
-                    className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition ${
-                      isDetail
-                        ? "border-white/18 bg-white/10 text-white"
-                        : "border-white/10 bg-white/4 text-white/72 hover:border-white/18 hover:bg-white/8 hover:text-white"
-                    }`}
+                    className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-medium transition ${detailButtonClass}`}
                   >
                     Detail View
                   </Link>
@@ -1425,7 +1443,7 @@ export default function WatchlistPage() {
                     {canUseDetail ? (
                       <Link
                         href={buildWatchlistModeHref("detail")}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-white/12 bg-white/6 px-4 text-sm font-medium text-white/85 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/14 px-4 text-sm font-medium text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.24)] transition hover:border-cyan-200/55 hover:bg-cyan-400/20 hover:text-white"
                       >
                         Return Detail
                       </Link>

@@ -1,7 +1,9 @@
 "use client";
 
+import SigiIntelligenceCardView from "@/components/sigi/SigiIntelligenceCard";
 import { renderTickerParagraphs, renderTickerText } from "@/components/sigi/renderTickerText";
 import { parseStructuredSigi } from "@/lib/sigi/parseStructuredSigi";
+import type { SigiIntelligenceCard } from "@/types/sigiIntelligence";
 
 function toneClass(value?: string) {
   const normalized = value?.toLowerCase() ?? "";
@@ -48,8 +50,10 @@ function FieldCard({
 
 export default function SigiResponseCards({
   response,
+  intelligenceCard = null,
 }: {
   response: string;
+  intelligenceCard?: SigiIntelligenceCard | null;
 }) {
   const parsed = parseStructuredSigi(response);
 
@@ -66,14 +70,18 @@ export default function SigiResponseCards({
 
   if (!hasStructuredFields) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-white/85 whitespace-pre-wrap">
-        {renderTickerParagraphs(response)}
+      <div className="space-y-4">
+        {intelligenceCard ? <SigiIntelligenceCardView card={intelligenceCard} /> : null}
+        <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-white/85 whitespace-pre-wrap">
+          {renderTickerParagraphs(response)}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {intelligenceCard ? <SigiIntelligenceCardView card={intelligenceCard} /> : null}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {parsed.bias ? (
           <div className={`rounded-2xl border px-3 py-3 ${toneClass(parsed.bias)}`}>

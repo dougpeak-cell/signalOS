@@ -1,8 +1,10 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import SigiIntelligenceCardView from "@/components/sigi/SigiIntelligenceCard";
 import { renderTickerParagraphs } from "@/components/sigi/renderTickerText";
 import { buildStockLiveUrl } from "@/lib/sigi/sigiNavigation";
+import type { SigiIntelligenceCard } from "@/types/sigiIntelligence";
 
 export type SigiResponseCardData = {
   question?: string | null;
@@ -15,6 +17,7 @@ export type SigiResponseCardData = {
   risk?: string | null;
   catalyst?: string | null;
   nextStep?: string | null;
+  intelligenceCard?: SigiIntelligenceCard | null;
 };
 
 function sectionLabelClass(accent: "cyan" | "rose") {
@@ -107,8 +110,13 @@ export default function SigiResponseCard({
           },
         })}
       </div>
+      {response.intelligenceCard ? (
+        <div className="mt-4">
+          <SigiIntelligenceCardView card={response.intelligenceCard} />
+        </div>
+      ) : null}
       {response.analysis || response.risk || response.catalyst || response.nextStep ? (
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className={`${response.intelligenceCard ? "mt-6" : "mt-5"} grid gap-3 sm:grid-cols-2`}>
           {response.analysis ? (
             <div className="rounded-3xl border border-cyan-400/14 bg-[linear-gradient(180deg,rgba(13,20,38,0.82),rgba(7,11,24,0.8))] p-4 sm:col-span-2">
               <div className={sectionLabelClass("cyan")}>
@@ -147,7 +155,7 @@ export default function SigiResponseCard({
         <button
           type="button"
           onClick={onAction}
-          className="mt-5 inline-flex min-h-11 items-center rounded-2xl border border-cyan-400/28 bg-cyan-400/12 px-4 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/18"
+          className={`${response.analysis || response.risk || response.catalyst || response.nextStep || response.intelligenceCard ? "mt-6" : "mt-5"} inline-flex min-h-11 items-center rounded-2xl border border-cyan-400/28 bg-cyan-400/12 px-4 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/18`}
         >
           {response.actionLabel ?? "Open Chart"}
         </button>

@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { openMobileSigiSheet } from "@/components/shell/mobileSigiSheetEvents";
+import SigiResponseCards from "@/components/sigi/SigiResponseCards";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { renderTickerParagraphs } from "@/components/sigi/renderTickerText";
+import { fetchSigiIntelligenceCard } from "@/lib/sigi/fetchIntelligenceCard";
 import { buildMetricContextAnswer } from "@/lib/sigi/sigiMetricContext";
 import { getSigiProfile } from "@/lib/sigi/sigiProfile";
 import { getVisibleSigiTextFromPayload } from "@/lib/sigi/responseVisibility";
+import type { SigiIntelligenceCard } from "@/types/sigiIntelligence";
 
 type MetricCard = {
   label: string;
@@ -63,6 +66,7 @@ export default function StockFundamentalsGrid({
   const searchParams = useSearchParams();
   const { tier } = useSigiTier();
   const [sigiRead, setSigiRead] = useState<string | null>(null);
+  const [intelligenceCard, setIntelligenceCard] = useState<SigiIntelligenceCard | null>(null);
   const [followUps, setFollowUps] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,16 +111,36 @@ export default function StockFundamentalsGrid({
         throw new Error(contextData?.error || "Unable to load stock context.");
       }
 
-      const res = await fetch("/api/sigi", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: `${prompt} Focus on ${ticker}.`,
-          stock: contextData?.stock || { ticker },
+      const stock = contextData?.stock || { ticker };
+      const [res, fetchedCard] = await Promise.all([
+        fetch("/api/sigi", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: `${prompt} Focus on ${ticker}.`,
+            stock,
+          }),
         }),
-      });
+        fetchSigiIntelligenceCard({
+          question: prompt,
+          ticker,
+          marketData: {
+            price: stock.price ?? null,
+            changePercent: stock.changePercent ?? null,
+            volume: stock.volume ?? null,
+            sector: stock.sector ?? null,
+            relativeVolume: stock.relativeVolume ?? null,
+            marketCap: stock.marketCap ?? null,
+            support: stock.support ?? null,
+            resistance: stock.resistance ?? null,
+            trend: stock.trend ?? null,
+            setup: stock.setup ?? null,
+            catalyst: stock.catalyst ?? null,
+          },
+        }),
+      ]);
 
       const data = await res.json();
 
@@ -125,7 +149,9 @@ export default function StockFundamentalsGrid({
       }
 
       setSigiRead(getVisibleSigiTextFromPayload(data));
+      setIntelligenceCard(fetchedCard ?? data.intelligenceCard ?? null);
     } catch (err) {
+      setIntelligenceCard(null);
       setError(err instanceof Error ? err.message : "Sigi request failed.");
     } finally {
       setLoading(false);
@@ -145,6 +171,7 @@ export default function StockFundamentalsGrid({
 
     setError(null);
     setSigiRead(response);
+    setIntelligenceCard(null);
     setFollowUps([
       `Explain ${term} simply`,
       `Is ${ticker} strong fundamentally?`,
@@ -214,7 +241,11 @@ export default function StockFundamentalsGrid({
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-300/80">
             SIGI Metric Read
           </div>
-          <div className="whitespace-pre-wrap">{renderTickerParagraphs(sigiRead)}</div>
+          {intelligenceCard ? (
+            <SigiResponseCards response={sigiRead} intelligenceCard={intelligenceCard} />
+          ) : (
+            <div className="whitespace-pre-wrap">{renderTickerParagraphs(sigiRead)}</div>
+          )}
 
           {followUps.length ? (
             <div className="mt-4 flex flex-wrap gap-2">
