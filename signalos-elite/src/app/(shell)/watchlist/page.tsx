@@ -953,7 +953,7 @@ function QuickWatchlistRowItem({ row, stockHref }: { row: WatchlistRow; stockHre
 
 export default function WatchlistPage() {
   const searchParams = useSearchParams();
-  const { tier } = useSigiTier();
+  const { tier, previewActive } = useSigiTier();
   const { watchlistTickers: accountWatchlistTickers } = useShellMarketContext();
   const {
     quoteMap,
@@ -971,7 +971,7 @@ export default function WatchlistPage() {
   );
   const [hasLoadedWatchlist, setHasLoadedWatchlist] = useState(false);
   const plan = tier ?? "free";
-  const canUseDetail = plan === "smart" || plan === "pro";
+  const canUseDetail = plan === "smart" || plan === "pro" || previewActive;
   const shouldForceQuickView = searchParams.get("quickView") === "1";
   const requestedMode =
     searchParams.get("mode") === "detail"

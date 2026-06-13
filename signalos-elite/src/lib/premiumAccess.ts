@@ -38,6 +38,20 @@ export function getFeaturedPreviewTicker() {
   return FEATURED_PREVIEW_TICKER;
 }
 
+export function canUseTradingWorkspaceAccess({
+  tier,
+  ticker,
+}: {
+  tier: UserTier;
+  ticker?: string;
+}) {
+  const normalizedTicker = ticker?.toUpperCase();
+
+  if (tier === "pro") return true;
+
+  return normalizedTicker === FEATURED_PREVIEW_TICKER;
+}
+
 export function isWeekendCryptoOpen() {
   const day = new Date().getDay();
   return day === 5 || day === 6 || day === 0;

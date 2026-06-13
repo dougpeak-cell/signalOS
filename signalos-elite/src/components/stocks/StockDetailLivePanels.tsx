@@ -11,7 +11,7 @@ import TechnicalIntelligenceCard from "@/components/stocks/TechnicalIntelligence
 import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
 import { useOptionalMarketData } from "@/components/providers/MarketDataProvider";
 import { useSigiTier } from "@/hooks/useSigiTier";
-import { getPremiumAccess } from "@/lib/premiumAccess";
+import { canUseTradingWorkspaceAccess, getPremiumAccess } from "@/lib/premiumAccess";
 import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
 import { computeMasterSignalScore } from "@/lib/analysis/masterSignalScore";
 import { buildExecutionModel } from "@/lib/engines/executionModel";
@@ -220,7 +220,10 @@ export default function StockDetailLivePanels({
     feature: "stock",
     previewActive,
   });
-  const canUseTradingWorkspace = plan === "pro" || canUseLiveChart;
+  const canUseTradingWorkspace = canUseTradingWorkspaceAccess({
+    tier: plan,
+    ticker: liveTicker,
+  });
 
   function buildPreviewHref(href: string) {
     if (searchParams.get("mobilePreview") !== "1") {

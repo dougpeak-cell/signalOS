@@ -3,6 +3,8 @@ import { resolveStockTickerAlias } from "@/lib/stocks/symbolAliases";
 export const WATCHLIST_STORAGE_KEY = "signalos:watchlist";
 const WATCHLIST_CANONICAL_KEY = "signalos.watchlist.v1";
 const WATCHLIST_HIDDEN_KEY = "signalos.watchlist.hidden.v1";
+const WATCHLIST_SEEDED_KEY = "signalos.watchlist.seeded.v1";
+const DEFAULT_WATCHLIST_TICKERS = ["NVDA", "MSFT"] as const;
 
 const WATCHLIST_STORAGE_KEYS = [
   "signalos:watchlist",
@@ -140,6 +142,17 @@ export function readWatchlistEntries(): WatchlistStoredEntry[] {
       } catch {
         // ignore malformed storage entries
       }
+    }
+
+    if (merged.size === 0 && window.localStorage.getItem(WATCHLIST_SEEDED_KEY) !== "1") {
+      const seededEntries = DEFAULT_WATCHLIST_TICKERS.map((ticker) => ({
+        ticker,
+        source: "default-watchlist",
+      } satisfies WatchlistStoredEntry));
+
+      window.localStorage.setItem(WATCHLIST_SEEDED_KEY, "1");
+      writeWatchlistEntries(seededEntries);
+      return seededEntries;
     }
 
     return [...merged.values()];

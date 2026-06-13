@@ -5,9 +5,7 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
 import { getDevPreviewTier } from "@/lib/sigi/devPreview";
 import {
-  getPremiumAccess,
-  isSmartPreviewTimestampActive,
-  SMART_PREVIEW_COOKIE_KEY,
+  canUseTradingWorkspaceAccess,
 } from "@/lib/premiumAccess";
 import { normalizeTicker } from "@/lib/tickerAliases";
 import { getStockWorkspaceData } from "@/lib/workspace/stockWorkspaceData";
@@ -61,16 +59,10 @@ export default async function StockWorkspacePage({
 
   const effectivePlan = previewTier || plan;
   const normalizedTicker = normalizeTicker(ticker);
-  const smartPreviewStartedAt = cookieStore.get(SMART_PREVIEW_COOKIE_KEY)?.value;
-  const previewActive = isSmartPreviewTimestampActive(smartPreviewStartedAt);
-  const canUseTradingWorkspace =
-    effectivePlan === "pro" ||
-    getPremiumAccess({
-      tier: effectivePlan as "free" | "smart" | "pro",
-      ticker: normalizedTicker,
-      feature: "stock",
-      previewActive,
-    });
+  const canUseTradingWorkspace = canUseTradingWorkspaceAccess({
+    tier: effectivePlan as "free" | "smart" | "pro",
+    ticker: normalizedTicker,
+  });
 
   if (!canUseTradingWorkspace) {
     redirect("/auth/upgrade?plan=pro&feature=trading-workspace");

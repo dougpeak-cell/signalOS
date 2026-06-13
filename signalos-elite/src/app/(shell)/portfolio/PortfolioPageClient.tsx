@@ -912,7 +912,7 @@ function PortfolioPageSkeleton() {
 function PortfolioPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { tier } = useSigiTier();
+  const { tier, previewActive } = useSigiTier();
   const { quoteMap, ensureQuotes, refreshQuotesNow } = useLiveMarket();
   const { setActiveTicker } = useSelectedTicker();
   const [holdings, setHoldings] = useState<Holding[]>(INITIAL_HOLDINGS);
@@ -927,7 +927,7 @@ function PortfolioPageContent() {
   const createPanelRef = useRef<HTMLDivElement | null>(null);
   const createTickerInputRef = useRef<HTMLInputElement | null>(null);
   const plan = tier ?? "free";
-  const canUseDetail = plan === "smart" || plan === "pro";
+  const canUseDetail = plan === "smart" || plan === "pro" || previewActive;
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const shouldForceQuickView = searchParams.get("quickView") === "1";
   const requestedMode =
