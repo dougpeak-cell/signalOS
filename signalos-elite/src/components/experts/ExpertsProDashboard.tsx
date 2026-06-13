@@ -180,16 +180,13 @@ function average(values: number[]) {
 function selectLiveBasketRows(
   rows: FmpExpertRow[],
   count: number,
-  preferredTickers?: Set<string>
+  preferredTickers?: Set<string>,
+  excludedTickers?: Set<string>
 ) {
   const seen = new Set<string>();
 
   return [...rows]
     .sort((left, right) => {
-      const preferredDelta =
-        Number(Boolean(preferredTickers?.has(right.symbol))) -
-        Number(Boolean(preferredTickers?.has(left.symbol)));
-      if (preferredDelta !== 0) return preferredDelta;
       const recencyDelta =
         Number(right.recencyBucket === "today") - Number(left.recencyBucket === "today");
       if (recencyDelta !== 0) return recencyDelta;
@@ -199,10 +196,16 @@ function selectLiveBasketRows(
       if (right.score !== left.score) return right.score - left.score;
       const upsideDelta = (right.upsidePercent ?? -999) - (left.upsidePercent ?? -999);
       if (upsideDelta !== 0) return upsideDelta;
+      const preferredDelta =
+        Number(Boolean(preferredTickers?.has(right.symbol))) -
+        Number(Boolean(preferredTickers?.has(left.symbol)));
+      if (preferredDelta !== 0) return preferredDelta;
       return getPublishedDateValue(right.publishedDate) - getPublishedDateValue(left.publishedDate);
     })
     .filter((row) => {
-      if (!row.symbol || seen.has(row.symbol)) return false;
+      if (!row.symbol || seen.has(row.symbol) || excludedTickers?.has(row.symbol)) {
+        return false;
+      }
       seen.add(row.symbol);
       return true;
     })
@@ -245,22 +248,38 @@ function buildModelRows(
     return fallbackModelRows;
   }
 
-  const techDeskRows = selectLiveBasketRows(
+  const usedTickers = new Set<string>();
+
+  function selectUniqueLiveBasketRows(
+    nextRows: FmpExpertRow[],
+    count: number,
+    preferredTickers?: Set<string>
+  ) {
+    const selectedRows = selectLiveBasketRows(nextRows, count, preferredTickers, usedTickers);
+
+    for (const row of selectedRows) {
+      usedTickers.add(row.symbol);
+    }
+
+    return selectedRows;
+  }
+
+  const techDeskRows = selectUniqueLiveBasketRows(
     sectorRows.Technology ?? rows.filter((row) => GROWTH_SECTORS.has(row.sector)),
     3
   );
-  const aiBasketRows = selectLiveBasketRows(
+  const aiBasketRows = selectUniqueLiveBasketRows(
     rows.filter(
       (row) => AI_THEME_TICKERS.has(row.symbol) || GROWTH_SECTORS.has(row.sector)
     ),
     3,
     AI_THEME_TICKERS
   );
-  const recentMomentumRows = selectLiveBasketRows(
+  const recentMomentumRows = selectUniqueLiveBasketRows(
     rows.filter((row) => row.recencyBucket === "today" || row.recencyBucket === "week"),
     3
   );
-  const institutionalRows = selectLiveBasketRows(
+  const institutionalRows = selectUniqueLiveBasketRows(
     rows.filter(
       (row) =>
         MEGA_CAP_CONSENSUS_TICKERS.has(row.symbol) || GROWTH_SECTORS.has(row.sector)
