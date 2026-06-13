@@ -56,6 +56,20 @@ function getContinueLabel(returnTo: string | null): string {
   return "Continue into SigiOS";
 }
 
+function getWelcomeContinueLabel({
+  returnTo,
+  isCheckoutSuccess,
+}: {
+  returnTo: string | null;
+  isCheckoutSuccess: boolean;
+}): string {
+  if (isCheckoutSuccess && !returnTo) {
+    return "Open Today";
+  }
+
+  return getContinueLabel(returnTo);
+}
+
 function getTierRank(value: UpgradePlan | "free"): number {
   if (value === "pro") {
     return 2;
@@ -108,7 +122,7 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
   const activeTier = requestedPlan ?? (settings.currentTier === "smart" || settings.currentTier === "pro" ? settings.currentTier : null);
   const tierCard = getSigiTierCard(activeTier ?? settings.currentTier);
   const continueHref = returnTo ?? "/today";
-  const continueLabel = getContinueLabel(returnTo);
+  const continueLabel = getWelcomeContinueLabel({ returnTo, isCheckoutSuccess });
   const planLabel = activeTier ? tierCard.name : "SigiOS";
 
   return (
