@@ -531,11 +531,16 @@ export async function createCheckoutSessionForPlan(
     metadata: {
       supabase_user_id: user.id,
       sigi_plan: tier,
+      userId: user.id,
+      plan: tier,
     },
     subscription_data: {
+      trial_period_days: 30,
       metadata: {
         supabase_user_id: user.id,
         sigi_plan: tier,
+        userId: user.id,
+        plan: tier,
       },
     },
   });
