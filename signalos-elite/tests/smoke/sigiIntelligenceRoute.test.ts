@@ -97,13 +97,21 @@ test("/api/sigi/intelligence returns the expected 500 shape when provider output
     }),
   });
 
-  const response = await handleSigiIntelligencePost(request, mockClient);
-  const data = (await response.json()) as {
-    error?: string;
-  };
+  const originalConsoleError = console.error;
 
-  assert.equal(response.status, 500);
-  assert.deepEqual(data, {
-    error: "Sigi could not generate intelligence card.",
-  });
+  try {
+    console.error = () => {};
+
+    const response = await handleSigiIntelligencePost(request, mockClient);
+    const data = (await response.json()) as {
+      error?: string;
+    };
+
+    assert.equal(response.status, 500);
+    assert.deepEqual(data, {
+      error: "Sigi could not generate intelligence card.",
+    });
+  } finally {
+    console.error = originalConsoleError;
+  }
 });
