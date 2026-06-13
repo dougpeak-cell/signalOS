@@ -151,8 +151,31 @@ function hasUsablePrice(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
-function hasUsablePercent(value: number | null | undefined) {
+function hasUsablePercent(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+function getDailyDollarChange(price: number | null | undefined, changePercent: number | null | undefined) {
+  if (!hasUsablePrice(price) || !hasUsablePercent(changePercent)) {
+    return null;
+  }
+
+  const changeFactor = 1 + changePercent / 100;
+
+  if (changeFactor <= 0) {
+    return null;
+  }
+
+  const previousClose = price / changeFactor;
+  const dayChange = price - previousClose;
+
+  return Number.isFinite(dayChange) ? dayChange : null;
+}
+
+function formatSignedMoney(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return "—";
+
+  return `${value >= 0 ? "+" : "-"}$${Math.abs(value).toFixed(2)}`;
 }
 
 function formatPercent(value?: number | null) {
@@ -852,6 +875,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
             const tier = getOpportunityTier(safeScore);
             const changeClass =
               (stableChangePercent ?? 0) >= 0 ? "text-emerald-300" : "text-red-300";
+            const dayChangeAmount = getDailyDollarChange(stablePrice, stableChangePercent);
             const watchlisted = hasTicker(ticker);
             const quickViewOpen = Boolean(quickViewTickers[ticker]);
 
@@ -887,8 +911,13 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                     ) : null}
                   </div>
 
-                  <div className="font-black tabular-nums text-white">
-                    {stablePrice != null && stablePrice > 0 ? `$${stablePrice.toFixed(2)}` : "—"}
+                  <div className="flex items-center gap-3 font-black tabular-nums text-white">
+                    <span className={dayChangeAmount == null ? "text-white/35" : changeClass}>
+                      {formatSignedMoney(dayChangeAmount)}
+                    </span>
+                    <span>
+                      {stablePrice != null && stablePrice > 0 ? `$${stablePrice.toFixed(2)}` : "—"}
+                    </span>
                   </div>
 
                   <div className={`font-black tabular-nums ${changeClass}`}>
@@ -946,8 +975,13 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-black tabular-nums text-white">
-                        {stablePrice != null && stablePrice > 0 ? `$${stablePrice.toFixed(2)}` : "—"}
+                      <div className="flex items-center justify-end gap-3 font-black tabular-nums text-white">
+                        <span className={dayChangeAmount == null ? "text-white/35" : changeClass}>
+                          {formatSignedMoney(dayChangeAmount)}
+                        </span>
+                        <span>
+                          {stablePrice != null && stablePrice > 0 ? `$${stablePrice.toFixed(2)}` : "—"}
+                        </span>
                       </div>
                       <div className={`mt-0.5 text-sm font-black ${changeClass}`}>
                         {stableChangePercent != null ? (

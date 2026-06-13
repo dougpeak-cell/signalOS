@@ -919,6 +919,8 @@ function EmptyWatchlistRowItem() {
 }
 
 function QuickWatchlistRowItem({ row, stockHref }: { row: WatchlistRow; stockHref: string }) {
+  const dayChangeAmount = getDailyDollarChange(row.price, row.changePct);
+
   return (
     <Link
       href={stockHref}
@@ -931,12 +933,18 @@ function QuickWatchlistRowItem({ row, stockHref }: { row: WatchlistRow; stockHre
         </div>
       </div>
 
-      <div className="text-right">
-        <div className="text-lg font-semibold text-white">
-          {hasUsablePrice(row.price) ? formatPrice(row.price) : "Awaiting quote"}
+      <div className="flex items-end justify-end gap-3 text-right">
+        <div className={`text-sm font-semibold ${dayChangeAmount == null ? "text-white/35" : changeClasses(dayChangeAmount)}`}>
+          {hasUsablePrice(row.price) ? formatSignedMoney(dayChangeAmount) : "—"}
         </div>
-        <div className={`mt-0.5 text-sm font-semibold ${changeClasses(row.changePct)}`}>
-          {hasUsablePrice(row.price) ? formatPct(row.changePct) : "Live syncing..."}
+
+        <div>
+          <div className="text-lg font-semibold text-white">
+            {hasUsablePrice(row.price) ? formatPrice(row.price) : "Awaiting quote"}
+          </div>
+          <div className={`mt-0.5 text-sm font-semibold ${changeClasses(row.changePct)}`}>
+            {hasUsablePrice(row.price) ? formatPct(row.changePct) : "Live syncing..."}
+          </div>
         </div>
       </div>
     </Link>
