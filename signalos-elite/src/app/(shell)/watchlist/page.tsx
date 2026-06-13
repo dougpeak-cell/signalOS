@@ -12,6 +12,7 @@ import { useSigiTier } from "@/hooks/useSigiTier";
 import { useSyncedWatchlist } from "@/hooks/useSyncedWatchlist";
 import { buildMasterScoreRow } from "@/lib/analysis/buildMasterScoreRow";
 import { buildSparklinePath, getSeriesTrend } from "@/lib/market/sparkline";
+import { resolveShellViewMode } from "@/lib/shell/viewMode";
 import {
   getMomentumScore,
   getTradeScore,
@@ -975,16 +976,13 @@ export default function WatchlistPage() {
   const canUseDetail = plan === "smart" || plan === "pro" || previewActive;
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const shouldForceQuickView = searchParams.get("quickView") === "1";
-  const shouldDefaultToQuickView = isMobilePhoneView || isMobilePreview;
-  const requestedMode =
-    searchParams.get("mode") === "detail"
-      ? "detail"
-      : searchParams.get("mode") === "quick" || shouldForceQuickView
-        ? "quick"
-        : shouldDefaultToQuickView
-          ? "quick"
-          : "detail";
-  const safeMode = canUseDetail ? requestedMode : "quick";
+  const { safeMode } = resolveShellViewMode({
+    mode: searchParams.get("mode"),
+    shouldForceQuickView,
+    isMobilePhoneView,
+    isMobilePreview,
+    canUseDetail,
+  });
   const isQuick = safeMode === "quick";
   const isDetail = safeMode === "detail";
   const detailButtonClass = isDetail

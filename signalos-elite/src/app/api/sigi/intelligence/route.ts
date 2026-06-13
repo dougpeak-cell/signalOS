@@ -1,9 +1,19 @@
 import { NextResponse } from "next/server";
 import { OpenAI } from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+export type SigiIntelligenceRouteClient = {
+  responses: {
+    create: (input: unknown) => Promise<{
+      output_text: string;
+    }>;
+  };
+};
+
+function createOpenAiClient(): SigiIntelligenceRouteClient {
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  }) as unknown as SigiIntelligenceRouteClient;
+}
 
 const schema = {
   type: "object",
@@ -75,11 +85,14 @@ const schema = {
   ],
 } as const;
 
-export async function POST(req: Request) {
+export async function handleSigiIntelligencePost(
+  req: Request,
+  client: SigiIntelligenceRouteClient = createOpenAiClient()
+) {
   try {
     const { question, ticker, marketData } = await req.json();
 
-    const response = await openai.responses.create({
+    const response = await client.responses.create({
       model: "gpt-4o-mini",
       input: [
         {
@@ -118,4 +131,8 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(req: Request) {
+  return handleSigiIntelligencePost(req, createOpenAiClient());
 }

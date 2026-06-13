@@ -2,6 +2,7 @@ import { OpenAI } from "openai";
 import { COMPANY_PROFILES } from "@/lib/companyProfiles";
 import { fundamentalsPack } from "@/lib/education/fundamentalsPack";
 import { findTopExpertLeaderBySector } from "@/lib/experts/profileLeaders";
+import { normalizeSigiIntelligenceCardPayload as normalizeSharedSigiIntelligenceCardPayload } from "@/lib/sigi/intelligenceCard";
 import { resolveSigiTicker } from "@/lib/sigi/resolveTicker";
 import { cleanTicker } from "@/lib/sigi/tickerActions";
 import { buildSigiTodayResponse } from "@/lib/sigi/todayAssistant";
@@ -1137,76 +1138,7 @@ function normalizeIntelligenceCardPayload(
   intelligence: SigiIntelligence,
   stock?: SigiStockContext | null
 ): SigiIntelligenceCard | null {
-  const fallback = buildFallbackSigiIntelligenceCard(intelligence, stock);
-  const card = payload?.intelligenceCard;
-
-  if (!card || typeof card !== "object") {
-    return stock?.ticker || intelligence.ticker ? fallback : null;
-  }
-
-  const keyLevels =
-    card.keyLevels && typeof card.keyLevels === "object" ? card.keyLevels : null;
-
-  return {
-    ticker:
-      typeof card.ticker === "string" && card.ticker.trim()
-        ? card.ticker.trim().toUpperCase()
-        : fallback.ticker,
-    companyName:
-      typeof card.companyName === "string" && card.companyName.trim()
-        ? card.companyName.trim()
-        : fallback.companyName,
-    signalOSScore:
-      typeof card.signalOSScore === "number" && Number.isFinite(card.signalOSScore)
-        ? Math.max(0, Math.min(100, Math.round(card.signalOSScore)))
-        : fallback.signalOSScore,
-    trendDirection: coerceEnum(card.trendDirection, TREND_DIRECTIONS, fallback.trendDirection),
-    momentumStatus: coerceEnum(
-      card.momentumStatus,
-      MOMENTUM_STATUSES,
-      fallback.momentumStatus
-    ),
-    sectorStrength: coerceEnum(
-      card.sectorStrength,
-      SECTOR_STRENGTHS,
-      fallback.sectorStrength
-    ),
-    riskMeter: coerceEnum(card.riskMeter, RISK_METERS, fallback.riskMeter),
-    analystConfidence: coerceEnum(
-      card.analystConfidence,
-      ANALYST_CONFIDENCE_LEVELS,
-      fallback.analystConfidence
-    ),
-    suggestedAction: coerceEnum(
-      card.suggestedAction,
-      SUGGESTED_ACTIONS,
-      fallback.suggestedAction
-    ),
-    keyLevels: {
-      support:
-        typeof keyLevels?.support === "string" && keyLevels.support.trim()
-          ? keyLevels.support.trim()
-          : fallback.keyLevels.support,
-      resistance:
-        typeof keyLevels?.resistance === "string" && keyLevels.resistance.trim()
-          ? keyLevels.resistance.trim()
-          : fallback.keyLevels.resistance,
-      breakout:
-        typeof keyLevels?.breakout === "string" && keyLevels.breakout.trim()
-          ? keyLevels.breakout.trim()
-          : fallback.keyLevels.breakout,
-    },
-    bullCase: sanitizeStringArray(card.bullCase, fallback.bullCase),
-    bearCase: sanitizeStringArray(card.bearCase, fallback.bearCase),
-    summary:
-      typeof card.summary === "string" && card.summary.trim()
-        ? card.summary.trim()
-        : fallback.summary,
-    disclaimer:
-      typeof card.disclaimer === "string" && card.disclaimer.trim()
-        ? card.disclaimer.trim()
-        : fallback.disclaimer,
-  };
+  return normalizeSharedSigiIntelligenceCardPayload(payload, intelligence, stock);
 }
 
 function buildFallbackAnalystLeader(sector: string): SigiAnalystLeader {

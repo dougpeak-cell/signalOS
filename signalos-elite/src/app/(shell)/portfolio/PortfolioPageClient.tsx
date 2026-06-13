@@ -11,6 +11,7 @@ import { useSigiTier } from "@/hooks/useSigiTier";
 import { buildExecutionModel } from "@/lib/engines/executionModel";
 import { buildTargetEngine } from "@/lib/engines/targetEngine";
 import { getQuotePrice } from "@/lib/market/quotes";
+import { resolveShellViewMode } from "@/lib/shell/viewMode";
 import {
   clearPortfolioHoldings,
   hasInitializedPortfolioHoldings,
@@ -931,16 +932,13 @@ function PortfolioPageContent() {
   const canUseDetail = plan === "smart" || plan === "pro" || previewActive;
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
   const shouldForceQuickView = searchParams.get("quickView") === "1";
-  const shouldDefaultToQuickView = isMobilePhoneView || isMobilePreview;
-  const requestedMode =
-    searchParams.get("mode") === "detail"
-      ? "detail"
-      : searchParams.get("mode") === "quick" || shouldForceQuickView
-        ? "quick"
-        : shouldDefaultToQuickView
-          ? "quick"
-          : "detail";
-  const safeMode = canUseDetail ? requestedMode : "quick";
+  const { safeMode } = resolveShellViewMode({
+    mode: searchParams.get("mode"),
+    shouldForceQuickView,
+    isMobilePhoneView,
+    isMobilePreview,
+    canUseDetail,
+  });
   const isQuick = safeMode === "quick";
   const isDetail = safeMode === "detail";
   const detailButtonClass = isDetail
