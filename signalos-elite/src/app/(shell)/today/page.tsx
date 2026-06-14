@@ -1,7 +1,10 @@
 import MobileSigiSplash from "@/components/mobile/MobileSigiSplash";
 import TodayPageShell from "@/components/today/TodayPageShell";
 import { getDevPreviewTier } from "@/lib/sigi/devPreview";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  createSupabaseServerClient,
+  hasSupabaseServerEnv,
+} from "@/lib/supabase/server";
 import { getTodayPageData } from "@/lib/today/pageData";
 
 export const dynamic = "force-dynamic";
@@ -13,23 +16,29 @@ export default async function TodayPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const todayPageData = await getTodayPageData();
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   const query = (await searchParams) ?? {};
   const mobilePreviewValue = query.mobilePreview;
   const previewTier = await getDevPreviewTier();
+  let userId: string | null = null;
   let profile: { sigi_tier: string | null; subscription_tier: string | null; plan: string | null } | null = null;
 
-  if (user?.id) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("sigi_tier, subscription_tier, plan")
-      .eq("user_id", user.id)
-      .maybeSingle();
+  if (hasSupabaseServerEnv()) {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    profile = data;
+    userId = user?.id ?? null;
+
+    if (userId) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("sigi_tier, subscription_tier, plan")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      profile = data;
+    }
   }
 
   const plan = previewTier || profile?.sigi_tier || profile?.subscription_tier || profile?.plan || "free";

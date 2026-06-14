@@ -2,7 +2,19 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
+export function hasSupabaseServerEnv() {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+}
+
 export async function createSupabaseServerClient() {
+  if (!hasSupabaseServerEnv()) {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be configured."
+    );
+  }
+
   const cookieStore = await cookies();
 
   return createServerClient(
