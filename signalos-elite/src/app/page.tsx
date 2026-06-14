@@ -1,10 +1,11 @@
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
+import bestStocksScreenshot from "../public/Images/Chart/best-stocks2.png";
 
 type LandingScreenshot = {
   title: string;
   desc: string;
-  img: string;
+  img: string | StaticImageData;
   secondaryImg?: string;
 };
 
@@ -37,7 +38,7 @@ const screenshots: readonly LandingScreenshot[] = [
   {
     title: "Best Stocks Right Now",
     desc: "Ranked by score, momentum, upside, and live market context.",
-    img: "/landing/best-stocks.png",
+    img: bestStocksScreenshot,
   },
   {
     title: "Stocks Discovery",
