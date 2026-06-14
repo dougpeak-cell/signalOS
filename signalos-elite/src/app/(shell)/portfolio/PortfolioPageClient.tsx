@@ -930,7 +930,13 @@ function PortfolioPageContent() {
   const [actionState, setActionState] = useState<ActionState>(null);
   const [editingTicker, setEditingTicker] = useState<string | null>(null);
   const [showAddStock, setShowAddStock] = useState(false);
-  const [isMobilePhoneView, setIsMobilePhoneView] = useState(false);
+  const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.matchMedia("(max-width: 767px)").matches;
+  });
   const createPanelRef = useRef<HTMLDivElement | null>(null);
   const createTickerInputRef = useRef<HTMLInputElement | null>(null);
   const plan = tier ?? "free";
@@ -980,9 +986,7 @@ function PortfolioPageContent() {
       params.set("mobilePreview", "1");
     }
 
-    if (mode === "quick") {
-      params.set("mode", "quick");
-    }
+    params.set("mode", mode);
 
     const query = params.toString();
     return query ? `/portfolio?${query}` : "/portfolio";

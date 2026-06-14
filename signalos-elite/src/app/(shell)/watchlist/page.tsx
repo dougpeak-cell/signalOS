@@ -976,7 +976,13 @@ export default function WatchlistPage() {
     {}
   );
   const [hasLoadedWatchlist, setHasLoadedWatchlist] = useState(false);
-  const [isMobilePhoneView, setIsMobilePhoneView] = useState(false);
+  const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.matchMedia("(max-width: 767px)").matches;
+  });
   const plan = tier ?? "free";
   const canUseDetail = plan === "smart" || plan === "pro" || previewActive;
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
@@ -1024,9 +1030,7 @@ export default function WatchlistPage() {
       params.set("mobilePreview", "1");
     }
 
-    if (mode === "quick") {
-      params.set("mode", "quick");
-    }
+    params.set("mode", mode);
 
     const query = params.toString();
     return query ? `/watchlist?${query}` : "/watchlist";
