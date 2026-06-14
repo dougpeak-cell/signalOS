@@ -113,10 +113,10 @@ export default function LandingPage() {
 
               <div className="flex flex-wrap gap-3">
                 <Link
-                  href="/today?previewPlan=smart"
+                  href="/today"
                   className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 px-5 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/8"
                 >
-                  Open Preview
+                  Returning Members
                 </Link>
 
                 <Link
