@@ -137,6 +137,12 @@
   width: max-content;
 }
 
+@media (max-width: 767px) {
+  .ticker-track {
+    animation-duration: 28s;
+  }
+}
+
 .ticker-track:hover,
 .ticker-track:active {
   animation-play-state: paused;
