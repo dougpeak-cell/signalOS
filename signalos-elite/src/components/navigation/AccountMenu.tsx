@@ -22,7 +22,10 @@ import {
   SIGI_PROFILE_CHANGED_EVENT,
   getSigiProfile,
 } from "@/lib/sigi/sigiProfile";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import {
+  createSupabaseBrowserClient,
+  hasSupabaseBrowserEnv,
+} from "@/lib/supabase/browser";
 
 type Props = {
   hasAccountSession?: boolean;
@@ -109,7 +112,10 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const supabase = useMemo(
+    () => (hasSupabaseBrowserEnv() ? createSupabaseBrowserClient() : null),
+    []
+  );
   const { tier, setPlanSummary } = useSigiTier();
   const [hasClientSession, setHasClientSession] = useState(hasAccountSession);
   const [open, setOpen] = useState(false);
@@ -125,6 +131,11 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
   }, [pathname]);
 
   useEffect(() => {
+    if (!supabase) {
+      setHasClientSession(hasAccountSession);
+      return;
+    }
+
     let cancelled = false;
 
     const syncSession = async () => {
@@ -158,7 +169,7 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
   }, [hasAccountSession, supabase]);
 
   useEffect(() => {
-    if (!hasClientSession) {
+    if (!hasClientSession || !supabase) {
       setUserState({ userName: "Member", email: null });
       return;
     }
@@ -249,6 +260,12 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
     setBillingError(null);
 
     try {
+      if (!supabase) {
+        router.push("/");
+        router.refresh();
+        return;
+      }
+
       await supabase.auth.signOut();
       setPlanSummary({
         currentTier: "free",
