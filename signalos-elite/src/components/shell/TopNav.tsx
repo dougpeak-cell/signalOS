@@ -5,7 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AccountMenu from "@/components/navigation/AccountMenu";
 import { MobileHealthyWealthButton } from "@/components/today/HealthyWealthButton";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import {
+  createSupabaseBrowserClient,
+  hasSupabaseBrowserEnv,
+} from "@/lib/supabase/browser";
 
 const MOBILE_PREVIEW_STORAGE_KEY = "signalos-dev-mobile-preview-today";
 
@@ -44,7 +47,10 @@ export default function TopNav({
   forceMobilePreview?: boolean;
   hasAccountSession?: boolean;
 }) {
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const supabase = useMemo(
+    () => (hasSupabaseBrowserEnv() ? createSupabaseBrowserClient() : null),
+    []
+  );
   const [contactOpen, setContactOpen] = useState(false);
   const [hasClientSession, setHasClientSession] = useState(hasAccountSession);
   const [supportMessage, setSupportMessage] = useState("");
@@ -77,6 +83,11 @@ export default function TopNav({
   }, [pathname, searchParams]);
 
   useEffect(() => {
+    if (!supabase) {
+      setHasClientSession(hasAccountSession);
+      return;
+    }
+
     let cancelled = false;
 
     const syncSession = async () => {

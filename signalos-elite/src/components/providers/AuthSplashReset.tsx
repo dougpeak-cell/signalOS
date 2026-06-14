@@ -2,10 +2,17 @@
 
 import { useEffect } from "react";
 import { MOBILE_SIGI_SPLASH_STORAGE_KEY } from "@/components/mobile/MobileSigiSplash";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import {
+  createSupabaseBrowserClient,
+  hasSupabaseBrowserEnv,
+} from "@/lib/supabase/browser";
 
 export default function AuthSplashReset() {
   useEffect(() => {
+    if (!hasSupabaseBrowserEnv()) {
+      return;
+    }
+
     const supabase = createSupabaseBrowserClient();
     const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {

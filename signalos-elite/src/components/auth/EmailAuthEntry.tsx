@@ -4,7 +4,10 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, Mail } from "lucide-react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import {
+  createSupabaseBrowserClient,
+  hasSupabaseBrowserEnv,
+} from "@/lib/supabase/browser";
 
 type EmailAuthEntryProps = {
   badgeLabel: string;
@@ -63,7 +66,10 @@ function getSafeNextPath(value: string | null, fallbackPath: string): string {
 function EmailAuthContent(props: EmailAuthEntryProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const supabase = useMemo(
+    () => (hasSupabaseBrowserEnv() ? createSupabaseBrowserClient() : null),
+    []
+  );
   const plan = getSafePlan(searchParams.get("plan"));
   const returnTo = getSafeReturnTo(searchParams.get("returnTo"));
   const callbackError = searchParams.get("error_description") ?? searchParams.get("error");
@@ -79,6 +85,11 @@ function EmailAuthContent(props: EmailAuthEntryProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!supabase) {
+      setIsCheckingSession(false);
+      return;
+    }
+
     let cancelled = false;
 
     const syncSession = async () => {
@@ -112,6 +123,11 @@ function EmailAuthContent(props: EmailAuthEntryProps) {
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
       setError("Enter your email to continue.");
+      return;
+    }
+
+    if (!supabase) {
+      setError("Sign-in is temporarily unavailable right now.");
       return;
     }
 
