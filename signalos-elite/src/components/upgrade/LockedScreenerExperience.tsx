@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import TickerLogo from "@/components/stocks/TickerLogo";
 import {
   BarChart3,
   BrainCircuit,
@@ -212,21 +213,25 @@ export default function LockedScreenerExperience() {
                     rowStyles.cardClassName,
                   ].join(" ")}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xl font-black text-white">{row.ticker}</h3>
-                        <span className={[
-                          "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em]",
-                          rowStyles.badgeClassName,
-                        ].join(" ")}>
-                          {row.tone}
-                        </span>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <TickerLogo ticker={row.ticker} size={40} />
+
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-xl font-black text-white">{row.ticker}</h3>
+                          <span className={[
+                            "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em]",
+                            rowStyles.badgeClassName,
+                          ].join(" ")}>
+                            {row.tone}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-[11px] text-white/40">{row.sector}</p>
                       </div>
-                      <p className="mt-0.5 text-[11px] text-white/40">{row.sector}</p>
                     </div>
 
-                    <div className="text-right">
+                    <div className="sm:text-right">
                       <div className="font-black tabular-nums text-white">{row.price}</div>
                       <div className={["mt-0.5 text-sm font-black", rowStyles.changeClassName].join(" ")}>
                         {row.change}

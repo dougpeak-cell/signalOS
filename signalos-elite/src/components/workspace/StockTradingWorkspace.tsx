@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import FundamentalIntelligenceCard from "@/components/stocks/FundamentalIntelligenceCard";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
 import TechnicalIntelligenceCard from "@/components/stocks/TechnicalIntelligenceCard";
+import TickerLogo from "@/components/stocks/TickerLogo";
 import WorkspaceCatalystPanel from "@/components/workspace/WorkspaceCatalystPanel";
 import { WorkspacePanel } from "@/components/workspace/WorkspacePanel";
 import WorkspaceRiskPanel from "@/components/workspace/WorkspaceRiskPanel";
@@ -768,40 +769,48 @@ export default function StockTradingWorkspace({ data }: Props) {
               isMobilePreview ? "" : "xl:flex-row xl:items-end xl:justify-between"
             }`}
           >
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/75">
-                SigiOS Workspace
-              </div>
-              <h1
-                className={`mt-2 font-semibold tracking-tight text-white ${
-                  isMobilePreview ? "text-2xl" : "text-3xl md:text-5xl"
-                }`}
-              >
-                {liveTicker} Trading Workspace
-              </h1>
-              <p
-                className={`mt-2 max-w-3xl leading-6 text-white/60 ${
-                  isMobilePreview ? "text-sm" : "text-sm md:text-base"
-                }`}
-              >
-                {row.company_name ?? liveTicker} • {row.sector ?? "Sector pending"} •
-                Execution mode with live chart context, decision levels, and trade-ready signal framing.
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <div className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">
-                  {heroAccentLabel}
+            <div className="flex items-start gap-4">
+              <TickerLogo
+                ticker={liveTicker}
+                size={isMobilePreview ? 52 : 64}
+                logoUrl={companyProfile?.logo ?? null}
+              />
+
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/75">
+                  SigiOS Workspace
                 </div>
-                <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
-                  {modeMeta.label} mode
-                </div>
-                <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/65">
-                  {activeLayout.label} layout
-                </div>
-                {activeCustomPreset ? (
-                  <div className="inline-flex rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
-                    Preset: {activeCustomPreset.name}
+                <h1
+                  className={`mt-2 font-semibold tracking-tight text-white ${
+                    isMobilePreview ? "text-2xl" : "text-3xl md:text-5xl"
+                  }`}
+                >
+                  {liveTicker} Trading Workspace
+                </h1>
+                <p
+                  className={`mt-2 max-w-3xl leading-6 text-white/60 ${
+                    isMobilePreview ? "text-sm" : "text-sm md:text-base"
+                  }`}
+                >
+                  {row.company_name ?? liveTicker} • {row.sector ?? "Sector pending"} •
+                  Execution mode with live chart context, decision levels, and trade-ready signal framing.
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <div className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">
+                    {heroAccentLabel}
                   </div>
-                ) : null}
+                  <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
+                    {modeMeta.label} mode
+                  </div>
+                  <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/65">
+                    {activeLayout.label} layout
+                  </div>
+                  {activeCustomPreset ? (
+                    <div className="inline-flex rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
+                      Preset: {activeCustomPreset.name}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
 

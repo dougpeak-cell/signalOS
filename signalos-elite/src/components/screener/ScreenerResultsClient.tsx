@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 
 import { useOptionalSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import ReturnToContextButton from "@/components/shared/ReturnToContextButton";
+import { fetchCompanyProfile } from "@/lib/companyCache";
 import { useSyncedWatchlist } from "@/hooks/useSyncedWatchlist";
 import { prefetchCompanyProfile } from "@/lib/companyCache";
 import { getQuoteByTicker } from "@/lib/market/quotes";
@@ -80,6 +81,107 @@ const ALL_MARKET_UNIVERSE = [
   "LLY", "JPM", "XOM", "GE", "CAT",
   "COST", "WMT", "NFLX", "ORCL", "CRM",
 ] as const;
+
+const availableLogoTickers = new Set(["AAPL", "AMD", "AMZN", "META", "MSFT", "NVDA", "TSLA"]);
+const missingScreenerLogoTickers = new Set<string>();
+
+function ScreenerTickerLogo({
+  ticker,
+  size,
+}: {
+  ticker: string;
+  size: number;
+}) {
+  const normalizedTicker = normalizeTicker(ticker);
+  const hasLocalLogo = availableLogoTickers.has(normalizedTicker);
+  const [remoteLogoUrl, setRemoteLogoUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(
+    () => (!hasLocalLogo && !remoteLogoUrl) || missingScreenerLogoTickers.has(normalizedTicker)
+  );
+
+  useEffect(() => {
+    setFailed((!hasLocalLogo && !remoteLogoUrl) || missingScreenerLogoTickers.has(normalizedTicker));
+  }, [hasLocalLogo, normalizedTicker, remoteLogoUrl]);
+
+  useEffect(() => {
+    if (!normalizedTicker || hasLocalLogo || remoteLogoUrl || missingScreenerLogoTickers.has(normalizedTicker)) {
+      return;
+    }
+
+    let active = true;
+
+    void fetchCompanyProfile(normalizedTicker)
+      .then((profile) => {
+        if (!active) {
+          return;
+        }
+
+        if (profile?.logo) {
+          setRemoteLogoUrl(profile.logo);
+          setFailed(false);
+          return;
+        }
+
+        setFailed(true);
+      })
+      .catch(() => {
+        if (active) {
+          setFailed(true);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [hasLocalLogo, normalizedTicker, remoteLogoUrl]);
+
+  if (!normalizedTicker || failed) {
+    return (
+      <div
+        className="flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xs font-semibold text-white/85"
+        style={{ width: size, height: size }}
+      >
+        {normalizedTicker.slice(0, 1) || "?"}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/5"
+      style={{ width: size, height: size }}
+    >
+      {hasLocalLogo ? (
+        <img
+          src={`/logos/${normalizedTicker.toLowerCase()}.png`}
+          alt={`${normalizedTicker} logo`}
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          onError={() => {
+            setFailed(!remoteLogoUrl);
+          }}
+        />
+      ) : remoteLogoUrl ? (
+        <img
+          src={remoteLogoUrl}
+          alt={`${normalizedTicker} logo`}
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => {
+            missingScreenerLogoTickers.add(normalizedTicker);
+            setRemoteLogoUrl(null);
+            setFailed(true);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
 
 function normalizeSearchValue(value?: string | null) {
   return (value ?? "").trim().toLowerCase();
@@ -889,6 +991,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                 <div className={isMobilePreviewEnabled ? "hidden" : "hidden min-w-215 grid-cols-[1.1fr_1.4fr_1fr_1fr_1fr_1fr] items-center gap-4 md:grid"}>
                   <div>
                     <div className="flex items-center gap-2">
+                      <ScreenerTickerLogo ticker={ticker} size={34} />
                       <div className="text-lg font-black text-white">{ticker}</div>
 
                       <span className={`badge ${getTierClass(tier)}`}>
@@ -962,7 +1065,10 @@ export default function ScreenerResultsClient({ stocks }: Props) {
 
                 <div className={isMobilePreviewEnabled ? "space-y-2.5" : "space-y-2.5 md:hidden"}>
                   <div className="flex items-start justify-between gap-3">
-                    <div>
+                    <div className="flex items-start gap-3">
+                      <ScreenerTickerLogo ticker={ticker} size={40} />
+
+                      <div>
                       <div className="flex items-center gap-2">
                         <div className="text-xl font-black text-white">{ticker}</div>
 
@@ -973,6 +1079,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                       <div className="mt-0.5 text-[11px] text-white/40">
                         {stock.sector ?? "Market"}
                       </div>
+                    </div>
                     </div>
                     <div className="text-right">
                       <div className="flex items-center justify-end gap-3 font-black tabular-nums text-white">

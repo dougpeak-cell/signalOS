@@ -7,6 +7,7 @@ import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
 import MiniSparkline from "@/components/stocks/MiniSparkline";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import ReturnToContextButton from "@/components/shared/ReturnToContextButton";
+import TickerLogo from "@/components/stocks/TickerLogo";
 import TickerHover from "@/components/sigi/TickerHover";
 import { buildTargetEngine } from "@/lib/engines/targetEngine";
 import {
@@ -321,7 +322,10 @@ function WatchlistStockCard({
       ].join(" ")}
     >
       <div className="flex flex-wrap items-start justify-between gap-2.5">
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <TickerLogo ticker={stock.ticker} size={44} />
+
+          <div className="min-w-0 flex-1">
           <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300/75">
             {stock.sector}
           </div>
@@ -349,6 +353,7 @@ function WatchlistStockCard({
           <div className="mt-1 truncate text-sm text-white/65">
             {stock.company}
           </div>
+        </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">

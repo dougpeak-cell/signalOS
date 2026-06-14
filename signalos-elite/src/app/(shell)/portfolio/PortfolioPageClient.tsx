@@ -7,6 +7,7 @@ import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
 import PortfolioSigiStrip from "@/components/portfolio/PortfolioSigiStrip";
 import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
+import TickerLogo from "@/components/stocks/TickerLogo";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { buildExecutionModel } from "@/lib/engines/executionModel";
 import { buildTargetEngine } from "@/lib/engines/targetEngine";
@@ -748,11 +749,15 @@ function QuickPortfolioRowItem({
       href={href}
       className="group flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/3 px-4 py-3 transition hover:border-cyan-400/20 hover:bg-cyan-400/5"
     >
-      <div className="min-w-0">
+      <div className="flex min-w-0 items-center gap-3">
+        <TickerLogo ticker={ticker} size={40} />
+
+        <div className="min-w-0">
         <div className="flex items-center gap-2">
           <div className="text-lg font-semibold tracking-tight text-white">{ticker}</div>
           <span className="truncate text-xs text-white/42">{name}</span>
         </div>
+      </div>
       </div>
 
       <div className="flex items-end justify-end gap-3 text-right">
@@ -2060,7 +2065,8 @@ function PortfolioPageContent() {
                         <div className="flex flex-col gap-3 sm:gap-4">
                           <div className="flex flex-col gap-3 sm:gap-4 xl:flex-row xl:items-start xl:justify-between">
                             <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-3">
+                                <TickerLogo ticker={holding.ticker} size={48} />
                                 <div className="text-2xl font-semibold tracking-tight text-white">
                                   {holding.ticker}
                                 </div>

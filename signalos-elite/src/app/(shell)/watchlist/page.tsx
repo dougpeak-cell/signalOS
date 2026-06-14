@@ -7,6 +7,7 @@ import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
 import { useShellMarketContext } from "@/components/shell/ShellMarketContext";
 import TickerActionButton from "@/components/sigi/TickerActionButton";
+import TickerLogo from "@/components/stocks/TickerLogo";
 import SignalOSScoreV2 from "@/components/stocks/SignalOSScoreV2";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { useSyncedWatchlist } from "@/hooks/useSyncedWatchlist";
@@ -727,34 +728,38 @@ function WatchlistRowItem({
         </div>
       ) : null}
       <div className="grid gap-3">
-        <div className="grid gap-3 xl:grid-cols-[140px_136px_minmax(240px,1fr)_76px] xl:items-center">
-          <div className="min-w-0 pr-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <TickerActionButton
-                ticker={row.ticker}
-                className="text-lg font-semibold tracking-tight text-white no-underline hover:text-cyan-200"
-              >
-                {row.ticker}
-              </TickerActionButton>
+        <div className="grid gap-3 xl:grid-cols-[176px_136px_minmax(240px,1fr)_76px] xl:items-center">
+          <div className="flex min-w-0 items-start gap-3 pr-2">
+            <TickerLogo ticker={row.ticker} size={42} />
 
-              <span
-                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${signalBadgeClasses(
-                  row.signal
-                )}`}
-              >
-                {row.signal}
-              </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <TickerActionButton
+                  ticker={row.ticker}
+                  className="text-lg font-semibold tracking-tight text-white no-underline hover:text-cyan-200"
+                >
+                  {row.ticker}
+                </TickerActionButton>
 
-              <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
-                {row.masterLabel ?? "Neutral"}
-              </span>
+                <span
+                  className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${signalBadgeClasses(
+                    row.signal
+                  )}`}
+                >
+                  {row.signal}
+                </span>
+
+                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
+                  {row.masterLabel ?? "Neutral"}
+                </span>
+              </div>
+
+              <div className="mt-1 text-[10px] uppercase tracking-[0.22em] text-cyan-300/80">
+                {row.sector}
+              </div>
+
+              <div className="mt-1 text-sm text-white/60">{row.name}</div>
             </div>
-
-            <div className="mt-1 text-[10px] uppercase tracking-[0.22em] text-cyan-300/80">
-              {row.sector}
-            </div>
-
-            <div className="mt-1 text-sm text-white/60">{row.name}</div>
           </div>
 
           <div className="min-w-0 pl-1">

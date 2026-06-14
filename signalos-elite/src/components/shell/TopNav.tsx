@@ -242,7 +242,7 @@ export default function TopNav({
           </nav>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap">
           {!hasClientSession && !forceMobilePreview ? (
             <Link
               href={buildAuthHref()}
@@ -339,7 +339,7 @@ export default function TopNav({
 
           <AccountMenu hasAccountSession={hasAccountSession} />
 
-          <div className={forceMobilePreview ? "inline-flex min-h-9 items-center rounded-full border border-white/10 bg-white/4 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70" : "hidden sm:hidden"}>
+          <div className={forceMobilePreview ? "hidden min-h-9 items-center rounded-full border border-white/10 bg-white/4 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70 xs:inline-flex" : "hidden sm:hidden"}>
             {activeLabel}
           </div>
 
@@ -358,7 +358,7 @@ export default function TopNav({
                 {showMobileHealthyWealth ? <MobileHealthyWealthButton /> : null}
 
                 {!showMobileHealthyWealth ? (
-                  <div className="inline-flex min-h-9 items-center rounded-full border border-white/10 bg-white/4 px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
+                  <div className="hidden min-h-9 items-center rounded-full border border-white/10 bg-white/4 px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70 min-[340px]:inline-flex">
                     {activeLabel}
                   </div>
                 ) : null}

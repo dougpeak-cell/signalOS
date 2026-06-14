@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { fetchCompanyProfile } from "@/lib/companyCache";
 
 const missingLogoTickers = new Set<string>();
 const availableLogoTickers = new Set(["AAPL", "AMD", "AMZN", "META", "MSFT", "NVDA", "TSLA"]);
@@ -9,25 +9,65 @@ const availableLogoTickers = new Set(["AAPL", "AMD", "AMZN", "META", "MSFT", "NV
 export default function TickerLogo({
   ticker,
   size = 36,
+  logoUrl,
 }: {
   ticker: string;
   size?: number;
+  logoUrl?: string | null;
 }) {
   const normalizedTicker = useMemo(
     () => String(ticker ?? "").toUpperCase().trim(),
     [ticker]
   );
   const hasLocalLogo = availableLogoTickers.has(normalizedTicker);
+  const [remoteLogoUrl, setRemoteLogoUrl] = useState<string | null>(logoUrl ?? null);
 
   const [failed, setFailed] = useState(
-    () => !hasLocalLogo || missingLogoTickers.has(normalizedTicker)
+    () => !hasLocalLogo && !logoUrl || missingLogoTickers.has(normalizedTicker)
   );
 
   useEffect(() => {
-    setFailed(!hasLocalLogo || missingLogoTickers.has(normalizedTicker));
-  }, [hasLocalLogo, normalizedTicker]);
+    setRemoteLogoUrl(logoUrl ?? null);
+  }, [logoUrl]);
+
+  useEffect(() => {
+    setFailed((!hasLocalLogo && !remoteLogoUrl) || missingLogoTickers.has(normalizedTicker));
+  }, [hasLocalLogo, normalizedTicker, remoteLogoUrl]);
+
+  useEffect(() => {
+    if (!normalizedTicker || hasLocalLogo || remoteLogoUrl || missingLogoTickers.has(normalizedTicker)) {
+      return;
+    }
+
+    let active = true;
+
+    void fetchCompanyProfile(normalizedTicker)
+      .then((profile) => {
+        if (!active) {
+          return;
+        }
+
+        if (profile?.logo) {
+          setRemoteLogoUrl(profile.logo);
+          setFailed(false);
+          return;
+        }
+
+        setFailed(true);
+      })
+      .catch(() => {
+        if (active) {
+          setFailed(true);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [hasLocalLogo, normalizedTicker, remoteLogoUrl]);
 
   const src = `/logos/${normalizedTicker.toLowerCase()}.png`;
+  const imageAlt = `${normalizedTicker} logo`;
 
   if (!normalizedTicker || failed) {
     return (
@@ -45,19 +85,36 @@ export default function TickerLogo({
       className="relative shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/5"
       style={{ width: size, height: size }}
     >
-      <Image
-        src={src}
-        alt={`${normalizedTicker} logo`}
-        fill
-        sizes={`${size}px`}
-        className="object-cover"
-        onError={() => {
-          if (normalizedTicker) {
-            missingLogoTickers.add(normalizedTicker);
-          }
-          setFailed(true);
-        }}
-      />
+      {hasLocalLogo ? (
+        <img
+          src={src}
+          alt={imageAlt}
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          onError={() => {
+            setFailed(!remoteLogoUrl);
+          }}
+        />
+      ) : remoteLogoUrl ? (
+        <img
+          src={remoteLogoUrl}
+          alt={imageAlt}
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => {
+            if (normalizedTicker) {
+              missingLogoTickers.add(normalizedTicker);
+            }
+            setRemoteLogoUrl(null);
+            setFailed(true);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

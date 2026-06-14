@@ -4,6 +4,8 @@ export type CompanyProfile = {
   description: string;
   sector?: string;
   industry?: string;
+  logo?: string | null;
+  weburl?: string | null;
 };
 
 export const COMPANY_PROFILES: Record<string, CompanyProfile> = {
