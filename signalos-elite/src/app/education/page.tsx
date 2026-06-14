@@ -404,8 +404,17 @@ function EducationPageContent() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [hasStoredMobilePreview, setHasStoredMobilePreview] = useState(false);
+  const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.matchMedia("(max-width: 767px)").matches;
+  });
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const returnTo = normalizeReturnTo(searchParams.get("returnTo"));
   const isMobilePreview = searchParams.get("mobilePreview") === "1" || hasStoredMobilePreview;
+  const shouldUseCompactCategoryMenu = isMobilePreview || isMobilePhoneView;
   const mobilePreviewFrame = useResponsiveMobilePreviewFrame(isMobilePreview);
   const fallbackExitHref = isMobilePreview ? "/?mobilePreview=1" : "/";
   const exitHref = returnTo ?? fallbackExitHref;
@@ -420,6 +429,24 @@ function EducationPageContent() {
       window.localStorage.getItem(MOBILE_PREVIEW_STORAGE_KEY) === "1"
     );
   }, [searchParams]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobilePhoneView(mediaQuery.matches);
+
+    sync();
+    mediaQuery.addEventListener("change", sync);
+
+    return () => {
+      mediaQuery.removeEventListener("change", sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!shouldUseCompactCategoryMenu) {
+      setCategoryMenuOpen(false);
+    }
+  }, [shouldUseCompactCategoryMenu]);
 
   const filteredEntries = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -516,21 +543,56 @@ function EducationPageContent() {
               className="h-11 rounded-xl border border-white/8 bg-white/3.5 px-4 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-300/35"
             />
 
-            <div className="flex flex-wrap gap-2">
-              {categories.map((item) => (
+            {shouldUseCompactCategoryMenu ? (
+              <div className="relative">
                 <button
-                  key={item}
-                  onClick={() => setCategory(item)}
-                  className={`rounded-xl border px-3 py-2 text-xs font-black uppercase tracking-[0.12em] transition ${
-                    category === item
-                      ? "border-cyan-400/30 bg-cyan-400/12 text-cyan-100"
-                      : "border-white/6 bg-white/2.5 text-white/45 hover:border-cyan-300/20 hover:text-cyan-200"
-                  }`}
+                  type="button"
+                  onClick={() => setCategoryMenuOpen((open) => !open)}
+                  className="flex h-11 w-full items-center justify-between rounded-xl border border-white/8 bg-white/3.5 px-4 text-left text-xs font-black uppercase tracking-[0.14em] text-white/72 transition hover:border-cyan-300/20 hover:text-cyan-200"
                 >
-                  {item}
+                  <span className="truncate">{category === "All" ? "All Categories" : category}</span>
+                  <span className="ml-3 shrink-0 text-cyan-200">{categoryMenuOpen ? "Close" : "Menu"}</span>
                 </button>
-              ))}
-            </div>
+
+                {categoryMenuOpen ? (
+                  <div className="mt-2 flex flex-wrap gap-2 rounded-2xl border border-white/8 bg-[#05080d]/96 p-3 shadow-[0_18px_40px_rgba(0,0,0,0.42)]">
+                    {categories.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => {
+                          setCategory(item);
+                          setCategoryMenuOpen(false);
+                        }}
+                        className={`rounded-xl border px-3 py-2 text-xs font-black uppercase tracking-[0.12em] transition ${
+                          category === item
+                            ? "border-cyan-400/30 bg-cyan-400/12 text-cyan-100"
+                            : "border-white/6 bg-white/2.5 text-white/45 hover:border-cyan-300/20 hover:text-cyan-200"
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {categories.map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => setCategory(item)}
+                    className={`rounded-xl border px-3 py-2 text-xs font-black uppercase tracking-[0.12em] transition ${
+                      category === item
+                        ? "border-cyan-400/30 bg-cyan-400/12 text-cyan-100"
+                        : "border-white/6 bg-white/2.5 text-white/45 hover:border-cyan-300/20 hover:text-cyan-200"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
