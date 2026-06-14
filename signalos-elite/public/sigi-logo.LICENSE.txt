@@ -1,0 +1,16 @@
+SignalOS Sigi Logo
+
+File:
+- public/images/sigi logo 2.png
+
+Provenance:
+- Original SignalOS logo asset maintained in-repository for the SigiOS landing page and related brand surfaces.
+- Added to the repository at the direction of the repository owner for SignalOS branding use.
+
+License:
+- Copyright (c) 2026 SignalOS.
+- Permission is granted to use, copy, modify, and distribute this asset as part of the SignalOS project and its derivatives.
+
+Notes:
+- This file records project-level copyright and provenance for the SigiOS logo asset.
+- Formal copyright registration, if desired, is a separate legal process outside the repository.

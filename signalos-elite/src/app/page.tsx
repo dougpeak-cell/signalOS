@@ -140,6 +140,18 @@ export default function LandingPage() {
                   better decisions.
                 </p>
 
+                <div className="mt-6 flex justify-center sm:justify-start">
+                  <div className="w-full max-w-44 sm:max-w-52">
+                    <Image
+                      src="/images/sigi logo 2.png"
+                      alt="SigiOS logo"
+                      width={560}
+                      height={280}
+                      className="h-auto w-full object-contain"
+                    />
+                  </div>
+                </div>
+
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Link
                     href="/today"
