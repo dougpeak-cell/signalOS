@@ -348,37 +348,6 @@ export default function CryptoWatchlistPageClient() {
                       price={row.price}
                       changePercent={row.changePercent}
                       changeAmount={row.change}
-                      actions={
-                        <>
-                          <Link
-                            href={detailHref}
-                            className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
-                          >
-                            Open
-                          </Link>
-                          <button
-                            onClick={() => removeCryptoWatchlistSymbol(row.symbol)}
-                            className="rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs font-semibold text-white/72 transition hover:bg-white/8"
-                          >
-                            Remove
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (row.price == null || row.price <= 0) return;
-                              upsertCryptoPortfolioHolding({
-                                symbol: row.symbol,
-                                name: row.name,
-                                quantity: 1,
-                                entryPrice: row.price,
-                              });
-                            }}
-                            disabled={row.price == null || row.price <= 0}
-                            className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            Add To Portfolio
-                          </button>
-                        </>
-                      }
                     />
                   );
                 })}
