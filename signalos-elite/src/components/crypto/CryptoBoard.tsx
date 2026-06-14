@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import CryptoPageTabs from "@/components/crypto/CryptoPageTabs";
+import CryptoQuickViewRow from "@/components/crypto/CryptoQuickViewRow";
 import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
@@ -16,6 +17,7 @@ import {
   upsertCryptoPortfolioHolding,
 } from "@/lib/crypto/storage";
 import { buildSparklinePath } from "@/lib/market/sparkline";
+import { resolveShellViewMode } from "@/lib/shell/viewMode";
 
 type CryptoRow = {
   ticker: string;
@@ -122,6 +124,13 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
   const searchParams = useSearchParams();
   const { tier } = useSigiTier();
   const canUseCrypto = getPremiumAccess({ tier, feature: "crypto" });
+  const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.matchMedia("(max-width: 767px)").matches;
+  });
   const [rows, setRows] = useState<CryptoRow[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -335,8 +344,33 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
     .sort((a, b) => (b.changePercent ?? -999) - (a.changePercent ?? -999))
     .slice(0, 3);
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
+  const shouldForceQuickView = searchParams.get("quickView") === "1";
   const mobilePreviewFrame = useResponsiveMobilePreviewFrame(isMobilePreview);
+  const { safeMode } = resolveShellViewMode({
+    mode: searchParams.get("mode"),
+    shouldForceQuickView,
+    isMobilePhoneView,
+    isMobilePreview,
+    canUseDetail: canUseCrypto,
+  });
+  const isQuick = safeMode === "quick";
+  const isDetail = safeMode === "detail";
+  const detailButtonClass = isDetail
+    ? "border-white/18 bg-white/10 text-white"
+    : "border-cyan-300/40 bg-cyan-400/14 text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.24)] hover:border-cyan-200/55 hover:bg-cyan-400/20 hover:text-white";
   const sourcePath = pathname || "/crypto";
+  const buildBoardModeHref = (mode: "detail" | "quick") => {
+    const params = new URLSearchParams();
+
+    if (isMobilePreview) {
+      params.set("mobilePreview", "1");
+    }
+
+    params.set("mode", mode);
+
+    const query = params.toString();
+    return query ? `${sourcePath}?${query}` : sourcePath;
+  };
   const buildCryptoHref = (symbol: string) => {
     const params = new URLSearchParams();
 
@@ -348,6 +382,18 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
 
     return `/crypto/${symbol}?${params.toString()}`;
   };
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobilePhoneView(mediaQuery.matches);
+
+    sync();
+    mediaQuery.addEventListener("change", sync);
+
+    return () => {
+      mediaQuery.removeEventListener("change", sync);
+    };
+  }, []);
 
   const setFeedback = (symbol: string, message: string) => {
     setActionFeedback((current) => ({ ...current, [symbol]: message }));
@@ -439,6 +485,25 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
               isMobilePreview={isMobilePreview}
               className={isMobilePreview ? "mt-4" : "mt-5"}
             />
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                href={buildBoardModeHref("detail")}
+                className={`inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-bold transition ${detailButtonClass}`}
+              >
+                Detail View
+              </Link>
+              <Link
+                href={buildBoardModeHref("quick")}
+                className={`inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-bold transition ${
+                  isQuick
+                    ? "border-cyan-400/30 bg-cyan-400/14 text-cyan-100"
+                    : "border-cyan-400/20 bg-cyan-400/10 text-cyan-200 hover:border-cyan-300/38 hover:bg-cyan-400/16 hover:text-cyan-100"
+                }`}
+              >
+                Quick View
+              </Link>
+            </div>
           </div>
 
           <div
@@ -802,6 +867,45 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
             </div>
           ) : null}
 
+          {isQuick ? (
+            <div className="space-y-3">
+              {filteredRows.map((row, index) => (
+                <CryptoQuickViewRow
+                  key={`${row.ticker}-${index}`}
+                  symbol={row.symbol}
+                  name={row.name}
+                  detailHref={buildCryptoHref(row.symbol)}
+                  price={row.price}
+                  changePercent={row.changePercent}
+                  changeAmount={row.change}
+                  actions={
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => addToCryptoWatchlist(row.symbol)}
+                        className="rounded-full border border-white/10 bg-white/3 px-3 py-1 text-xs font-semibold text-white/78 transition hover:bg-white/8"
+                      >
+                        Add to Watchlist
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => addToCryptoPortfolio(row)}
+                        className="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
+                      >
+                        Add to Portfolio
+                      </button>
+                      <Link
+                        href={buildCryptoHref(row.symbol)}
+                        className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
+                      >
+                        Open
+                      </Link>
+                    </>
+                  }
+                />
+              ))}
+            </div>
+          ) : (
           <div className={isMobilePreview ? "space-y-3" : "grid gap-3 md:hidden"}>
             {filteredRows.map((row, index) => {
               const positive = (row.changePercent ?? 0) >= 0;
@@ -876,8 +980,9 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
               );
             })}
           </div>
+          )}
 
-          <div className={isMobilePreview ? "hidden" : "hidden md:block"}>
+          <div className={isQuick || isMobilePreview ? "hidden" : "hidden md:block"}>
             <div className="overflow-x-auto rounded-2xl border border-white/10">
               <table className="w-full border-collapse text-sm">
                 <thead className="bg-white/4 text-xs uppercase tracking-[0.16em] text-white/40">

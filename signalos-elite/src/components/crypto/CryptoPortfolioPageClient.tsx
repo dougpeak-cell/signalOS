@@ -5,11 +5,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import CryptoPageTabs from "@/components/crypto/CryptoPageTabs";
+import CryptoQuickViewRow from "@/components/crypto/CryptoQuickViewRow";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { CRYPTO_DIRECTORY } from "@/lib/crypto/catalog";
 import { getPremiumAccess } from "@/lib/premiumAccess";
+import { resolveShellViewMode } from "@/lib/shell/viewMode";
 import {
   normalizeCryptoSymbol,
   readCryptoPortfolio,
@@ -22,6 +24,7 @@ type SnapshotRow = {
   symbol: string;
   name: string;
   price: number | null;
+  change: number | null;
   changePercent: number | null;
 };
 
@@ -46,8 +49,29 @@ export default function CryptoPortfolioPageClient() {
   const searchParams = useSearchParams();
   const { tier } = useSigiTier();
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
+  const shouldForceQuickView = searchParams.get("quickView") === "1";
   const mobilePreviewFrame = useResponsiveMobilePreviewFrame(isMobilePreview);
   const canUseCrypto = getPremiumAccess({ tier, feature: "crypto" });
+  const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.matchMedia("(max-width: 767px)").matches;
+  });
+
+  const { safeMode } = resolveShellViewMode({
+    mode: searchParams.get("mode"),
+    shouldForceQuickView,
+    isMobilePhoneView,
+    isMobilePreview,
+    canUseDetail: canUseCrypto,
+  });
+  const isQuick = safeMode === "quick";
+  const isDetail = safeMode === "detail";
+  const detailButtonClass = isDetail
+    ? "border-white/18 bg-white/10 text-white"
+    : "border-cyan-300/40 bg-cyan-400/14 text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.24)] hover:border-cyan-200/55 hover:bg-cyan-400/20 hover:text-white";
 
   const [holdings, setHoldings] = useState<CryptoPortfolioHolding[]>([]);
   const [quotes, setQuotes] = useState<Record<string, SnapshotRow>>({});
@@ -58,6 +82,31 @@ export default function CryptoPortfolioPageClient() {
   const [error, setError] = useState("");
   const formPanelRef = useRef<HTMLDivElement | null>(null);
   const symbolInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobilePhoneView(mediaQuery.matches);
+
+    sync();
+    mediaQuery.addEventListener("change", sync);
+
+    return () => {
+      mediaQuery.removeEventListener("change", sync);
+    };
+  }, []);
+
+  function buildPortfolioModeHref(mode: "detail" | "quick") {
+    const params = new URLSearchParams();
+
+    if (isMobilePreview) {
+      params.set("mobilePreview", "1");
+    }
+
+    params.set("mode", mode);
+
+    const query = params.toString();
+    return query ? `/crypto/portfolio?${query}` : "/crypto/portfolio";
+  }
 
   useEffect(() => {
     const sync = () => setHoldings(readCryptoPortfolio());
@@ -141,6 +190,7 @@ export default function CryptoPortfolioPageClient() {
           costBasis,
           plValue,
           plPercent,
+          dayChangeAmount: quote?.change ?? null,
           dayChangePercent: quote?.changePercent ?? null,
         };
       }),
@@ -253,6 +303,25 @@ export default function CryptoPortfolioPageClient() {
               isMobilePreview={isMobilePreview}
               className="mt-4"
             />
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                href={buildPortfolioModeHref("detail")}
+                className={`inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-bold transition ${detailButtonClass}`}
+              >
+                Detail View
+              </Link>
+              <Link
+                href={buildPortfolioModeHref("quick")}
+                className={`inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-bold transition ${
+                  isQuick
+                    ? "border-cyan-400/30 bg-cyan-400/14 text-cyan-100"
+                    : "border-cyan-400/20 bg-cyan-400/10 text-cyan-200 hover:border-cyan-300/38 hover:bg-cyan-400/16 hover:text-cyan-100"
+                }`}
+              >
+                Quick View
+              </Link>
+            </div>
           </div>
 
           <div className={isMobilePreview ? "mt-4 space-y-3" : "mt-5 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]"}>
@@ -346,6 +415,49 @@ export default function CryptoPortfolioPageClient() {
           </div>
 
           {rows.length > 0 ? (
+            isQuick ? (
+              <div className="mt-5 space-y-3">
+                {rows.map((row) => {
+                  const detailHref = isMobilePreview
+                    ? `/crypto/${row.symbol}?source=/crypto/portfolio&mobilePreview=1`
+                    : `/crypto/${row.symbol}?source=/crypto/portfolio`;
+
+                  return (
+                    <CryptoQuickViewRow
+                      key={row.symbol}
+                      symbol={row.symbol}
+                      name={row.name}
+                      detailHref={detailHref}
+                      price={row.currentPrice}
+                      changePercent={row.dayChangePercent}
+                      changeAmount={row.dayChangeAmount}
+                      actions={
+                        <>
+                          <Link
+                            href={detailHref}
+                            className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
+                          >
+                            Open
+                          </Link>
+                          <button
+                            onClick={() => startEditing(row)}
+                            className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => removeCryptoPortfolioHolding(row.symbol)}
+                            className="rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs font-semibold text-white/72 transition hover:bg-white/8"
+                          >
+                            Remove
+                          </button>
+                        </>
+                      }
+                    />
+                  );
+                })}
+              </div>
+            ) : (
             <div className={isMobilePreview ? "mt-5 space-y-3" : "mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3"}>
               {rows.map((row) => {
                 const detailHref = isMobilePreview
@@ -427,6 +539,7 @@ export default function CryptoPortfolioPageClient() {
                 );
               })}
             </div>
+            )
           ) : (
             <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 px-4 py-5 text-sm text-white/58">
               No crypto positions are saved yet. Add a symbol, quantity, and entry price above to build a crypto-only portfolio view.

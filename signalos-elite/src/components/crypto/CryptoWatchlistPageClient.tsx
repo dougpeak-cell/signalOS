@@ -5,11 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import CryptoPageTabs from "@/components/crypto/CryptoPageTabs";
+import CryptoQuickViewRow from "@/components/crypto/CryptoQuickViewRow";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { CRYPTO_DIRECTORY } from "@/lib/crypto/catalog";
 import { getPremiumAccess } from "@/lib/premiumAccess";
+import { resolveShellViewMode } from "@/lib/shell/viewMode";
 import {
   addCryptoWatchlistSymbol,
   readCryptoWatchlist,
@@ -22,6 +24,7 @@ type SnapshotRow = {
   symbol: string;
   name: string;
   price: number | null;
+  change: number | null;
   changePercent: number | null;
   volume: number | null;
 };
@@ -47,13 +50,59 @@ export default function CryptoWatchlistPageClient() {
   const searchParams = useSearchParams();
   const { tier } = useSigiTier();
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
+  const shouldForceQuickView = searchParams.get("quickView") === "1";
   const mobilePreviewFrame = useResponsiveMobilePreviewFrame(isMobilePreview);
   const canUseCrypto = getPremiumAccess({ tier, feature: "crypto" });
+  const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.matchMedia("(max-width: 767px)").matches;
+  });
+
+  const { safeMode } = resolveShellViewMode({
+    mode: searchParams.get("mode"),
+    shouldForceQuickView,
+    isMobilePhoneView,
+    isMobilePreview,
+    canUseDetail: canUseCrypto,
+  });
+  const isQuick = safeMode === "quick";
+  const isDetail = safeMode === "detail";
+  const detailButtonClass = isDetail
+    ? "border-white/18 bg-white/10 text-white"
+    : "border-cyan-300/40 bg-cyan-400/14 text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.24)] hover:border-cyan-200/55 hover:bg-cyan-400/20 hover:text-white";
 
   const [entries, setEntries] = useState<CryptoWatchlistEntry[]>([]);
   const [quotes, setQuotes] = useState<Record<string, SnapshotRow>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobilePhoneView(mediaQuery.matches);
+
+    sync();
+    mediaQuery.addEventListener("change", sync);
+
+    return () => {
+      mediaQuery.removeEventListener("change", sync);
+    };
+  }, []);
+
+  function buildWatchlistModeHref(mode: "detail" | "quick") {
+    const params = new URLSearchParams();
+
+    if (isMobilePreview) {
+      params.set("mobilePreview", "1");
+    }
+
+    params.set("mode", mode);
+
+    const query = params.toString();
+    return query ? `/crypto/watchlist?${query}` : "/crypto/watchlist";
+  }
 
   useEffect(() => {
     const sync = () => setEntries(readCryptoWatchlist());
@@ -127,6 +176,7 @@ export default function CryptoWatchlistPageClient() {
           ...entry,
           name: quote?.name ?? entry.name,
           price: quote?.price ?? null,
+          change: quote?.change ?? null,
           changePercent: quote?.changePercent ?? null,
           volume: quote?.volume ?? null,
         };
@@ -186,6 +236,25 @@ export default function CryptoWatchlistPageClient() {
               isMobilePreview={isMobilePreview}
               className="mt-4"
             />
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                href={buildWatchlistModeHref("detail")}
+                className={`inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-bold transition ${detailButtonClass}`}
+              >
+                Detail View
+              </Link>
+              <Link
+                href={buildWatchlistModeHref("quick")}
+                className={`inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-bold transition ${
+                  isQuick
+                    ? "border-cyan-400/30 bg-cyan-400/14 text-cyan-100"
+                    : "border-cyan-400/20 bg-cyan-400/10 text-cyan-200 hover:border-cyan-300/38 hover:bg-cyan-400/16 hover:text-cyan-100"
+                }`}
+              >
+                Quick View
+              </Link>
+            </div>
           </div>
 
           <div className={isMobilePreview ? "mt-4 space-y-3" : "mt-5 flex flex-wrap items-center gap-3"}>
@@ -263,6 +332,58 @@ export default function CryptoWatchlistPageClient() {
           </div>
 
           {rows.length > 0 ? (
+            isQuick ? (
+              <div className="mt-5 space-y-3">
+                {rows.map((row) => {
+                  const detailHref = isMobilePreview
+                    ? `/crypto/${row.symbol}?source=/crypto/watchlist&mobilePreview=1`
+                    : `/crypto/${row.symbol}?source=/crypto/watchlist`;
+
+                  return (
+                    <CryptoQuickViewRow
+                      key={row.symbol}
+                      symbol={row.symbol}
+                      name={row.name}
+                      detailHref={detailHref}
+                      price={row.price}
+                      changePercent={row.changePercent}
+                      changeAmount={row.change}
+                      actions={
+                        <>
+                          <Link
+                            href={detailHref}
+                            className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
+                          >
+                            Open
+                          </Link>
+                          <button
+                            onClick={() => removeCryptoWatchlistSymbol(row.symbol)}
+                            className="rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs font-semibold text-white/72 transition hover:bg-white/8"
+                          >
+                            Remove
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (row.price == null || row.price <= 0) return;
+                              upsertCryptoPortfolioHolding({
+                                symbol: row.symbol,
+                                name: row.name,
+                                quantity: 1,
+                                entryPrice: row.price,
+                              });
+                            }}
+                            disabled={row.price == null || row.price <= 0}
+                            className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Add To Portfolio
+                          </button>
+                        </>
+                      }
+                    />
+                  );
+                })}
+              </div>
+            ) : (
             <div className={isMobilePreview ? "mt-5 space-y-3" : "mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3"}>
               {rows.map((row) => {
                 const quoteTone = (row.changePercent ?? 0) >= 0 ? "text-emerald-300" : "text-rose-300";
@@ -334,6 +455,7 @@ export default function CryptoWatchlistPageClient() {
                 );
               })}
             </div>
+            )
           ) : (
             <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 px-4 py-5 text-sm text-white/58">
               No crypto names are being tracked yet. Add a symbol above to start a crypto-only watchlist.
