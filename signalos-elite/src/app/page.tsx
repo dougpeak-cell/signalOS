@@ -256,8 +256,10 @@ export default function LandingPage() {
             </h2>
 
             <p className="mt-5 max-w-2xl text-base leading-8 text-white/70">
-              "I've never been good with money. It's probably too late to build
-              financial security."
+              SigiOS was created to help people who once believed investing was
+              only for experts. The mission is simple: education over noise,
+              patience over emotion, stewardship over greed, and disciplined
+              long-term thinking.
             </p>
           </div>
 
