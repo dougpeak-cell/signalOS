@@ -5,7 +5,7 @@ const screenshots = [
   {
     title: "Market Thesis",
     desc: "Start with the clearest story moving the market.",
-    img: "/landing/hero-today.png",
+    img: "/landing/hero-today2.png",
   },
   {
     title: "Sigi Smart",
