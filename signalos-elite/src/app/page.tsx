@@ -76,6 +76,7 @@ const screenshots = [
     title: "Market News",
     desc: "Follow catalyst-backed stories tied directly to tickers.",
     img: "/landing/news-page.png",
+    secondaryImg: "/images/News-page 2.png",
   },
   {
     title: "SigiOS Education",
@@ -224,14 +225,28 @@ export default function LandingPage() {
               className="overflow-hidden rounded-[1.75rem] border border-white/12 bg-[linear-gradient(180deg,rgba(6,17,25,0.92),rgba(11,27,38,0.96))] shadow-[0_20px_60px_rgba(0,0,0,0.28)]"
             >
               <div className="border-b border-white/8 bg-[radial-gradient(circle_at_top,rgba(45,212,191,0.10),transparent_52%),#08131b] p-3 sm:p-4">
-                <div className="overflow-hidden rounded-[1.35rem] border border-white/8 bg-[#07131d]">
-                  <Image
-                    src={shot.img}
-                    alt={shot.title}
-                    width={1200}
-                    height={900}
-                    className="h-auto w-full object-contain object-center"
-                  />
+                <div className="space-y-3">
+                  <div className="overflow-hidden rounded-[1.35rem] border border-white/8 bg-[#07131d]">
+                    <Image
+                      src={shot.img}
+                      alt={shot.title}
+                      width={1200}
+                      height={900}
+                      className="h-auto w-full object-contain object-center"
+                    />
+                  </div>
+
+                  {shot.secondaryImg ? (
+                    <div className="overflow-hidden rounded-[1.35rem] border border-white/8 bg-[#07131d]">
+                      <Image
+                        src={shot.secondaryImg}
+                        alt={`${shot.title} secondary view`}
+                        width={1200}
+                        height={900}
+                        className="h-auto w-full object-contain object-center"
+                      />
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
