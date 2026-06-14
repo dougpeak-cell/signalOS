@@ -1,7 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const screenshots = [
+type LandingScreenshot = {
+  title: string;
+  desc: string;
+  img: string;
+  secondaryImg?: string;
+};
+
+const screenshots: readonly LandingScreenshot[] = [
   {
     title: "Market Thesis",
     desc: "Start with the clearest story moving the market.",
@@ -88,7 +95,7 @@ const screenshots = [
     desc: "Built around patience, wisdom, discipline, and responsible growth.",
     img: "/landing/healthy-wealth.png",
   },
-] as const;
+];
 
 export default function LandingPage() {
   return (
