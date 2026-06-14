@@ -92,8 +92,8 @@ const screenshots = [
 export default function LandingPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.18),transparent_36%),linear-gradient(180deg,#041017_0%,#071722_45%,#f4efe4_100%)] text-white">
-      <section className="mx-auto max-w-368 px-4 pb-20 pt-6 sm:px-6 lg:px-8">
-        <div className="rounded-4xl border border-white/12 bg-black/24 px-5 py-5 backdrop-blur-xl sm:px-8 sm:py-7">
+      <section className="mx-auto max-w-368 px-3 pb-20 pt-6 sm:px-6 lg:px-8">
+        <div className="rounded-4xl border border-white/12 bg-black/24 px-4 py-5 backdrop-blur-xl sm:px-8 sm:py-7">
           <div className="flex flex-col gap-10">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -121,12 +121,12 @@ export default function LandingPage() {
             </div>
 
             <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-              <div>
+              <div className="min-w-0">
                 <div className="inline-flex rounded-full border border-teal-300/25 bg-teal-300/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-teal-100">
                   AI Market Intelligence
                 </div>
 
-                <h1 className="mt-6 max-w-4xl text-5xl font-black leading-[0.95] text-white sm:text-6xl lg:text-7xl">
+                <h1 className="mt-6 max-w-[10ch] text-4xl font-black leading-[0.92] tracking-tight text-white sm:max-w-[11ch] sm:text-5xl lg:max-w-4xl lg:text-7xl">
                   Invest Smarter.
                   <br />
                   Think Clearly.
@@ -161,14 +161,14 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="rounded-4xl border border-white/12 bg-[linear-gradient(180deg,rgba(7,19,29,0.96),rgba(9,24,35,0.96))] p-3 shadow-[0_30px_100px_rgba(0,0,0,0.45)] sm:p-4">
+              <div className="min-w-0 rounded-4xl border border-white/12 bg-[linear-gradient(180deg,rgba(7,19,29,0.96),rgba(9,24,35,0.96))] p-2.5 shadow-[0_30px_100px_rgba(0,0,0,0.45)] sm:p-4">
                 <div className="overflow-hidden rounded-[1.6rem] border border-white/8 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.10),transparent_48%),#07131d]">
                   <Image
                     src="/landing/hero-today.png"
                     alt="SigiOS market thesis preview"
                     width={1600}
                     height={1000}
-                    className="h-auto w-full object-contain object-center"
+                    className="h-auto w-full max-w-full object-contain object-center"
                     priority
                   />
                 </div>
