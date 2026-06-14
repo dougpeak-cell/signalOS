@@ -389,17 +389,21 @@ export default function CryptoPortfolioPageClient() {
             </div>
 
             <div className={isMobilePreview ? "grid grid-cols-2 gap-3" : "grid grid-cols-3 gap-3"}>
-              <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
+              <div className="min-w-0 rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Positions</div>
                 <div className="mt-2 text-2xl font-semibold text-white">{rows.length}</div>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
+              <div className="min-w-0 rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Value</div>
-                <div className="mt-2 text-xl font-semibold text-white">{money(totalValue)}</div>
+                <div className="mt-2 text-lg leading-tight font-semibold tracking-tight text-white sm:text-xl">
+                  {money(totalValue)}
+                </div>
               </div>
-              <div className={`rounded-2xl border px-4 py-3 ${totalPL >= 0 ? "border-emerald-400/20 bg-emerald-400/8" : "border-rose-400/20 bg-rose-400/8"} ${isMobilePreview ? "col-span-2" : ""}`}>
+              <div className={`min-w-0 rounded-2xl border px-4 py-3 ${totalPL >= 0 ? "border-emerald-400/20 bg-emerald-400/8" : "border-rose-400/20 bg-rose-400/8"} ${isMobilePreview ? "col-span-2" : ""}`}>
                 <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Open P/L</div>
-                <div className={`mt-2 text-xl font-semibold ${totalPL >= 0 ? "text-emerald-300" : "text-rose-300"}`}>{pct(totalPLPct)}</div>
+                <div className={`mt-2 text-lg leading-tight font-semibold tracking-tight sm:text-xl ${totalPL >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                  {pct(totalPLPct)}
+                </div>
               </div>
             </div>
           </div>
