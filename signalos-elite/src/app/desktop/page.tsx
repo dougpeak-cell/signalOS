@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
-  ArrowUpRight,
   CheckCircle2,
   Laptop2,
   LayoutPanelLeft,
@@ -328,15 +327,13 @@ export default async function DesktopDirectionsPage({
         </section>
 
         <div className="flex justify-center pt-2">
-          <a
-            href="https://sigios.com"
-            target="_blank"
-            rel="noreferrer"
+          <Link
+            href={returnHref}
             className="inline-flex items-center gap-2 rounded-2xl border border-cyan-300/25 bg-cyan-400/10 px-5 py-3 text-sm font-black text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/15"
           >
-            Go to Sigios.com
-            <ArrowUpRight className="h-4 w-4" />
-          </a>
+            <ArrowLeft className="h-4 w-4" />
+            Back to Mobile SigiOS
+          </Link>
         </div>
       </div>
     </main>

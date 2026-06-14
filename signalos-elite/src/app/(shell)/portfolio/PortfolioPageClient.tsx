@@ -1873,9 +1873,6 @@ function PortfolioPageContent() {
                 </div>
                 </div>
               ) : null}
-
-              <SigiDesktopCTA />
-
               {isDetail ? (
                 <PortfolioSigiStrip
                   holdings={portfolioStripHoldings}
@@ -2573,6 +2570,8 @@ function PortfolioPageContent() {
                       management.
                     </div>
                   )}
+
+                  {isQuick ? <SigiDesktopCTA /> : null}
                 </div>
               </div>
         </div>
