@@ -23,12 +23,12 @@ export default function AboutPage() {
         <div className="mt-10 rounded-3xl border border-white/10 bg-white/3 p-8 backdrop-blur">
           <p className="text-lg leading-8 text-slate-200">
             As the creator of SigiOS, I was inspired to help others because I
-            was once the person who believed:
+            was the person that used to think:
           </p>
 
           <div className="mt-8 rounded-2xl border border-emerald-400/20 bg-emerald-500/6 p-6 text-center">
             <p className="text-2xl font-semibold italic text-emerald-100">
-              &ldquo;I&apos;m not good with money. I&apos;m not worthy of financial security.&rdquo;
+              &ldquo;I&apos;ve never been good with money. It&apos;s probably too late to build financial security.&rdquo;
             </p>
           </div>
 
