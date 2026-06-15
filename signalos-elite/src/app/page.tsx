@@ -291,7 +291,7 @@ export default function LandingPage() {
                 </Link>
 
                 <Link
-                  href="#pricing"
+                  href="#pricing-spotlight"
                   className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 px-6 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/8"
                 >
                   See Pricing
@@ -337,22 +337,33 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-amber-200/14 bg-[linear-gradient(180deg,rgba(15,13,20,0.96),rgba(9,17,27,0.98))] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.24)] sm:p-4">
+              <div
+                id="pricing-spotlight"
+                className="mt-4 overflow-hidden rounded-[1.75rem] border border-amber-200/14 bg-[linear-gradient(180deg,rgba(15,13,20,0.96),rgba(9,17,27,0.98))] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.24)] scroll-mt-28 sm:p-5"
+              >
                 <div className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-100/72">
                   Upgrade Path
                 </div>
-                <div className="mt-2 text-2xl font-black text-white">Try the workflow free. Upgrade when you want the full edge.</div>
+                <div className="mt-2 text-2xl font-black text-white">See pricing up close before you choose your access.</div>
                 <p className="mt-2 max-w-2xl text-sm leading-7 text-white/62">
-                  Start with quick-view access, then move into deeper Sigi intelligence, chart workflows, and full market coverage.
+                  Start with quick-view access, then compare the full Smart and Pro plans in a larger pricing preview before moving deeper into Sigi intelligence.
                 </p>
-                <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-white/8 bg-[#08131b]">
+                <div className="mt-4 overflow-hidden rounded-[1.35rem] border border-white/8 bg-[#08131b]">
                   <Image
                     src="/images/sigi-pricing-mobile.png"
                     alt="SigiOS pricing and access on mobile"
                     width={1800}
                     height={1300}
-                    className="h-auto w-full object-contain object-top"
+                    className="h-auto max-h-[34rem] w-full object-contain object-top"
                   />
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link
+                    href="#pricing"
+                    className="inline-flex min-h-11 items-center justify-center rounded-full border border-amber-200/20 bg-amber-200/10 px-4 text-sm font-semibold text-amber-100 transition hover:border-amber-100/35 hover:bg-amber-100/14 hover:text-white"
+                  >
+                    Compare All Plans
+                  </Link>
                 </div>
               </div>
             </div>
