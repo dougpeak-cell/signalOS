@@ -119,6 +119,12 @@ const mobileShowcases: readonly MobileShowcase[] = [
     accent: "Move from thesis to opportunity",
   },
   {
+    title: "Mobile Live Chart",
+    text: "Check live price action, fast market buttons, and chart access without leaving your mobile workflow.",
+    img: "/images/mobile-live-chart.png",
+    accent: "Watch the move in real time",
+  },
+  {
     title: "Quick Watchlist",
     text: "Track your watched names in a condensed view built for fast scanning.",
     img: "/images/quickview-watchlist-mobile.png",
@@ -253,7 +259,7 @@ export default function LandingPage() {
               </h2>
 
               <p className="mt-5 max-w-xl text-sm leading-7 text-white/72 sm:text-base">
-                SigiOS turns mobile investing into a disciplined workflow: read the market thesis, open the strongest names, track your watchlist, and monitor your portfolio before emotion takes over.
+                SigiOS turns mobile investing into a disciplined workflow: read the market thesis, open the strongest names, watch live price action, track your watchlist, and monitor your portfolio before emotion takes over.
               </p>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
@@ -265,7 +271,7 @@ export default function LandingPage() {
                 <MobileStep
                   label="2"
                   title="Open the strongest names"
-                  text="Jump straight into ranked setups, quick views, and live context."
+                  text="Jump straight into ranked setups, mobile live charts, and quick views."
                 />
                 <MobileStep
                   label="3"
