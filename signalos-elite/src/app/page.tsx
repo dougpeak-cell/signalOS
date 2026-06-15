@@ -140,6 +140,13 @@ const mobileShowcases: readonly MobileShowcase[] = [
   },
 ];
 
+const featuredMobileShowcase =
+  mobileShowcases.find((item) => item.featured) ?? mobileShowcases[0];
+
+const secondaryMobileShowcases = mobileShowcases.filter(
+  (item) => item.title !== featuredMobileShowcase.title
+);
+
 export default function LandingPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.18),transparent_36%),linear-gradient(180deg,#041017_0%,#071722_45%,#f4efe4_100%)] text-white">
@@ -243,7 +250,7 @@ export default function LandingPage() {
 
       <section id="features" className="mx-auto max-w-368 px-4 py-12 sm:px-6 lg:px-8">
         <div
-          className="overflow-hidden rounded-[2rem] border border-cyan-300/18 bg-[#03101a] shadow-[0_28px_80px_rgba(0,0,0,0.34)]"
+          className="overflow-hidden rounded-4xl border border-cyan-300/18 bg-[#03101a] shadow-[0_28px_80px_rgba(0,0,0,0.34)]"
           style={{
             backgroundImage: "linear-gradient(180deg, rgba(3,16,26,0.88), rgba(4,14,23,0.96)), url('/images/sigi-hero-bg.png')",
             backgroundSize: "cover",
@@ -323,48 +330,58 @@ export default function LandingPage() {
             </div>
 
             <div className="min-w-0">
-              <div className="grid gap-4 sm:grid-cols-2">
-                {mobileShowcases.map((item, index) => (
-                  <MobileShowcaseCard
-                    key={item.title}
-                    title={item.title}
-                    text={item.text}
-                    img={item.img}
-                    accent={item.accent}
-                    featured={item.featured}
-                    priority={index === 0}
-                  />
-                ))}
-              </div>
+              <MobileShowcaseCard
+                title={featuredMobileShowcase.title}
+                text={featuredMobileShowcase.text}
+                img={featuredMobileShowcase.img}
+                accent={featuredMobileShowcase.accent}
+                featured={featuredMobileShowcase.featured}
+                priority
+              />
+            </div>
+          </div>
 
-              <div
-                id="pricing-spotlight"
-                className="mt-4 overflow-hidden rounded-[1.75rem] border border-amber-200/14 bg-[linear-gradient(180deg,rgba(15,13,20,0.96),rgba(9,17,27,0.98))] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.24)] scroll-mt-28 sm:p-5"
-              >
-                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-100/72">
-                  Upgrade Path
-                </div>
-                <div className="mt-2 text-2xl font-black text-white">See pricing up close before you choose your access.</div>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-white/62">
-                  Start with quick-view access, then compare the full Smart and Pro plans in a larger pricing preview before moving deeper into Sigi intelligence.
-                </p>
-                <div className="mt-4 overflow-hidden rounded-[1.35rem] border border-white/8 bg-[#08131b]">
-                  <Image
-                    src="/images/sigi-pricing-mobile.png"
-                    alt="SigiOS pricing and access on mobile"
-                    width={1800}
-                    height={1300}
-                    className="h-auto max-h-[34rem] w-full object-contain object-top"
-                  />
-                </div>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <Link
-                    href="#pricing"
-                    className="inline-flex min-h-11 items-center justify-center rounded-full border border-amber-200/20 bg-amber-200/10 px-4 text-sm font-semibold text-amber-100 transition hover:border-amber-100/35 hover:bg-amber-100/14 hover:text-white"
-                  >
-                    Compare All Plans
-                  </Link>
-                </div>
+          <div className="mt-4 grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {secondaryMobileShowcases.map((item) => (
+                <MobileShowcaseCard
+                  key={item.title}
+                  title={item.title}
+                  text={item.text}
+                  img={item.img}
+                  accent={item.accent}
+                  featured={item.featured}
+                />
+              ))}
+            </div>
+
+            <div
+              id="pricing-spotlight"
+              className="overflow-hidden rounded-[1.75rem] border border-amber-200/14 bg-[linear-gradient(180deg,rgba(15,13,20,0.96),rgba(9,17,27,0.98))] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.24)] scroll-mt-28 sm:p-5"
+            >
+              <div className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-100/72">
+                Upgrade Path
+              </div>
+              <div className="mt-2 text-2xl font-black text-white">See pricing up close before you choose your access.</div>
+              <p className="mt-2 max-w-2xl text-sm leading-7 text-white/62">
+                Start with quick-view access, then compare the full Smart and Pro plans in a larger pricing preview before moving deeper into Sigi intelligence.
+              </p>
+              <div className="mt-4 overflow-hidden rounded-[1.35rem] border border-white/8 bg-[#08131b]">
+                <Image
+                  src="/images/sigi-pricing-mobile.png"
+                  alt="SigiOS pricing and access on mobile"
+                  width={1800}
+                  height={1300}
+                  className="h-auto max-h-136 w-full object-contain object-top"
+                />
+              </div>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  href="#pricing"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-amber-200/20 bg-amber-200/10 px-4 text-sm font-semibold text-amber-100 transition hover:border-amber-100/35 hover:bg-amber-100/14 hover:text-white"
+                >
+                  Compare All Plans
+                </Link>
               </div>
             </div>
           </div>
@@ -590,7 +607,7 @@ function MobileShowcaseCard({
             alt={title}
             width={900}
             height={1600}
-            className={featured ? "h-auto max-h-[42rem] w-full object-contain object-top" : "h-auto w-full object-contain object-top"}
+            className={featured ? "h-auto max-h-168 w-full object-contain object-top" : "h-auto w-full object-contain object-top"}
             priority={priority}
           />
         </div>
