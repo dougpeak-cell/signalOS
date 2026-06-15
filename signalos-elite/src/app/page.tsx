@@ -121,9 +121,9 @@ const mobileShowcases: readonly MobileShowcase[] = [
   },
   {
     title: "Mobile Live Chart",
-    text: "Check live price action, fast market buttons, and chart access without leaving your mobile workflow.",
-    img: "/images/mobile-live-chart.png",
-    accent: "Watch the move in real time",
+    text: "Know what the chart is doing before you make the trade. Check live price action, chart levels, and market readiness from one mobile command view.",
+    img: "/images/mobile-live-charts.png",
+    accent: "Know the move before the trade",
     featured: true,
   },
   {
