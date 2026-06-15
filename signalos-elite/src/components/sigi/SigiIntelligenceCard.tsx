@@ -27,17 +27,17 @@ export default function SigiIntelligenceCardView({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
         <Metric label="Trend" value={card.trendDirection} />
         <Metric label="Momentum" value={card.momentumStatus} />
         <Metric label="Sector" value={card.sectorStrength} />
         <Metric label="Risk" value={card.riskMeter} />
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
         <Metric label="Analyst Confidence" value={card.analystConfidence} accent="emerald" />
         <Metric label="Suggested Action" value={card.suggestedAction} accent="cyan" />
-        <div className="rounded-2xl border border-white/10 bg-white/4 px-3 py-3 sm:col-span-2 xl:col-span-1">
+        <div className="min-w-0 rounded-2xl border border-white/10 bg-white/4 px-3 py-3 sm:col-span-2 2xl:col-span-1">
           <div className="text-[10px] uppercase tracking-[0.16em] text-white/36">Key Levels</div>
           <div className="mt-2 space-y-1 text-sm text-white/78">
             <div>Support: {card.keyLevels.support}</div>
@@ -85,9 +85,9 @@ function Metric({
         : "text-white";
 
   return (
-    <div className={`rounded-2xl border px-3 py-3 ${accentClass}`}>
+    <div className={`min-w-0 rounded-2xl border px-3 py-3 ${accentClass}`}>
       <div className="text-[10px] uppercase tracking-[0.16em] text-white/36">{label}</div>
-      <div className={`mt-2 text-sm font-semibold ${valueClass}`}>{value}</div>
+      <div className={`mt-2 wrap-break-word text-sm leading-6 font-semibold ${valueClass}`}>{value}</div>
     </div>
   );
 }
