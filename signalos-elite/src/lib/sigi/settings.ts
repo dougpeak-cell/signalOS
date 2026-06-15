@@ -9,8 +9,11 @@ import {
 } from "@/lib/sigi/plans";
 
 const DEFAULT_SIGI_BASE_URL = "https://api.openai.com/v1";
-const DEFAULT_SIGI_MODEL = "gpt-4.1-mini";
+const DEFAULT_SIGI_MODEL = "gpt-5.4-mini";
 const ALLOWED_MODELS = new Set([
+  "gpt-5.5",
+  "gpt-5.4",
+  "gpt-5.4-mini",
   "gpt-4.1-mini",
   "gpt-4.1",
   "gpt-4o-mini",
@@ -33,10 +36,14 @@ function formatBillingDate(value: string | null | undefined): string | null {
   }).format(date);
 }
 
+function getTierScopedEnvModel(tier: SigiTier): string {
+  if (hasPro(tier)) return process.env.SIGI_PRO_MODEL || "gpt-5.5";
+  if (hasSmart(tier)) return process.env.SIGI_SMART_MODEL || "gpt-5.4";
+  return process.env.SIGI_FREE_MODEL || "gpt-5.4-mini";
+}
+
 export function getDefaultModelByTier(tier: SigiTier): string {
-  if (hasPro(tier)) return "gpt-4.1";
-  if (hasSmart(tier)) return "gpt-4.1-mini";
-  return "gpt-4o-mini";
+  return normalizeModel(getTierScopedEnvModel(tier));
 }
 
 export type StoredSigiSettingsRow = {
@@ -145,6 +152,26 @@ function normalizeModel(value: string | null | undefined): string {
   return ALLOWED_MODELS.has(model) ? model : DEFAULT_SIGI_MODEL;
 }
 
+function buildEnvConfig(currentTier: SigiTier = "free"): SigiResolvedModelConfig | null {
+  const apiKey = process.env.SIGI_API_KEY ?? process.env.OPENAI_API_KEY ?? null;
+  if (!apiKey) return null;
+
+  const tierModel = getDefaultModelByTier(currentTier);
+
+  return {
+    provider: process.env.SIGI_PROVIDER ?? "openai-compatible",
+    baseUrl: normalizeBaseUrl(process.env.SIGI_BASE_URL ?? process.env.OPENAI_BASE_URL),
+    apiKey,
+    model: normalizeModel(process.env.SIGI_MODEL ?? process.env.OPENAI_MODEL ?? tierModel),
+    requestLimitPerMinute: RATE_LIMIT_MAX_REQUESTS,
+    source: "env",
+  };
+}
+
+export function getHostedSigiModelConfig(currentTier: SigiTier = "free"): SigiResolvedModelConfig | null {
+  return buildEnvConfig(currentTier);
+}
+
 async function getAuthContext(): Promise<AuthContext> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -199,36 +226,15 @@ function resolveCurrentTier(
   return normalizeSigiTier(profile?.sigi_tier);
 }
 
-function buildEnvConfig(): SigiResolvedModelConfig | null {
-  const apiKey = process.env.SIGI_API_KEY ?? process.env.OPENAI_API_KEY ?? null;
-  if (!apiKey) return null;
-
-  return {
-    provider: process.env.SIGI_PROVIDER ?? "openai-compatible",
-    baseUrl: normalizeBaseUrl(process.env.SIGI_BASE_URL ?? process.env.OPENAI_BASE_URL),
-    apiKey,
-    model: normalizeModel(process.env.SIGI_MODEL ?? process.env.OPENAI_MODEL),
-    requestLimitPerMinute: RATE_LIMIT_MAX_REQUESTS,
-    source: "env",
-  };
-}
-
-export function getHostedSigiModelConfig(): SigiResolvedModelConfig | null {
-  return buildEnvConfig();
-}
-
 function shouldUseCustomProvider(
   tier: SigiTier,
   row: StoredSigiSettingsRow | null,
   profile: StoredProfileRow | null
 ): boolean {
-  if (!hasSmart(tier)) return false;
-
-  if (profile?.sigi_provider_enabled && profile?.sigi_provider_api_key_encrypted) {
-    return true;
-  }
-
-  return Boolean(row?.is_enabled && row?.encrypted_api_key);
+  void tier;
+  void row;
+  void profile;
+  return false;
 }
 
 function resolveBillingStatus(profile: StoredProfileRow | null, tier: SigiTier): SigiBillingStatus {
@@ -270,20 +276,18 @@ function toViewModel(
   const isSignedIn = Boolean(userId);
   const currentTier = currentTierOverride ?? resolveCurrentTier(profile, row);
   const paidAccessEnabled = hasSmart(currentTier);
-  const hostedConfig = buildEnvConfig();
+  const hostedConfig = buildEnvConfig(currentTier);
   const hostedAiAvailable = hostedConfig != null;
   const usingOwnProvider = shouldUseCustomProvider(currentTier, row, profile);
-  const canManage = isSignedIn && hasSmart(currentTier);
+  const canManage = false;
   const billingStatus = resolveBillingStatus(profile, currentTier);
   const billingUI = getBillingUI(profile);
   const tierCard = getSigiTierCard(currentTier);
-  const provider = profile?.sigi_provider_label ?? row?.provider ?? "openai-compatible";
-  const baseUrl = profile?.sigi_provider_base_url ?? row?.base_url ?? DEFAULT_SIGI_BASE_URL;
-  const model = normalizeModel(profile?.sigi_provider_model ?? row?.model);
-  const apiKeyConfigured = Boolean(
-    profile?.sigi_provider_api_key_encrypted ?? row?.encrypted_api_key
-  );
-  const isEnabled = Boolean(profile?.sigi_provider_enabled ?? row?.is_enabled ?? false);
+  const provider = hostedConfig?.provider ?? "openai-compatible";
+  const baseUrl = hostedConfig?.baseUrl ?? DEFAULT_SIGI_BASE_URL;
+  const model = normalizeModel(hostedConfig?.model);
+  const apiKeyConfigured = false;
+  const isEnabled = false;
   const pendingTier = normalizeSigiTier(profile?.pending_sigi_tier);
   const scheduledTier = pendingTier !== currentTier ? pendingTier : null;
 
@@ -293,7 +297,7 @@ function toViewModel(
   } else if (!hasSmart(currentTier)) {
     message = "SigiOS Experts is reserved for Pro members. Upgrade when you want institutional-grade setups, deeper AI analysis, and premium market workflows.";
   } else if (!encryptionReady && isSignedIn) {
-    message = "Hosted Sigi AI stays active. SIGI_SETTINGS_ENCRYPTION_KEY is only needed if you want to store your own provider key in Advanced AI Settings.";
+    message = "Hosted Sigi AI stays active.";
   }
 
   return {
@@ -371,9 +375,11 @@ export async function getResolvedSigiModelConfigForCurrentUser(): Promise<SigiRe
         };
       }
     }
+
+    return buildEnvConfig(currentTier);
   }
 
-  return buildEnvConfig();
+  return buildEnvConfig(previewTier ?? "free");
 }
 
 export async function resetSigiPersonalProviderFailureStateForCurrentUser(): Promise<void> {

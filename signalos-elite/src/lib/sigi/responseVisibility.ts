@@ -27,5 +27,7 @@ export function getVisibleSigiTextFromPayload(payload: unknown): string | null {
 
   const record = payload as Record<string, unknown>;
   const text = readText(record.text);
-  return text || null;
+  const answer = readText(record.answer);
+  const summary = readText(record.summary);
+  return text || answer || summary || null;
 }

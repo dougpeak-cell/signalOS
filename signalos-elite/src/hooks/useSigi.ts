@@ -5,6 +5,7 @@ import {
   getSigiProfile,
 } from "@/lib/sigi/sigiProfile";
 import { getVisibleSigiTextFromPayload } from "@/lib/sigi/responseVisibility";
+import type { SigiTier } from "@/lib/sigi/gates";
 
 export type SigiStockContext = {
   ticker?: string;
@@ -71,6 +72,7 @@ export function useSigi() {
       const profile = getSigiProfile();
       const userName = profile?.name ?? "friend";
       const profilePrompt = buildSigiProfilePrompt(profile);
+      const plan: SigiTier = "free";
 
       const res = await fetch("/api/sigi", {
         method: "POST",
@@ -78,6 +80,24 @@ export function useSigi() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          question: message,
+          ticker: stock?.ticker?.trim().toUpperCase() || undefined,
+          plan,
+          marketContext: {
+            profilePrompt,
+            stock: stock ?? null,
+            context: context ?? null,
+          },
+          portfolioContext: {
+            tickers: context?.portfolioTickers ?? [],
+            trackedQuotes: context?.trackedQuotes ?? [],
+          },
+          watchlistContext: {
+            tickers: context?.watchlistTickers ?? [],
+            headlines: context?.headlines ?? [],
+          },
+
+          // Legacy compatibility for any route implementation still expecting the older shape.
           message,
           profilePrompt,
           stock: stock ?? null,
