@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import SigiIntelligenceCardView from "@/components/sigi/SigiIntelligenceCard";
 import { renderTickerParagraphs, renderTickerText } from "@/components/sigi/renderTickerText";
@@ -20,6 +20,8 @@ type StockAskSigiCardProps = {
   stockContext?: SigiStockContext | null;
   onResolvedTicker?: (ticker: string) => void | Promise<void>;
 };
+
+type SigiAnswerMode = "analyze" | "short";
 
 function withTicker(question: string, ticker: string) {
   return `${question} Focus on ${ticker}.`;
@@ -120,12 +122,15 @@ export default function StockAskSigiCard({
   const router = useRouter();
   const { tier } = useSigiTier();
   const { setActiveTicker } = useSelectedTicker();
+  const requestIdRef = useRef(0);
   const [question, setQuestion] = useState("");
   const [response, setResponse] = useState<string | null>(null);
   const [intelligenceCard, setIntelligenceCard] = useState<SigiIntelligenceCard | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [answerMode, setAnswerMode] = useState<SigiAnswerMode>("analyze");
   const hasSigiSmart = tier === "smart" || tier === "pro";
+  const hasSigiPro = tier === "pro";
 
   if (!hasSigiSmart) {
     return <UpgradeSigiSmartCard />;
@@ -166,6 +171,7 @@ export default function StockAskSigiCard({
     setError(null);
     setResponse(null);
     setIntelligenceCard(null);
+    const requestId = ++requestIdRef.current;
 
     try {
       if (onResolvedTicker) {
@@ -191,37 +197,44 @@ export default function StockAskSigiCard({
       }
 
       const stock = contextData?.stock || { ticker: resolvedTicker };
-      const [res, fetchedCard] = await Promise.all([
-        fetch("/api/sigi", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message: withTicker(trimmed, resolvedTicker),
-            stock,
-          }),
+      const intelligenceCardPromise =
+        answerMode === "analyze"
+          ? fetchSigiIntelligenceCard({
+              question: trimmed,
+              ticker: resolvedTicker,
+              marketData: {
+                price: stock.price ?? null,
+                changePercent: stock.changePercent ?? null,
+                volume: stock.volume ?? null,
+                sector: stock.sector ?? null,
+                relativeVolume: stock.relativeVolume ?? null,
+                marketCap: stock.marketCap ?? null,
+                support: stock.support ?? null,
+                resistance: stock.resistance ?? null,
+                trend: stock.trend ?? null,
+                setup: stock.setup ?? null,
+                catalyst: stock.catalyst ?? null,
+              },
+            })
+          : null;
+
+      const res = await fetch("/api/sigi", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          answerMode,
+          message: withTicker(trimmed, resolvedTicker),
+          stock,
         }),
-        fetchSigiIntelligenceCard({
-          question: trimmed,
-          ticker: resolvedTicker,
-          marketData: {
-            price: stock.price ?? null,
-            changePercent: stock.changePercent ?? null,
-            volume: stock.volume ?? null,
-            sector: stock.sector ?? null,
-            relativeVolume: stock.relativeVolume ?? null,
-            marketCap: stock.marketCap ?? null,
-            support: stock.support ?? null,
-            resistance: stock.resistance ?? null,
-            trend: stock.trend ?? null,
-            setup: stock.setup ?? null,
-            catalyst: stock.catalyst ?? null,
-          },
-        }),
-      ]);
+      });
 
       const data = await res.json();
+
+      if (requestIdRef.current !== requestId) {
+        return;
+      }
 
       if (!res.ok) {
         throw new Error(data?.error || "Sigi request failed.");
@@ -229,8 +242,18 @@ export default function StockAskSigiCard({
 
       const nextResponse = getVisibleSigiTextFromPayload(data);
       setResponse(nextResponse);
-      setIntelligenceCard(fetchedCard ?? data.intelligenceCard ?? null);
+      setIntelligenceCard(data.intelligenceCard ?? null);
       setQuestion("");
+
+      if (intelligenceCardPromise) {
+        void intelligenceCardPromise.then((fetchedCard) => {
+          if (!fetchedCard || requestIdRef.current !== requestId) {
+            return;
+          }
+
+          setIntelligenceCard(fetchedCard);
+        });
+      }
     } catch (err) {
       setIntelligenceCard(null);
       setError(err instanceof Error ? err.message : "Sigi request failed.");
@@ -294,6 +317,34 @@ export default function StockAskSigiCard({
             ))}
           </div>
 
+          {hasSigiPro ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {([
+                { id: "analyze", label: "Analyze" },
+                { id: "short", label: "Short Answer" },
+              ] as const).map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setAnswerMode(option.id)}
+                  className={[
+                    "rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                    answerMode === option.id
+                      ? "border-cyan-300/40 bg-cyan-400/12 text-cyan-100"
+                      : "border-white/10 bg-white/4 text-white/60 hover:border-white/20 hover:text-white",
+                  ].join(" ")}
+                >
+                  {option.label}
+                </button>
+              ))}
+              <div className="text-[11px] text-white/38">
+                {answerMode === "short"
+                  ? "Short Answer uses the Pro model for a faster, tighter read."
+                  : "Analyze keeps the deeper Pro read and fills the intelligence card after the answer lands."}
+              </div>
+            </div>
+          ) : null}
+
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               value={question}
@@ -314,7 +365,7 @@ export default function StockAskSigiCard({
               disabled={loading || !question.trim()}
               className="inline-flex h-12 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-5 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-400/16 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "Sigi is scanning..." : title}
+              {loading ? (answerMode === "short" ? "Sigi is answering..." : "Sigi is scanning...") : answerMode === "short" ? "Short Answer" : title}
             </button>
           </div>
         </div>

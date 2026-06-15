@@ -10,6 +10,7 @@ const openai = new OpenAI({
 });
 
 type Plan = "free" | "smart" | "pro";
+type AnswerMode = "analyze" | "short";
 
 type LegacyStockContext = {
   ticker?: string;
@@ -44,6 +45,7 @@ type SigiRequestBody = {
   mode?: string;
   sector?: string;
   plan?: Plan;
+  answerMode?: AnswerMode;
   profilePrompt?: string;
   marketContext?: unknown;
   portfolioContext?: unknown;
@@ -60,6 +62,10 @@ function getSigiModel(plan: Plan) {
 
 function normalizePlan(value: unknown): Plan | null {
   return value === "pro" || value === "smart" || value === "free" ? value : null;
+}
+
+function normalizeAnswerMode(value: unknown): AnswerMode {
+  return value === "short" ? "short" : "analyze";
 }
 
 async function resolvePlan(value: unknown): Promise<Plan> {
@@ -270,6 +276,7 @@ export async function POST(req: Request) {
     const question = extractQuestion(body);
     const ticker = extractTicker(body);
     const plan = await resolvePlan(body.plan);
+    const answerMode = normalizeAnswerMode(body.answerMode);
     const sector = typeof body.sector === "string" ? body.sector.trim() : "";
     const marketContext = buildMarketContext(body);
     const portfolioContext =
@@ -294,8 +301,9 @@ export async function POST(req: Request) {
     const response = await openai.responses.create({
       model,
       reasoning: {
-        effort: "medium",
+        effort: answerMode === "short" ? "low" : "medium",
       },
+      max_output_tokens: answerMode === "short" ? 220 : undefined,
       input: [
         {
           role: "system",
@@ -311,12 +319,15 @@ Rules:
 - Be concise but intelligent.
 - If data is missing, say what is missing.
 - For Pro users, sound more institutional and analytical.
+- If response mode is short, answer in 3 to 5 tight sentences and end with one clear actionable takeaway.
+- If response mode is analyze, give a fuller institutional read while staying concise.
           `,
         },
         {
           role: "user",
           content: `
 User plan: ${plan}
+Response mode: ${answerMode}
 Ticker focus: ${ticker || "none"}
 
 User question:
@@ -340,6 +351,7 @@ ${JSON.stringify(watchlistContext ?? {}, null, 2)}
       answer: response.output_text,
       model,
       plan,
+      answerMode,
       mode: "future-ai",
     });
   } catch (error: any) {

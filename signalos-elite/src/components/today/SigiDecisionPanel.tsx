@@ -114,6 +114,8 @@ type DesktopSigiApiResponse = {
   } | null;
 };
 
+type SigiAnswerMode = "analyze" | "short";
+
 function getSigiIntelligenceResetKey() {
   const easternDate = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York",
@@ -265,6 +267,7 @@ function SigiDecisionPanelContent({
   const { tier, previewActive } = useSigiTier();
   const { ensureQuotes, quoteMap } = useLiveMarket();
   const lastHandledSigiActionNonceRef = useRef(sigiActionNonce);
+  const lastAnalysisRequestRef = useRef(0);
   const previewBootstrapRef = useRef(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [profile, setProfile] = useState<SigiProfile | null>(null);
@@ -276,6 +279,7 @@ function SigiDecisionPanelContent({
   const [todayIntel, setTodayIntel] = useState<any>(null);
   const [lastInteraction, setLastInteraction] = useState<"click" | "type">("type");
   const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [answerMode, setAnswerMode] = useState<SigiAnswerMode>("analyze");
   const [intelligenceResetKey, setIntelligenceResetKey] = useState(() =>
     getSigiIntelligenceResetKey()
   );
@@ -701,6 +705,7 @@ function SigiDecisionPanelContent({
     setError(null);
     setResponse(null);
     setIsAnalyzing(true);
+    const requestId = ++lastAnalysisRequestRef.current;
 
     try {
       await loadHeroStory(resolvedTicker);
@@ -716,38 +721,45 @@ function SigiDecisionPanelContent({
         : parsed.ticker
           ? parsed.originalQuestion
           : withTicker(trimmed, resolvedTicker);
-      const [response, fetchedCard] = await Promise.all([
-        fetch("/api/sigi", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: withTicker(question, resolvedTicker),
-            profilePrompt: buildSigiProfilePrompt(profile),
-            stock: context ?? null,
-            context: null,
-            source: "today_desktop",
-          }),
+      const intelligenceCardPromise =
+        answerMode === "analyze"
+          ? fetchSigiIntelligenceCard({
+              question,
+              ticker: resolvedTicker,
+              marketData: {
+                price: context?.price ?? null,
+                changePercent: context?.changePercent ?? null,
+                volume: context?.volume ?? null,
+                sector: context?.sector ?? null,
+                relativeVolume: context?.relativeVolume ?? null,
+                marketCap: context?.marketCap ?? null,
+                support: context?.support ?? null,
+                resistance: context?.resistance ?? null,
+                trend: context?.trend ?? null,
+                setup: context?.setup ?? null,
+                catalyst: context?.catalyst ?? null,
+              },
+            })
+          : null;
+
+      const response = await fetch("/api/sigi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: withTicker(question, resolvedTicker),
+          answerMode,
+          profilePrompt: buildSigiProfilePrompt(profile),
+          stock: context ?? null,
+          context: null,
+          source: "today_desktop",
         }),
-        fetchSigiIntelligenceCard({
-          question,
-          ticker: resolvedTicker,
-          marketData: {
-            price: context?.price ?? null,
-            changePercent: context?.changePercent ?? null,
-            volume: context?.volume ?? null,
-            sector: context?.sector ?? null,
-            relativeVolume: context?.relativeVolume ?? null,
-            marketCap: context?.marketCap ?? null,
-            support: context?.support ?? null,
-            resistance: context?.resistance ?? null,
-            trend: context?.trend ?? null,
-            setup: context?.setup ?? null,
-            catalyst: context?.catalyst ?? null,
-          },
-        }),
-      ]);
+      });
 
       const data = (await response.json()) as DesktopSigiApiResponse;
+
+      if (lastAnalysisRequestRef.current !== requestId) {
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Sigi request failed.");
@@ -761,7 +773,9 @@ function SigiDecisionPanelContent({
       }
 
       const thesis = data.thesis ?? null;
-      const title = thesis?.title?.trim() || `${resolvedTicker} Sigi Read`;
+      const title =
+        thesis?.title?.trim() ||
+        (answerMode === "short" ? `${resolvedTicker} Quick Sigi Read` : `${resolvedTicker} Sigi Read`);
       const thesisSummary = thesis?.summary?.trim() || null;
       const analysis = thesisSummary && thesisSummary !== answer ? thesisSummary : null;
 
@@ -774,9 +788,26 @@ function SigiDecisionPanelContent({
         risk: thesis?.risk ?? data.intelligence?.risk ?? data.risk ?? null,
         catalyst: thesis?.catalyst ?? data.intelligence?.catalyst ?? data.catalyst ?? null,
         nextStep: data.intelligence?.nextStep ?? data.nextStep ?? null,
-        intelligenceCard: fetchedCard ?? data.intelligenceCard ?? null,
+        intelligenceCard: data.intelligenceCard ?? null,
       });
       setSigiInput("");
+
+      if (intelligenceCardPromise) {
+        void intelligenceCardPromise.then((fetchedCard) => {
+          if (!fetchedCard || lastAnalysisRequestRef.current !== requestId) {
+            return;
+          }
+
+          setResponse((current) =>
+            current
+              ? {
+                  ...current,
+                  intelligenceCard: fetchedCard,
+                }
+              : current
+          );
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sigi request failed.");
     } finally {
@@ -918,6 +949,34 @@ function SigiDecisionPanelContent({
           </div>
         ) : null}
 
+        {hasSigiPro ? (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            {([
+              { id: "analyze", label: "Analyze" },
+              { id: "short", label: "Short Answer" },
+            ] as const).map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setAnswerMode(option.id)}
+                className={[
+                  "rounded-full border px-3 py-1.5 text-[11px] font-semibold transition",
+                  answerMode === option.id
+                    ? "border-cyan-300/40 bg-cyan-400/12 text-cyan-100"
+                    : "border-white/10 bg-white/5 text-white/55 hover:border-white/20 hover:text-white",
+                ].join(" ")}
+              >
+                {option.label}
+              </button>
+            ))}
+            <div className="text-[11px] text-white/38">
+              {answerMode === "short"
+                ? "Pro short answer prioritizes speed and the clearest takeaway."
+                : "Pro analyze keeps the deeper read and fills the intelligence card after the answer lands."}
+            </div>
+          </div>
+        ) : null}
+
         <div className="flex items-center gap-2">
         <input
           id="sigi-command-input"
@@ -948,7 +1007,7 @@ function SigiDecisionPanelContent({
           ].join(" ")}
         >
           <span className="relative z-10 inline-flex items-center">
-            {isAnalyzing ? "Analyzing..." : "Analyze"}
+            {isAnalyzing ? (answerMode === "short" ? "Answering..." : "Analyzing...") : answerMode === "short" ? "Short Answer" : "Analyze"}
             {isAnalyzing ? (
               <span className="ml-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
             ) : null}
