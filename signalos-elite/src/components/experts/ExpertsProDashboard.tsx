@@ -845,6 +845,7 @@ export default function ExpertsPage() {
               <div id="sigi-analyst-leaders" className="mt-6 scroll-mt-28">
                 <SigiAnalystLeaders
                   selectedSector={selectedExpertSector}
+                  onSectorChange={setSelectedExpertSector}
                   onLeaderChange={setCurrentAnalystLeader}
                 />
               </div>

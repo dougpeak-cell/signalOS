@@ -62,9 +62,11 @@ const mockLeaders: Record<string, SigiAnalystLeader> = {
 
 export default function SigiAnalystLeaders({
   selectedSector,
+  onSectorChange,
   onLeaderChange,
 }: {
   selectedSector?: string;
+  onSectorChange?: (sector: string) => void;
   onLeaderChange?: (leader: SigiAnalystLeader | null) => void;
 }) {
   const [activeSector, setActiveSector] = useState("Technology");
@@ -101,7 +103,7 @@ export default function SigiAnalystLeaders({
 
     setInput(selectedSector);
     void requestAnalystLeader(selectedSector);
-  }, [activeSector, selectedSector]);
+  }, [selectedSector]);
 
   const displayAnalyst = isDisclosureHidden(leader.analyst)
     ? "Sigi Sector Leader"
@@ -148,7 +150,14 @@ export default function SigiAnalystLeaders({
 
   async function handleAskSigi() {
     const sector = input.trim() || activeSector;
+    onSectorChange?.(sector);
     await requestAnalystLeader(sector);
+  }
+
+  function handleSelectSector(sector: string) {
+    setInput(sector);
+    onSectorChange?.(sector);
+    void requestAnalystLeader(sector);
   }
 
   return (
@@ -191,10 +200,7 @@ export default function SigiAnalystLeaders({
         {sectors.map((sector) => (
           <button
             key={sector}
-            onClick={() => {
-              setInput(sector);
-              void requestAnalystLeader(sector);
-            }}
+            onClick={() => handleSelectSector(sector)}
             disabled={loading}
             className={`rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] transition ${
               activeSector === sector
