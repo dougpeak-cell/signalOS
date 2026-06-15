@@ -459,8 +459,11 @@ export default function LandingPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
             <Pricing
               name="Smart"
-              price="Preview Access"
+              amount="$9.00"
+              priceSuffix="/mo"
+              headline="Preview Access"
               badge="Most Popular"
+              href="/auth/upgrade?plan=smart"
               items={[
                 "Ask Sigi market questions",
                 "Open Watchlist and Portfolio",
@@ -469,8 +472,11 @@ export default function LandingPage() {
             />
             <Pricing
               name="Pro"
-              price="Full Intelligence"
+              amount="$24.00"
+              priceSuffix="/mo"
+              headline="Full Intelligence"
               badge="Full Access"
+              href="/auth/upgrade?plan=pro"
               items={[
                 "Experts and Screener access",
                 "Trading workspace workflows",
@@ -604,34 +610,55 @@ function Feature({ title, text }: { title: string; text: string }) {
 
 function Pricing({
   name,
-  price,
+  amount,
+  priceSuffix,
+  headline,
   badge,
+  href,
   items,
 }: {
   name: string;
-  price: string;
+  amount: string;
+  priceSuffix?: string;
+  headline: string;
   badge: string;
+  href: string;
   items: string[];
 }) {
   return (
-    <div className="rounded-[1.75rem] border border-white/10 bg-[#08131b] p-6 text-white shadow-[0_14px_40px_rgba(0,0,0,0.18)]">
+    <div className="rounded-[1.75rem] border border-white/10 bg-[#08131b] p-6 text-white shadow-[0_14px_40px_rgba(0,0,0,0.18)] sm:p-7">
       <div className="inline-flex rounded-full border border-teal-300/20 bg-teal-300/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-teal-100">
         {badge}
       </div>
-      <div className="text-sm font-semibold uppercase tracking-[0.22em] text-teal-200/70">
+      <div className="mt-3 text-sm font-semibold uppercase tracking-[0.22em] text-teal-200/78 sm:text-base">
         {name}
       </div>
-      <div className="mt-2 text-2xl font-black">{price}</div>
 
-      <div className="mt-4 space-y-2 text-sm leading-7 text-white/72">
+      <div className="mt-3 flex items-end gap-1.5 text-white">
+        <div className="text-4xl font-black leading-none sm:text-5xl">{amount}</div>
+        {priceSuffix ? (
+          <div className="pb-1 text-sm font-semibold text-white/55 sm:text-base">
+            {priceSuffix}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mt-3 text-2xl font-black leading-tight text-white sm:text-[2rem]">
+        {headline}
+      </div>
+
+      <div className="mt-5 space-y-3 text-base leading-8 text-white/82 sm:text-lg">
         {items.map((item) => (
           <div key={item}>✓ {item}</div>
         ))}
       </div>
 
-      <div className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full border border-white/12 px-4 text-sm font-semibold text-white/88">
+      <Link
+        href={href}
+        className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/12 px-4 text-base font-semibold text-white/92 transition hover:border-teal-300/35 hover:bg-teal-300/10 hover:text-white"
+      >
         Choose {name}
-      </div>
+      </Link>
     </div>
   );
 }
