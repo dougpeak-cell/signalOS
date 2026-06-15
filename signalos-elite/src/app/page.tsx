@@ -103,6 +103,7 @@ type MobileShowcase = {
   text: string;
   img: string | StaticImageData;
   accent: string;
+  featured?: boolean;
 };
 
 const mobileShowcases: readonly MobileShowcase[] = [
@@ -123,6 +124,7 @@ const mobileShowcases: readonly MobileShowcase[] = [
     text: "Check live price action, fast market buttons, and chart access without leaving your mobile workflow.",
     img: "/images/mobile-live-chart.png",
     accent: "Watch the move in real time",
+    featured: true,
   },
   {
     title: "Quick Watchlist",
@@ -329,6 +331,7 @@ export default function LandingPage() {
                     text={item.text}
                     img={item.img}
                     accent={item.accent}
+                    featured={item.featured}
                     priority={index === 0}
                   />
                 ))}
@@ -532,32 +535,45 @@ function MobileShowcaseCard({
   text,
   img,
   accent,
+  featured = false,
   priority = false,
 }: {
   title: string;
   text: string;
   img: string | StaticImageData;
   accent: string;
+  featured?: boolean;
   priority?: boolean;
 }) {
   return (
-    <article className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(7,18,27,0.95),rgba(5,12,19,0.98))] shadow-[0_16px_40px_rgba(0,0,0,0.22)]">
+    <article
+      className={[
+        "overflow-hidden rounded-[1.6rem] shadow-[0_16px_40px_rgba(0,0,0,0.22)]",
+        featured
+          ? "border border-cyan-300/22 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.14),transparent_42%),linear-gradient(180deg,rgba(7,20,31,0.98),rgba(4,11,18,1))] sm:col-span-2"
+          : "border border-white/10 bg-[linear-gradient(180deg,rgba(7,18,27,0.95),rgba(5,12,19,0.98))]",
+      ].join(" ")}
+    >
       <div className="border-b border-white/8 px-4 py-3">
-        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-200/82">
+        <div className={featured ? "text-[10px] font-black uppercase tracking-[0.22em] text-cyan-100" : "text-[10px] font-black uppercase tracking-[0.22em] text-cyan-200/82"}>
           {accent}
         </div>
-        <div className="mt-1 text-lg font-black text-white">{title}</div>
-        <p className="mt-2 text-sm leading-6 text-white/62">{text}</p>
+        <div className={featured ? "mt-1 text-xl font-black text-white sm:text-2xl" : "mt-1 text-lg font-black text-white"}>
+          {title}
+        </div>
+        <p className={featured ? "mt-2 max-w-2xl text-sm leading-7 text-white/72" : "mt-2 text-sm leading-6 text-white/62"}>
+          {text}
+        </p>
       </div>
 
-      <div className="p-3">
-        <div className="overflow-hidden rounded-[1.25rem] border border-white/8 bg-[#07131d]">
+      <div className={featured ? "p-3 sm:p-4" : "p-3"}>
+        <div className={featured ? "overflow-hidden rounded-[1.35rem] border border-cyan-300/14 bg-[#07131d]" : "overflow-hidden rounded-[1.25rem] border border-white/8 bg-[#07131d]"}>
           <Image
             src={img}
             alt={title}
             width={900}
             height={1600}
-            className="h-auto w-full object-contain object-top"
+            className={featured ? "h-auto max-h-[42rem] w-full object-contain object-top" : "h-auto w-full object-contain object-top"}
             priority={priority}
           />
         </div>
