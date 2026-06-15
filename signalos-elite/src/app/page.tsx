@@ -98,6 +98,40 @@ const screenshots: readonly LandingScreenshot[] = [
   },
 ];
 
+type MobileShowcase = {
+  title: string;
+  text: string;
+  img: string | StaticImageData;
+  accent: string;
+};
+
+const mobileShowcases: readonly MobileShowcase[] = [
+  {
+    title: "Market Thesis",
+    text: "Start with the headline, setup, and context before acting on noise.",
+    img: "/images/today-market-thesis-mobile.png",
+    accent: "See what matters now",
+  },
+  {
+    title: "Best Stocks",
+    text: "Open a mobile-ranked feed of names already scored by SigiOS.",
+    img: "/images/best-stocks-screener-mobile.png",
+    accent: "Move from thesis to opportunity",
+  },
+  {
+    title: "Quick Watchlist",
+    text: "Track your watched names in a condensed view built for fast scanning.",
+    img: "/images/quickview-watchlist-mobile.png",
+    accent: "Keep the leaders visible",
+  },
+  {
+    title: "Quick Portfolio",
+    text: "Check live value, conviction, and movement without opening a heavy desktop workflow.",
+    img: "/images/quickview-portfolio-mobile.png",
+    accent: "Know the position instantly",
+  },
+];
+
 export default function LandingPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.18),transparent_36%),linear-gradient(180deg,#041017_0%,#071722_45%,#f4efe4_100%)] text-white">
@@ -200,6 +234,122 @@ export default function LandingPage() {
       </section>
 
       <section id="features" className="mx-auto max-w-368 px-4 py-12 sm:px-6 lg:px-8">
+        <div
+          className="overflow-hidden rounded-[2rem] border border-cyan-300/18 bg-[#03101a] shadow-[0_28px_80px_rgba(0,0,0,0.34)]"
+          style={{
+            backgroundImage: "linear-gradient(180deg, rgba(3,16,26,0.88), rgba(4,14,23,0.96)), url('/images/sigi-hero-bg.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div className="grid gap-8 px-4 py-6 sm:px-7 sm:py-8 lg:grid-cols-[0.92fr_1.08fr] lg:gap-10 lg:px-10 lg:py-10">
+            <div className="min-w-0">
+              <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-1 text-[11px] font-bold uppercase tracking-[0.26em] text-cyan-100">
+                Mobile View
+              </div>
+
+              <h2 className="mt-5 max-w-[12ch] text-3xl font-black leading-[0.95] text-white sm:text-4xl lg:text-5xl">
+                Stop guessing. See the market clearly from your phone.
+              </h2>
+
+              <p className="mt-5 max-w-xl text-sm leading-7 text-white/72 sm:text-base">
+                SigiOS turns mobile investing into a disciplined workflow: read the market thesis, open the strongest names, track your watchlist, and monitor your portfolio before emotion takes over.
+              </p>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                <MobileStep
+                  label="1"
+                  title="Start with the thesis"
+                  text="Know what is driving the market before you chase a ticker."
+                />
+                <MobileStep
+                  label="2"
+                  title="Open the strongest names"
+                  text="Jump straight into ranked setups, quick views, and live context."
+                />
+                <MobileStep
+                  label="3"
+                  title="Upgrade for full control"
+                  text="Start free, then unlock deeper intelligence when you are ready to act with conviction."
+                />
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href="/today"
+                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#f2e8c9] px-6 text-sm font-bold text-slate-950 transition hover:bg-[#f7efd7]"
+                >
+                  Start Free
+                </Link>
+
+                <Link
+                  href="#pricing"
+                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 px-6 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/8"
+                >
+                  See Pricing
+                </Link>
+              </div>
+
+              <div className="mt-8 rounded-[1.6rem] border border-cyan-300/14 bg-cyan-300/6 p-3 shadow-[0_16px_40px_rgba(0,0,0,0.2)] sm:p-4">
+                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-200/84">
+                  Mobile Learning Layer
+                </div>
+                <div className="mt-3 grid gap-4 sm:grid-cols-[0.88fr_1.12fr] sm:items-center">
+                  <div className="overflow-hidden rounded-[1.25rem] border border-white/10 bg-[#07131d]">
+                    <Image
+                      src="/images/education-mobile.png"
+                      alt="SigiOS education page on mobile"
+                      width={900}
+                      height={1600}
+                      className="h-auto w-full object-contain object-top"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-white">Learn while you invest.</div>
+                    <p className="mt-2 text-sm leading-7 text-white/65">
+                      New users do not need to leave SigiOS to decode signals, commands, or market terms before making a decision.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="min-w-0">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {mobileShowcases.map((item, index) => (
+                  <MobileShowcaseCard
+                    key={item.title}
+                    title={item.title}
+                    text={item.text}
+                    img={item.img}
+                    accent={item.accent}
+                    priority={index === 0}
+                  />
+                ))}
+              </div>
+
+              <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-amber-200/14 bg-[linear-gradient(180deg,rgba(15,13,20,0.96),rgba(9,17,27,0.98))] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.24)] sm:p-4">
+                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-100/72">
+                  Upgrade Path
+                </div>
+                <div className="mt-2 text-2xl font-black text-white">Try the workflow free. Upgrade when you want the full edge.</div>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-white/62">
+                  Start with quick-view access, then move into deeper Sigi intelligence, chart workflows, and full market coverage.
+                </p>
+                <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-white/8 bg-[#08131b]">
+                  <Image
+                    src="/images/sigi-pricing-mobile.png"
+                    alt="SigiOS pricing and access on mobile"
+                    width={1800}
+                    height={1300}
+                    className="h-auto w-full object-contain object-top"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="max-w-3xl">
           <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-200/70">
             What SigiOS Does
@@ -267,7 +417,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-368 px-4 py-12 sm:px-6 lg:px-8">
+      <section id="pricing" className="mx-auto max-w-368 px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="rounded-4xl border border-white/10 bg-[#08151d]/90 p-8 text-white shadow-[0_24px_60px_rgba(0,0,0,0.28)]">
             <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-200/70">
@@ -346,6 +496,67 @@ export default function LandingPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function MobileStep({
+  label,
+  title,
+  text,
+}: {
+  label: string;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="rounded-[1.4rem] border border-white/10 bg-white/4 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
+      <div className="flex items-center gap-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-300/30 bg-cyan-300/10 text-xs font-black text-cyan-100">
+          {label}
+        </div>
+        <div className="text-sm font-bold text-white">{title}</div>
+      </div>
+      <div className="mt-3 text-sm leading-6 text-white/62">{text}</div>
+    </div>
+  );
+}
+
+function MobileShowcaseCard({
+  title,
+  text,
+  img,
+  accent,
+  priority = false,
+}: {
+  title: string;
+  text: string;
+  img: string | StaticImageData;
+  accent: string;
+  priority?: boolean;
+}) {
+  return (
+    <article className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(7,18,27,0.95),rgba(5,12,19,0.98))] shadow-[0_16px_40px_rgba(0,0,0,0.22)]">
+      <div className="border-b border-white/8 px-4 py-3">
+        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-200/82">
+          {accent}
+        </div>
+        <div className="mt-1 text-lg font-black text-white">{title}</div>
+        <p className="mt-2 text-sm leading-6 text-white/62">{text}</p>
+      </div>
+
+      <div className="p-3">
+        <div className="overflow-hidden rounded-[1.25rem] border border-white/8 bg-[#07131d]">
+          <Image
+            src={img}
+            alt={title}
+            width={900}
+            height={1600}
+            className="h-auto w-full object-contain object-top"
+            priority={priority}
+          />
+        </div>
+      </div>
+    </article>
   );
 }
 
