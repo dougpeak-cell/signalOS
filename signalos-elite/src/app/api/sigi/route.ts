@@ -294,7 +294,7 @@ export async function POST(req: Request) {
     const response = await openai.responses.create({
       model,
       reasoning: {
-        effort: plan === "pro" ? "high" : "medium",
+        effort: "medium",
       },
       input: [
         {
