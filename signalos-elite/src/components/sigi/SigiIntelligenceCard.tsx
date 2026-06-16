@@ -28,10 +28,10 @@ export default function SigiIntelligenceCardView({
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
-        <Metric label="Trend" value={card.trendDirection} />
-        <Metric label="Momentum" value={card.momentumStatus} />
-        <Metric label="Sector" value={card.sectorStrength} />
-        <Metric label="Risk" value={card.riskMeter} />
+        <Metric label="Trend" value={card.trendDirection} variant="signal" />
+        <Metric label="Momentum" value={card.momentumStatus} variant="signal" />
+        <Metric label="Sector" value={card.sectorStrength} variant="signal" />
+        <Metric label="Risk" value={card.riskMeter} variant="signal" />
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
@@ -65,11 +65,14 @@ function Metric({
   label,
   value,
   accent = "default",
+  variant = "default",
 }: {
   label: string;
   value: string;
   accent?: "default" | "cyan" | "emerald";
+  variant?: "default" | "signal";
 }) {
+  const signalDisplay = variant === "signal" ? getSignalDisplay(label, value) : null;
   const accentClass =
     accent === "cyan"
       ? "border-cyan-400/14 bg-cyan-400/6"
@@ -84,12 +87,112 @@ function Metric({
         ? "text-emerald-100"
         : "text-white";
 
+  if (signalDisplay) {
+    return (
+      <div className="min-w-0 rounded-2xl border border-white/10 bg-white/4 px-3 py-3">
+        <div className="text-[10px] uppercase tracking-[0.16em] text-white/36">{label}</div>
+        <div className="mt-2 flex items-center gap-2">
+          <span
+            className={[
+              "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold",
+              signalDisplay.iconClass,
+            ].join(" ")}
+            aria-hidden="true"
+          >
+            {signalDisplay.icon}
+          </span>
+          <div className="min-w-0">
+            <div className={["text-sm font-semibold leading-5", signalDisplay.valueClass].join(" ")}>
+              {signalDisplay.shortLabel}
+            </div>
+            <div className="text-[11px] leading-4 text-white/42">{signalDisplay.caption}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-w-0 rounded-2xl border px-3 py-3 ${accentClass}`}>
       <div className="text-[10px] uppercase tracking-[0.16em] text-white/36">{label}</div>
       <div className={`mt-2 wrap-break-word text-sm leading-6 font-semibold ${valueClass}`}>{value}</div>
     </div>
   );
+}
+
+function getSignalDisplay(label: string, value: string) {
+  const normalizedLabel = label.trim().toLowerCase();
+  const normalizedValue = value.trim().toLowerCase();
+
+  if (normalizedLabel === "trend") {
+    if (normalizedValue === "bullish") {
+      return buildSignalDisplay("▲", "Bull", "Rising", "text-emerald-100", "bg-emerald-400/14 text-emerald-300");
+    }
+
+    if (normalizedValue === "bearish") {
+      return buildSignalDisplay("▼", "Bear", "Falling", "text-rose-100", "bg-rose-400/14 text-rose-300");
+    }
+
+    return buildSignalDisplay("•", "Neutral", "Balanced", "text-amber-100", "bg-amber-400/14 text-amber-300");
+  }
+
+  if (normalizedLabel === "momentum") {
+    if (normalizedValue === "strong") {
+      return buildSignalDisplay("▲", "Strong", "Accelerating", "text-emerald-100", "bg-emerald-400/14 text-emerald-300");
+    }
+
+    if (normalizedValue === "improving") {
+      return buildSignalDisplay("↗", "Up", "Improving", "text-emerald-100", "bg-emerald-400/14 text-emerald-300");
+    }
+
+    if (normalizedValue === "weakening") {
+      return buildSignalDisplay("↘", "Weak", "Slowing", "text-rose-100", "bg-rose-400/14 text-rose-300");
+    }
+
+    return buildSignalDisplay("•", "Mixed", "Uneven", "text-amber-100", "bg-amber-400/14 text-amber-300");
+  }
+
+  if (normalizedLabel === "sector") {
+    if (normalizedValue === "strong") {
+      return buildSignalDisplay("▲", "Strong", "Leading", "text-emerald-100", "bg-emerald-400/14 text-emerald-300");
+    }
+
+    if (normalizedValue === "weak") {
+      return buildSignalDisplay("▼", "Weak", "Lagging", "text-rose-100", "bg-rose-400/14 text-rose-300");
+    }
+
+    return buildSignalDisplay("•", "Moderate", "Neutral", "text-amber-100", "bg-amber-400/14 text-amber-300");
+  }
+
+  if (normalizedLabel === "risk") {
+    if (normalizedValue === "low") {
+      return buildSignalDisplay("✓", "Low", "Contained", "text-emerald-100", "bg-emerald-400/14 text-emerald-300");
+    }
+
+    if (normalizedValue === "high") {
+      return buildSignalDisplay("!", "High", "Elevated", "text-rose-100", "bg-rose-400/14 text-rose-300");
+    }
+
+    return buildSignalDisplay("•", "Med", "Watch", "text-amber-100", "bg-amber-400/14 text-amber-300");
+  }
+
+  return null;
+}
+
+function buildSignalDisplay(
+  icon: string,
+  shortLabel: string,
+  caption: string,
+  valueClass: string,
+  iconClass: string
+) {
+  return {
+    icon,
+    shortLabel,
+    caption,
+    valueClass,
+    iconClass,
+  };
 }
 
 function CaseBlock({
