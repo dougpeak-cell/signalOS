@@ -44,7 +44,6 @@ import type {
   TodaySetupSession,
   TodayWatchlistMoverRow,
 } from "@/lib/today/pageData";
-import type { TodayActionRowMetrics } from "@/lib/today/actionRow";
 
 type MobileSigiHomeProps = {
   hasSigiSmart: boolean;
@@ -60,7 +59,8 @@ type MobileSigiHomeProps = {
   highVolumeRows: TodayMostTradedRow[];
   watchlistRows: TodayWatchlistMoverRow[];
   defaultSetupSession: TodaySetupSession;
-  initialActionRowMetrics: TodayActionRowMetrics;
+  initialActionRowSetups: TodaySetupItem[];
+  initialActionRowUpdatedAt: number;
   forceVisible?: boolean;
 };
 
@@ -151,7 +151,8 @@ export default function MobileSigiHome({
   highVolumeRows,
   watchlistRows,
   defaultSetupSession,
-  initialActionRowMetrics,
+  initialActionRowSetups,
+  initialActionRowUpdatedAt,
   forceVisible = false,
 }: MobileSigiHomeProps): ReactElement {
   const { tier, previewActive } = useSigiTier();
@@ -959,7 +960,10 @@ export default function MobileSigiHome({
         </div>
       </div>
 
-      <TodayActionRowClient initialMetrics={initialActionRowMetrics} />
+      <TodayActionRowClient
+        initialSetups={initialActionRowSetups}
+        initialUpdatedAt={initialActionRowUpdatedAt}
+      />
 
       <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,30,0.96),rgba(3,7,18,0.9))] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
         <div className="flex items-start justify-between gap-3">

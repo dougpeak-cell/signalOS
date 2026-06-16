@@ -5,7 +5,6 @@ import MobileSigiHome from "@/components/today/MobileSigiHome";
 import TodayLoadingScreen from "@/components/today/TodayLoadingScreen";
 import { TodayHeroProvider } from "@/components/today/TodayHeroContext";
 import type { HeroStory } from "@/components/today/TodayHeroPanel";
-import type { TodayActionRowMetrics } from "@/lib/today/actionRow";
 import type { RankedSetupItem } from "@/lib/today/setupDiscovery";
 import type {
   TodayCommandCenterNewsRow,
@@ -30,7 +29,8 @@ type TodayMobileHomeSlotProps = {
   highVolumeRows: TodayMostTradedRow[];
   watchlistRows: TodayWatchlistMoverRow[];
   defaultSetupSession: TodaySetupSession;
-  initialActionRowMetrics: TodayActionRowMetrics;
+  initialActionRowSetups: TodaySetupItem[];
+  initialActionRowUpdatedAt: number;
   initialHeroStory?: HeroStory | null;
   forceVisible?: boolean;
   preMarketTopSetups: TodaySetupItem[];
@@ -49,7 +49,8 @@ export default function TodayMobileHomeSlot({
   highVolumeRows,
   watchlistRows,
   defaultSetupSession,
-  initialActionRowMetrics,
+  initialActionRowSetups,
+  initialActionRowUpdatedAt,
   initialHeroStory = null,
   forceVisible = false,
   preMarketTopSetups,
@@ -95,7 +96,8 @@ export default function TodayMobileHomeSlot({
         highVolumeRows={highVolumeRows}
         watchlistRows={watchlistRows}
         defaultSetupSession={defaultSetupSession}
-        initialActionRowMetrics={initialActionRowMetrics}
+        initialActionRowSetups={initialActionRowSetups}
+        initialActionRowUpdatedAt={initialActionRowUpdatedAt}
         forceVisible={forceVisible}
       />
     </TodayHeroProvider>

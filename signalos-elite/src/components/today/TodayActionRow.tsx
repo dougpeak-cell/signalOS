@@ -1,8 +1,18 @@
 import TodayActionRowClient from "@/components/today/TodayActionRowClient";
-import { getTodayActionRowMetrics } from "@/lib/today/actionRow";
+import { getTodayPageData } from "@/lib/today/pageData";
 
 export default async function TodayActionRow() {
-  const metrics = await getTodayActionRowMetrics();
+  const pageData = await getTodayPageData();
+  const initialSetups =
+    pageData.defaultSetupSession === "pre"
+      ? pageData.preMarketTopSetups
+      : pageData.topSetups;
+  const initialUpdatedAt = Date.now();
 
-  return <TodayActionRowClient initialMetrics={metrics} />;
+  return (
+    <TodayActionRowClient
+      initialSetups={initialSetups}
+      initialUpdatedAt={initialUpdatedAt}
+    />
+  );
 }

@@ -18,7 +18,6 @@ import {
 	multiCardRowClass,
 	todayPageStackClass,
 } from "@/components/today/TodayLayoutPrimitives";
-import { getTodayActionRowMetrics } from "@/lib/today/actionRow";
 import type { TodayPageData } from "@/lib/today/pageData";
 
 type TodayPageShellProps = Pick<
@@ -86,7 +85,9 @@ export default async function TodayPageShell({
 	const sigiMovers = [...commandCenterGainers, ...commandCenterLosers];
 	const shouldUseMobileTodayHome = isDevMobilePreview;
 	const shouldRenderDesktopTodayLayout = !shouldUseMobileTodayHome;
-	const actionRowMetrics = await getTodayActionRowMetrics();
+	const actionRowSetups =
+		defaultSetupSession === "pre" ? preMarketTopSetups : topSetups;
+	const actionRowUpdatedAt = Date.now();
 	const initialHeroStory = await getHeroStoryPayload();
 
 	return (
@@ -109,7 +110,8 @@ export default async function TodayPageShell({
 						highVolumeRows={defaultSetupSession === "pre" ? preMarketRows : regularMostTradedRows}
 						watchlistRows={watchlistMovers}
 						defaultSetupSession={defaultSetupSession}
-						initialActionRowMetrics={actionRowMetrics}
+						initialActionRowSetups={actionRowSetups}
+						initialActionRowUpdatedAt={actionRowUpdatedAt}
 						initialHeroStory={initialHeroStory}
 						forceVisible={shouldUseMobileTodayHome}
 					/>
@@ -125,7 +127,10 @@ export default async function TodayPageShell({
 						watchlistRows={watchlistMovers}
 						initialHeroStory={initialHeroStory}
 					/>
-					<TodayActionRowClient initialMetrics={actionRowMetrics} />
+					<TodayActionRowClient
+						initialSetups={actionRowSetups}
+						initialUpdatedAt={actionRowUpdatedAt}
+					/>
 					<LiveAccessStrip hasPaidCryptoAccess={hasSigiPro} tier={hasSigiPro ? "pro" : hasSigiSmart ? "smart" : "free"} />
 
 					<TodaySecondaryIntelRow
