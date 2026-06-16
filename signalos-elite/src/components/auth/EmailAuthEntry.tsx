@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, Mail } from "lucide-react";
+import DiscordInviteButton from "@/components/community/DiscordInviteButton";
 import {
   createSupabaseBrowserClient,
   hasSupabaseBrowserEnv,
@@ -233,6 +234,8 @@ function EmailAuthShell({
                 ? "Sending secure link"
                 : "Continue with Email"}
           </button>
+
+                  <DiscordInviteButton className="w-full rounded-2xl border border-white/12 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:border-cyan-300/30 hover:bg-cyan-400/10 hover:text-cyan-100" />
         </form>
 
         {message ? (

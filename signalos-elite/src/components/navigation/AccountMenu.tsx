@@ -14,6 +14,7 @@ import {
   CreditCard,
   LogOut,
   LogIn,
+  MessageSquare,
   Settings,
   User,
 } from "lucide-react";
@@ -85,25 +86,46 @@ function MenuLinkItem({
   label,
   sub,
   onSelect,
+  external = false,
 }: {
   href: string;
   icon: ReactNode;
   label: string;
   sub: string;
   onSelect?: () => void;
+  external?: boolean;
 }) {
-  return (
-    <Link
-      href={href}
-      onClick={onSelect}
-      className="flex items-start gap-3 rounded-2xl px-4 py-3 transition-all hover:bg-cyan-500/10"
-    >
+  const className =
+    "flex items-start gap-3 rounded-2xl px-4 py-3 transition-all hover:bg-cyan-500/10";
+
+  const content = (
+    <>
       <div className="mt-0.5 text-cyan-300">{icon}</div>
 
       <div>
         <div className="text-sm font-semibold text-white">{label}</div>
         <div className="mt-1 text-xs text-cyan-100/60">{sub}</div>
       </div>
+    </>
+  );
+
+  if (external) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        onClick={onSelect}
+        className={className}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link href={href} onClick={onSelect} className={className}>
+      {content}
     </Link>
   );
 }
@@ -379,13 +401,23 @@ export default function AccountMenu({ hasAccountSession = false }: Props) {
 
           <div className="p-2">
             {!hasClientSession ? (
-              <MenuLinkItem
-                href={authEntryHref}
-                icon={<LogIn size={18} />}
-                label="Sign In / Create Account"
-                sub="Open your SigiOS account and sync profile, settings, and billing"
-                onSelect={() => setOpen(false)}
-              />
+              <>
+                <MenuLinkItem
+                  href={authEntryHref}
+                  icon={<LogIn size={18} />}
+                  label="Sign In / Create Account"
+                  sub="Open your SigiOS account and sync profile, settings, and billing"
+                  onSelect={() => setOpen(false)}
+                />
+                <MenuLinkItem
+                  href={process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || "https://discord.com"}
+                  icon={<MessageSquare size={18} />}
+                  label="Join Discord Community"
+                  sub="Enter the SigiOS community directly from the account menu"
+                  onSelect={() => setOpen(false)}
+                  external={true}
+                />
+              </>
             ) : null}
 
             <MenuLinkItem

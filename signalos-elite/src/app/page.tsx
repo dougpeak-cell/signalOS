@@ -1,5 +1,6 @@
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
+import DiscordInviteButton from "@/components/community/DiscordInviteButton";
 import bestStocksScreenshot from "../public/Images/Chart/best-stocks2.png";
 
 type LandingScreenshot = {
@@ -168,6 +169,8 @@ export default function LandingPage() {
                 >
                   Sign In
                 </Link>
+
+                <DiscordInviteButton className="inline-flex min-h-11 items-center justify-center rounded-full border border-cyan-400/24 bg-cyan-400/10 px-5 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/36 hover:bg-cyan-400/16" />
 
                 <Link
                   href="/auth?next=%2Fwelcome"
