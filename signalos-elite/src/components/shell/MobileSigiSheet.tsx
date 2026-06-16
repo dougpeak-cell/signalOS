@@ -459,7 +459,10 @@ export default function MobileSigiSheet({
     }) ?? (looksLikeTicker(question) ? normalizeTickerInput(question) : null);
 
     if (ticker) {
-      if ((effectiveSheetContext?.pathname ?? pathname) === "/today") {
+      const isTodayContext = (effectiveSheetContext?.pathname ?? pathname) === "/today";
+      const shouldShowTodayShortRead = isTodayContext && showReadFirst;
+
+      if (isTodayContext && !shouldShowTodayShortRead) {
         setOpen(false);
         setShowReadFirst(false);
         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -476,13 +479,21 @@ export default function MobileSigiSheet({
 
       try {
         const stock = await fetchStockContext(ticker);
+        const tickerOnlyInput = normalizeTickerInput(question) === ticker;
+        const requestQuestion = tickerOnlyInput
+          ? `Analyze ${ticker}`
+          : parsedQuestion.ticker
+            ? parsedQuestion.originalQuestion
+            : `${question} Focus on ${ticker}.`;
+        const answerMode = shouldShowTodayShortRead ? "short" : "analyze";
 
         const response = await fetch("/api/sigi", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            message: question,
+            message: requestQuestion,
             ticker,
+            answerMode,
             profilePrompt: buildSigiProfilePrompt(sigiProfile),
             stock,
             source: "mobile_today",
@@ -499,7 +510,7 @@ export default function MobileSigiSheet({
 
         const answer = data.answer?.trim() || `I'm reading ${ticker} now.`;
         const thesis = data.thesis ?? null;
-        const title = thesis?.title?.trim() || `${ticker} Sigi Read`;
+  const title = thesis?.title?.trim() || (answerMode === "short" ? `${ticker} Quick Sigi Read` : `${ticker} Sigi Read`);
         const thesisSummary = thesis?.summary?.trim() || null;
         const analysis = thesisSummary && thesisSummary !== answer ? thesisSummary : null;
 
