@@ -280,7 +280,7 @@ export default function MobileSigiHome({
       ? "local-fallback"
       : "none";
   const greeting = sigiName
-    ? `Hi ${sigiName}, what do you want to know today?`
+    ? `Hi ${sigiName}, what stock do you want to look at today?`
     : "Sigi is ready.";
   const commandCenterGreeting = effectiveHasSigiSmart
     ? greeting
@@ -864,6 +864,49 @@ export default function MobileSigiHome({
             />
           ) : null}
 
+          <div className="rounded-3xl border border-cyan-400/18 bg-slate-950/88 p-4 shadow-[0_0_26px_rgba(34,211,238,0.1)]">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/76">
+                Mobile Sigi Input
+              </div>
+              {!effectiveHasSigiSmart ? (
+                <Link
+                  href={upgradeHref}
+                  className="text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100/80 hover:text-cyan-50"
+                >
+                  Smart unlock
+                </Link>
+              ) : null}
+            </div>
+            <div className="mt-3 flex min-w-0 items-center gap-3">
+              <input
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    handleAnalyze();
+                  }
+                }}
+                placeholder={
+                  isSmartPreview
+                    ? "Smart preview active"
+                    : effectiveHasSigiSmart
+                      ? "Stock/Ticker?"
+                      : "Ask about NVDA, TSLA, AAPL..."
+                }
+                className="min-h-12 min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none placeholder:text-white/34 focus:border-cyan-300/40"
+              />
+              <button
+                type="button"
+                onClick={handleAnalyze}
+                className="min-h-12 shrink-0 rounded-2xl border border-cyan-300/30 bg-cyan-400/15 px-4 text-sm font-semibold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/25"
+              >
+                {effectiveHasSigiSmart ? "Analyze" : "Unlock Smart"}
+              </button>
+            </div>
+          </div>
+
           {activeInsight ? (
             <div className="rounded-3xl border border-cyan-400/18 bg-slate-950/88 p-4 shadow-[0_0_26px_rgba(34,211,238,0.1)]">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -913,48 +956,6 @@ export default function MobileSigiHome({
             </div>
           )}
 
-          <div className="rounded-3xl border border-cyan-400/18 bg-slate-950/88 p-4 shadow-[0_0_26px_rgba(34,211,238,0.1)]">
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/76">
-                Mobile Sigi Input
-              </div>
-              {!effectiveHasSigiSmart ? (
-                <Link
-                  href={upgradeHref}
-                  className="text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100/80 hover:text-cyan-50"
-                >
-                  Smart unlock
-                </Link>
-              ) : null}
-            </div>
-            <div className="mt-3 flex min-w-0 items-center gap-3">
-              <input
-                value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    handleAnalyze();
-                  }
-                }}
-                placeholder={
-                  isSmartPreview
-                    ? "Smart preview active"
-                    : effectiveHasSigiSmart
-                      ? "Stock/Ticker?"
-                      : "Ask about NVDA, TSLA, AAPL..."
-                }
-                className="min-h-12 min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 text-sm text-white outline-none placeholder:text-white/34 focus:border-cyan-300/40"
-              />
-              <button
-                type="button"
-                onClick={handleAnalyze}
-                className="min-h-12 shrink-0 rounded-2xl border border-cyan-300/30 bg-cyan-400/15 px-4 text-sm font-semibold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/25"
-              >
-                {effectiveHasSigiSmart ? "Analyze" : "Unlock Smart"}
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
