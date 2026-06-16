@@ -953,7 +953,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
             <div className={isMobilePreviewEnabled ? "block" : "md:hidden"}>Live opportunities feed</div>
           </div>
 
-          <div className="signalos-thin-scrollbar overflow-x-auto">
+          <div className="overflow-x-hidden md:signalos-thin-scrollbar md:overflow-x-auto">
             {displayRows.map((stock) => {
             const ticker = stock.ticker.toUpperCase();
             const quote = quoteMap[ticker];
@@ -1063,34 +1063,34 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                   </div>
                 </div>
 
-                <div className={isMobilePreviewEnabled ? "space-y-2.5" : "space-y-2.5 md:hidden"}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
+                <div className={isMobilePreviewEnabled ? "space-y-2.5 overflow-hidden" : "space-y-2.5 overflow-hidden md:hidden"}>
+                  <div className="flex items-start justify-between gap-2.5">
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
                       <ScreenerTickerLogo ticker={ticker} size={40} />
 
-                      <div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-xl font-black text-white">{ticker}</div>
+                      <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <div className="text-lg font-black text-white sm:text-xl">{ticker}</div>
 
                         <span className={`badge ${getTierClass(tier)}`}>
                           {tier}
                         </span>
                       </div>
-                      <div className="mt-0.5 text-[11px] text-white/40">
+                      <div className="mt-0.5 truncate pr-1 text-[11px] text-white/40">
                         {stock.sector ?? "Market"}
                       </div>
                     </div>
                     </div>
-                    <div className="text-right">
-                      <div className="flex items-center justify-end gap-3 font-black tabular-nums text-white">
-                        <span className={dayChangeAmount == null ? "text-white/35" : changeClass}>
-                          {formatSignedMoney(dayChangeAmount)}
-                        </span>
-                        <span>
+                    <div className="shrink-0 text-right">
+                      <div className="flex flex-col items-end gap-0.5 font-black tabular-nums text-white">
+                        <span className="text-sm sm:text-base">
                           {stablePrice != null && stablePrice > 0 ? `$${stablePrice.toFixed(2)}` : "—"}
                         </span>
+                        <span className={dayChangeAmount == null ? "text-xs text-white/35" : `text-xs ${changeClass}`}>
+                          {formatSignedMoney(dayChangeAmount)}
+                        </span>
                       </div>
-                      <div className={`mt-0.5 text-sm font-black ${changeClass}`}>
+                      <div className={`mt-0.5 text-xs font-black sm:text-sm ${changeClass}`}>
                         {stableChangePercent != null ? (
                           <>
                             {stableChangePercent >= 0 ? "+" : ""}
@@ -1103,8 +1103,8 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                     </div>
                   </div>
 
-                  <div>
-                    <div className="font-bold text-white/90">{stock.company ?? stock.name ?? ticker}</div>
+                  <div className="min-w-0">
+                    <div className="wrap-break-word pr-1 font-bold leading-5 text-white/90">{stock.company ?? stock.name ?? ticker}</div>
                     {quickViewOpen ? (
                       <div className="mt-0.5 line-clamp-2 text-[11px] leading-5 text-white/45">{getThesisLabel(stock)}</div>
                     ) : null}
