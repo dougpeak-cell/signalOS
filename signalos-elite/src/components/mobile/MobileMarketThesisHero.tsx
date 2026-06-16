@@ -47,6 +47,19 @@ export default function MobileMarketThesisHero({
           fallbackClassName="aspect-[16/9] rounded-3xl border border-white/10"
         />
 
+        {intelligence.heroArticleUrl ? (
+          <div className="mt-3 flex justify-end">
+            <a
+              href={intelligence.heroArticleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-400/20"
+            >
+              Open Story
+            </a>
+          </div>
+        ) : null}
+
         <div className="mt-4 flex flex-wrap gap-2">
           <MobileHealthyWealthButton />
           {intelligence.badges?.slice(0, 4).map((badge) => (
