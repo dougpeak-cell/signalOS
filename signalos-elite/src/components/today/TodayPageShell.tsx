@@ -1,5 +1,6 @@
 import { Suspense, type ReactElement } from "react";
 import LiveAccessStrip from "@/components/access/LiveAccessStrip";
+import DiscordCommunityCard from "@/components/community/DiscordCommunityCard";
 import TodayActionRowClient from "@/components/today/TodayActionRowClient";
 import TodayBottomIntelRail from "@/components/today/TodayBottomIntelRail";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
@@ -167,6 +168,7 @@ export default async function TodayPageShell({
 						opportunities={opportunities}
 						risks={risks}
 					/>
+					<DiscordCommunityCard />
 					<TodayBottomIntelRail
 						globalPulseItems={globalPulseItems}
 						featuredMacro={featuredMacro}

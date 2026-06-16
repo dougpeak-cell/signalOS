@@ -1,4 +1,5 @@
 import Link from "next/link";
+import DiscordCommunityCard from "@/components/community/DiscordCommunityCard";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import {
   getSigiTierCard,
@@ -40,6 +41,8 @@ export default async function SigiSettingsPage() {
         pendingTier={settings.pendingTier}
         pendingTierEffectiveLabel={settings.pendingTierEffectiveLabel}
       />
+
+      <DiscordCommunityCard />
 
       <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,13,21,0.98),rgba(5,9,16,0.98))] p-5 md:p-6">
         <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/75">
