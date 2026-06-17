@@ -10,12 +10,12 @@ export default function DiscordCommunityCard() {
       </div>
 
       <h2 className="mt-3 text-2xl font-semibold text-white">
-        Join the SigiOS Trading Floor
+        Join the SigiOS Founders Community
       </h2>
 
       <p className="mt-3 max-w-2xl text-sm leading-6 text-white/72">
-        Connect with other SigiOS users, discuss market setups, ask questions,
-        share ideas, and grow with the community.
+        Discuss markets, top setups, crypto, Healthy Wealth, and help shape
+        the future of SigiOS.
       </p>
 
       <p className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-6 text-white/58">
