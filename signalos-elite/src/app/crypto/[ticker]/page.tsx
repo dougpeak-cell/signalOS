@@ -1032,7 +1032,7 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
       ? [0, Math.floor((visibleCandles.length - 1) / 2), visibleCandles.length - 1].map((index) => {
           const candle = visibleCandles[index];
           const date = new Date(candle.time);
-          const label = formatMarketClockTimeMs(candle.time);
+          const label = `${formatMarketClockTimeMs(candle.time)} EST`;
 
           return {
             key: `${candle.time}-${index}`,

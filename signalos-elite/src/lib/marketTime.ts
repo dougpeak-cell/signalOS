@@ -1,5 +1,6 @@
 export const MARKET_TZ = "America/New_York";
 export const MARKET_TIME_ABBR = "ET";
+export const MARKET_STANDARD_TIME_ABBR = "EST";
 
 type MarketClockOptions = {
   includeSeconds?: boolean;
@@ -42,11 +43,13 @@ export function formatMarketClockTimeMs(
 }
 
 export function formatMarketTime(unixSeconds: number) {
-  return new Date(unixSeconds * 1000).toLocaleString("en-US", {
+  const formatted = new Date(unixSeconds * 1000).toLocaleString("en-US", {
     timeZone: MARKET_TZ,
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
   });
+
+  return `${formatted} ${MARKET_STANDARD_TIME_ABBR}`;
 }
