@@ -15,6 +15,7 @@ import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
 import TodayActionRowClient from "@/components/today/TodayActionRowClient";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
+import UpcomingEarningsPanel from "@/components/today/UpcomingEarningsPanel";
 import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import type { SigiTodayContext } from "@/hooks/useSigi";
@@ -36,6 +37,7 @@ import {
 } from "@/lib/portfolio/localPortfolio";
 import type { RankedSetupItem } from "@/lib/today/setupDiscovery";
 import type {
+  TodayCommandCenterEarningsRow,
   TodayCommandCenterNewsRow,
   TodayMostTradedRow,
   TodayOpportunityItem,
@@ -51,6 +53,7 @@ type MobileSigiHomeProps = {
   preMarketTopSetups: TodaySetupItem[];
   emergingSetups: RankedSetupItem[];
   preMarketEmergingSetups: RankedSetupItem[];
+  commandCenterEarnings: TodayCommandCenterEarningsRow[];
   news: TodayCommandCenterNewsRow[];
   trendingNews: TodayCommandCenterNewsRow[];
   opportunities: TodayOpportunityItem[];
@@ -143,6 +146,7 @@ export default function MobileSigiHome({
   preMarketTopSetups,
   emergingSetups,
   preMarketEmergingSetups,
+  commandCenterEarnings,
   news,
   trendingNews: _trendingNews,
   opportunities,
@@ -1038,6 +1042,8 @@ export default function MobileSigiHome({
         preMarketItems={preMarketEmergingSetups}
         defaultSession={defaultSetupSession}
       />
+
+      <UpcomingEarningsPanel rows={commandCenterEarnings} />
 
       {effectiveHasSigiSmart ? null : <UpgradeSigiSmartCard />}
 

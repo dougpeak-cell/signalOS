@@ -7,6 +7,7 @@ import { TodayHeroProvider } from "@/components/today/TodayHeroContext";
 import type { HeroStory } from "@/components/today/TodayHeroPanel";
 import type { RankedSetupItem } from "@/lib/today/setupDiscovery";
 import type {
+  TodayCommandCenterEarningsRow,
   TodayCommandCenterNewsRow,
   TodayMostTradedRow,
   TodayOpportunityItem,
@@ -21,6 +22,7 @@ type TodayMobileHomeSlotProps = {
   topSetups: TodaySetupItem[];
   emergingSetups: RankedSetupItem[];
   preMarketEmergingSetups: RankedSetupItem[];
+  commandCenterEarnings: TodayCommandCenterEarningsRow[];
   news: TodayCommandCenterNewsRow[];
   trendingNews: TodayCommandCenterNewsRow[];
   opportunities: TodayOpportunityItem[];
@@ -41,6 +43,7 @@ export default function TodayMobileHomeSlot({
   topSetups,
   emergingSetups,
   preMarketEmergingSetups,
+  commandCenterEarnings,
   news,
   trendingNews,
   opportunities,
@@ -87,6 +90,7 @@ export default function TodayMobileHomeSlot({
         topSetups={topSetups}
         emergingSetups={emergingSetups}
         preMarketEmergingSetups={preMarketEmergingSetups}
+        commandCenterEarnings={commandCenterEarnings}
         preMarketTopSetups={preMarketTopSetups}
         news={news}
         trendingNews={trendingNews}

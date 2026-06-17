@@ -12,6 +12,7 @@ import TodayOpportunityRiskRow from "@/components/today/TodayOpportunityRiskRow"
 import TodaySecondaryIntelRow from "@/components/today/TodaySecondaryIntelRow";
 import TodaySectorHeatmapPanel from "@/components/today/TodaySectorHeatmapPanel";
 import TodayTopSetupsPanel from "@/components/today/TodayTopSetupsPanel";
+import UpcomingEarningsPanel from "@/components/today/UpcomingEarningsPanel";
 import TodayLoadingScreen from "@/components/today/TodayLoadingScreen";
 import TodayMobileHomeSlot from "@/components/today/TodayMobileHomeSlot";
 import { getHeroStoryPayload } from "@/lib/news/heroStory";
@@ -104,6 +105,7 @@ export default async function TodayPageShell({
 						preMarketEmergingSetups={preMarketEmergingSetups}
 						preMarketTopSetups={preMarketTopSetups}
 						news={commandCenterNews}
+						commandCenterEarnings={commandCenterEarnings}
 						trendingNews={trendingNews}
 						opportunities={opportunities}
 						risks={risks}
@@ -168,7 +170,10 @@ export default async function TodayPageShell({
 						opportunities={opportunities}
 						risks={risks}
 					/>
-					<DiscordCommunityCard />
+					<section className={`${multiCardRowClass} grid-cols-1 xl:grid-cols-[0.85fr_1.15fr]`}>
+						<UpcomingEarningsPanel rows={commandCenterEarnings} />
+						<DiscordCommunityCard />
+					</section>
 					<TodayBottomIntelRail
 						globalPulseItems={globalPulseItems}
 						featuredMacro={featuredMacro}
