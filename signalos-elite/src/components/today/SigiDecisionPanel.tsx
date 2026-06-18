@@ -80,6 +80,14 @@ const NON_TICKER_INTENTS = new Set<string>([
   "help",
 ]);
 
+const SIGI_LOADING_LINES = [
+  "Scanning live price action...",
+  "Checking volume, trend, and momentum...",
+  "Reviewing news and catalyst context...",
+  "Comparing fundamentals and market conditions...",
+  "Building your SigiOS Pro answer...",
+] as const;
+
 const MARKET_CONDITION_TICKERS = ["SPY", "QQQ", "IWM", "DIA", "^VIX"] as const;
 
 type DesktopSigiApiResponse = {
@@ -280,6 +288,7 @@ function SigiDecisionPanelContent({
   const [lastInteraction, setLastInteraction] = useState<"click" | "type">("type");
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [answerMode, setAnswerMode] = useState<SigiAnswerMode>("analyze");
+  const [loadingLineIndex, setLoadingLineIndex] = useState(0);
   const [intelligenceResetKey, setIntelligenceResetKey] = useState(() =>
     getSigiIntelligenceResetKey()
   );
@@ -830,6 +839,21 @@ function SigiDecisionPanelContent({
   }, [activeTicker, sigiActionNonce]);
 
   useEffect(() => {
+    if (!isAnalyzing || !hasSigiPro) {
+      setLoadingLineIndex(0);
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setLoadingLineIndex((previousIndex) => (previousIndex + 1) % SIGI_LOADING_LINES.length);
+    }, 2500);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [hasSigiPro, isAnalyzing]);
+
+  useEffect(() => {
     const syncProfile = () => {
       setProfile(getSigiProfile());
     };
@@ -1007,7 +1031,15 @@ function SigiDecisionPanelContent({
           ].join(" ")}
         >
           <span className="relative z-10 inline-flex items-center">
-            {isAnalyzing ? (answerMode === "short" ? "Answering..." : "Analyzing...") : answerMode === "short" ? "Short Answer" : "Analyze"}
+            {isAnalyzing
+              ? answerMode === "short"
+                ? "Answering..."
+                : hasSigiPro
+                  ? "Preparing..."
+                  : "Analyzing..."
+              : answerMode === "short"
+                ? "Short Answer"
+                : "Analyze"}
             {isAnalyzing ? (
               <span className="ml-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
             ) : null}
@@ -1017,6 +1049,26 @@ function SigiDecisionPanelContent({
           ) : null}
         </button>
         </div>
+
+        {hasSigiPro && isAnalyzing && answerMode !== "short" ? (
+          <div className="mt-3 rounded-3xl border border-cyan-400/20 bg-cyan-400/8 px-4 py-4 text-left shadow-[0_18px_40px_rgba(8,145,178,0.16)]">
+            <div className="text-sm font-semibold text-cyan-100">
+              Sigi is gathering live market intelligence...
+            </div>
+
+            <p className="mt-1 text-sm leading-6 text-white/72">
+              Checking price action, volume, trend, news, fundamentals, and macro context to build your answer.
+            </p>
+
+            <div className="mt-3 rounded-2xl border border-cyan-300/18 bg-black/30 px-3 py-2 text-sm font-medium text-cyan-200">
+              {SIGI_LOADING_LINES[loadingLineIndex]}
+            </div>
+
+            <div className="mt-3 text-xs uppercase tracking-[0.2em] text-cyan-200/72">
+              Your Pro-level response is being prepared.
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {suggestions.length > 0 ? (
