@@ -929,25 +929,29 @@ function QuickWatchlistRowItem({ row, stockHref }: { row: WatchlistRow; stockHre
   return (
     <Link
       href={stockHref}
-      className="group flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/3 px-4 py-3 transition hover:border-cyan-400/20 hover:bg-cyan-400/5"
+      className="group flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/3 px-3 py-2.5 transition hover:border-cyan-400/20 hover:bg-cyan-400/5"
     >
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <div className="text-lg font-semibold tracking-tight text-white">{row.ticker}</div>
-          <span className="truncate text-xs text-white/42">{row.name}</span>
+      <div className="min-w-0 flex flex-1 items-center gap-2.5">
+        <TickerLogo ticker={row.ticker} size={30} />
+
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <div className="text-base font-semibold tracking-tight text-white">{row.ticker}</div>
+            <span className="truncate text-[11px] text-white/42">{row.name}</span>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-end justify-end gap-3 text-right">
-        <div className={`text-sm font-semibold ${dayChangeAmount == null ? "text-white/35" : changeClasses(dayChangeAmount)}`}>
+      <div className="flex shrink-0 items-end justify-end gap-3 text-right">
+        <div className={`text-xs font-semibold ${dayChangeAmount == null ? "text-white/35" : changeClasses(dayChangeAmount)}`}>
           {hasUsablePrice(row.price) ? formatSignedMoney(dayChangeAmount) : "—"}
         </div>
 
         <div>
-          <div className="text-lg font-semibold text-white">
+          <div className="text-base font-semibold text-white">
             {hasUsablePrice(row.price) ? formatPrice(row.price) : "Awaiting quote"}
           </div>
-          <div className={`mt-0.5 text-sm font-semibold ${changeClasses(row.changePct)}`}>
+          <div className={`mt-0.5 text-xs font-semibold ${changeClasses(row.changePct)}`}>
             {hasUsablePrice(row.price) ? formatPct(row.changePct) : "Live syncing..."}
           </div>
         </div>
