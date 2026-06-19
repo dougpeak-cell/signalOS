@@ -848,6 +848,7 @@ function PortfolioPageContent() {
   const [actionState, setActionState] = useState<ActionState>(null);
   const [editingTicker, setEditingTicker] = useState<string | null>(null);
   const [showAddStock, setShowAddStock] = useState(false);
+  const [showGettingStarted, setShowGettingStarted] = useState(true);
   const [showAddPositionHelp, setShowAddPositionHelp] = useState(false);
   const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
     if (typeof window === "undefined") {
@@ -1555,30 +1556,37 @@ function PortfolioPageContent() {
                   </p>
 
                   <div className="mt-8 space-y-3">
+                    {showGettingStarted ? (
                     <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-300">
                             Getting Started
                           </div>
-                          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">
-                            Use `+ Add Stock`, `Open Watchlist`, and `+ Portfolio` to move
-                            from Stocks into your Portfolio, then save share quantity and
-                            optional average cost.
-                          </p>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => setShowAddPositionHelp((prev) => !prev)}
-                          aria-expanded={showAddPositionHelp}
-                          className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-[11px] font-semibold text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-400/18 hover:text-white"
-                        >
-                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-300/12 text-[11px] font-bold">
-                            ?
-                          </span>
-                          How to Add Positions
-                        </button>
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowAddPositionHelp((prev) => !prev)}
+                            aria-expanded={showAddPositionHelp}
+                            className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-[11px] font-semibold text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-400/18 hover:text-white"
+                          >
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-300/12 text-[11px] font-bold">
+                              ?
+                            </span>
+                            How to Add Positions
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setShowGettingStarted(false)}
+                            aria-label="Close getting started"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-white/6 text-sm font-semibold text-white/72 transition hover:border-white/24 hover:bg-white/10 hover:text-white"
+                          >
+                            ×
+                          </button>
+                        </div>
                       </div>
 
                       {showAddPositionHelp ? (
@@ -1587,6 +1595,9 @@ function PortfolioPageContent() {
                           <p>2. Type the stock in search and click + Add Stock.</p>
                           <p>3. Click Open Watchlist.</p>
                           <p>4. Find the stock in Watchlist and click + Portfolio.</p>
+                          <p className="mt-3 text-white/72">
+                            Quickest way to add true stock purchase quantity and average price value, is found in your brokerage account Gain/Loss page.
+                          </p>
                           <p className="mt-3 text-cyan-100/85">
                             SigiOS will automatically calculate value, performance,
                             allocation, and portfolio insights.
@@ -1594,6 +1605,7 @@ function PortfolioPageContent() {
                         </div>
                       ) : null}
                     </div>
+                    ) : null}
 
                     <div className="flex flex-wrap gap-3">
                     {canUseDetail ? (
