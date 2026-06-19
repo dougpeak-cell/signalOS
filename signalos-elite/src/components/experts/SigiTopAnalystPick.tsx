@@ -31,6 +31,11 @@ type TopPickApiResponse = {
   sigiReason: string;
 };
 
+type LegacyTopPickResponse = {
+  intelligence?: SigiAnalystLeader;
+  thesis?: SigiAnalystLeader;
+};
+
 const sectors = [
   "Technology",
   "Healthcare",
@@ -108,7 +113,10 @@ export default function SigiTopAnalystPick({
     risk: "No live top analyst pick has been calculated yet for this sector.",
   };
 
-  const leader = useMemo(() => aiLeader ?? mockLeaders[activeSector] ?? fallbackLeader, [activeSector, aiLeader]);
+  const leader = useMemo(
+    () => aiLeader ?? mapTopPickResponseToLeader(mockTopPicks[activeSector] ?? buildFallbackTopPick(activeSector)) ?? fallbackLeader,
+    [activeSector, aiLeader, fallbackLeader]
+  );
   const displayTopPick = topPick ?? mockTopPicks[activeSector] ?? buildFallbackTopPick(activeSector);
 
   useEffect(() => {
@@ -139,7 +147,9 @@ export default function SigiTopAnalystPick({
         cache: "no-store",
       });
 
-      const data = (await res.json()) as Partial<TopPickApiResponse & SigiAnalystLeader>;
+      const data = (await res.json()) as Partial<
+        TopPickApiResponse & SigiAnalystLeader & LegacyTopPickResponse
+      >;
       const nextLeader = isTopPickApiResponse(data)
         ? mapTopPickResponseToLeader(data)
         : ((data.intelligence ?? data.thesis ?? data) as SigiAnalystLeader);
@@ -273,13 +283,19 @@ function isDisclosureHidden(value: unknown) {
   );
 }
 
-function isTopPickApiResponse(value: Partial<TopPickApiResponse & SigiAnalystLeader>): value is TopPickApiResponse {
+function isTopPickApiResponse(value: unknown): value is TopPickApiResponse {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+
   return (
-    typeof value.ticker === "string" &&
-    typeof value.company === "string" &&
-    typeof value.analyst === "string" &&
-    typeof value.firm === "string" &&
-    typeof value.sigiReason === "string"
+    typeof candidate.ticker === "string" &&
+    typeof candidate.company === "string" &&
+    typeof candidate.analyst === "string" &&
+    typeof candidate.firm === "string" &&
+    typeof candidate.sigiReason === "string"
   );
 }
 
