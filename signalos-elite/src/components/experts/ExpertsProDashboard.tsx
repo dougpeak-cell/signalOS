@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import ActiveExpertSignals from "@/components/experts/ActiveExpertSignals";
+import AnalystTopPicks, { type AnalystTopPickRow } from "@/components/experts/AnalystTopPicks";
 import InsiderTradesPanel from "@/components/experts/InsiderTradesPanel";
 import SigiAnalystLeaders, { type SigiAnalystLeader } from "@/components/experts/SigiAnalystLeaders";
 
@@ -523,6 +524,25 @@ function getModelAlignmentClasses(alignment: ExpertModelRow["alignment"]) {
   };
 }
 
+function buildLiveAnalystCallLabel(
+  grade: string | null,
+  recencyBucket: FmpExpertRow["recencyBucket"]
+) {
+  const bucketLabel =
+    recencyBucket === "today"
+      ? "Today"
+      : recencyBucket === "week"
+        ? "7D"
+        : recencyBucket === "twoWeeks"
+          ? "14D"
+          : "Recent";
+
+  const normalizedGrade = grade?.trim();
+  if (!normalizedGrade) return `${bucketLabel} Analyst Call`;
+
+  return `${bucketLabel} ${normalizedGrade}`;
+}
+
 export default function ExpertsPage() {
   const [fmpRows, setFmpRows] = useState<FmpExpertRow[]>([]);
   const [fmpSectorRows, setFmpSectorRows] = useState<Record<string, FmpExpertRow[]>>({});
@@ -626,6 +646,18 @@ export default function ExpertsPage() {
     selectedExpertSector === "All"
       ? fmpRows
       : fmpSectorRows[selectedExpertSector] ?? [];
+  const liveAnalystTopPicks: AnalystTopPickRow[] = fmpRows.slice(0, 20).map((row) => ({
+    ticker: row.symbol,
+    company: row.companyName ?? row.symbol,
+    sector: row.sector,
+    analyst: buildLiveAnalystCallLabel(row.lastGrade, row.recencyBucket),
+    firm: row.firm ?? "Wall Street Desk",
+    date: row.publishedDate ?? "Recent",
+    currentPrice: row.price ?? 0,
+    priceTarget: row.targetConsensus ?? 0,
+    analystAvgReturn: row.score,
+  }));
+  const shouldShowFallbackAnalystPicks = !isLoadingFmpRows && (Boolean(fmpLoadError) || fmpRows.length === 0);
 
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#020617] text-white">
@@ -684,6 +716,12 @@ export default function ExpertsPage() {
 
           <div className="border-b border-white/10 pt-1" />
         </div>
+
+        <AnalystTopPicks
+          rows={liveAnalystTopPicks}
+          loading={isLoadingFmpRows}
+          fallback={shouldShowFallbackAnalystPicks}
+        />
 
         <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <div className="relative min-w-0 overflow-hidden rounded-[28px] border border-emerald-400/15 bg-linear-to-b from-emerald-500/8 via-black to-black p-4 shadow-[0_0_28px_rgba(16,185,129,0.08)]">

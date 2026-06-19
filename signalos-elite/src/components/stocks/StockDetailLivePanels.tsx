@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
 import LockedLiveChart from "@/components/upgrade/LockedLiveChart";
@@ -192,6 +192,13 @@ export default function StockDetailLivePanels({
 }: StockDetailLivePanelsProps) {
   const searchParams = useSearchParams();
   const { tier, previewActive } = useSigiTier();
+  const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.matchMedia("(max-width: 767px)").matches;
+  });
   const liveMarket = useOptionalLiveMarket();
   const marketData = useOptionalMarketData();
   const liveTicker = normalizeTicker(row.ticker);
@@ -213,6 +220,7 @@ export default function StockDetailLivePanels({
   const { watchlistTickerSet } = useStoredWatchlistTickers();
   const isTracked = watchlistTickerSet.has(liveTicker);
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
+  const isCompactMobileSurface = isMobilePreview || isMobilePhoneView;
   const plan = tier ?? "free";
   const canUseLiveChart = getPremiumAccess({
     tier: plan,
@@ -237,7 +245,20 @@ export default function StockDetailLivePanels({
   }
 
   const workspaceHref = buildPreviewHref(`/stocks/${liveTicker.toLowerCase()}/workspace`);
+  const mobileLiveChartHref = buildPreviewHref(`/stocks/${liveTicker.toLowerCase()}/day`);
   const workspaceUpgradeHref = buildPreviewHref("/auth/upgrade?plan=pro&feature=trading-workspace");
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobilePhoneView(mediaQuery.matches);
+
+    sync();
+    mediaQuery.addEventListener("change", sync);
+
+    return () => {
+      mediaQuery.removeEventListener("change", sync);
+    };
+  }, []);
 
   useEffect(() => {
     if (!liveMarket) return;
@@ -657,21 +678,30 @@ export default function StockDetailLivePanels({
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/75">
-              In-Place Chart
+              {isCompactMobileSurface ? "Mobile Live Chart" : "In-Place Chart"}
             </div>
             <h2 className="mt-1 text-xl font-semibold tracking-tight text-white">
-              {liveTicker} Live Day Chart
+              {isCompactMobileSurface
+                ? `${liveTicker} Mobile Live Chart`
+                : `${liveTicker} Live Day Chart`}
             </h2>
             <p className="mt-1 text-sm text-white/55">
-              Intraday chart stays inside the stock detail page so you can keep signal context,
-              target levels, and execution guidance in view.
+              {isCompactMobileSurface
+                ? "Watch live candles, monitor price action, and jump into a focused full-screen chart without leaving the stock detail workflow."
+                : "Intraday chart stays inside the stock detail page so you can keep signal context, target levels, and execution guidance in view."}
             </p>
           </div>
 
           <div className="hidden flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] md:flex">
             <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-cyan-200">
-              Detail Page Embedded
+              {isCompactMobileSurface ? "Phone-Ready Live View" : "Detail Page Embedded"}
             </div>
+            <Link
+              href={mobileLiveChartHref}
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white/75 transition hover:border-cyan-300/30 hover:bg-cyan-400/10 hover:text-white"
+            >
+              Open Full Live Chart
+            </Link>
             <Link
               href={canUseTradingWorkspace ? workspaceHref : workspaceUpgradeHref}
               className={`rounded-full border px-3 py-1.5 transition ${
@@ -704,7 +734,7 @@ export default function StockDetailLivePanels({
                 Quick Actions
               </div>
               <div className="mt-1 text-sm text-white/58">
-                Quick workspace, watchlist, and portfolio actions.
+                Open the full mobile chart, workspace, watchlist, and portfolio actions.
               </div>
             </div>
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
@@ -713,6 +743,13 @@ export default function StockDetailLivePanels({
           </summary>
 
           <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href={mobileLiveChartHref}
+              className="inline-flex min-h-11 items-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/15 hover:text-white"
+            >
+              Open Full Live Chart
+            </Link>
+
             <button
               type="button"
               onClick={() => addStoredWatchlistTicker(liveTicker)}
@@ -744,13 +781,14 @@ export default function StockDetailLivePanels({
 
         <div className="mt-5 overflow-hidden rounded-3xl border border-cyan-400/15 bg-[radial-gradient(circle_at_top,rgba(0,160,255,0.08),transparent_28%),linear-gradient(180deg,rgba(5,10,20,0.96),rgba(0,0,0,0.98))] shadow-[0_0_45px_rgba(0,145,255,0.08)]">
           {canUseLiveChart ? (
-            <div className="min-h-220 w-full p-0.5 md:p-3">
+            <div className={isCompactMobileSurface ? "min-h-[68svh] w-full p-0.5" : "min-h-220 w-full p-0.5 md:p-3"}>
               <div className="h-full overflow-hidden rounded-[20px] border border-cyan-400/12 bg-black/70 shadow-[inset_0_0_25px_rgba(0,140,255,0.08)]">
-                <div className="min-h-220 w-full">
+                <div className={isCompactMobileSurface ? "min-h-[68svh] w-full" : "min-h-220 w-full"}>
                   <LiveStockChart
                     ticker={liveTicker}
                     expanded
                     showSignalRail={false}
+                    hideStatsAndLegend={isCompactMobileSurface}
                     signals={[]}
                     currentPrice={analysisPrice}
                   />

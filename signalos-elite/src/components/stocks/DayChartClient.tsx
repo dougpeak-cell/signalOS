@@ -21,6 +21,13 @@ export default function DayChartClient({
   website,
 }: DayChartClientProps): ReactElement {
   const [focusMode] = useState<boolean>(true);
+  const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.matchMedia("(max-width: 767px)").matches;
+  });
   const { getQuote, registerTickers, unregisterTickers } = useMarketData();
   const { activeTicker, setActiveTicker } = useSelectedTicker();
   const liveQuote = getQuote(ticker);
@@ -41,6 +48,18 @@ export default function DayChartClient({
     }
   }, [activeTicker, ticker, setActiveTicker]);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobilePhoneView(mediaQuery.matches);
+
+    sync();
+    mediaQuery.addEventListener("change", sync);
+
+    return () => {
+      mediaQuery.removeEventListener("change", sync);
+    };
+  }, []);
+
   const displayName = useMemo(() => companyName ?? ticker, [companyName, ticker]);
   const websiteLabel = `Visit ${displayName}`;
 
@@ -53,7 +72,7 @@ export default function DayChartClient({
           <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(0,140,255,0.08),transparent_58%)]" />
           <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.18))]" />
 
-          <div className="absolute left-4 top-4 z-30 flex flex-wrap items-center gap-2">
+          <div className="absolute left-4 right-4 top-4 z-30 flex flex-wrap items-center gap-2">
             <Link
               href={`/stocks/${ticker}`}
               className="inline-flex items-center rounded-full border border-white/10 bg-black/55 px-3 py-1.5 text-xs font-medium text-white/70 backdrop-blur transition hover:border-cyan-400/30 hover:bg-cyan-400/10 hover:text-white"
@@ -70,11 +89,9 @@ export default function DayChartClient({
             </div>
 
             <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-300 backdrop-blur">
-              Day Chart Focus
+              {isMobilePhoneView ? "Mobile Live Chart" : "Live Chart Focus"}
             </div>
-          </div>
 
-          <div className="absolute right-4 top-4 z-30 flex items-center gap-2">
             {website ? (
               <a
                 href={website}
@@ -115,13 +132,17 @@ export default function DayChartClient({
           <div className="absolute bottom-4 left-4 z-30">
             <div className="rounded-2xl border border-cyan-400/15 bg-black/65 px-4 py-3 backdrop-blur">
               <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/70">
-                Trading Mode
+                {isMobilePhoneView ? "Mobile Mode" : "Trading Mode"}
               </div>
               <div className="mt-1 text-base font-semibold text-white/92">
-                {ticker} Day Structure Active
+                {isMobilePhoneView
+                  ? `${ticker} Live Chart Active`
+                  : `${ticker} Day Structure Active`}
               </div>
               <div className="mt-1 text-[11px] text-white/42">
-                Full-screen chart focus with reduced interface noise.
+                {isMobilePhoneView
+                  ? "Full-screen live chart focus with reduced interface noise."
+                  : "Full-screen chart focus with reduced interface noise."}
               </div>
             </div>
           </div>
@@ -132,7 +153,7 @@ export default function DayChartClient({
                 command view
               </div>
               <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/75">
-                day chart
+                live chart
               </div>
             </div>
           </div>
@@ -147,7 +168,9 @@ export default function DayChartClient({
                   focusMode={focusMode}
                   showSignalRail={false}
                   hideStatsAndLegend
-                  enableLiveStream={false} signals={[]}                />
+                  enableLiveStream
+                  signals={[]}
+                />
               </div>
             </div>
           </div>
