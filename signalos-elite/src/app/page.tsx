@@ -1,6 +1,5 @@
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
-import DiscordInviteButton from "@/components/community/DiscordInviteButton";
 import bestStocksScreenshot from "../public/Images/Chart/best-stocks2.png";
 
 type LandingScreenshot = {
@@ -162,22 +161,26 @@ export default function LandingPage() {
                 <div className="mt-1 text-base text-white/60">Powered by Sigi</div>
               </div>
 
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/auth?next=%2Ftoday"
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 px-5 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/8"
-                >
-                  Sign In
-                </Link>
+              <div className="flex max-w-xl flex-col items-start gap-2 sm:items-end">
+                <div className="flex flex-wrap gap-3 sm:justify-end">
+                  <Link
+                    href="/auth?next=%2Ftoday"
+                    className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 px-5 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/8"
+                  >
+                    Sign In
+                  </Link>
 
-                <DiscordInviteButton className="inline-flex min-h-11 items-center justify-center rounded-full border border-cyan-400/24 bg-cyan-400/10 px-5 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/36 hover:bg-cyan-400/16" />
+                  <Link
+                    href="/auth?next=%2Fwelcome"
+                    className="inline-flex min-h-11 items-center justify-center rounded-full bg-teal-300 px-5 text-sm font-bold text-slate-950 transition hover:bg-teal-200"
+                  >
+                    Create Free Account
+                  </Link>
+                </div>
 
-                <Link
-                  href="/auth?next=%2Fwelcome"
-                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-teal-300 px-5 text-sm font-bold text-slate-950 transition hover:bg-teal-200"
-                >
-                  Create Free Account
-                </Link>
+                <p className="max-w-md text-sm leading-6 text-white/62 sm:text-right">
+                  Create free account and enjoy Sigi Pro at no cost for 30 days, no credit card required.
+                </p>
               </div>
             </div>
 
