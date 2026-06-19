@@ -96,7 +96,7 @@ export default function AnalystTopPicks({
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-300">
             {eyebrow}
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-white">Analyst Top 20 Picks</h2>
+          <h2 className="mt-2 text-2xl font-bold text-white">Analysts Top Live Picks</h2>
           <p className="mt-2 text-sm font-medium text-cyan-200/90">{subtitle}</p>
           <p className="mt-2 max-w-3xl text-sm text-slate-300">{description}</p>
         </div>

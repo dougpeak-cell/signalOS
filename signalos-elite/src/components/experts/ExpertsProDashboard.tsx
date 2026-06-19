@@ -646,18 +646,22 @@ export default function ExpertsPage() {
     selectedExpertSector === "All"
       ? fmpRows
       : fmpSectorRows[selectedExpertSector] ?? [];
-  const liveAnalystTopPicks: AnalystTopPickRow[] = fmpRows.slice(0, 20).map((row) => ({
-    ticker: row.symbol,
-    company: row.companyName ?? row.symbol,
-    sector: row.sector,
-    analyst: buildLiveAnalystCallLabel(row.lastGrade, row.recencyBucket),
-    firm: row.firm ?? "Wall Street Desk",
-    date: row.publishedDate ?? "Recent",
-    currentPrice: row.price ?? 0,
-    priceTarget: row.targetConsensus ?? 0,
-    analystAvgReturn: row.score,
-  }));
-  const shouldShowFallbackAnalystPicks = !isLoadingFmpRows && (Boolean(fmpLoadError) || fmpRows.length === 0);
+  const liveAnalystTopPicks: AnalystTopPickRow[] = fmpRows
+    .filter((row) => row.recencyBucket != null)
+    .slice(0, 20)
+    .map((row) => ({
+      ticker: row.symbol,
+      company: row.companyName ?? row.symbol,
+      sector: row.sector,
+      analyst: buildLiveAnalystCallLabel(row.lastGrade, row.recencyBucket),
+      firm: row.firm ?? "Wall Street Desk",
+      date: row.publishedDate ?? "Recent",
+      currentPrice: row.price ?? 0,
+      priceTarget: row.targetConsensus ?? 0,
+      analystAvgReturn: row.score,
+    }));
+  const shouldShowFallbackAnalystPicks =
+    !isLoadingFmpRows && (Boolean(fmpLoadError) || liveAnalystTopPicks.length === 0);
 
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#020617] text-white">
