@@ -1,11 +1,12 @@
 ﻿"use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import type { FmpExpertPickRow as FmpExpertRow } from "@/lib/experts/fmpLeaders";
 
 import ActiveExpertSignals from "@/components/experts/ActiveExpertSignals";
 import AnalystTopPicks, { type AnalystTopPickRow } from "@/components/experts/AnalystTopPicks";
 import InsiderTradesPanel from "@/components/experts/InsiderTradesPanel";
-import SigiAnalystLeaders, { type SigiAnalystLeader } from "@/components/experts/SigiAnalystLeaders";
+import SigiTopAnalystPick, { type SigiAnalystLeader } from "@/components/experts/SigiTopAnalystPick";
 
 type ExpertConviction = {
   ticker: string;
@@ -28,22 +29,6 @@ type ExpertModelRow = {
   avg90: number;
   alignment: "Bullish" | "Mixed" | "Bearish";
   tickers: string[];
-};
-
-type FmpExpertRow = {
-  symbol: string;
-  companyName: string | null;
-  sector: string;
-  targetConsensus: number | null;
-  targetHigh: number | null;
-  targetLow: number | null;
-  price: number | null;
-  upsidePercent: number | null;
-  lastGrade: string | null;
-  firm: string | null;
-  publishedDate: string | null;
-  recencyBucket: "today" | "week" | "twoWeeks" | null;
-  score: number;
 };
 
 const expertProfileHrefByTicker: Record<string, string> = {
@@ -333,6 +318,14 @@ function gradeTone(grade: string | null) {
     return "text-red-300 border-red-400/20 bg-red-400/10";
   }
   return "text-yellow-200 border-yellow-400/20 bg-yellow-400/10";
+}
+
+function formatTransitionLabel(row: FmpExpertRow, fallback: string) {
+  if (row.previousGrade && row.currentGrade) {
+    return `${row.previousGrade} → ${row.currentGrade}`;
+  }
+
+  return row.currentGrade ?? row.lastGrade ?? fallback;
 }
 
 function getPublishedDateValue(value: string | null) {
@@ -662,6 +655,12 @@ export default function ExpertsPage() {
     }));
   const shouldShowFallbackAnalystPicks =
     !isLoadingFmpRows && (Boolean(fmpLoadError) || liveAnalystTopPicks.length === 0);
+  const recentUpgradeRows = visibleFmpRows
+    .filter((row) => row.ratingTransition === "upgrade")
+    .slice(0, 4);
+  const recentDowngradeRows = visibleFmpRows
+    .filter((row) => row.ratingTransition === "downgrade")
+    .slice(0, 4);
 
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#020617] text-white">
@@ -726,6 +725,105 @@ export default function ExpertsPage() {
           loading={isLoadingFmpRows}
           fallback={shouldShowFallbackAnalystPicks}
         />
+
+        <div id="sigi-top-analyst-pick" className="scroll-mt-28">
+          <SigiTopAnalystPick
+            selectedSector={selectedExpertSector}
+            onSectorChange={setSelectedExpertSector}
+            onLeaderChange={setCurrentAnalystLeader}
+          />
+        </div>
+
+        <section className="rounded-3xl border border-white/10 bg-white/3 p-6 shadow-2xl">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300/90">
+            Recent Upgrades
+          </div>
+          <p className="mt-2 text-sm leading-6 text-white/48">
+            Fresh bullish analyst changes and positive conviction resets from the current live feed.
+          </p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {recentUpgradeRows.length > 0 ? recentUpgradeRows.map((row) => (
+              <Link
+                key={`upgrade-${row.symbol}`}
+                href={`/stocks/${row.symbol}`}
+                className="rounded-[22px] border border-emerald-400/15 bg-emerald-400/8 p-4 transition hover:-translate-y-0.5 hover:border-emerald-300/30"
+              >
+                <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-300/80">
+                  {formatTransitionLabel(row, "Upgrade")}
+                </div>
+                <div className="mt-2 flex items-start justify-between gap-3">
+                  <div className="text-lg font-semibold text-white">{row.symbol}</div>
+                  <div className="text-xs font-semibold text-emerald-300">
+                    {row.upsidePercent != null ? `${row.upsidePercent >= 0 ? "+" : ""}${row.upsidePercent.toFixed(1)}%` : "—"}
+                  </div>
+                </div>
+                <div className="mt-1 text-xs text-white/45">{row.companyName ?? row.firm ?? row.symbol}</div>
+                <div className="mt-3 text-sm leading-6 text-white/58">
+                  {row.firm ?? "Wall Street desk"} {row.targetConsensus != null ? `sees ${money(row.targetConsensus)} vs. ${money(row.price)} current.` : "is resetting expectations higher."}
+                </div>
+              </Link>
+            )) : (
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-6 text-sm text-white/45 md:col-span-2 xl:col-span-4">
+                No recent upgrades are available in the current analyst window.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-white/3 p-6 shadow-2xl">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-300/90">
+            Recent Downgrades
+          </div>
+          <p className="mt-2 text-sm leading-6 text-white/48">
+            Names facing weaker analyst conviction, lower ratings, or deteriorating upside support.
+          </p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {recentDowngradeRows.length > 0 ? recentDowngradeRows.map((row) => (
+              <Link
+                key={`downgrade-${row.symbol}`}
+                href={`/stocks/${row.symbol}`}
+                className="rounded-[22px] border border-rose-400/15 bg-rose-400/8 p-4 transition hover:-translate-y-0.5 hover:border-rose-300/30"
+              >
+                <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-300/80">
+                  {formatTransitionLabel(row, "Downgrade")}
+                </div>
+                <div className="mt-2 flex items-start justify-between gap-3">
+                  <div className="text-lg font-semibold text-white">{row.symbol}</div>
+                  <div className="text-xs font-semibold text-rose-300">
+                    {row.upsidePercent != null ? `${row.upsidePercent >= 0 ? "+" : ""}${row.upsidePercent.toFixed(1)}%` : "—"}
+                  </div>
+                </div>
+                <div className="mt-1 text-xs text-white/45">{row.companyName ?? row.firm ?? row.symbol}</div>
+                <div className="mt-3 text-sm leading-6 text-white/58">
+                  {row.firm ?? "Wall Street desk"} {row.targetConsensus != null ? `now points to ${money(row.targetConsensus)} vs. ${money(row.price)} current.` : "is dialing back conviction on this setup."}
+                </div>
+              </Link>
+            )) : (
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-6 text-sm text-white/45 md:col-span-2 xl:col-span-4">
+                No recent downgrades are available in the current analyst window.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-cyan-400/20 bg-linear-to-br from-cyan-950/30 to-slate-950 p-6 shadow-[0_0_40px_rgba(34,211,238,0.08)]">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300">
+                Ask Sigi About Analyst Picks
+              </div>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                Get Sigi's best analyst-backed stock in your selected sector and the reasoning behind the pick.
+              </p>
+            </div>
+            <a
+              href="#sigi-top-analyst-pick"
+              className="inline-flex items-center justify-center rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-black hover:bg-cyan-200"
+            >
+              Ask Sigi About Analyst Picks
+            </a>
+          </div>
+        </section>
 
         <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <div className="relative min-w-0 overflow-hidden rounded-[28px] border border-emerald-400/15 bg-linear-to-b from-emerald-500/8 via-black to-black p-4 shadow-[0_0_28px_rgba(16,185,129,0.08)]">
@@ -883,14 +981,6 @@ export default function ExpertsPage() {
                   );
                 })()
               ))}
-
-              <div id="sigi-analyst-leaders" className="mt-6 scroll-mt-28">
-                <SigiAnalystLeaders
-                  selectedSector={selectedExpertSector}
-                  onSectorChange={setSelectedExpertSector}
-                  onLeaderChange={setCurrentAnalystLeader}
-                />
-              </div>
 
               <div className="mt-6">
                 <InsiderTradesPanel

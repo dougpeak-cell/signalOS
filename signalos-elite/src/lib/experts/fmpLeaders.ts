@@ -20,6 +20,7 @@ const DEFAULT_SECTOR_PICK_LIMIT = 4;
 const BACKFILL_SECTOR_FETCH_LIMIT = 40;
 const BACKFILL_SECTOR_PICK_LIMIT = 12;
 const DIVERSIFIED_FEED_LIMIT = 20;
+const PRIMARY_DIVERSIFIED_BUCKETS: Array<FmpExpertPickRow["recencyBucket"]> = ["today", "week"];
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const ANALYST_LOOKBACK_DAYS = 14;
 
@@ -32,6 +33,9 @@ export type FmpExpertPickRow = {
   targetHigh: number | null;
   targetLow: number | null;
   lastGrade: string | null;
+  previousGrade: string | null;
+  currentGrade: string | null;
+  ratingTransition: "upgrade" | "downgrade" | "reiterate" | null;
   firm: string | null;
   publishedDate: string | null;
   recencyBucket: "today" | "week" | "twoWeeks" | null;
@@ -40,8 +44,11 @@ export type FmpExpertPickRow = {
 };
 
 type GradeRow = {
+  previousGrade?: string | null;
   newGrade?: string | null;
   grade?: string | null;
+  action?: string | null;
+  actionCompany?: string | null;
   gradingCompany?: string | null;
   firm?: string | null;
   publishedDate?: string | null;
@@ -109,6 +116,37 @@ function recencyBucketScore(bucket: "today" | "week" | "twoWeeks" | null) {
   if (bucket === "week") return 28;
   if (bucket === "twoWeeks") return 10;
   return 0;
+}
+
+function normalizeGradeValue(value: string | null | undefined) {
+  const normalized = value?.trim();
+  return normalized && normalized.length > 0 ? normalized : null;
+}
+
+function deriveRatingTransition(
+  action: string | null | undefined,
+  previousGrade: string | null | undefined,
+  currentGrade: string | null | undefined
+) {
+  const normalizedAction = action?.trim().toLowerCase() ?? "";
+
+  if (normalizedAction.includes("upgrad")) return "upgrade" as const;
+  if (normalizedAction.includes("downgrad")) return "downgrade" as const;
+  if (normalizedAction.includes("reiterat") || normalizedAction.includes("maintain")) {
+    return "reiterate" as const;
+  }
+
+  const previous = normalizeGradeValue(previousGrade);
+  const current = normalizeGradeValue(currentGrade);
+
+  if (!previous || !current) return null;
+  if (previous.toLowerCase() === current.toLowerCase()) return "reiterate" as const;
+
+  const scoreDelta = gradeScore(current) - gradeScore(previous);
+  if (scoreDelta > 0) return "upgrade" as const;
+  if (scoreDelta < 0) return "downgrade" as const;
+
+  return "reiterate" as const;
 }
 
 function compareRankedRows(left: FmpExpertPickRow, right: FmpExpertPickRow) {
@@ -388,6 +426,13 @@ async function scoreCandidateRows(candidates: CandidateRow[]) {
           ? [gradesJson]
           : [];
       const grade = pickBestRecentGrade(grades);
+      const previousGrade = normalizeGradeValue(grade?.previousGrade ?? null);
+      const currentGrade = normalizeGradeValue(grade?.newGrade ?? grade?.grade ?? null);
+      const ratingTransition = deriveRatingTransition(
+        grade?.action ?? null,
+        previousGrade,
+        currentGrade
+      );
       const publishedDate = grade?.publishedDate ?? grade?.date ?? null;
       const recencyBucket = getRecencyBucket(publishedDate);
 
@@ -418,8 +463,11 @@ async function scoreCandidateRows(candidates: CandidateRow[]) {
         targetConsensus,
         targetHigh: target?.targetHigh ?? null,
         targetLow: target?.targetLow ?? null,
-        lastGrade: grade?.newGrade ?? grade?.grade ?? null,
-        firm: grade?.gradingCompany ?? grade?.firm ?? null,
+        lastGrade: currentGrade,
+        previousGrade,
+        currentGrade,
+        ratingTransition,
+        firm: grade?.gradingCompany ?? grade?.actionCompany ?? grade?.firm ?? null,
         publishedDate,
         recencyBucket,
         upsidePercent,
@@ -440,6 +488,14 @@ function addQualifiedRows(bySector: Map<string, FmpExpertPickRow[]>, rows: FmpEx
     list.push(row);
     bySector.set(row.sector, list);
   }
+}
+
+function isPrimaryDiversifiedRow(row: FmpExpertPickRow) {
+  return row.recencyBucket != null && PRIMARY_DIVERSIFIED_BUCKETS.includes(row.recencyBucket);
+}
+
+function hasDatedAnalystRow(row: FmpExpertPickRow) {
+  return row.recencyBucket != null;
 }
 
 async function buildCandidateRows() {
@@ -496,17 +552,44 @@ export async function loadFmpExpertsFeed(): Promise<FmpExpertsFeed> {
   const selectedSymbols = new Set<string>();
 
   for (const sector of EXPERT_SECTOR_BUCKETS) {
-    const picks = (bySector.get(sector) ?? []).sort(compareRankedRows).slice(0, 1);
+    const sectorCandidates = [...(bySector.get(sector) ?? [])].sort(compareRankedRows);
+    const freshSectorPick = sectorCandidates.find(isPrimaryDiversifiedRow) ?? null;
+    const datedSectorPick = sectorCandidates.find(hasDatedAnalystRow) ?? null;
+    const picks = freshSectorPick
+      ? [freshSectorPick]
+      : datedSectorPick
+        ? [datedSectorPick]
+        : sectorCandidates.slice(0, 1);
 
     diversified.push(...picks);
     picks.forEach((pick) => selectedSymbols.add(pick.symbol));
   }
 
-  const remaining = enriched
+  const remainingPrimary = enriched
+    .filter((row) => !selectedSymbols.has(row.symbol) && isPrimaryDiversifiedRow(row))
+    .sort(compareRankedRows);
+
+  for (const row of remainingPrimary) {
+    if (diversified.length >= DIVERSIFIED_FEED_LIMIT) break;
+    diversified.push(row);
+    selectedSymbols.add(row.symbol);
+  }
+
+  const remainingFallback = enriched
+    .filter((row) => !selectedSymbols.has(row.symbol) && hasDatedAnalystRow(row))
+    .sort(compareRankedRows);
+
+  for (const row of remainingFallback) {
+    if (diversified.length >= DIVERSIFIED_FEED_LIMIT) break;
+    diversified.push(row);
+    selectedSymbols.add(row.symbol);
+  }
+
+  const remainingUndated = enriched
     .filter((row) => !selectedSymbols.has(row.symbol))
     .sort(compareRankedRows);
 
-  for (const row of remaining) {
+  for (const row of remainingUndated) {
     if (diversified.length >= DIVERSIFIED_FEED_LIMIT) break;
     diversified.push(row);
   }

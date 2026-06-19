@@ -1,5 +1,5 @@
 import Link from "next/link";
-import SigiAnalystLeaders from "@/components/experts/SigiAnalystLeaders";
+import SigiTopAnalystPick from "@/components/experts/SigiTopAnalystPick";
 
 export default function ExpertRankingsPage() {
   return (
@@ -16,16 +16,16 @@ export default function ExpertRankingsPage() {
           SIGIOS PRO
         </p>
 
-        <h1 className="mt-3 text-4xl font-black">Sigi Analyst Leaders</h1>
+        <h1 className="mt-3 text-4xl font-black">Sigi Top Analyst Pick</h1>
 
         <p className="mt-3 max-w-3xl text-slate-400">
-          Sector-ranked analyst intelligence selected by Sigi from real analyst
-          flow, conviction, coverage quality, recency, success rate, and return
-          consistency.
+          Sector-ranked top-pick intelligence selected by Sigi from analyst
+          performance, coverage quality, recency, momentum, and leadership
+          signals.
         </p>
 
         <div className="mt-8">
-          <SigiAnalystLeaders />
+          <SigiTopAnalystPick />
         </div>
       </div>
     </main>

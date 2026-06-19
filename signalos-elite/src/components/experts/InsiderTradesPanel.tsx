@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import type { SigiAnalystLeader } from "@/components/experts/SigiAnalystLeaders";
+import type { SigiAnalystLeader } from "@/components/experts/SigiTopAnalystPick";
 
 type InsiderTradeRow = {
   symbol: string;
