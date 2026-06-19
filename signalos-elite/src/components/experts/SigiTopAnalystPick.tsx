@@ -62,7 +62,9 @@ export default function SigiTopAnalystPick({
   onLeaderChange?: (leader: SigiAnalystLeader | null) => void;
 }) {
   const router = useRouter();
-  const [activeSector, setActiveSector] = useState("Technology");
+  const initialSelectedSector = selectedSector?.trim() ?? "";
+  const [activeSector, setActiveSector] = useState("");
+  const [hasSelectedSector, setHasSelectedSector] = useState(false);
   const [loading, setLoading] = useState(false);
   const [aiLeader, setAiLeader] = useState<SigiAnalystLeader | null>(null);
   const [topPick, setTopPick] = useState<TopPickApiResponse | null>(null);
@@ -70,22 +72,27 @@ export default function SigiTopAnalystPick({
   const fallbackLeader: SigiAnalystLeader = {
     analyst: "Sigi AI Leader",
     firm: "SigiOS Analyst Flow",
-    sector: activeSector,
+    sector: activeSector || "Select a sector",
     successRate: "—",
     avgReturn: "—",
     coveredNames: ["—"],
-    mostRecentPick: "Needs live analyst-feed confirmation before publishing.",
+    mostRecentPick: hasSelectedSector
+      ? "Needs live analyst-feed confirmation before publishing."
+      : "Select a sector button to load the current top analyst pick.",
     strongestCall: "—",
-    reason:
-      "Sigi is ready to rank the strongest stock setup in this sector once live analyst-flow data is connected.",
-    risk: "No live top analyst pick has been calculated yet for this sector.",
+    reason: hasSelectedSector
+      ? "Sigi is ready to rank the strongest stock setup in this sector once live analyst-flow data is connected."
+      : "Select a sector first so Sigi can load the matching analyst leader instead of a placeholder.",
+    risk: hasSelectedSector
+      ? "No live top analyst pick has been calculated yet for this sector."
+      : "The analyst pick action stays locked until a sector button is selected.",
   };
 
   const leader = useMemo(
-    () => aiLeader ?? mapTopPickResponseToLeader(topPick ?? buildFallbackTopPick(activeSector)) ?? fallbackLeader,
+    () => aiLeader ?? mapTopPickResponseToLeader(topPick ?? buildFallbackTopPick(activeSector || "Select a sector")) ?? fallbackLeader,
     [activeSector, aiLeader, fallbackLeader, topPick]
   );
-  const displayTopPick = topPick ?? buildFallbackTopPick(activeSector);
+  const displayTopPick = topPick ?? buildFallbackTopPick(activeSector || "Select a sector");
 
   useEffect(() => {
     onLeaderChange?.(leader);
@@ -96,17 +103,22 @@ export default function SigiTopAnalystPick({
       return;
     }
 
+    if (!hasSelectedSector && selectedSector === initialSelectedSector) {
+      return;
+    }
+
     setActiveSector(selectedSector);
+    setHasSelectedSector(true);
     void requestTopPick(selectedSector);
-  }, [selectedSector]);
+  }, [activeSector, hasSelectedSector, initialSelectedSector, selectedSector]);
 
   useEffect(() => {
-    if (topPick?.sector === activeSector) {
+    if (!hasSelectedSector || !activeSector || topPick?.sector === activeSector) {
       return;
     }
 
     void requestTopPick(activeSector);
-  }, [activeSector, topPick?.sector]);
+  }, [activeSector, hasSelectedSector, topPick?.sector]);
 
   const displayAnalyst = isDisclosureHidden(leader.analyst) ? "Sigi Sector Leader" : leader.analyst;
   const displayFirm = isDisclosureHidden(leader.firm) ? "Live analyst feed" : leader.firm;
@@ -145,6 +157,7 @@ export default function SigiTopAnalystPick({
   }
 
   function handleSelectSector(sector: string) {
+    setHasSelectedSector(true);
     setActiveSector(sector);
     onSectorChange?.(sector);
     void requestTopPick(sector);
@@ -154,7 +167,7 @@ export default function SigiTopAnalystPick({
     const ticker = displayTopPick.ticker?.trim().toUpperCase();
     const sector = activeSector.trim();
 
-    if (!ticker || ticker === "—") {
+    if (!hasSelectedSector || !sector || !ticker || ticker === "—") {
       return;
     }
 
@@ -184,10 +197,14 @@ export default function SigiTopAnalystPick({
         <button
           type="button"
           onClick={handleAskSigi}
-          disabled={loading}
+          disabled={loading || !hasSelectedSector || !activeSector || displayTopPick.ticker === "—"}
           className="rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-black hover:bg-cyan-200 disabled:opacity-50"
         >
-          {loading ? "Sigi thinking..." : "Ask Sigi About Analyst Pick"}
+          {loading
+            ? "Sigi thinking..."
+            : hasSelectedSector
+              ? "Ask Sigi About Analyst Pick"
+              : "Select Sector First"}
         </button>
       </div>
 
