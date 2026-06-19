@@ -677,7 +677,7 @@ export default function ExpertsPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(0,0,0,0.55)_100%)]" />
       </div>
 
-      <section className="relative z-10">
+      <section>
         <div className="w-full space-y-4 md:space-y-6 xl:space-y-7">
           <div className="space-y-2">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -733,8 +733,6 @@ export default function ExpertsPage() {
 
         <div id="sigi-top-analyst-pick" className="scroll-mt-28">
           <SigiTopAnalystPick
-            selectedSector={selectedExpertSector}
-            onSectorChange={setSelectedExpertSector}
             onLeaderChange={setCurrentAnalystLeader}
           />
         </div>

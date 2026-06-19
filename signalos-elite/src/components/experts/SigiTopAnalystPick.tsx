@@ -53,16 +53,11 @@ const sectors = [
 ];
 
 export default function SigiTopAnalystPick({
-  selectedSector,
-  onSectorChange,
   onLeaderChange,
 }: {
-  selectedSector?: string;
-  onSectorChange?: (sector: string) => void;
   onLeaderChange?: (leader: SigiAnalystLeader | null) => void;
 }) {
   const router = useRouter();
-  const initialSelectedSector = selectedSector?.trim() ?? "";
   const [activeSector, setActiveSector] = useState("");
   const [hasSelectedSector, setHasSelectedSector] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -97,20 +92,6 @@ export default function SigiTopAnalystPick({
   useEffect(() => {
     onLeaderChange?.(leader);
   }, [leader, onLeaderChange]);
-
-  useEffect(() => {
-    if (!selectedSector || selectedSector === "All" || selectedSector === activeSector) {
-      return;
-    }
-
-    if (!hasSelectedSector && selectedSector === initialSelectedSector) {
-      return;
-    }
-
-    setActiveSector(selectedSector);
-    setHasSelectedSector(true);
-    void requestTopPick(selectedSector);
-  }, [activeSector, hasSelectedSector, initialSelectedSector, selectedSector]);
 
   useEffect(() => {
     if (!hasSelectedSector || !activeSector || topPick?.sector === activeSector) {
@@ -159,7 +140,6 @@ export default function SigiTopAnalystPick({
   function handleSelectSector(sector: string) {
     setHasSelectedSector(true);
     setActiveSector(sector);
-    onSectorChange?.(sector);
     void requestTopPick(sector);
   }
 
