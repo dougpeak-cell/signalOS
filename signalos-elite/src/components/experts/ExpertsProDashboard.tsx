@@ -542,20 +542,28 @@ export default function ExpertsPage() {
   const [isLoadingFmpRows, setIsLoadingFmpRows] = useState(true);
   const [fmpLoadError, setFmpLoadError] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
-  const [selectedExpertSector, setSelectedExpertSector] = useState("All");
+  const [selectedExpertSector, setSelectedExpertSector] = useState("Technology");
   const [currentAnalystLeader, setCurrentAnalystLeader] = useState<SigiAnalystLeader | null>(null);
 
-  const expertSectorTabs = ["All", ...Object.keys(fmpSectorRows)];
+  const expertSectorTabs = Object.keys(fmpSectorRows);
   const modelRows = useMemo(
     () => buildModelRows(fmpRows, fmpSectorRows),
     [fmpRows, fmpSectorRows]
   );
 
   useEffect(() => {
-    if (selectedExpertSector !== "All" && !(selectedExpertSector in fmpSectorRows)) {
-      setSelectedExpertSector("All");
+    if (expertSectorTabs.length === 0) {
+      return;
     }
-  }, [fmpSectorRows, selectedExpertSector]);
+
+    if (selectedExpertSector in fmpSectorRows) {
+      return;
+    }
+
+    setSelectedExpertSector(
+      "Technology" in fmpSectorRows ? "Technology" : expertSectorTabs[0]
+    );
+  }, [expertSectorTabs, fmpSectorRows, selectedExpertSector]);
 
   useEffect(() => {
     if (selectedModel && !modelRows.some((model) => model.name === selectedModel)) {
@@ -635,10 +643,7 @@ export default function ExpertsPage() {
   ).length;
   const selectedModelRow =
     modelRows.find((model) => model.name === selectedModel) ?? null;
-  const visibleFmpRows =
-    selectedExpertSector === "All"
-      ? fmpRows
-      : fmpSectorRows[selectedExpertSector] ?? [];
+  const visibleFmpRows = fmpSectorRows[selectedExpertSector] ?? [];
   const liveAnalystTopPicks: AnalystTopPickRow[] = fmpRows
     .filter((row) => row.recencyBucket != null)
     .slice(0, 20)
@@ -980,7 +985,7 @@ export default function ExpertsPage() {
                   Analyst Top Picks Across the Market
                 </div>
                 <p className="mt-1 text-[14px] leading-6 text-white/48">
-                  Diversified analyst signals from today, yesterday, the last 7 days, and the last 14 days ranked with fresh calls weighted highest, then upside, rating quality, recency, and sector balance. Use sector tabs to drill into the top 10 analyst-ranked names inside each group.
+                  Diversified analyst signals from today, yesterday, the last 7 days, and the last 14 days ranked with fresh calls weighted highest, then upside, rating quality, recency, and sector balance. Use this section to find additional stocks per sector.
                 </p>
               </div>
               <div className="relative inline-flex items-center rounded-full border border-emerald-400/40 bg-emerald-400/10 px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200 shadow-[0_0_20px_rgba(16,185,129,0.25)]">
@@ -1007,14 +1012,10 @@ export default function ExpertsPage() {
             </div>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/8 bg-black/25 px-4 py-3 text-sm text-white/55">
               <div>
-                {selectedExpertSector === "All"
-                  ? `Showing diversified top picks from a broader 30-name consensus pool.`
-                  : `Showing the top ${Math.min(10, visibleFmpRows.length)} analyst-ranked names in ${selectedExpertSector}.`}
+                {`Showing the top ${Math.min(10, visibleFmpRows.length)} analyst-ranked names in ${selectedExpertSector}.`}
               </div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/35">
-                {selectedExpertSector === "All"
-                  ? `${fmpRows.length} ranked picks`
-                  : `${visibleFmpRows.length} sector picks`}
+                {`${visibleFmpRows.length} sector picks`}
               </div>
             </div>
             <div className="space-y-4">
