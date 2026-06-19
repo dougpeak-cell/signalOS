@@ -245,6 +245,17 @@ export default function MobileSigiSheet({
     return `/today?${nextParams.toString()}`;
   }
 
+  function handleCloseToMarketThesis(ticker: string | null) {
+    setOpen(false);
+    setShowReadFirst(false);
+
+    if (!ticker) {
+      return;
+    }
+
+    router.push(buildTodayTickerHref(ticker), { scroll: true });
+  }
+
   useEffect(() => {
     setSigiProfile(getSigiProfile());
 
@@ -727,6 +738,8 @@ export default function MobileSigiSheet({
                     router.push(buildStockHref(mobileSigiAnswer?.ticker ?? ""));
                   }
                 : null}
+                onSecondaryAction={() => handleCloseToMarketThesis(mobileSigiAnswer?.ticker ?? routeTicker ?? null)}
+                secondaryActionLabel="Close to Market Thesis"
             />
           </div>
         ) : null}
@@ -894,6 +907,8 @@ export default function MobileSigiSheet({
                   router.push(buildStockHref(mobileSigiAnswer?.ticker ?? ""));
                 }
               : null}
+            onSecondaryAction={() => handleCloseToMarketThesis(mobileSigiAnswer?.ticker ?? routeTicker ?? null)}
+            secondaryActionLabel="Close to Market Thesis"
           />
         ) : null}
       </div>

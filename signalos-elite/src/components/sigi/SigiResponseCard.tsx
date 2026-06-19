@@ -42,11 +42,15 @@ function tonePillClass(tone?: SigiResponseCardData["tone"]) {
 export default function SigiResponseCard({
   response,
   onAction,
+  onSecondaryAction,
+  secondaryActionLabel,
   onTickerClick,
   showQuestion = true,
 }: {
   response: SigiResponseCardData;
   onAction?: (() => void) | null;
+  onSecondaryAction?: (() => void) | null;
+  secondaryActionLabel?: string | null;
   onTickerClick?: ((ticker: string) => void) | null;
   showQuestion?: boolean;
 }) {
@@ -151,14 +155,27 @@ export default function SigiResponseCard({
           ) : null}
         </div>
       ) : null}
-      {onAction ? (
-        <button
-          type="button"
-          onClick={onAction}
-          className={`${response.analysis || response.risk || response.catalyst || response.nextStep || response.intelligenceCard ? "mt-6" : "mt-5"} inline-flex min-h-11 items-center rounded-2xl border border-cyan-400/28 bg-cyan-400/12 px-4 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/18`}
-        >
-          {response.actionLabel ?? "Open Chart"}
-        </button>
+      {onAction || onSecondaryAction ? (
+        <div className={`${response.analysis || response.risk || response.catalyst || response.nextStep || response.intelligenceCard ? "mt-6" : "mt-5"} flex flex-wrap gap-3`}>
+          {onAction ? (
+            <button
+              type="button"
+              onClick={onAction}
+              className="inline-flex min-h-11 items-center rounded-2xl border border-cyan-400/28 bg-cyan-400/12 px-4 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/18"
+            >
+              {response.actionLabel ?? "Open Chart"}
+            </button>
+          ) : null}
+          {onSecondaryAction ? (
+            <button
+              type="button"
+              onClick={onSecondaryAction}
+              className="inline-flex min-h-11 items-center rounded-2xl border border-white/12 bg-white/6 px-4 text-sm font-semibold text-white/78 transition hover:bg-white/10 hover:text-white"
+            >
+              {secondaryActionLabel ?? "Close"}
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

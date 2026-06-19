@@ -207,6 +207,7 @@ export default function MobileSigiHome({
     mainRisk?: string;
   } | null>(null);
   const [activeInsightKey, setActiveInsightKey] = useState<MobileInsightKey | null>(null);
+  const [handledPrefillQuestion, setHandledPrefillQuestion] = useState<string | null>(null);
 
   useEffect(() => {
     ensureQuotes([...MOBILE_PULSE_TICKERS]);
@@ -697,6 +698,29 @@ export default function MobileSigiHome({
       setMobileSigiSheetDefaultContext(null);
     };
   }, [mobileSigiContext]);
+
+  useEffect(() => {
+    const preloadedQuestion = searchParams.get("question")?.trim() ?? "";
+    const preloadedTicker = searchParams.get("ticker")?.trim().toUpperCase() ?? "";
+    const shouldUseShortAnswer = searchParams.get("answerMode") === "short";
+
+    if (!preloadedQuestion || !shouldUseShortAnswer) {
+      return;
+    }
+
+    const prefillKey = `${preloadedTicker}:${preloadedQuestion}`;
+    if (handledPrefillQuestion === prefillKey) {
+      return;
+    }
+
+    setHandledPrefillQuestion(prefillKey);
+
+    openMobileSigiSheet({
+      prompt: preloadedQuestion,
+      context: mobileSigiContext,
+      autoSubmit: true,
+    });
+  }, [handledPrefillQuestion, mobileSigiContext, searchParams]);
 
   function openSheetWithContext(nextPrompt?: string) {
     openMobileSigiSheet({

@@ -52,43 +52,6 @@ const sectors = [
   "Basic Materials",
 ];
 
-const mockTopPicks: Record<string, TopPickApiResponse> = {
-  Technology: {
-    sector: "Technology",
-    ticker: "NVDA",
-    company: "NVIDIA Corporation",
-    analyst: "Joseph Moore",
-    firm: "Morgan Stanley",
-    analystAvgReturn: 28.4,
-    successRate: 73,
-    currentPrice: 182.4,
-    targetPrice: 225,
-    upside: 23.3,
-    convictionScore: 94,
-    targetUpdated: "2026-06-17",
-    trend: "Bullish",
-    sigiReason:
-      "NVDA combines strong analyst conviction, superior momentum, sector leadership, positive earnings revisions, and favorable institutional positioning.",
-  },
-  Healthcare: {
-    sector: "Healthcare",
-    ticker: "LLY",
-    company: "Eli Lilly and Company",
-    analyst: "Chris Schott",
-    firm: "JPMorgan",
-    analystAvgReturn: 21.8,
-    successRate: 69,
-    currentPrice: 872.1,
-    targetPrice: 960,
-    upside: 10.1,
-    convictionScore: 88,
-    targetUpdated: "2026-06-17",
-    trend: "Bullish",
-    sigiReason:
-      "LLY continues to pair strong analyst support with durable earnings momentum, category leadership, and steady institutional sponsorship.",
-  },
-};
-
 export default function SigiTopAnalystPick({
   selectedSector,
   onSectorChange,
@@ -119,10 +82,10 @@ export default function SigiTopAnalystPick({
   };
 
   const leader = useMemo(
-    () => aiLeader ?? mapTopPickResponseToLeader(mockTopPicks[activeSector] ?? buildFallbackTopPick(activeSector)) ?? fallbackLeader,
-    [activeSector, aiLeader, fallbackLeader]
+    () => aiLeader ?? mapTopPickResponseToLeader(topPick ?? buildFallbackTopPick(activeSector)) ?? fallbackLeader,
+    [activeSector, aiLeader, fallbackLeader, topPick]
   );
-  const displayTopPick = topPick ?? mockTopPicks[activeSector] ?? buildFallbackTopPick(activeSector);
+  const displayTopPick = topPick ?? buildFallbackTopPick(activeSector);
 
   useEffect(() => {
     onLeaderChange?.(leader);
@@ -136,6 +99,14 @@ export default function SigiTopAnalystPick({
     setActiveSector(selectedSector);
     void requestTopPick(selectedSector);
   }, [selectedSector]);
+
+  useEffect(() => {
+    if (topPick?.sector === activeSector) {
+      return;
+    }
+
+    void requestTopPick(activeSector);
+  }, [activeSector, topPick?.sector]);
 
   const displayAnalyst = isDisclosureHidden(leader.analyst) ? "Sigi Sector Leader" : leader.analyst;
   const displayFirm = isDisclosureHidden(leader.firm) ? "Live analyst feed" : leader.firm;
@@ -189,7 +160,7 @@ export default function SigiTopAnalystPick({
 
     const question = `Why is ${ticker} your top analyst pick in ${sector}?`;
     router.push(
-      `/today?ticker=${encodeURIComponent(ticker)}&question=${encodeURIComponent(question)}#sigi-command-panel`
+      `/today?ticker=${encodeURIComponent(ticker)}&question=${encodeURIComponent(question)}&answerMode=short#sigi-command-panel`
     );
   }
 
@@ -216,7 +187,7 @@ export default function SigiTopAnalystPick({
           disabled={loading}
           className="rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-black hover:bg-cyan-200 disabled:opacity-50"
         >
-          {loading ? "Sigi thinking..." : "Ask Sigi About Analyst Picks"}
+          {loading ? "Sigi thinking..." : "Ask Sigi About Analyst Pick"}
         </button>
       </div>
 

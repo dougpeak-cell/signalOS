@@ -297,6 +297,7 @@ function SigiDecisionPanelContent({
   const isSmartPreview = previewActive && tier === "free";
   const preloadedQuestion = searchParams.get("question")?.trim() ?? "";
   const preloadedTicker = searchParams.get("ticker")?.trim().toUpperCase() ?? "";
+  const preloadedAnswerMode: SigiAnswerMode = searchParams.get("answerMode") === "short" ? "short" : "analyze";
   const suggestions = searchTickers(sigiInput);
   const watchlistTickers = useMemo(
     () => watchlistRows.map((item) => item.ticker).filter(Boolean),
@@ -635,9 +636,14 @@ function SigiDecisionPanelContent({
     });
   }
 
-  async function ask(rawQuestion: string, fallbackTicker = effectiveTicker) {
+  async function ask(
+    rawQuestion: string,
+    fallbackTicker = effectiveTicker,
+    options?: { forcedAnswerMode?: SigiAnswerMode }
+  ) {
     const trimmed = rawQuestion.trim();
     if (!trimmed || isAnalyzing) return;
+    const requestedAnswerMode = options?.forcedAnswerMode ?? answerMode;
 
     const educationEntry = findEducationEntry(trimmed);
 
@@ -735,7 +741,7 @@ function SigiDecisionPanelContent({
           ? parsed.originalQuestion
           : withTicker(trimmed, resolvedTicker);
       const intelligenceCardPromise =
-        answerMode === "analyze"
+        requestedAnswerMode === "analyze"
           ? fetchSigiIntelligenceCard({
               question,
               ticker: resolvedTicker,
@@ -760,7 +766,7 @@ function SigiDecisionPanelContent({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: withTicker(question, resolvedTicker),
-          answerMode,
+          answerMode: requestedAnswerMode,
           profilePrompt: buildSigiProfilePrompt(profile),
           stock: context ?? null,
           context: null,
@@ -788,7 +794,7 @@ function SigiDecisionPanelContent({
       const thesis = data.thesis ?? null;
       const title =
         thesis?.title?.trim() ||
-        (answerMode === "short" ? `${resolvedTicker} Quick Sigi Read` : `${resolvedTicker} Sigi Read`);
+        (requestedAnswerMode === "short" ? `${resolvedTicker} Quick Sigi Read` : `${resolvedTicker} Sigi Read`);
       const thesisSummary = thesis?.summary?.trim() || null;
       const analysis = thesisSummary && thesisSummary !== answer ? thesisSummary : null;
 
@@ -858,9 +864,39 @@ function SigiDecisionPanelContent({
       setActiveTicker(preloadedTicker);
     }
 
+    setAnswerMode(preloadedAnswerMode);
     setSigiInput(preloadedQuestion);
-    void ask(preloadedQuestion, preloadedTicker || effectiveTicker);
-  }, [ask, effectiveTicker, isAnalyzing, preloadedQuestion, preloadedTicker, setActiveTicker]);
+    void ask(preloadedQuestion, preloadedTicker || effectiveTicker, {
+      forcedAnswerMode: preloadedAnswerMode,
+    });
+  }, [ask, effectiveTicker, isAnalyzing, preloadedAnswerMode, preloadedQuestion, preloadedTicker, setActiveTicker]);
+
+  function buildTodayTickerQueryHref(ticker: string) {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("ticker", ticker.trim().toUpperCase());
+    nextParams.delete("question");
+    nextParams.delete("answerMode");
+    const query = nextParams.toString();
+    return query ? `/today?${query}` : "/today";
+  }
+
+  function handleCloseToMarketThesis() {
+    const ticker = focusedTicker ?? effectiveTicker ?? preloadedTicker;
+
+    setResponse(null);
+    setError(null);
+    setSigiInput("");
+
+    if (!ticker) {
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+      return;
+    }
+
+    setActiveTicker(ticker);
+    void loadHeroStory(ticker);
+    router.replace(buildTodayTickerQueryHref(ticker), { scroll: false });
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  }
 
   useEffect(() => {
     if (!isAnalyzing || !hasSigiPro) {
@@ -1125,6 +1161,8 @@ function SigiDecisionPanelContent({
             onAction={focusedTicker
               ? () => router.push(buildStockLiveUrl(focusedTicker))
               : null}
+            onSecondaryAction={handleCloseToMarketThesis}
+            secondaryActionLabel="Close to Market Thesis"
           />
         </div>
       ) : null}
