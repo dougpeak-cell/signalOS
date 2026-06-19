@@ -168,6 +168,9 @@ Rules:
 - For Pro users, sound more institutional and analytical.
 - If response mode is short, answer in 3 to 5 tight sentences and end with one clear actionable takeaway.
 - If response mode is analyze, give a fuller institutional read while staying concise.
+- If a ticker focus is provided, the answer must stay focused on that exact ticker.
+- Do not replace the requested ticker with other stocks, sector leaders, watchlist ideas, or thematic baskets unless the user explicitly asks for alternatives or comparisons.
+- If the user asks why a specific stock is a top pick, explain that stock directly instead of naming different companies.
           `,
         },
         {
@@ -176,6 +179,7 @@ Rules:
 User plan: ${plan}
 Response mode: ${answerMode}
 Ticker focus: ${ticker || "none"}
+${ticker ? `Hard requirement: answer only about ${ticker}. Do not switch to another ticker unless the user explicitly asks for a comparison or alternative.` : ""}
 
 User question:
 ${question}
