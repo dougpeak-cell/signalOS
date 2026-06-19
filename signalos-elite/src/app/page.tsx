@@ -155,10 +155,11 @@ export default function LandingPage() {
           <div className="flex flex-col gap-10">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="text-sm font-semibold uppercase tracking-[0.28em] text-teal-200/80">
+                <div className="text-sm font-semibold tracking-[0.28em] text-teal-200/80">
                   SigiOS
                 </div>
                 <div className="mt-1 text-base text-white/60">Powered by Sigi</div>
+                <div className="mt-1 text-xs tracking-[0.18em] text-white/42">SIGIOS LLC</div>
               </div>
 
               <div className="flex max-w-xl flex-col items-start gap-2 sm:items-end">
