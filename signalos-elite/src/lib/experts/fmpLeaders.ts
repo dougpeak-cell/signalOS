@@ -19,6 +19,7 @@ const DEFAULT_SECTOR_FETCH_LIMIT = 6;
 const DEFAULT_SECTOR_PICK_LIMIT = 4;
 const BACKFILL_SECTOR_FETCH_LIMIT = 40;
 const BACKFILL_SECTOR_PICK_LIMIT = 12;
+const DIVERSIFIED_FEED_LIMIT = 20;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const ANALYST_LOOKBACK_DAYS = 14;
 
@@ -506,11 +507,11 @@ export async function loadFmpExpertsFeed(): Promise<FmpExpertsFeed> {
     .sort(compareRankedRows);
 
   for (const row of remaining) {
-    if (diversified.length >= 12) break;
+    if (diversified.length >= DIVERSIFIED_FEED_LIMIT) break;
     diversified.push(row);
   }
 
-  const strictRows = diversified.sort(compareRankedRows).slice(0, 12);
+  const strictRows = diversified.sort(compareRankedRows).slice(0, DIVERSIFIED_FEED_LIMIT);
 
   const fallbackRows = [...enriched]
     .filter((row) => Boolean(row.publishedDate))
