@@ -105,6 +105,22 @@ function stripTrailingReadQuestion(text: string) {
     .trim();
 }
 
+function withTickerFocus(question: string, ticker: string) {
+  const normalizedQuestion = question.trim();
+  const normalizedTicker = ticker.trim().toUpperCase();
+
+  if (!normalizedQuestion) {
+    return `Analyze ${normalizedTicker}. Focus only on ${normalizedTicker}.`;
+  }
+
+  const focusSentence = `Focus only on ${normalizedTicker}.`;
+  if (normalizedQuestion.toUpperCase().includes(normalizedTicker) && normalizedQuestion.includes(focusSentence)) {
+    return normalizedQuestion;
+  }
+
+  return `${normalizedQuestion} ${focusSentence}`.trim();
+}
+
 const QUICK_PROMPTS = [
   "What matters right now?",
   "Best setup today",
@@ -493,16 +509,17 @@ export default function MobileSigiSheet({
         const tickerOnlyInput = normalizeTickerInput(question) === ticker;
         const requestQuestion = tickerOnlyInput
           ? `Analyze ${ticker}`
-          : parsedQuestion.ticker
-            ? parsedQuestion.originalQuestion
-            : `${question} Focus on ${ticker}.`;
+          : withTickerFocus(
+              parsedQuestion.ticker ? parsedQuestion.originalQuestion : question,
+              ticker
+            );
         const answerMode = shouldShowTodayShortRead ? "short" : "analyze";
 
         const response = await fetch("/api/sigi", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            message: requestQuestion,
+            message: withTickerFocus(requestQuestion, ticker),
             ticker,
             answerMode,
             profilePrompt: buildSigiProfilePrompt(sigiProfile),
