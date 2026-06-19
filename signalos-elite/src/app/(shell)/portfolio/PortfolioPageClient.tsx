@@ -15,6 +15,7 @@ import { getQuotePrice } from "@/lib/market/quotes";
 import { resolveShellViewMode } from "@/lib/shell/viewMode";
 import {
   clearPortfolioHoldings,
+  getDefaultPortfolioHoldings,
   hasInitializedPortfolioHoldings,
   readPortfolioHoldings,
   replacePortfolioHoldings,
@@ -75,92 +76,9 @@ type ActionState =
 
 const QUICK_VIEW_QUOTE_POLL_MS = 3_000;
 
-const INITIAL_HOLDINGS: Holding[] = [
-  {
-    ticker: "NVDA",
-    name: "NVIDIA",
-    direction: "Long",
-    status: "Core AI",
-    tag: "Core AI",
-    thesis: "Core long-term AI infrastructure idea.",
-    shares: 25,
-    entryPrice: 118.4,
-    currentPrice: 183.04,
-    targetPrice: 210,
-    stopPrice: 148,
-    conviction: 98,
-  },
-  {
-    ticker: "MSFT",
-    name: "Microsoft",
-    direction: "Long",
-    status: "Core AI",
-    tag: "Core AI",
-    thesis: "High-quality compounder.",
-    shares: 18,
-    entryPrice: 122.83,
-    currentPrice: 374.46,
-    targetPrice: 430,
-    stopPrice: 315,
-    conviction: 91,
-  },
-  {
-    ticker: "TSLA",
-    name: "Tesla",
-    direction: "Long",
-    status: "Active Momentum",
-    tag: "Momentum",
-    thesis: "Momentum tactical position.",
-    shares: 12,
-    entryPrice: 219.8,
-    currentPrice: 346.27,
-    targetPrice: 280,
-    stopPrice: 255,
-    conviction: 93,
-  },
-  {
-    ticker: "AMD",
-    name: "Advanced Micro Devices",
-    direction: "Long",
-    status: "Active Momentum",
-    tag: "Semis",
-    thesis: "Semiconductor continuation setup.",
-    shares: 20,
-    entryPrice: 164.9,
-    currentPrice: 236.73,
-    targetPrice: 195,
-    stopPrice: 205,
-    conviction: 89,
-  },
-  {
-    ticker: "AAPL",
-    name: "Apple",
-    direction: "Long",
-    status: "Quality Compounder",
-    tag: "Large Cap",
-    thesis: "Durable balance-sheet compounder.",
-    shares: 16,
-    entryPrice: 173.42,
-    currentPrice: 201.12,
-    targetPrice: 220,
-    stopPrice: 184,
-    conviction: 87,
-  },
-  {
-    ticker: "META",
-    name: "Meta",
-    direction: "Long",
-    status: "Active Momentum",
-    tag: "Internet",
-    thesis: "Ad demand and margin discipline remain supportive.",
-    shares: 11,
-    entryPrice: 332.7,
-    currentPrice: 573.66,
-    targetPrice: 610,
-    stopPrice: 520,
-    conviction: 90,
-  },
-];
+const INITIAL_HOLDINGS: Holding[] = getDefaultPortfolioHoldings().map(
+  mapLocalHoldingToHolding
+);
 
 function normalizeTicker(value: string) {
   return value.trim().toUpperCase().replace(/[^A-Z.\-]/g, "");
@@ -930,6 +848,7 @@ function PortfolioPageContent() {
   const [actionState, setActionState] = useState<ActionState>(null);
   const [editingTicker, setEditingTicker] = useState<string | null>(null);
   const [showAddStock, setShowAddStock] = useState(false);
+  const [showAddPositionHelp, setShowAddPositionHelp] = useState(false);
   const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -1635,7 +1554,48 @@ function PortfolioPageContent() {
                     the same intelligence system.
                   </p>
 
-                  <div className="mt-8 flex flex-wrap gap-3">
+                  <div className="mt-8 space-y-3">
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-300">
+                            Getting Started
+                          </div>
+                          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">
+                            Use `+ Add Stock`, `Open Watchlist`, and `+ Portfolio` to move
+                            from Stocks into your Portfolio, then save share quantity and
+                            optional average cost.
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowAddPositionHelp((prev) => !prev)}
+                          aria-expanded={showAddPositionHelp}
+                          className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-[11px] font-semibold text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-400/18 hover:text-white"
+                        >
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-300/12 text-[11px] font-bold">
+                            ?
+                          </span>
+                          How to Add Positions
+                        </button>
+                      </div>
+
+                      {showAddPositionHelp ? (
+                        <div className="mt-3 rounded-2xl border border-cyan-400/15 bg-black/20 p-4 text-sm leading-6 text-white/72">
+                          <p>1. Go to the Stocks page from the top menu.</p>
+                          <p>2. Type the stock in search and click + Add Stock.</p>
+                          <p>3. Click Open Watchlist.</p>
+                          <p>4. Find the stock in Watchlist and click + Portfolio.</p>
+                          <p className="mt-3 text-cyan-100/85">
+                            SigiOS will automatically calculate value, performance,
+                            allocation, and portfolio insights.
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
                     {canUseDetail ? (
                       <Link
                         href={buildPortfolioModeHref("detail")}
@@ -1682,7 +1642,7 @@ function PortfolioPageContent() {
                       onClick={() => setShowAddStock(true)}
                       className="rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-5 py-3 text-sm font-bold text-emerald-200 shadow-[0_0_24px_rgba(16,185,129,0.18)] transition hover:bg-emerald-400/20 hover:text-white"
                     >
-                      + Add Stock
+                      + Add Position
                     </button>
 
                     <button
@@ -1702,6 +1662,7 @@ function PortfolioPageContent() {
                     >
                       Reset Portfolio
                     </button>
+                  </div>
                   </div>
                 </div>
               </section>

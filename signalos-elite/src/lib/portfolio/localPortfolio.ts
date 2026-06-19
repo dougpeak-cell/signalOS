@@ -18,6 +18,23 @@ export type LocalPortfolioHolding = {
   conviction: number;
 };
 
+export const DEFAULT_PORTFOLIO_HOLDINGS: LocalPortfolioHolding[] = [
+  {
+    ticker: "MSFT",
+    name: "Microsoft",
+    direction: "Long",
+    status: "Starter Position",
+    tag: "Starter",
+    thesis: "Starter portfolio seed for first-time users.",
+    shares: 1,
+    entryPrice: 0,
+    currentPrice: 0,
+    targetPrice: null,
+    stopPrice: null,
+    conviction: 72,
+  },
+];
+
 type AddPendingPortfolioHoldingInput = {
   ticker: string;
   name?: string | null;
@@ -44,6 +61,10 @@ function toFiniteNumber(value: unknown): number | null {
 function roundPrice(value: number | null | undefined): number {
   if (value == null || !Number.isFinite(value) || value <= 0) return 0;
   return Number(value.toFixed(2));
+}
+
+export function getDefaultPortfolioHoldings(): LocalPortfolioHolding[] {
+  return DEFAULT_PORTFOLIO_HOLDINGS.map((holding) => ({ ...holding }));
 }
 
 export function readPortfolioHoldings(): LocalPortfolioHolding[] {
@@ -97,6 +118,12 @@ export function readPortfolioHoldings(): LocalPortfolioHolding[] {
         };
       })
       .filter((item): item is LocalPortfolioHolding => item != null);
+
+    if (normalized.length === 0 && !hasInitializedPortfolioHoldings()) {
+      const defaults = getDefaultPortfolioHoldings();
+      writePortfolioHoldings(defaults, { dispatchEvent: false });
+      return defaults;
+    }
 
     return normalized;
   } catch {
