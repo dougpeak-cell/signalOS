@@ -15,6 +15,10 @@ export const EXPERT_SECTOR_BUCKETS = [
 ];
 
 const BROAD_CANDIDATE_LIMIT = 30;
+const DEFAULT_SECTOR_FETCH_LIMIT = 6;
+const DEFAULT_SECTOR_PICK_LIMIT = 4;
+const BACKFILL_SECTOR_FETCH_LIMIT = 40;
+const BACKFILL_SECTOR_PICK_LIMIT = 12;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const ANALYST_LOOKBACK_DAYS = 14;
 
@@ -248,6 +252,17 @@ function normalizeSector(value: string | null | undefined) {
   return sector && sector.length > 0 ? sector : "Other";
 }
 
+function isEquityCandidate(item: {
+  companyName?: string | null;
+  isEtf?: boolean | null;
+  isFund?: boolean | null;
+}) {
+  if (item.isEtf || item.isFund) return false;
+
+  const companyName = String(item.companyName ?? "");
+  return !/(\betf\b|\bfund\b|\btrust\b)/i.test(companyName);
+}
+
 function isBroadMarketTicker(symbol: string) {
   return /^[A-Z]{1,5}$/.test(symbol);
 }
@@ -289,7 +304,16 @@ async function getBroadConsensusCandidates() {
     .slice(0, BROAD_CANDIDATE_LIMIT);
 }
 
-async function getSectorCandidates(sectors: string[]) {
+async function getSectorCandidates(
+  sectors: string[],
+  options?: {
+    fetchLimit?: number;
+    pickLimit?: number;
+  }
+) {
+  const fetchLimit = options?.fetchLimit ?? DEFAULT_SECTOR_FETCH_LIMIT;
+  const pickLimit = options?.pickLimit ?? DEFAULT_SECTOR_PICK_LIMIT;
+
   const sectorCandidates = await Promise.all(
     sectors.map(async (sector) => {
       const url =
@@ -299,13 +323,13 @@ async function getSectorCandidates(sectors: string[]) {
         `&volumeMoreThan=500000` +
         `&priceMoreThan=5` +
         `&isActivelyTrading=true` +
-        `&limit=6` +
+        `&limit=${fetchLimit}` +
         `&apikey=${FMP_API_KEY}`;
 
       const json = await fetchJson(url);
       const rows = Array.isArray(json) ? json : [];
 
-      return rows.slice(0, 4).map((item: any) => ({
+      return rows.filter(isEquityCandidate).slice(0, pickLimit).map((item: any) => ({
         symbol: String(item.symbol ?? "").trim().toUpperCase(),
         companyName: item.companyName ?? item.company ?? null,
         sector,
@@ -447,7 +471,10 @@ export async function loadFmpExpertsFeed(): Promise<FmpExpertsFeed> {
 
   if (missingSectors.length > 0) {
     const seenSymbols = new Set(candidates.map((candidate) => candidate.symbol));
-    const backfillCandidates = (await getSectorCandidates(missingSectors)).filter(
+    const backfillCandidates = (await getSectorCandidates(missingSectors, {
+      fetchLimit: BACKFILL_SECTOR_FETCH_LIMIT,
+      pickLimit: BACKFILL_SECTOR_PICK_LIMIT,
+    })).filter(
       (candidate) => !seenSymbols.has(candidate.symbol)
     );
 
