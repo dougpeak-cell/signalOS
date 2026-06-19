@@ -278,7 +278,8 @@ export async function POST(request: Request) {
         break;
       }
       case "customer.subscription.created":
-      case "customer.subscription.updated": {
+      case "customer.subscription.updated":
+      case "customer.subscription.trial_will_end": {
         const subscription = event.data.object as Stripe.Subscription;
         await syncSubscriptionToProfile(subscription);
         break;
