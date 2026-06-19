@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export type SigiAnalystLeader = {
@@ -26,7 +27,8 @@ type TopPickApiResponse = {
   currentPrice: number;
   targetPrice: number;
   upside: number;
-  momentumScore: number;
+  convictionScore: number;
+  targetUpdated: string;
   trend: string;
   sigiReason: string;
 };
@@ -62,7 +64,8 @@ const mockTopPicks: Record<string, TopPickApiResponse> = {
     currentPrice: 182.4,
     targetPrice: 225,
     upside: 23.3,
-    momentumScore: 92,
+    convictionScore: 94,
+    targetUpdated: "2026-06-17",
     trend: "Bullish",
     sigiReason:
       "NVDA combines strong analyst conviction, superior momentum, sector leadership, positive earnings revisions, and favorable institutional positioning.",
@@ -78,7 +81,8 @@ const mockTopPicks: Record<string, TopPickApiResponse> = {
     currentPrice: 872.1,
     targetPrice: 960,
     upside: 10.1,
-    momentumScore: 84,
+    convictionScore: 88,
+    targetUpdated: "2026-06-17",
     trend: "Bullish",
     sigiReason:
       "LLY continues to pair strong analyst support with durable earnings momentum, category leadership, and steady institutional sponsorship.",
@@ -94,6 +98,7 @@ export default function SigiTopAnalystPick({
   onSectorChange?: (sector: string) => void;
   onLeaderChange?: (leader: SigiAnalystLeader | null) => void;
 }) {
+  const router = useRouter();
   const [activeSector, setActiveSector] = useState("Technology");
   const [loading, setLoading] = useState(false);
   const [aiLeader, setAiLeader] = useState<SigiAnalystLeader | null>(null);
@@ -174,6 +179,20 @@ export default function SigiTopAnalystPick({
     void requestTopPick(sector);
   }
 
+  function handleAskSigi() {
+    const ticker = displayTopPick.ticker?.trim().toUpperCase();
+    const sector = activeSector.trim();
+
+    if (!ticker || ticker === "—") {
+      return;
+    }
+
+    const question = `Why is ${ticker} your top analyst pick in ${sector}?`;
+    router.push(
+      `/today?ticker=${encodeURIComponent(ticker)}&question=${encodeURIComponent(question)}#sigi-command-panel`
+    );
+  }
+
   return (
     <section className="rounded-4xl border border-cyan-400/20 bg-[#020817] p-6 shadow-[0_0_60px_rgba(34,211,238,0.08)]">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
@@ -193,7 +212,7 @@ export default function SigiTopAnalystPick({
 
         <button
           type="button"
-          onClick={() => void requestTopPick(activeSector)}
+          onClick={handleAskSigi}
           disabled={loading}
           className="rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-black hover:bg-cyan-200 disabled:opacity-50"
         >
@@ -238,10 +257,23 @@ export default function SigiTopAnalystPick({
               <span className="text-emerald-300">{formatPercent(displayTopPick.upside)}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span>Sigi Momentum</span>
-              <span className="text-cyan-300">{Math.round(displayTopPick.momentumScore)}</span>
+              <span>Sigi Conviction Score</span>
+              <span className="text-cyan-300">{Math.round(displayTopPick.convictionScore)}</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span>Target Updated</span>
+              <span>{formatDateLabel(displayTopPick.targetUpdated)}</span>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => router.push(`/stocks/${encodeURIComponent(displayTopPick.ticker)}/live`)}
+            disabled={!displayTopPick.ticker || displayTopPick.ticker === "—"}
+            className="mt-6 inline-flex items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm font-black text-cyan-100 hover:border-cyan-300/40 hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {`Open ${displayTopPick.ticker} Workspace`}
+          </button>
         </div>
 
         <div className="rounded-3xl border border-cyan-400/20 bg-slate-950 p-6">
@@ -329,7 +361,8 @@ function buildFallbackTopPick(sector: string): TopPickApiResponse {
     currentPrice: 0,
     targetPrice: 0,
     upside: 0,
-    momentumScore: 0,
+    convictionScore: 0,
+    targetUpdated: "",
     trend: "Awaiting data",
     sigiReason:
       "Sigi is waiting for live analyst-target and momentum inputs before publishing the top sector pick.",
@@ -348,4 +381,17 @@ function formatDollars(value: number) {
 function formatPercent(value: number, includeSign = true) {
   const signed = includeSign && value > 0 ? "+" : "";
   return `${signed}${value.toFixed(1)}%`;
+}
+
+function formatDateLabel(value: string) {
+  const parsed = Date.parse(value);
+  if (!value || !Number.isFinite(parsed)) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(parsed));
 }

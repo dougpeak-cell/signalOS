@@ -2,7 +2,7 @@
 
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import SigiOnboarding from "@/components/sigi/SigiOnboarding";
@@ -270,11 +270,13 @@ function SigiDecisionPanelContent({
   watchlistRows,
 }: Omit<SigiDecisionPanelProps, "hasSigiSmart">): ReactElement {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { effectiveTicker, loadHeroStory, stockContext } = useTodayHeroContext();
   const { activeTicker, setActiveTicker, setSigiAction, sigiActionNonce } = useSelectedTicker();
   const { tier, previewActive } = useSigiTier();
   const { ensureQuotes, quoteMap } = useLiveMarket();
   const lastHandledSigiActionNonceRef = useRef(sigiActionNonce);
+  const lastHandledPrefillQuestionRef = useRef<string | null>(null);
   const lastAnalysisRequestRef = useRef(0);
   const previewBootstrapRef = useRef(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -293,6 +295,8 @@ function SigiDecisionPanelContent({
     getSigiIntelligenceResetKey()
   );
   const isSmartPreview = previewActive && tier === "free";
+  const preloadedQuestion = searchParams.get("question")?.trim() ?? "";
+  const preloadedTicker = searchParams.get("ticker")?.trim().toUpperCase() ?? "";
   const suggestions = searchTickers(sigiInput);
   const watchlistTickers = useMemo(
     () => watchlistRows.map((item) => item.ticker).filter(Boolean),
@@ -837,6 +841,26 @@ function SigiDecisionPanelContent({
 
     void ask("Best setup now");
   }, [activeTicker, sigiActionNonce]);
+
+  useEffect(() => {
+    if (!preloadedQuestion || isAnalyzing) {
+      return;
+    }
+
+    const prefillKey = `${preloadedTicker}:${preloadedQuestion}`;
+    if (lastHandledPrefillQuestionRef.current === prefillKey) {
+      return;
+    }
+
+    lastHandledPrefillQuestionRef.current = prefillKey;
+
+    if (preloadedTicker) {
+      setActiveTicker(preloadedTicker);
+    }
+
+    setSigiInput(preloadedQuestion);
+    void ask(preloadedQuestion, preloadedTicker || effectiveTicker);
+  }, [ask, effectiveTicker, isAnalyzing, preloadedQuestion, preloadedTicker, setActiveTicker]);
 
   useEffect(() => {
     if (!isAnalyzing || !hasSigiPro) {

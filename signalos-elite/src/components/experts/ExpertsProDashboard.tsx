@@ -806,25 +806,6 @@ export default function ExpertsPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-cyan-400/20 bg-linear-to-br from-cyan-950/30 to-slate-950 p-6 shadow-[0_0_40px_rgba(34,211,238,0.08)]">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300">
-                Ask Sigi About Analyst Picks
-              </div>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-                Get Sigi's best analyst-backed stock in your selected sector and the reasoning behind the pick.
-              </p>
-            </div>
-            <a
-              href="#sigi-top-analyst-pick"
-              className="inline-flex items-center justify-center rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-black hover:bg-cyan-200"
-            >
-              Ask Sigi About Analyst Picks
-            </a>
-          </div>
-        </section>
-
         <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <div className="relative min-w-0 overflow-hidden rounded-[28px] border border-emerald-400/15 bg-linear-to-b from-emerald-500/8 via-black to-black p-4 shadow-[0_0_28px_rgba(16,185,129,0.08)]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_34%),radial-gradient(circle_at_70%_18%,rgba(34,211,238,0.10),transparent_28%),linear-gradient(180deg,rgba(6,78,59,0.10),transparent_40%)]" />
