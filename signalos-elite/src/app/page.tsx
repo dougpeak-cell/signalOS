@@ -147,6 +147,8 @@ const secondaryMobileShowcases = mobileShowcases.filter(
   (item) => item.title !== featuredMobileShowcase.title
 );
 
+const LANDING_PRO_TRIAL_HREF = "/auth/upgrade?plan=pro&returnTo=%2Ftoday";
+
 export default function LandingPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.18),transparent_36%),linear-gradient(180deg,#041017_0%,#071722_45%,#f4efe4_100%)] text-white">
@@ -172,7 +174,7 @@ export default function LandingPage() {
                   </Link>
 
                   <Link
-                    href="/auth?next=%2Fwelcome"
+                    href={LANDING_PRO_TRIAL_HREF}
                     className="inline-flex min-h-11 items-center justify-center rounded-full bg-teal-300 px-5 text-sm font-bold text-slate-950 transition hover:bg-teal-200"
                   >
                     Create Free Account
@@ -219,7 +221,7 @@ export default function LandingPage() {
 
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Link
-                    href="/auth?next=%2Fwelcome"
+                    href={LANDING_PRO_TRIAL_HREF}
                     className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#f2e8c9] px-6 text-sm font-bold text-slate-950 transition hover:bg-[#f7efd7]"
                   >
                     Create Free Account
@@ -298,7 +300,7 @@ export default function LandingPage() {
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
-                  href="/auth?next=%2Fwelcome"
+                  href={LANDING_PRO_TRIAL_HREF}
                   className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#f2e8c9] px-6 text-sm font-bold text-slate-950 transition hover:bg-[#f7efd7]"
                 >
                   Create Free Account
@@ -537,7 +539,7 @@ export default function LandingPage() {
             </div>
 
             <Link
-              href="/auth?next=%2Fwelcome"
+              href={LANDING_PRO_TRIAL_HREF}
               className="inline-flex min-h-12 items-center justify-center rounded-full bg-slate-950 px-6 text-sm font-bold text-white transition hover:bg-slate-800"
             >
               Create Free Account
