@@ -324,9 +324,7 @@ function ShellLayoutContent({
                 </button>
               </div>
             ) : null}
-            <div className="block">
-              <TopNav forceMobilePreview={shouldUseCompactShell} hasAccountSession={hasAccountSession} />
-            </div>
+            <TopNav forceMobilePreview={shouldUseCompactShell} hasAccountSession={hasAccountSession} />
             {!shouldUseCompactShell ? (
               <div className={isTodayShellRoute ? "hidden md:block" : "block"}>
                 <MarketPulseStrip />

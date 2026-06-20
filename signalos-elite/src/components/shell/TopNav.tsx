@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { MouseEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AccountMenu from "@/components/navigation/AccountMenu";
@@ -154,6 +155,22 @@ export default function TopNav({
     return `${nextHref}${separator}returnTo=${encodeURIComponent(buildCurrentRoute())}`;
   }
 
+  function handlePrimaryNavClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    window.location.assign(href);
+  }
+
   function toggleMobilePreview() {
     const nextParams = new URLSearchParams(searchParams.toString());
     const nextEnabled = !isMobilePreviewEnabled;
@@ -217,6 +234,7 @@ export default function TopNav({
         <div className="flex items-center gap-4 md:gap-6">
           <Link
             href={buildNavHref("/today")}
+            onClick={(event) => handlePrimaryNavClick(event, buildNavHref("/today"))}
             className="flex flex-col leading-none"
           >
             <span className="text-[13px] font-semibold tracking-[0.24em] text-white md:text-[15px] md:tracking-[0.32em]">
@@ -232,6 +250,7 @@ export default function TopNav({
               <Link
                 key={item.href}
                 href={buildNavHref(item.href)}
+                onClick={(event) => handlePrimaryNavClick(event, buildNavHref(item.href))}
                 className="text-[13px] font-medium text-white/72 transition hover:text-white"
               >
                 {item.label}
@@ -240,6 +259,7 @@ export default function TopNav({
 
             <Link
               href={buildNavHref("/crypto")}
+              onClick={(event) => handlePrimaryNavClick(event, buildNavHref("/crypto"))}
               className={isCryptoMode ? cryptoActive : navDefault}
             >
               Crypto
@@ -247,6 +267,7 @@ export default function TopNav({
 
             <Link
               href={buildNavHref("/about")}
+              onClick={(event) => handlePrimaryNavClick(event, buildNavHref("/about"))}
               className="text-sm text-slate-300 transition hover:text-white"
             >
               About SigiOS
