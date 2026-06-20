@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { MouseEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
@@ -112,6 +113,22 @@ export default function MobileBottomNav({
     return `${nextHref}${separator}returnTo=${encodeURIComponent(buildCurrentRoute())}`;
   }
 
+  function handlePrimaryNavClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    window.location.assign(href);
+  }
+
   function openSigi() {
     const sigiProfile = getSigiProfile();
 
@@ -164,6 +181,7 @@ export default function MobileBottomNav({
             <Link
               key={item.href}
               href={buildNavHref(item.href)}
+              onClick={(event) => handlePrimaryNavClick(event, buildNavHref(item.href))}
               className={[
                 forceVisible
                   ? "flex min-h-9 flex-col items-center justify-center rounded-[18px] px-0.5 py-1 text-[8px] font-semibold text-center transition"
