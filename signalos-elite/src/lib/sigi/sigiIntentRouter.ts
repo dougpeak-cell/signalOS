@@ -397,12 +397,12 @@ export function matchSigiIntent(message: string): SigiIntent {
   } else if (ticker && matchesAny(clean, TRADE_PATTERNS)) {
     type = "trade";
     confidence = 0.95;
-  } else if (sector) {
-    type = "sector";
-    confidence = 0.85;
   } else if (ticker) {
     type = "stock";
     confidence = 0.9;
+  } else if (sector) {
+    type = "sector";
+    confidence = 0.85;
   } else if (matchesAny(clean, WATCHLIST_PATTERNS)) {
     type = "watchlist";
     confidence = 0.9;
