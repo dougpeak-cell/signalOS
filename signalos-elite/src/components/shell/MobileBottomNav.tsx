@@ -44,8 +44,14 @@ export default function MobileBottomNav({
   const lastScrollYRef = useRef(0);
   const showNavTimeoutRef = useRef<number | null>(null);
   const [isNavHidden, setIsNavHidden] = useState(false);
+  const shouldKeepNavVisible = pathname === "/experts" || pathname.startsWith("/experts/");
 
   useEffect(() => {
+    if (shouldKeepNavVisible) {
+      setIsNavHidden(false);
+      return;
+    }
+
     const syncScrollState = () => {
       const nextScrollY = window.scrollY;
       const delta = nextScrollY - lastScrollYRef.current;
@@ -79,7 +85,7 @@ export default function MobileBottomNav({
       }
       window.removeEventListener("scroll", syncScrollState);
     };
-  }, []);
+  }, [shouldKeepNavVisible]);
 
   function withPreviewParam(href: string) {
     if (!isMobilePreviewEnabled) {
