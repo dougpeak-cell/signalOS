@@ -29,9 +29,12 @@ export default async function ExpertsPage({
   const settings = await getSigiSettingsViewForCurrentUser();
   const params = (await searchParams) ?? {};
   const isMobilePreview = params.mobilePreview === "1";
+  const visibleProPreviewCards = isMobilePreview
+    ? PRO_PREVIEW_CARDS.filter((card) => card.eyebrow !== "Sigi Model Command")
+    : PRO_PREVIEW_CARDS;
 
   if (settings.hasProFeatures) {
-    return <ExpertsProDashboard />;
+    return <ExpertsProDashboard isMobilePreview={isMobilePreview} />;
   }
 
   return (
@@ -308,7 +311,7 @@ export default async function ExpertsPage({
           </div>
 
           <div className={["mt-8 grid gap-5", isMobilePreview ? "grid-cols-1" : "xl:grid-cols-2"].join(" ")}>
-            {PRO_PREVIEW_CARDS.map((card) => (
+            {visibleProPreviewCards.map((card) => (
               <ProPreviewCard
                 key={card.title}
                 compact={isMobilePreview}

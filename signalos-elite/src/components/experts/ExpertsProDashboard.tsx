@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { FmpExpertPickRow as FmpExpertRow } from "@/lib/experts/fmpLeaders";
-
 import ActiveExpertSignals from "@/components/experts/ActiveExpertSignals";
 import AnalystTopPicks, { type AnalystTopPickRow } from "@/components/experts/AnalystTopPicks";
 import InsiderTradesPanel from "@/components/experts/InsiderTradesPanel";
@@ -162,7 +161,6 @@ function average(values: number[]) {
   if (values.length === 0) return 0;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
-
 function selectLiveBasketRows(
   rows: FmpExpertRow[],
   count: number,
@@ -536,12 +534,15 @@ function buildLiveAnalystCallLabel(
   return `${bucketLabel} ${normalizedGrade}`;
 }
 
-export default function ExpertsPage() {
+export default function ExpertsPage({
+  isMobilePreview = false,
+}: {
+  isMobilePreview?: boolean;
+}) {
   const [fmpRows, setFmpRows] = useState<FmpExpertRow[]>([]);
   const [fmpSectorRows, setFmpSectorRows] = useState<Record<string, FmpExpertRow[]>>({});
   const [isLoadingFmpRows, setIsLoadingFmpRows] = useState(true);
   const [fmpLoadError, setFmpLoadError] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [selectedExpertSector, setSelectedExpertSector] = useState("Technology");
   const [currentAnalystLeader, setCurrentAnalystLeader] = useState<SigiAnalystLeader | null>(null);
 
@@ -564,12 +565,6 @@ export default function ExpertsPage() {
       "Technology" in fmpSectorRows ? "Technology" : expertSectorTabs[0]
     );
   }, [expertSectorTabs, fmpSectorRows, selectedExpertSector]);
-
-  useEffect(() => {
-    if (selectedModel && !modelRows.some((model) => model.name === selectedModel)) {
-      setSelectedModel(null);
-    }
-  }, [modelRows, selectedModel]);
 
   useEffect(() => {
     let alive = true;
@@ -641,8 +636,6 @@ export default function ExpertsPage() {
   const bullishModelCount = modelRows.filter(
     (model) => model.alignment === "Bullish"
   ).length;
-  const selectedModelRow =
-    modelRows.find((model) => model.name === selectedModel) ?? null;
   const visibleFmpRows = fmpSectorRows[selectedExpertSector] ?? [];
   const liveAnalystTopPicks: AnalystTopPickRow[] = fmpRows
     .filter((row) => row.recencyBucket != null)
@@ -809,7 +802,8 @@ export default function ExpertsPage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <section className={["grid grid-cols-1 gap-6", isMobilePreview ? "" : "xl:grid-cols-[1.1fr_0.9fr]"].join(" ")}>
+          {!isMobilePreview ? (
           <div className="relative min-w-0 overflow-hidden rounded-[28px] border border-emerald-400/15 bg-linear-to-b from-emerald-500/8 via-black to-black p-4 shadow-[0_0_28px_rgba(16,185,129,0.08)]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_34%),radial-gradient(circle_at_70%_18%,rgba(34,211,238,0.10),transparent_28%),linear-gradient(180deg,rgba(6,78,59,0.10),transparent_40%)]" />
             <div className="pointer-events-none absolute -right-13 -top-13 h-40 w-40 rounded-full bg-emerald-400/8 blur-3xl" />
@@ -872,20 +866,9 @@ export default function ExpertsPage() {
                   return (
                 <div
                   key={model.name}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSelectedModel(model.name)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      setSelectedModel(model.name);
-                    }
-                  }}
                   className={[
                     "group relative w-full overflow-hidden rounded-3xl border p-4 text-left transition duration-300",
-                    selectedModel === model.name
-                      ? "border-cyan-400/35 bg-cyan-400/8 shadow-[0_0_30px_rgba(34,211,238,0.10)]"
-                      : "border-white/10 bg-black/25 hover:border-emerald-400/25 hover:bg-emerald-400/4.5",
+                    "border-white/10 bg-black/25 hover:border-emerald-400/25 hover:bg-emerald-400/4.5",
                   ].join(" ")}
                 >
                   <div className={["pointer-events-none absolute left-0 top-0 h-full w-1 bg-linear-to-b", alignment.line].join(" ")} />
@@ -946,7 +929,6 @@ export default function ExpertsPage() {
                             key={ticker}
                             href={`/stocks/${ticker}`}
                             className="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-200 transition hover:bg-cyan-400/20 hover:text-white"
-                            onClick={(event) => event.stopPropagation()}
                           >
                             {ticker}
                           </Link>
@@ -974,6 +956,7 @@ export default function ExpertsPage() {
               </div>
             </div>
           </div>
+          ) : null}
 
           <section className="relative rounded-3xl bg-linear-to-br from-white/3 via-transparent to-transparent p-6 shadow-[0_0_40px_rgba(34,211,238,0.05)]">
             <div className="pointer-events-none absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-cyan-400/40 to-transparent" />
