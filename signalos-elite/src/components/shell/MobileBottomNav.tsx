@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type { MouseEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -184,7 +183,7 @@ export default function MobileBottomNav({
           const active = isActivePath(pathname, item.href);
 
           return (
-            <Link
+            <a
               key={item.href}
               href={buildNavHref(item.href)}
               onClick={(event) => handlePrimaryNavClick(event, buildNavHref(item.href))}
@@ -209,7 +208,7 @@ export default function MobileBottomNav({
               <span className="block max-w-full text-balance text-center leading-tight whitespace-normal">
                 {item.label}
               </span>
-            </Link>
+            </a>
           );
         })}
 
