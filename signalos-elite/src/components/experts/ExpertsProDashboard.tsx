@@ -545,6 +545,13 @@ export default function ExpertsPage({
   const [fmpLoadError, setFmpLoadError] = useState<string | null>(null);
   const [selectedExpertSector, setSelectedExpertSector] = useState("Technology");
   const [currentAnalystLeader, setCurrentAnalystLeader] = useState<SigiAnalystLeader | null>(null);
+  const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.matchMedia("(max-width: 767px)").matches;
+  });
 
   const expertSectorTabs = Object.keys(fmpSectorRows);
   const modelRows = useMemo(
@@ -565,6 +572,18 @@ export default function ExpertsPage({
       "Technology" in fmpSectorRows ? "Technology" : expertSectorTabs[0]
     );
   }, [expertSectorTabs, fmpSectorRows, selectedExpertSector]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobilePhoneView(mediaQuery.matches);
+
+    sync();
+    mediaQuery.addEventListener("change", sync);
+
+    return () => {
+      mediaQuery.removeEventListener("change", sync);
+    };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -636,6 +655,7 @@ export default function ExpertsPage({
   const bullishModelCount = modelRows.filter(
     (model) => model.alignment === "Bullish"
   ).length;
+  const shouldHideModelCommand = isMobilePreview || isMobilePhoneView;
   const visibleFmpRows = fmpSectorRows[selectedExpertSector] ?? [];
   const liveAnalystTopPicks: AnalystTopPickRow[] = fmpRows
     .filter((row) => row.recencyBucket != null)
@@ -803,7 +823,7 @@ export default function ExpertsPage({
         </section>
 
         <section className={["grid grid-cols-1 gap-6", isMobilePreview ? "" : "xl:grid-cols-[1.1fr_0.9fr]"].join(" ")}>
-          {!isMobilePreview ? (
+          {!shouldHideModelCommand ? (
           <div className="relative min-w-0 overflow-hidden rounded-[28px] border border-emerald-400/15 bg-linear-to-b from-emerald-500/8 via-black to-black p-4 shadow-[0_0_28px_rgba(16,185,129,0.08)]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_34%),radial-gradient(circle_at_70%_18%,rgba(34,211,238,0.10),transparent_28%),linear-gradient(180deg,rgba(6,78,59,0.10),transparent_40%)]" />
             <div className="pointer-events-none absolute -right-13 -top-13 h-40 w-40 rounded-full bg-emerald-400/8 blur-3xl" />
