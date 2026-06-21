@@ -33,14 +33,17 @@ export function useTickerNewsPulse(
   const limit = options?.limit ?? 12;
   const maxAgeHours = options?.maxAgeHours ?? DEFAULT_TICKER_PULSE_MAX_AGE_HOURS;
   const [pulseMap, setPulseMap] = useState<Record<string, TickerNewsPulse>>({});
+  const normalizedTickerKey = tickers
+    .map(normalizeTicker)
+    .filter(Boolean)
+    .join("|");
 
   const normalizedTickers = useMemo(
     () =>
-      Array.from(new Set(tickers.map(normalizeTicker).filter(Boolean))).slice(
-        0,
-        limit
-      ),
-    [limit, tickers]
+      Array.from(
+        new Set(normalizedTickerKey ? normalizedTickerKey.split("|") : [])
+      ).slice(0, limit),
+    [limit, normalizedTickerKey]
   );
 
   useEffect(() => {

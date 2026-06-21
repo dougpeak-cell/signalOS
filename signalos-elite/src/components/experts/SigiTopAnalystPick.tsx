@@ -64,30 +64,38 @@ export default function SigiTopAnalystPick({
   const [aiLeader, setAiLeader] = useState<SigiAnalystLeader | null>(null);
   const [topPick, setTopPick] = useState<TopPickApiResponse | null>(null);
 
-  const fallbackLeader: SigiAnalystLeader = {
-    analyst: "Sigi AI Leader",
-    firm: "SigiOS Analyst Flow",
-    sector: activeSector || "Select a sector",
-    successRate: "—",
-    avgReturn: "—",
-    coveredNames: ["—"],
-    mostRecentPick: hasSelectedSector
-      ? "Needs live analyst-feed confirmation before publishing."
-      : "Select a sector button to load the current top analyst pick.",
-    strongestCall: "—",
-    reason: hasSelectedSector
-      ? "Sigi is ready to rank the strongest stock setup in this sector once live analyst-flow data is connected."
-      : "Select a sector first so Sigi can load the matching analyst leader instead of a placeholder.",
-    risk: hasSelectedSector
-      ? "No live top analyst pick has been calculated yet for this sector."
-      : "The analyst pick action stays locked until a sector button is selected.",
-  };
+  const fallbackTopPick = useMemo(
+    () => buildFallbackTopPick(activeSector || "Select a sector"),
+    [activeSector]
+  );
+
+  const fallbackLeader = useMemo<SigiAnalystLeader>(
+    () => ({
+      analyst: "Sigi AI Leader",
+      firm: "SigiOS Analyst Flow",
+      sector: activeSector || "Select a sector",
+      successRate: "—",
+      avgReturn: "—",
+      coveredNames: ["—"],
+      mostRecentPick: hasSelectedSector
+        ? "Needs live analyst-feed confirmation before publishing."
+        : "Select a sector button to load the current top analyst pick.",
+      strongestCall: "—",
+      reason: hasSelectedSector
+        ? "Sigi is ready to rank the strongest stock setup in this sector once live analyst-flow data is connected."
+        : "Select a sector first so Sigi can load the matching analyst leader instead of a placeholder.",
+      risk: hasSelectedSector
+        ? "No live top analyst pick has been calculated yet for this sector."
+        : "The analyst pick action stays locked until a sector button is selected.",
+    }),
+    [activeSector, hasSelectedSector]
+  );
 
   const leader = useMemo(
-    () => aiLeader ?? mapTopPickResponseToLeader(topPick ?? buildFallbackTopPick(activeSector || "Select a sector")) ?? fallbackLeader,
-    [activeSector, aiLeader, fallbackLeader, topPick]
+    () => aiLeader ?? mapTopPickResponseToLeader(topPick ?? fallbackTopPick) ?? fallbackLeader,
+    [aiLeader, fallbackLeader, fallbackTopPick, topPick]
   );
-  const displayTopPick = topPick ?? buildFallbackTopPick(activeSector || "Select a sector");
+  const displayTopPick = topPick ?? fallbackTopPick;
 
   useEffect(() => {
     onLeaderChange?.(leader);
