@@ -159,11 +159,12 @@ export async function buildSectorComparisonData(): Promise<SectorComparisonData>
   const historyMap = new Map(histories.map((entry) => [entry.symbol, entry.bars]));
   const now = new Date();
 
-  const rows = SECTOR_ETFS.map((item) => {
+  const rows: SectorComparisonRow[] = SECTOR_ETFS.map((item) => {
     const bars = historyMap.get(item.symbol) ?? [];
     const latestClose = bars[bars.length - 1]?.close ?? null;
     const quoteState = quoteMap[item.symbol];
     const isLiveQuote = quoteState?.source === "api";
+    const freshness: SectorComparisonRow["freshness"] = isLiveQuote ? "live" : "close";
     const previousClose =
       (isLiveQuote ? quoteState?.prevClose : null) ??
       bars[bars.length - 2]?.close ??
@@ -186,7 +187,7 @@ export async function buildSectorComparisonData(): Promise<SectorComparisonData>
       week,
       month,
       year,
-      freshness: isLiveQuote ? "live" : "close",
+      freshness,
       ...scoreSector(today, week, month, year),
     };
   }).sort((left, right) => right.momentumScore - left.momentumScore);
