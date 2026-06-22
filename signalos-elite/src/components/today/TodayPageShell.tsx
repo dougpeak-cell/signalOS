@@ -1,6 +1,7 @@
 import { Suspense, type ReactElement } from "react";
 import LiveAccessStrip from "@/components/access/LiveAccessStrip";
 import DiscordCommunityCard from "@/components/community/DiscordCommunityCard";
+import SectorComparisonPanel from "@/components/market/SectorComparisonPanel";
 import TodayActionRowClient from "@/components/today/TodayActionRowClient";
 import TodayBottomIntelRail from "@/components/today/TodayBottomIntelRail";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
@@ -43,6 +44,7 @@ type TodayPageShellProps = Pick<
 	| "regularMostTradedRows"
 	| "preMarketRows"
 	| "sectorHeatmapItems"
+	| "sectorComparison"
 	| "opportunities"
 	| "risks"
 	| "globalPulseItems"
@@ -74,6 +76,7 @@ export default async function TodayPageShell({
 	regularMostTradedRows,
 	preMarketRows,
 	sectorHeatmapItems,
+	sectorComparison,
 	opportunities,
 	risks,
 	globalPulseItems,
@@ -166,6 +169,10 @@ export default async function TodayPageShell({
 						preMarketRows={preMarketRows}
 					/>
 					<TodaySectorHeatmapPanel items={sectorHeatmapItems} />
+					<SectorComparisonPanel
+						data={sectorComparison}
+						className="rounded-2xl border border-cyan-500/20 bg-slate-950/88 p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.04),0_10px_30px_rgba(0,0,0,0.35)]"
+					/>
 					<TodayOpportunityRiskRow
 						opportunities={opportunities}
 						risks={risks}

@@ -1,5 +1,9 @@
 import type { GlobalPulseTickerItem } from "@/components/today/GlobalPulseTicker";
 import type { PortfolioItem, WatchlistItem } from "@/lib/intelligence/buildMarketIntel";
+import {
+  buildSectorComparisonData,
+  type SectorComparisonData,
+} from "@/lib/market/sectorComparison";
 import { getStoredMarketContext } from "@/lib/intelligence/contextStore";
 import { getMarketMovers, type MarketMoverRow } from "@/lib/market/movers";
 import { fetchFreeTickerPulses } from "@/lib/news/fetchFreeTickerPulses";
@@ -122,6 +126,7 @@ export type TodayPageData = {
   regularMostTradedRows: TodayMostTradedRow[];
   preMarketRows: TodayMostTradedRow[];
   sectorHeatmapItems: TodaySectorHeatmapItem[];
+  sectorComparison: SectorComparisonData;
   globalPulseItems: GlobalPulseTickerItem[];
   featuredMacro: TodayFeaturedMacroItem;
   leadershipWatch: TodaySetupItem[];
@@ -175,6 +180,7 @@ const earningsCalendarCache = new Map<
   string,
   CachedAsyncValue<Array<TodayCommandCenterEarningsRow & { sortDate: string }>>
 >();
+const sectorComparisonCache = new Map<string, CachedAsyncValue<SectorComparisonData>>();
 
 const EMPTY_STORED_MARKET_CONTEXT: Awaited<ReturnType<typeof getStoredMarketContext>> = {
   userId: null,
@@ -1153,7 +1159,7 @@ function buildRisks(setupDiscovery: SetupDiscoveryData): TodayRiskItem[] {
 }
 
 export async function getTodayPageData(): Promise<TodayPageData> {
-  const [setupDiscovery, marketNews, marketMovers, storedMarketContext] = await Promise.all([
+  const [setupDiscovery, marketNews, marketMovers, storedMarketContext, sectorComparison] = await Promise.all([
     time(
       "setupDiscovery",
       getSetupDiscoveryData({
@@ -1182,6 +1188,20 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     time(
       "storedMarketContext",
       withTimeout(getStoredMarketContext(), EMPTY_STORED_MARKET_CONTEXT, 500)
+    ),
+    time(
+      "sectorComparison",
+      withTimeout(
+        getCachedAsyncValue(sectorComparisonCache, "sector-comparison", () =>
+          buildSectorComparisonData()
+        ),
+        {
+          rows: [],
+          freshness: "close",
+          generatedAt: new Date(0).toISOString(),
+        },
+        1800
+      )
     ),
   ]);
 
@@ -1423,6 +1443,7 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     regularMostTradedRows: regularMostTradedRowsWithPulse,
     preMarketRows: preMarketRowsWithPulse,
     sectorHeatmapItems,
+    sectorComparison,
     globalPulseItems,
     featuredMacro,
     leadershipWatch,

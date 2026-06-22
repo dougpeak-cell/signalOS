@@ -1,8 +1,12 @@
 import Link from "next/link";
 import type { ReactElement } from "react";
 
+import SectorComparisonPanel from "@/components/market/SectorComparisonPanel";
 import SetupsSessionAutoSync from "@/components/screener/SetupsSessionAutoSync";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
+import {
+  buildSectorComparisonData,
+} from "@/lib/market/sectorComparison";
 import {
   getSetupDiscoveryData,
   type SetupDiscoveryData,
@@ -437,6 +441,7 @@ export default async function SetupsPage({
     highRvol,
   });
   const preMarketFilteredCount = Math.max(0, sourceRows.length - filteredRows.length);
+  const sectorComparison = await buildSectorComparisonData();
 
   return (
     <div className="space-y-6">
@@ -709,6 +714,8 @@ export default async function SetupsPage({
           ) : null}
         </div>
       </section>
+
+      <SectorComparisonPanel data={sectorComparison} />
     </div>
   );
 }
