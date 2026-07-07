@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { loadFmpExpertsFeed, type FmpExpertPickRow } from "@/lib/experts/fmpLeaders";
 import { findTopExpertLeaderBySector } from "@/lib/experts/profileLeaders";
+import { getTopAnalystPickBySector } from "@/lib/experts/topAnalystPick";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -122,6 +123,12 @@ function buildTrend(row: FmpExpertPickRow) {
   return "Constructive";
 }
 
+function buildCoverageTrend(position: "Buy" | "Hold" | "Sell") {
+  if (position === "Buy") return "Bullish";
+  if (position === "Hold") return "Neutral";
+  return "Defensive";
+}
+
 function buildReason(
   sector: string,
   row: FmpExpertPickRow,
@@ -191,35 +198,77 @@ export async function GET(req: NextRequest) {
       feed.rows.find((row) => row.sector === sector) ??
       null;
 
-    if (!livePick) {
+    const analystFirm = rankedLeader?.profile.analyst.firm ?? null;
+
+    if (livePick) {
+      const liveFirm = livePick.firm ?? null;
+      const matchedLeader = firmsMatch(liveFirm, analystFirm) ? rankedLeader : null;
+      const analystName = matchedLeader?.profile.analyst.name ?? "Sigi Sector Leader";
+      const firm = liveFirm ?? analystFirm ?? "Live analyst feed";
+      const analystAvgReturn = matchedLeader?.profile.analyst.averageReturn ?? 0;
+      const successRate = matchedLeader?.profile.analyst.successRate ?? 0;
+      const targetUpdated =
+        livePick.publishedDate ?? matchedLeader?.recentPick?.actionDate ?? matchedLeader?.profile.updatedAt ?? "";
+
+      return NextResponse.json({
+        sector,
+        ticker: livePick.symbol,
+        company: livePick.companyName ?? livePick.symbol,
+        analyst: analystName,
+        firm,
+        analystAvgReturn,
+        successRate,
+        currentPrice: livePick.price ?? 0,
+        targetPrice: livePick.targetConsensus ?? 0,
+        upside: livePick.upsidePercent ?? 0,
+        convictionScore: buildConvictionScore(livePick, successRate, analystAvgReturn),
+        targetUpdated,
+        trend: buildTrend(livePick),
+        sigiReason: buildReason(sector, livePick, analystName, firm),
+      } satisfies TopPickApiResponse);
+    }
+
+    const recentCoverage = rankedLeader?.recentPick ?? null;
+    if (!recentCoverage) {
       return NextResponse.json(buildUnavailableResponse(sector));
     }
 
-    const analystFirm = rankedLeader?.profile.analyst.firm ?? null;
-    const liveFirm = livePick.firm ?? null;
-    const matchedLeader = firmsMatch(liveFirm, analystFirm) ? rankedLeader : null;
+    const coverageFirm = recentCoverage.sourceFirm ?? analystFirm ?? null;
+    const matchedLeader = firmsMatch(coverageFirm, analystFirm) ? rankedLeader : null;
     const analystName = matchedLeader?.profile.analyst.name ?? "Sigi Sector Leader";
-    const firm = liveFirm ?? analystFirm ?? "Live analyst feed";
+    const firm = coverageFirm ?? "Live analyst feed";
     const analystAvgReturn = matchedLeader?.profile.analyst.averageReturn ?? 0;
     const successRate = matchedLeader?.profile.analyst.successRate ?? 0;
-    const targetUpdated =
-      livePick.publishedDate ?? matchedLeader?.recentPick?.actionDate ?? matchedLeader?.profile.updatedAt ?? "";
+    const aiFallback = await getTopAnalystPickBySector({
+      sector,
+      message: `What is the most recent top analyst pick for ${sector}?`,
+      plan: "free",
+    });
 
     return NextResponse.json({
       sector,
-      ticker: livePick.symbol,
-      company: livePick.companyName ?? livePick.symbol,
+      ticker: recentCoverage.ticker,
+      company: recentCoverage.company,
       analyst: analystName,
       firm,
       analystAvgReturn,
       successRate,
-      currentPrice: livePick.price ?? 0,
-      targetPrice: livePick.targetConsensus ?? 0,
-      upside: livePick.upsidePercent ?? 0,
-      convictionScore: buildConvictionScore(livePick, successRate, analystAvgReturn),
-      targetUpdated,
-      trend: buildTrend(livePick),
-      sigiReason: buildReason(sector, livePick, analystName, firm),
+      currentPrice: recentCoverage.currentPrice ?? 0,
+      targetPrice: recentCoverage.priceTarget ?? 0,
+      upside: recentCoverage.upsidePct ?? 0,
+      convictionScore: Math.round(
+        clamp(
+          56 +
+            (recentCoverage.position === "Buy" ? 14 : recentCoverage.position === "Hold" ? 6 : -8) +
+            clamp((recentCoverage.upsidePct ?? 0) / 2, -6, 14) +
+            clamp((successRate - 55) / 3, -4, 7),
+          0,
+          100
+        )
+      ),
+      targetUpdated: recentCoverage.actionDate ?? rankedLeader?.profile.updatedAt ?? "",
+      trend: buildCoverageTrend(recentCoverage.position),
+      sigiReason: aiFallback.intelligence.reason,
     } satisfies TopPickApiResponse);
   } catch (error) {
     console.error("Experts top pick route error:", error);
