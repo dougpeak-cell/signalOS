@@ -359,15 +359,60 @@ function formatPercent(value: number, includeSign = true) {
   return `${signed}${value.toFixed(1)}%`;
 }
 
+function parseDateLabel(value: string) {
+  const normalized = value.trim();
+  const dateOnlyMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (dateOnlyMatch) {
+    const [, year, month, day] = dateOnlyMatch;
+    return new Date(Number(year), Number(month) - 1, Number(day), 12);
+  }
+
+  const parsed = Date.parse(normalized);
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return new Date(parsed);
+}
+
 function formatDateLabel(value: string) {
-  const parsed = Date.parse(value);
-  if (!value || !Number.isFinite(parsed)) {
+  if (!value) {
     return "—";
+  }
+
+  const parsed = parseDateLabel(value);
+  if (!parsed) {
+    return "—";
+  }
+
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const parsedStart = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  const diffDays = Math.floor(
+    (todayStart.getTime() - parsedStart.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  if (diffDays >= 0 && diffDays < 30) {
+    if (diffDays === 0) {
+      return "Today";
+    }
+
+    if (diffDays === 1) {
+      return "1 day ago";
+    }
+
+    if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    }
+
+    const weeksAgo = Math.floor(diffDays / 7);
+    return weeksAgo === 1 ? "1 week ago" : `${weeksAgo} weeks ago`;
   }
 
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
-  }).format(new Date(parsed));
+  }).format(parsed);
 }
