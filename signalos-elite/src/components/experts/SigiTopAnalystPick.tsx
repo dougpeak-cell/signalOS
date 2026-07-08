@@ -237,7 +237,7 @@ export default function SigiTopAnalystPick({
               <span className="text-cyan-300">{Math.round(displayTopPick.convictionScore)}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span>Target Updated</span>
+              <span>Pick Date</span>
               <span>{formatDateLabel(displayTopPick.targetUpdated)}</span>
             </div>
           </div>
