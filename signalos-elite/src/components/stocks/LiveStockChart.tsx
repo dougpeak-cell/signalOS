@@ -1009,6 +1009,94 @@ function findValueAtTime(
   return match ? Number(match.value) : null;
 }
 
+function findBarAtTime(bars: BaseBar[], time: number): BaseBar | null {
+  const normalizedTime = normalizeEpochSeconds(time);
+  if (!normalizedTime) return null;
+
+  const exact = bars.find((bar) => Number(bar.time) === Number(normalizedTime));
+  if (exact) return exact;
+
+  let nearest: BaseBar | null = null;
+  let smallestDistance = Number.POSITIVE_INFINITY;
+
+  for (const bar of bars) {
+    const distance = Math.abs(Number(bar.time) - Number(normalizedTime));
+    if (distance < smallestDistance) {
+      smallestDistance = distance;
+      nearest = bar;
+    }
+  }
+
+  return nearest;
+}
+
+function findBarAtLogicalIndex(
+  bars: BaseBar[],
+  logical: unknown
+): BaseBar | null {
+  if (!Array.isArray(bars) || bars.length === 0) return null;
+
+  const logicalIndex = Number(logical);
+  if (!Number.isFinite(logicalIndex)) return null;
+
+  const roundedIndex = Math.round(logicalIndex);
+  const clampedIndex = clamp(roundedIndex, 0, bars.length - 1);
+
+  return bars[clampedIndex] ?? null;
+}
+
+function readCrosshairCandle(
+  seriesData: unknown,
+  candleSeries: ISeriesApi<"Candlestick", Time, any, any, any> | null
+): Pick<BaseBar, "open" | "high" | "low" | "close"> | null {
+  if (!candleSeries || !seriesData || typeof seriesData !== "object") return null;
+
+  const maybeMap = seriesData as { get?: (key: unknown) => unknown };
+  if (typeof maybeMap.get !== "function") return null;
+
+  const value = maybeMap.get(candleSeries) as
+    | {
+        open?: unknown;
+        high?: unknown;
+        low?: unknown;
+        close?: unknown;
+      }
+    | undefined;
+
+  if (!value) return null;
+
+  const open = Number(value.open);
+  const high = Number(value.high);
+  const low = Number(value.low);
+  const close = Number(value.close);
+
+  if (
+    !Number.isFinite(open) ||
+    !Number.isFinite(high) ||
+    !Number.isFinite(low) ||
+    !Number.isFinite(close)
+  ) {
+    return null;
+  }
+
+  return { open, high, low, close };
+}
+
+function readCrosshairVolume(
+  seriesData: unknown,
+  volumeSeries: ISeriesApi<"Histogram", Time, any, any, any> | null
+): number | null {
+  if (!volumeSeries || !seriesData || typeof seriesData !== "object") return null;
+
+  const maybeMap = seriesData as { get?: (key: unknown) => unknown };
+  if (typeof maybeMap.get !== "function") return null;
+
+  const value = maybeMap.get(volumeSeries) as { value?: unknown } | undefined;
+  const volume = Number(value?.value);
+
+  return Number.isFinite(volume) ? volume : null;
+}
+
 function tooltipEquals(a: TooltipState, b: TooltipState) {
   return (
     a.visible === b.visible &&
@@ -1278,6 +1366,7 @@ export default function LiveStockChart({
   const lastPushedBarTimeRef = useRef<number | null>(null);
   const chartApiRef = useRef<IChartApi | null>(null);
   const tooltipFrameRef = useRef<number | null>(null);
+  const tooltipPointerRef = useRef<{ x: number; y: number } | null>(null);
   const candleSeriesRef =
     useRef<ISeriesApi<"Candlestick", Time, any, any, any> | null>(null);
   const volumeSeriesRef =
@@ -1301,6 +1390,9 @@ export default function LiveStockChart({
   const previousTimeframeRef = useRef<Timeframe | null>(null);
   const userDetachedFromLiveRef = useRef(false);
   const isProgrammaticRangeChangeRef = useRef(false);
+  const hoverPinnedRef = useRef(false);
+  const hoverMoveVersionRef = useRef(0);
+  const processedHoverMoveVersionRef = useRef(-1);
   const initialFocusAppliedRef = useRef(false);
   const initialLiveRangeAppliedRef = useRef(false);
   const appliedWorkspaceChartSyncKeyRef = useRef<number | null>(null);
@@ -1390,10 +1482,59 @@ export default function LiveStockChart({
     ma30: null,
   });
   const tooltipRef = useRef<TooltipState>(tooltip);
+  const liveChartBarsRef = useRef<BaseBar[]>([]);
+  const vwapRefData = useRef<{ time: UTCTimestamp; value: number }[]>([]);
+  const ma5RefData = useRef<{ time: UTCTimestamp; value: number }[]>([]);
+  const ma10RefData = useRef<{ time: UTCTimestamp; value: number }[]>([]);
+  const ma20RefData = useRef<{ time: UTCTimestamp; value: number }[]>([]);
+  const ma30RefData = useRef<{ time: UTCTimestamp; value: number }[]>([]);
+  const lineVisibilityRef = useRef(lineVisibility);
 
   useEffect(() => {
     tooltipRef.current = tooltip;
   }, [tooltip]);
+
+  useEffect(() => {
+    const wrapEl = chartWrapRef.current;
+    if (!wrapEl) return;
+
+    let lastX: number | null = null;
+    let lastY: number | null = null;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const nextX = Math.round(event.clientX);
+      const nextY = Math.round(event.clientY);
+
+      if (lastX === nextX && lastY === nextY) {
+        return;
+      }
+
+      lastX = nextX;
+      lastY = nextY;
+      hoverMoveVersionRef.current += 1;
+    };
+
+    const handlePointerLeave = () => {
+      lastX = null;
+      lastY = null;
+      hoverPinnedRef.current = false;
+      tooltipPointerRef.current = null;
+      processedHoverMoveVersionRef.current = -1;
+      setTooltip((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+    };
+
+    wrapEl.addEventListener("pointermove", handlePointerMove);
+    wrapEl.addEventListener("pointerleave", handlePointerLeave);
+
+    return () => {
+      wrapEl.removeEventListener("pointermove", handlePointerMove);
+      wrapEl.removeEventListener("pointerleave", handlePointerLeave);
+    };
+  }, []);
+
+  useEffect(() => {
+    lineVisibilityRef.current = lineVisibility;
+  }, [lineVisibility]);
 
   const timeframe = useMemo<Timeframe>(() => intervalToMinutes(chartInterval), [chartInterval]);
 
@@ -1838,6 +1979,30 @@ export default function LiveStockChart({
   const ma10 = useMemo(() => calcMA(displayBars, 10), [displayBars]);
   const ma20 = useMemo(() => calcMA(displayBars, 20), [displayBars]);
   const ma30 = useMemo(() => calcMA(displayBars, 30), [displayBars]);
+
+  useEffect(() => {
+    liveChartBarsRef.current = liveChartBars;
+  }, [liveChartBars]);
+
+  useEffect(() => {
+    vwapRefData.current = vwap;
+  }, [vwap]);
+
+  useEffect(() => {
+    ma5RefData.current = ma5;
+  }, [ma5]);
+
+  useEffect(() => {
+    ma10RefData.current = ma10;
+  }, [ma10]);
+
+  useEffect(() => {
+    ma20RefData.current = ma20;
+  }, [ma20]);
+
+  useEffect(() => {
+    ma30RefData.current = ma30;
+  }, [ma30]);
 
   useEffect(() => {
     const latestVwap =
@@ -2425,6 +2590,8 @@ export default function LiveStockChart({
   const returnToLive = useCallback(() => {
     const chart = chartApiRef.current;
     if (!chart || !displayBars.length) return;
+
+    hoverPinnedRef.current = false;
 
     const totalBars = displayBars.length;
     const barsToShow = getBarsToShowForDensity(
@@ -3173,6 +3340,10 @@ useEffect(() => {
       return;
     }
 
+    if (hoverPinnedRef.current) {
+      return;
+    }
+
     const currentRange = chart.timeScale().getVisibleLogicalRange();
     if (!autoFollowEnabled) {
       if (
@@ -3254,7 +3425,10 @@ useEffect(() => {
 
     const onCrosshairMove = (param: any) => {
       const wrapEl = chartWrapRef.current;
+      const candleSeries = candleSeriesRef.current;
       if (!wrapEl || !param?.point || param.time == null) {
+        hoverPinnedRef.current = false;
+        tooltipPointerRef.current = null;
         setTooltip((prev) => (prev.visible ? { ...prev, visible: false } : prev));
         return;
       }
@@ -3265,6 +3439,8 @@ useEffect(() => {
           : normalizeEpochSeconds(param.time as unknown as number);
 
       if (!time) {
+        hoverPinnedRef.current = false;
+        tooltipPointerRef.current = null;
         setTooltip((prev) => (prev.visible ? { ...prev, visible: false } : prev));
         return;
       }
@@ -3273,12 +3449,58 @@ useEffect(() => {
       const y = param.point.y;
 
       if (x < 0 || y < 0 || x > wrapEl.clientWidth || y > wrapEl.clientHeight) {
+        hoverPinnedRef.current = false;
+        tooltipPointerRef.current = null;
+        processedHoverMoveVersionRef.current = -1;
         setTooltip((prev) => (prev.visible ? { ...prev, visible: false } : prev));
         return;
       }
 
-      const bar = displayBars.find((b) => Number(b.time) === Number(time));
-      if (!bar) {
+      if (
+        tooltipRef.current.visible &&
+        processedHoverMoveVersionRef.current === hoverMoveVersionRef.current
+      ) {
+        return;
+      }
+
+      const lastPointer = tooltipPointerRef.current;
+      if (
+        lastPointer &&
+        tooltipRef.current.visible &&
+        lastPointer.x === x &&
+        lastPointer.y === y
+      ) {
+        return;
+      }
+
+      hoverPinnedRef.current = true;
+      tooltipPointerRef.current = { x, y };
+      processedHoverMoveVersionRef.current = hoverMoveVersionRef.current;
+
+      const latestBars = liveChartBarsRef.current;
+      const latestLineVisibility = lineVisibilityRef.current;
+      const hoveredCandle = readCrosshairCandle(param.seriesData, candleSeries);
+      const hoveredVolume = readCrosshairVolume(param.seriesData, volumeSeriesRef.current);
+      const logicalBar = findBarAtLogicalIndex(latestBars, param.logical);
+      const timeBar = findBarAtTime(latestBars, time);
+      const bar = logicalBar ?? timeBar;
+      const open = hoveredCandle?.open ?? (bar ? Number(bar.open) : null);
+      const high = hoveredCandle?.high ?? (bar ? Number(bar.high) : null);
+      const low = hoveredCandle?.low ?? (bar ? Number(bar.low) : null);
+      const close = hoveredCandle?.close ?? (bar ? Number(bar.close) : null);
+
+      if (
+        open == null ||
+        high == null ||
+        low == null ||
+        close == null ||
+        !Number.isFinite(open) ||
+        !Number.isFinite(high) ||
+        !Number.isFinite(low) ||
+        !Number.isFinite(close)
+      ) {
+        hoverPinnedRef.current = false;
+        tooltipPointerRef.current = null;
         setTooltip((prev) => (prev.visible ? { ...prev, visible: false } : prev));
         return;
       }
@@ -3305,16 +3527,16 @@ useEffect(() => {
         x: left,
         y: top,
         timeLabel: formatTimeLabel(time),
-        open: Number(bar.open),
-        high: Number(bar.high),
-        low: Number(bar.low),
-        close: Number(bar.close),
-        volume: Number(bar.volume ?? 0),
-        vwap: lineVisibility.vwap ? findValueAtTime(vwap, time) : null,
-        ma5: lineVisibility.ma5 ? findValueAtTime(ma5, time) : null,
-        ma10: lineVisibility.ma10 ? findValueAtTime(ma10, time) : null,
-        ma20: lineVisibility.ma20 ? findValueAtTime(ma20, time) : null,
-        ma30: lineVisibility.ma30 ? findValueAtTime(ma30, time) : null,
+        open,
+        high,
+        low,
+        close,
+        volume: hoveredVolume ?? (bar ? Number(bar.volume ?? 0) : null),
+        vwap: latestLineVisibility.vwap ? findValueAtTime(vwapRefData.current, time) : null,
+        ma5: latestLineVisibility.ma5 ? findValueAtTime(ma5RefData.current, time) : null,
+        ma10: latestLineVisibility.ma10 ? findValueAtTime(ma10RefData.current, time) : null,
+        ma20: latestLineVisibility.ma20 ? findValueAtTime(ma20RefData.current, time) : null,
+        ma30: latestLineVisibility.ma30 ? findValueAtTime(ma30RefData.current, time) : null,
       };
 
       if (!tooltipEquals(tooltipRef.current, nextTooltip)) {
@@ -3336,7 +3558,7 @@ useEffect(() => {
         cancelAnimationFrame(tooltipFrameRef.current);
       }
     };
-  }, [displayBars, lineVisibility, vwap, ma5, ma10, ma20, ma30]);
+  }, []);
 
   useEffect(() => {
     const chart = chartApiRef.current;
@@ -3622,6 +3844,10 @@ useEffect(() => {
   useEffect(() => {
     const chart = chartApiRef.current;
     if (!chart || displayBars.length === 0) return;
+
+    if (hoverPinnedRef.current) {
+      return;
+    }
 
     const totalBars = displayBars.length;
     const to = Math.max(0, totalBars - 1);
