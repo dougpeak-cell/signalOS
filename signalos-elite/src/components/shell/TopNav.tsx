@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AccountMenu from "@/components/navigation/AccountMenu";
 import DiscordInviteButton from "@/components/community/DiscordInviteButton";
 import { MobileHealthyWealthButton } from "@/components/today/HealthyWealthButton";
+import { features } from "@/lib/features";
 import {
   createSupabaseBrowserClient,
   hasSupabaseBrowserEnv,
@@ -14,9 +15,8 @@ import {
 
 const MOBILE_PREVIEW_STORAGE_KEY = "signalos-dev-mobile-preview-today";
 
-const navItems = [
+const baseNavItems = [
   { href: "/today", label: "Today" },
-  { href: "/vision", label: "Vision" },
   { href: "/stocks", label: "Stocks" },
   { href: "/screener", label: "Screener" },
   { href: "/watchlist", label: "Watchlist" },
@@ -25,6 +25,10 @@ const navItems = [
   { href: "/experts", label: "Experts" },
   { href: "/education", label: "Education" },
 ];
+
+const navItems = features.visionEnabled
+  ? [baseNavItems[0], { href: "/vision", label: "Vision" }, ...baseNavItems.slice(1)]
+  : baseNavItems;
 
 function getMobileAuthCtaLabel(pathname: string): string {
   if (pathname === "/today" || pathname.startsWith("/today/")) {
@@ -252,6 +256,9 @@ export default function TopNav({
                 className="text-[13px] font-medium text-white/72 transition hover:text-white"
               >
                 {item.label}
+                {item.href === "/vision" && features.visionBeta ? (
+                  <span className="ml-1 text-[9px] text-cyan-300">BETA</span>
+                ) : null}
               </Link>
             ))}
 

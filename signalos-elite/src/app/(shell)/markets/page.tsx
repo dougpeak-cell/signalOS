@@ -41,7 +41,7 @@ const marketTools = [
 
 export default function MarketsPage() {
   return (
-    <main className="min-h-screen bg-black px-2 pb-28 pt-4 text-white lg:px-8 lg:pb-12 lg:pt-6">
+    <main className="min-h-screen bg-black px-2 pb-28 pt-4 text-white lg:px-8 lg:pb-0 lg:pt-6">
       <div className="mx-auto w-full max-w-none lg:max-w-7xl">
         <section className="rounded-[26px] border border-cyan-400/15 bg-[#020817] p-6 sm:p-8">
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-cyan-300">
