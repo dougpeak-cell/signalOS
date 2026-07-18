@@ -715,7 +715,9 @@ export default async function SetupsPage({
         </div>
       </section>
 
-      <SectorComparisonPanel data={sectorComparison} />
+      <div id="sector-comparison" className="scroll-mt-24">
+        <SectorComparisonPanel data={sectorComparison} />
+      </div>
     </div>
   );
 }

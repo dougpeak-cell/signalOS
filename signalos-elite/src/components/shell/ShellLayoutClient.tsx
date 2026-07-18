@@ -8,7 +8,6 @@ import MarketPulseStrip from "@/components/market/MarketPulseStrip";
 import BreakingNewsTicker from "@/components/news/BreakingNewsTicker";
 import MarketDataDebugOverlay from "@/components/dev/MarketDataDebugOverlay";
 import ContextAwareRightRail from "@/components/shell/ContextAwareRightRail";
-import MobileBottomNav from "@/components/shell/MobileBottomNav";
 import { ShellMarketContextProvider } from "@/components/shell/ShellMarketContext";
 import MobileSigiSheet from "@/components/shell/MobileSigiSheet";
 import TopNav from "@/components/shell/TopNav";
@@ -35,6 +34,17 @@ function readPreviewPlanCookie(): SigiTier | null {
   }
 
   return null;
+}
+
+function writePreviewPlanCookie(nextPlan: "free" | "smart" | "pro" | "off") {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  document.cookie =
+    nextPlan === "off"
+      ? `${DEV_PREVIEW_PLAN_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`
+      : `${DEV_PREVIEW_PLAN_COOKIE}=${nextPlan}; path=/; SameSite=Lax`;
 }
 
 function ShellLoadingFallback() {
@@ -81,8 +91,14 @@ function ShellLayoutContent({
   const searchParams = useSearchParams();
   const hasSyncedMobilePreviewRef = useRef(false);
   const [hasCompactMobileShell, setHasCompactMobileShell] = useState(false);
-  const [previewPlan, setPreviewPlan] = useState<SigiTier | null>(null);
   const hasMobilePreviewParam = searchParams.get("mobilePreview") === "1";
+  const previewPlanParam = searchParams.get("previewPlan");
+  const previewPlan: SigiTier | null =
+    previewPlanParam === "free" || previewPlanParam === "smart" || previewPlanParam === "pro"
+      ? previewPlanParam
+      : previewPlanParam === "off" || previewPlanParam === "clear"
+        ? null
+        : readPreviewPlanCookie();
   const isDevMobilePreview =
     process.env.NODE_ENV !== "production" && hasMobilePreviewParam;
   const isDensePreviewRoute = /^\/stocks\/[^/]+\/live(?:\/.*)?$/i.test(pathname);
@@ -116,11 +132,7 @@ function ShellLayoutContent({
       return;
     }
 
-    if (nextPlan === "off") {
-      document.cookie = `${DEV_PREVIEW_PLAN_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-    } else {
-      document.cookie = `${DEV_PREVIEW_PLAN_COOKIE}=${nextPlan}; path=/; SameSite=Lax`;
-    }
+    writePreviewPlanCookie(nextPlan);
 
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set("previewPlan", nextPlan);
@@ -128,26 +140,6 @@ function ShellLayoutContent({
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
     router.refresh();
   }
-
-  useEffect(() => {
-    if (process.env.NODE_ENV === "production") {
-      return;
-    }
-
-    const nextPreviewPlan = searchParams.get("previewPlan");
-
-    if (nextPreviewPlan === "free" || nextPreviewPlan === "smart" || nextPreviewPlan === "pro") {
-      setPreviewPlan(nextPreviewPlan);
-      return;
-    }
-
-    if (nextPreviewPlan === "off" || nextPreviewPlan === "clear") {
-      setPreviewPlan(null);
-      return;
-    }
-
-    setPreviewPlan(readPreviewPlanCookie());
-  }, [pathname, searchParams]);
 
   useEffect(() => {
     if (process.env.NODE_ENV === "production") {
@@ -218,11 +210,9 @@ function ShellLayoutContent({
 
   const isWorkspaceStockPage =
     pathname.startsWith("/stocks/") && pathname.includes("/workspace");
-  const isStockChartPage = /^\/stocks\/[^/]+\/chart(?:\/.*)?$/i.test(pathname);
   const isCryptoMode = pathname.startsWith("/crypto");
   const isScreenerRoute = pathname.startsWith("/screener");
   const isTodayShellRoute = pathname === "/" || pathname === "/today";
-  const shouldShowMobileBottomNav = !shouldUseCompactShell || !isStockChartPage;
   const shellBottomPadding = isDevMobilePreview
     ? `calc(${mobilePreviewFrame.bottomGap}px + 8rem + env(safe-area-inset-bottom))`
     : undefined;
@@ -372,7 +362,6 @@ function ShellLayoutContent({
 
           {!shouldUseCompactShell ? <SigiMiniPanel /> : null}
           <MobileSigiSheet forceDesktopPreview={shouldUseCompactShell} />
-          {shouldShowMobileBottomNav ? <MobileBottomNav forceVisible={isDevMobilePreview} /> : null}
           </ShellMarketContextProvider>
         </SigiPanelProvider>
       </LiveMarketProvider>

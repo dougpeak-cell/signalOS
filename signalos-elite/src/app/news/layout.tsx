@@ -5,7 +5,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SelectedSignalProvider } from "@/components/chart/SelectedSignalContext";
 import TopNav from "@/components/shell/TopNav";
 import StickyMacroStrip from "@/components/shell/StickyMacroStrip";
-import MobileBottomNav from "@/components/shell/MobileBottomNav";
 import MobileSigiSheet from "@/components/shell/MobileSigiSheet";
 import BreakingNewsTicker from "@/components/news/BreakingNewsTicker";
 import SigiMiniPanel from "@/components/sigi/SigiMiniPanel";
@@ -100,7 +99,6 @@ function NewsLayoutInner({
 
         {!isDevMobilePreview ? <SigiMiniPanel /> : null}
         <MobileSigiSheet forceDesktopPreview={isDevMobilePreview} />
-        <MobileBottomNav forceVisible={isDevMobilePreview} />
       </SigiPanelProvider>
     </SelectedSignalProvider>
   );
