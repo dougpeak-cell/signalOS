@@ -64,7 +64,7 @@ function NewsLayoutInner({
     <SelectedSignalProvider>
       <SigiPanelProvider>
         <div
-          className="min-h-screen bg-black pb-[calc(8rem+env(safe-area-inset-bottom))] text-white md:pb-0"
+          className="min-h-screen bg-black pb-[calc(8rem+env(safe-area-inset-bottom))] text-white lg:pb-0"
           style={
             isDevMobilePreview
               ? {

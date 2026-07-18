@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { features } from "@/lib/features";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 
 type NavItem = {
@@ -88,7 +89,7 @@ function VisionIcon() {
   );
 }
 
-const navItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
   {
     label: "Today",
     href: "/today",
@@ -113,14 +114,17 @@ const navItems: NavItem[] = [
     activePaths: ["/portfolio"],
     icon: <PortfolioIcon />,
   },
-  {
-    label: "Vision",
-    href: "/vision",
-    activePaths: ["/vision"],
-    icon: <VisionIcon />,
-    featured: true,
-  },
 ];
+
+const visionNavItem: NavItem = {
+  label: "Vision",
+  href: "/vision",
+  activePaths: ["/vision"],
+  icon: <VisionIcon />,
+  featured: true,
+};
+
+const navItems = features.visionEnabled ? [...baseNavItems, visionNavItem] : baseNavItems;
 
 export default function MobileBottomNav({
   forceVisible = false,
@@ -210,7 +214,12 @@ export default function MobileBottomNav({
 
   return (
     <nav className={navShellClass} style={navShellStyle}>
-      <div className="mx-auto grid max-w-xl grid-cols-5 rounded-[28px] border border-cyan-400/15 bg-black/95 p-1.5 shadow-[0_18px_70px_rgba(0,0,0,0.72)] backdrop-blur-xl">
+      <div
+        className={[
+          "mx-auto grid max-w-xl rounded-[28px] border border-cyan-400/15 bg-black/95 p-1.5 shadow-[0_18px_70px_rgba(0,0,0,0.72)] backdrop-blur-xl",
+          features.visionEnabled ? "grid-cols-5" : "grid-cols-4",
+        ].join(" ")}
+      >
         {navItems.map((item) => {
           const active = isActive(item);
 

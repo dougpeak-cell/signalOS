@@ -1,17 +1,24 @@
 import { getHistoryBars, type HistoryBar } from "@/lib/market/historyBars";
 import { fetchServerQuoteMap } from "@/lib/market/serverQuote";
+import {
+  calculateSectorScore,
+  getSectorMomentum,
+} from "@/lib/intelligence/sector-score";
 
-export type SectorComparisonRow = {
+export type VisionSector = {
   sector: string;
   symbol: string;
   today: number;
   week: number;
   month: number;
   year: number;
+  score: number;
   momentum: string;
   valuation: string;
   breakout: string;
-  momentumScore: number;
+};
+
+export type SectorComparisonRow = VisionSector & {
   freshness: "live" | "close";
 };
 
@@ -38,17 +45,8 @@ export const SECTOR_ETFS = [
 ] as const;
 
 function scoreSector(today: number, week: number, month: number, year: number) {
-  const momentumScore = today * 1.5 + week * 1.25 + month * 1.1 + year * 0.25;
-  const momentum =
-    momentumScore > 18
-      ? "Elite Momentum"
-      : momentumScore > 9
-        ? "Strong"
-        : momentumScore > 3
-          ? "Building"
-          : momentumScore > -3
-            ? "Neutral"
-            : "Weak";
+  const score = calculateSectorScore({ today, week, month, year });
+  const momentum = getSectorMomentum(score);
   const valuation =
     year < 3 && month > 0
       ? "Undervalued Watch"
@@ -66,7 +64,7 @@ function scoreSector(today: number, week: number, month: number, year: number) {
           ? "Early Rotation"
           : "No Signal";
 
-  return { momentum, valuation, breakout, momentumScore };
+    return { score, momentum, valuation, breakout };
 }
 
 function computePercentDelta(current: number | null, baseline: number | null): number | null {
@@ -190,11 +188,28 @@ export async function buildSectorComparisonData(): Promise<SectorComparisonData>
       freshness,
       ...scoreSector(today, week, month, year),
     };
-  }).sort((left, right) => right.momentumScore - left.momentumScore);
+  }).sort((left, right) => right.score - left.score);
 
   return {
     rows,
     freshness: getPanelFreshness(rows),
     generatedAt: new Date().toISOString(),
   };
+}
+
+export async function getLiveSectorComparison(): Promise<VisionSector[]> {
+  const { rows } = await buildSectorComparisonData();
+
+  return rows.map((row) => ({
+    sector: row.sector,
+    symbol: row.symbol,
+    today: row.today,
+    week: row.week,
+    month: row.month,
+    year: row.year,
+    score: row.score,
+    momentum: row.momentum,
+    valuation: row.valuation,
+    breakout: row.breakout,
+  }));
 }

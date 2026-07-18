@@ -237,7 +237,7 @@ function ShellLayoutContent({
           <SigiUpgradeAnalyticsBridge />
           <div
             className={[
-              "min-h-screen bg-black pb-[calc(8rem+env(safe-area-inset-bottom))] text-white transition-colors md:pb-0",
+              "min-h-screen bg-black pb-[calc(8rem+env(safe-area-inset-bottom))] text-white transition-colors lg:pb-0",
               isCryptoMode
                 ? "bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.10),transparent_34%),#000]"
                 : "",

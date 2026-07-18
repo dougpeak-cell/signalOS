@@ -99,7 +99,7 @@ export default async function TodayPageShell({
 		<div className="min-h-screen bg-black text-white">
 			<TodayAutoRefresh />
 			<TodayPageQueryTickerSync />
-			<main className={`mx-auto w-full max-w-400 px-3 pb-10 pt-3 sm:px-4 md:pt-4 lg:px-5 xl:px-6 ${todayPageStackClass}`}>
+			<main className={`mx-auto w-full max-w-400 px-3 pb-28 pt-3 sm:px-4 md:pt-4 lg:px-5 lg:pb-0 xl:px-6 ${todayPageStackClass}`}>
 				<Suspense fallback={<TodayLoadingScreen className={shouldUseMobileTodayHome ? "" : "md:hidden"} fullHeight={false} />}>
 					<TodayMobileHomeSlot
 						hasSigiSmart={hasSigiSmart}
