@@ -4,7 +4,7 @@ import TradeReadinessBar from "@/components/stocks/TradeReadinessBar";
 import MobileSignalSheet from "@/components/shell/MobileSignalSheet";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MARKET_TIME_ABBR, formatMarketTime } from "@/lib/marketTime";
+import { MARKET_TIME_ABBR, MARKET_TZ, formatMarketTime } from "@/lib/marketTime";
 import {
   CandlestickSeries,
   ColorType,
@@ -644,6 +644,119 @@ function normalizeEpochSeconds(value: number | string | null | undefined): numbe
   return Math.floor(n / 1e9);
 }
 
+const marketDateTimePartsFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: MARKET_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+function getMarketDateKeyAndMinutes(ts: number) {
+  const parts = marketDateTimePartsFormatter.formatToParts(new Date(ts * 1000));
+  const values = new Map(parts.map((part) => [part.type, part.value]));
+
+  const year = values.get("year") ?? "0000";
+  const month = values.get("month") ?? "01";
+  const day = values.get("day") ?? "01";
+  const hour = Number(values.get("hour") ?? 0);
+  const minute = Number(values.get("minute") ?? 0);
+
+  return {
+    dateKey: `${year}-${month}-${day}`,
+    minutesOfDay: hour * 60 + minute,
+  };
+}
+
+function findRegularSessionOpenBar(
+  bars: BaseBar[],
+  referenceTime: number | null | undefined
+): BaseBar | null {
+  if (!bars.length) return null;
+
+  const normalizedReferenceTime = normalizeEpochSeconds(referenceTime);
+  if (!normalizedReferenceTime) return null;
+
+  const { dateKey: targetDateKey } = getMarketDateKeyAndMinutes(normalizedReferenceTime);
+
+  for (const bar of bars) {
+    const normalizedBarTime = normalizeEpochSeconds(bar.time);
+    if (!normalizedBarTime) continue;
+
+    const { dateKey, minutesOfDay } = getMarketDateKeyAndMinutes(normalizedBarTime);
+    if (dateKey !== targetDateKey) continue;
+
+    if (minutesOfDay >= 9 * 60 + 30 && minutesOfDay <= 16 * 60) {
+      return bar;
+    }
+  }
+
+  return null;
+}
+
+function getRegularSessionStats(
+  bars: BaseBar[],
+  referenceTime: number | null | undefined
+): {
+  openBar: BaseBar | null;
+  high: number | null;
+  low: number | null;
+} {
+  if (!bars.length) {
+    return {
+      openBar: null,
+      high: null,
+      low: null,
+    };
+  }
+
+  const normalizedReferenceTime = normalizeEpochSeconds(referenceTime);
+  if (!normalizedReferenceTime) {
+    return {
+      openBar: null,
+      high: null,
+      low: null,
+    };
+  }
+
+  const { dateKey: targetDateKey } = getMarketDateKeyAndMinutes(normalizedReferenceTime);
+  let openBar: BaseBar | null = null;
+  let sessionHigh: number | null = null;
+  let sessionLow: number | null = null;
+
+  for (const bar of bars) {
+    const normalizedBarTime = normalizeEpochSeconds(bar.time);
+    if (!normalizedBarTime) continue;
+
+    const { dateKey, minutesOfDay } = getMarketDateKeyAndMinutes(normalizedBarTime);
+    if (dateKey !== targetDateKey) continue;
+    if (minutesOfDay < 9 * 60 + 30 || minutesOfDay > 16 * 60) continue;
+
+    if (!openBar) {
+      openBar = bar;
+    }
+
+    const barHigh = Number(bar.high);
+    const barLow = Number(bar.low);
+
+    if (Number.isFinite(barHigh)) {
+      sessionHigh = sessionHigh == null ? barHigh : Math.max(sessionHigh, barHigh);
+    }
+
+    if (Number.isFinite(barLow)) {
+      sessionLow = sessionLow == null ? barLow : Math.min(sessionLow, barLow);
+    }
+  }
+
+  return {
+    openBar,
+    high: sessionHigh,
+    low: sessionLow,
+  };
+}
+
 function signalGlow(signal?: string | null) {
   if (!signal) return "shadow-[0_0_25px_rgba(34,211,238,0.25)]";
 
@@ -974,7 +1087,14 @@ function getAnchoredTime(
   if (!bars.length) return null;
 
   if (mode === "custom") return customAnchorTime;
-  if (mode === "day-open") return Number(bars[0]?.time ?? null);
+  if (mode === "day-open") {
+    const sessionOpenBar = findRegularSessionOpenBar(
+      bars,
+      normalizeEpochSeconds(bars[bars.length - 1]?.time ?? null)
+    );
+
+    return Number(sessionOpenBar?.time ?? bars[0]?.time ?? null);
+  }
 
   if (mode === "session-high") {
     let best = bars[0];
@@ -1014,87 +1134,7 @@ function findBarAtTime(bars: BaseBar[], time: number): BaseBar | null {
   if (!normalizedTime) return null;
 
   const exact = bars.find((bar) => Number(bar.time) === Number(normalizedTime));
-  if (exact) return exact;
-
-  let nearest: BaseBar | null = null;
-  let smallestDistance = Number.POSITIVE_INFINITY;
-
-  for (const bar of bars) {
-    const distance = Math.abs(Number(bar.time) - Number(normalizedTime));
-    if (distance < smallestDistance) {
-      smallestDistance = distance;
-      nearest = bar;
-    }
-  }
-
-  return nearest;
-}
-
-function findBarAtLogicalIndex(
-  bars: BaseBar[],
-  logical: unknown
-): BaseBar | null {
-  if (!Array.isArray(bars) || bars.length === 0) return null;
-
-  const logicalIndex = Number(logical);
-  if (!Number.isFinite(logicalIndex)) return null;
-
-  const roundedIndex = Math.round(logicalIndex);
-  const clampedIndex = clamp(roundedIndex, 0, bars.length - 1);
-
-  return bars[clampedIndex] ?? null;
-}
-
-function readCrosshairCandle(
-  seriesData: unknown,
-  candleSeries: ISeriesApi<"Candlestick", Time, any, any, any> | null
-): Pick<BaseBar, "open" | "high" | "low" | "close"> | null {
-  if (!candleSeries || !seriesData || typeof seriesData !== "object") return null;
-
-  const maybeMap = seriesData as { get?: (key: unknown) => unknown };
-  if (typeof maybeMap.get !== "function") return null;
-
-  const value = maybeMap.get(candleSeries) as
-    | {
-        open?: unknown;
-        high?: unknown;
-        low?: unknown;
-        close?: unknown;
-      }
-    | undefined;
-
-  if (!value) return null;
-
-  const open = Number(value.open);
-  const high = Number(value.high);
-  const low = Number(value.low);
-  const close = Number(value.close);
-
-  if (
-    !Number.isFinite(open) ||
-    !Number.isFinite(high) ||
-    !Number.isFinite(low) ||
-    !Number.isFinite(close)
-  ) {
-    return null;
-  }
-
-  return { open, high, low, close };
-}
-
-function readCrosshairVolume(
-  seriesData: unknown,
-  volumeSeries: ISeriesApi<"Histogram", Time, any, any, any> | null
-): number | null {
-  if (!volumeSeries || !seriesData || typeof seriesData !== "object") return null;
-
-  const maybeMap = seriesData as { get?: (key: unknown) => unknown };
-  if (typeof maybeMap.get !== "function") return null;
-
-  const value = maybeMap.get(volumeSeries) as { value?: unknown } | undefined;
-  const volume = Number(value?.value);
-
-  return Number.isFinite(volume) ? volume : null;
+  return exact ?? null;
 }
 
 function tooltipEquals(a: TooltipState, b: TooltipState) {
@@ -1147,6 +1187,13 @@ function formatPrice(v: number | null | undefined) {
 function formatTimeLabel(unixSeconds: number | null | undefined) {
   if (unixSeconds == null || !Number.isFinite(Number(unixSeconds))) return "—";
   return formatMarketTime(Number(unixSeconds));
+}
+
+function getTooltipFallbackSize(visibleLines: number, isWide: boolean) {
+  return {
+    width: isWide ? 192 : 160,
+    height: isWide ? 86 + visibleLines * 26 : 80 + visibleLines * 24,
+  };
 }
 
 function RangeButton({
@@ -1361,6 +1408,7 @@ export default function LiveStockChart({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartWrapRef = useRef<HTMLDivElement | null>(null);
   const chartHostRef = useRef<HTMLDivElement | null>(null);
+  const tooltipBoxRef = useRef<HTMLDivElement | null>(null);
   const liveChartCardRef = useRef<HTMLDivElement | null>(null);
   const chartScrollShellRef = useRef<HTMLDivElement | null>(null);
   const lastPushedBarTimeRef = useRef<number | null>(null);
@@ -1492,6 +1540,35 @@ export default function LiveStockChart({
 
   useEffect(() => {
     tooltipRef.current = tooltip;
+  }, [tooltip]);
+
+  useEffect(() => {
+    if (!tooltip.visible) {
+      return;
+    }
+
+    const wrapEl = chartWrapRef.current;
+    const tooltipEl = tooltipBoxRef.current;
+    if (!wrapEl || !tooltipEl) {
+      return;
+    }
+
+    const nextX = Math.min(
+      Math.max(8, tooltip.x),
+      Math.max(8, wrapEl.clientWidth - tooltipEl.offsetWidth - 8),
+    );
+    const nextY = Math.min(
+      Math.max(8, tooltip.y),
+      Math.max(8, wrapEl.clientHeight - tooltipEl.offsetHeight - 8),
+    );
+
+    if (nextX === tooltip.x && nextY === tooltip.y) {
+      return;
+    }
+
+    setTooltip((prev) =>
+      prev.visible ? { ...prev, x: nextX, y: nextY } : prev,
+    );
   }, [tooltip]);
 
   useEffect(() => {
@@ -3425,7 +3502,6 @@ useEffect(() => {
 
     const onCrosshairMove = (param: any) => {
       const wrapEl = chartWrapRef.current;
-      const candleSeries = candleSeriesRef.current;
       if (!wrapEl || !param?.point || param.time == null) {
         hoverPinnedRef.current = false;
         tooltipPointerRef.current = null;
@@ -3479,15 +3555,16 @@ useEffect(() => {
 
       const latestBars = liveChartBarsRef.current;
       const latestLineVisibility = lineVisibilityRef.current;
-      const hoveredCandle = readCrosshairCandle(param.seriesData, candleSeries);
-      const hoveredVolume = readCrosshairVolume(param.seriesData, volumeSeriesRef.current);
-      const logicalBar = findBarAtLogicalIndex(latestBars, param.logical);
       const timeBar = findBarAtTime(latestBars, time);
-      const bar = logicalBar ?? timeBar;
-      const open = hoveredCandle?.open ?? (bar ? Number(bar.open) : null);
-      const high = hoveredCandle?.high ?? (bar ? Number(bar.high) : null);
-      const low = hoveredCandle?.low ?? (bar ? Number(bar.low) : null);
-      const close = hoveredCandle?.close ?? (bar ? Number(bar.close) : null);
+      const sessionStats = getRegularSessionStats(latestBars, time);
+      const open = sessionStats.openBar
+        ? Number(sessionStats.openBar.open)
+        : timeBar
+          ? Number(timeBar.open)
+          : null;
+      const high = sessionStats.high ?? (timeBar ? Number(timeBar.high) : null);
+      const low = sessionStats.low ?? (timeBar ? Number(timeBar.low) : null);
+  const close = timeBar ? Number(timeBar.close) : null;
 
       if (
         open == null ||
@@ -3505,8 +3582,20 @@ useEffect(() => {
         return;
       }
 
-      const tooltipWidth = 190;
-      const tooltipHeight = 214;
+      const tooltipEl = tooltipBoxRef.current;
+      const visibleLines =
+        5 +
+        Number(latestLineVisibility.vwap) +
+        Number(latestLineVisibility.ma5) +
+        Number(latestLineVisibility.ma10) +
+        Number(latestLineVisibility.ma20) +
+        Number(latestLineVisibility.ma30);
+      const fallbackSize = getTooltipFallbackSize(
+        visibleLines,
+        typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches,
+      );
+      const tooltipWidth = tooltipEl?.offsetWidth ?? fallbackSize.width;
+      const tooltipHeight = tooltipEl?.offsetHeight ?? fallbackSize.height;
       const offset = 14;
 
       let left = x + offset;
@@ -3531,7 +3620,7 @@ useEffect(() => {
         high,
         low,
         close,
-        volume: hoveredVolume ?? (bar ? Number(bar.volume ?? 0) : null),
+        volume: timeBar ? Number(timeBar.volume ?? 0) : null,
         vwap: latestLineVisibility.vwap ? findValueAtTime(vwapRefData.current, time) : null,
         ma5: latestLineVisibility.ma5 ? findValueAtTime(ma5RefData.current, time) : null,
         ma10: latestLineVisibility.ma10 ? findValueAtTime(ma10RefData.current, time) : null,
@@ -4967,6 +5056,7 @@ const gapFillLabel =
 
               {tooltip.visible ? (
                 <div
+                  ref={tooltipBoxRef}
                   className="pointer-events-none absolute z-20 w-40 rounded-2xl border border-neutral-200 bg-white/95 p-2.5 shadow-xl backdrop-blur sm:w-48 sm:p-3"
                   style={{ left: tooltip.x, top: tooltip.y }}
                 >
@@ -4976,7 +5066,7 @@ const gapFillLabel =
                   <div className="mt-1 text-sm font-medium text-neutral-900">{tooltip.timeLabel}</div>
 
                   <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                    <div className="text-neutral-500">Open</div>
+                    <div className="text-neutral-500">Session Open</div>
                     <div className="text-right font-medium text-neutral-900">{formatPrice(tooltip.open)}</div>
 
                     <div className="text-neutral-500">High</div>
