@@ -1,34 +1,126 @@
 "use client";
 
-import type { MouseEvent } from "react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
-import {
-  getMobileSigiSheetDefaultContext,
-  openMobileSigiSheet,
-} from "@/components/shell/mobileSigiSheetEvents";
-import { getSigiProfile } from "@/lib/sigi/sigiProfile";
 
-const navItems = [
-  { href: "/today", label: "Today" },
-  { href: "/stocks", label: "Stocks" },
-  { href: "/screener", label: "Screener" },
-  { href: "/watchlist", label: "Watchlist" },
-  { href: "/portfolio", label: "Portfolio" },
-  { href: "/news", label: "News" },
-  { href: "/experts", label: "Experts" },
-  { href: "/education", label: "Education" },
-  { href: "/crypto", label: "Crypto" },
-] as const;
+type NavItem = {
+  label: string;
+  href: string;
+  icon: React.ReactNode;
+  activePaths: string[];
+  featured?: boolean;
+};
 
-function isActivePath(pathname: string, href: string) {
-  if (href === "/today") {
-    return pathname === "/" || pathname === "/today";
-  }
-
-  return pathname === href || pathname.startsWith(`${href}/`);
+function TodayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
+      <path
+        d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1v-9.5Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
+
+function MarketsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
+      <path
+        d="M4 18V9m5 9V5m5 13v-7m5 7V3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function WatchlistIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
+      <path
+        d="m12 3 2.65 5.36 5.92.86-4.29 4.18 1.01 5.9L12 16.52 6.71 19.3l1.01-5.9-4.29-4.18 5.92-.86L12 3Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function PortfolioIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
+      <path
+        d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2m-12 0h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M3 12h18M10 12v2h4v-2"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+    </svg>
+  );
+}
+
+function VisionIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
+      <path
+        d="M2.5 12s3.4-5.5 9.5-5.5S21.5 12 21.5 12 18.1 17.5 12 17.5 2.5 12 2.5 12Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <circle cx="12" cy="12" r="2.8" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M12 2.5v2M12 19.5v2M3.5 5l1.5 1.5M19 17.5l1.5 1.5M20.5 5 19 6.5M5 17.5 3.5 19"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+const navItems: NavItem[] = [
+  {
+    label: "Today",
+    href: "/today",
+    activePaths: ["/", "/today"],
+    icon: <TodayIcon />,
+  },
+  {
+    label: "Markets",
+    href: "/markets",
+    activePaths: ["/markets", "/stocks", "/screener", "/news", "/crypto"],
+    icon: <MarketsIcon />,
+  },
+  {
+    label: "Watchlist",
+    href: "/watchlist?quickView=1",
+    activePaths: ["/watchlist"],
+    icon: <WatchlistIcon />,
+  },
+  {
+    label: "Portfolio",
+    href: "/portfolio?quickView=1",
+    activePaths: ["/portfolio"],
+    icon: <PortfolioIcon />,
+  },
+  {
+    label: "Vision",
+    href: "/vision",
+    activePaths: ["/vision"],
+    icon: <VisionIcon />,
+    featured: true,
+  },
+];
 
 export default function MobileBottomNav({
   forceVisible = false,
@@ -36,21 +128,14 @@ export default function MobileBottomNav({
   forceVisible?: boolean;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const isMobilePreviewEnabled = searchParams.get("mobilePreview") === "1";
   const mobilePreviewFrame = useResponsiveMobilePreviewFrame(forceVisible || isMobilePreviewEnabled);
   const lastScrollYRef = useRef(0);
   const showNavTimeoutRef = useRef<number | null>(null);
   const [isNavHidden, setIsNavHidden] = useState(false);
-  const shouldKeepNavVisible = pathname === "/experts" || pathname.startsWith("/experts/");
 
   useEffect(() => {
-    if (shouldKeepNavVisible) {
-      setIsNavHidden(false);
-      return;
-    }
-
     const syncScrollState = () => {
       const nextScrollY = window.scrollY;
       const delta = nextScrollY - lastScrollYRef.current;
@@ -84,7 +169,7 @@ export default function MobileBottomNav({
       }
       window.removeEventListener("scroll", syncScrollState);
     };
-  }, [shouldKeepNavVisible]);
+  }, []);
 
   function withPreviewParam(href: string) {
     if (!isMobilePreviewEnabled) {
@@ -94,80 +179,30 @@ export default function MobileBottomNav({
     return href.includes("?") ? `${href}&mobilePreview=1` : `${href}?mobilePreview=1`;
   }
 
-  function buildCurrentRoute() {
-    const nextParams = new URLSearchParams(searchParams.toString());
-    nextParams.delete("returnTo");
-    const nextQuery = nextParams.toString();
-
-    return nextQuery ? `${pathname}?${nextQuery}` : pathname;
-  }
-
-  function buildNavHref(href: string) {
-    const nextHref = withPreviewParam(href);
-
-    if (href === "/watchlist" || href === "/portfolio") {
-      const separator = nextHref.includes("?") ? "&" : "?";
-      return `${nextHref}${separator}quickView=1`;
-    }
-
-    if (href !== "/education") {
-      return nextHref;
-    }
-
-    const separator = nextHref.includes("?") ? "&" : "?";
-    return `${nextHref}${separator}returnTo=${encodeURIComponent(buildCurrentRoute())}`;
-  }
-
-  function handlePrimaryNavClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
-    if (
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
-      return;
-    }
-
-    event.preventDefault();
-    window.location.assign(href);
-  }
-
-  function openSigi() {
-    const sigiProfile = getSigiProfile();
-
-    if (!sigiProfile?.name?.trim()) {
-      router.push(`${withPreviewParam("/today")}#sigi-command-panel`);
-      return;
-    }
-
-    openMobileSigiSheet({
-      context: pathname === "/today" ? getMobileSigiSheetDefaultContext() : undefined,
+  function isActive(item: NavItem) {
+    return item.activePaths.some((path) => {
+      if (path === "/") return pathname === "/";
+      return pathname === path || pathname.startsWith(`${path}/`);
     });
   }
 
   const navShellClass = forceVisible
     ? [
-        "fixed left-1/2 z-50 -translate-x-1/2 will-change-transform transition-[transform,opacity] duration-150 ease-out",
+        "fixed left-1/2 z-50 -translate-x-1/2 will-change-transform transition-[transform,opacity] duration-150 ease-out lg:hidden",
         isNavHidden
           ? "translate-y-[calc(100%+1.5rem)] opacity-0 pointer-events-none"
           : "translate-y-0 opacity-100",
       ].join(" ")
     : [
-        "fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 md:hidden will-change-transform transition-[transform,opacity] duration-150 ease-out",
+        "fixed inset-x-2 bottom-2 z-50 will-change-transform transition-[transform,opacity] duration-150 ease-out lg:hidden",
         isNavHidden
           ? "translate-y-[calc(100%+1.5rem)] opacity-0 pointer-events-none"
           : "translate-y-0 opacity-100",
       ].join(" ");
 
-  const navGridClass = forceVisible
-    ? "grid min-h-[104px] grid-cols-5 items-center gap-1 overflow-hidden rounded-[24px] border border-cyan-300/15 bg-black/80 px-1.5 py-1.5 shadow-[0_0_12px_rgba(103,232,249,0.10),0_12px_24px_rgba(8,47,73,0.22)] backdrop-blur-2xl"
-    : "grid min-h-[104px] grid-cols-5 items-center gap-1 rounded-[28px] border border-cyan-300/20 bg-black/88 px-2 py-2 shadow-[0_0_28px_rgba(103,232,249,0.18),0_20px_50px_rgba(8,47,73,0.38)] backdrop-blur-xl sm:min-h-[104px] sm:grid-cols-5 sm:gap-1";
-
   const navShellStyle = forceVisible
     ? {
-        bottom: `calc(${mobilePreviewFrame.bottomGap}px + env(safe-area-inset-bottom) + 0.75rem)`,
+        bottom: `calc(${mobilePreviewFrame.bottomGap}px + env(safe-area-inset-bottom) + 0.5rem)`,
         width: "calc(100% - 1rem)",
         maxWidth: `${Math.max(320, mobilePreviewFrame.width - 16)}px`,
       }
@@ -175,61 +210,35 @@ export default function MobileBottomNav({
 
   return (
     <nav className={navShellClass} style={navShellStyle}>
-      {forceVisible ? (
-        <div className="pointer-events-none absolute inset-x-5 -bottom-3 h-8 rounded-b-[22px] bg-linear-to-t from-black/70 via-black/28 to-transparent" />
-      ) : null}
-      <div className={navGridClass}>
+      <div className="mx-auto grid max-w-xl grid-cols-5 rounded-[28px] border border-cyan-400/15 bg-black/95 p-1.5 shadow-[0_18px_70px_rgba(0,0,0,0.72)] backdrop-blur-xl">
         {navItems.map((item) => {
-          const active = isActivePath(pathname, item.href);
+          const active = isActive(item);
 
           return (
-            <a
-              key={item.href}
-              href={buildNavHref(item.href)}
-              onClick={(event) => handlePrimaryNavClick(event, buildNavHref(item.href))}
+            <Link
+              key={item.label}
+              href={withPreviewParam(item.href)}
+              aria-label={item.label}
               className={[
-                forceVisible
-                  ? "flex min-h-9 flex-col items-center justify-center rounded-[18px] px-0.5 py-1 text-[8px] font-semibold text-center transition"
-                  : "flex min-h-11 flex-col items-center justify-center rounded-2xl px-0.5 py-1 text-[8px] font-semibold text-center transition sm:text-[8px]",
-                active
-                  ? "bg-cyan-400/12 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.14)]"
-                  : "text-white/56 hover:bg-white/6 hover:text-white",
+                "relative flex min-h-14.5 flex-col items-center justify-center gap-1 rounded-[20px] px-1 text-[9px] font-semibold transition",
+                active ? "bg-cyan-400/10 text-cyan-200" : "text-slate-500 hover:text-slate-200",
+                item.featured ? "border border-cyan-400/20 bg-cyan-400/5.5" : "",
               ].join(" ")}
-
             >
-              <span
-                className={[
-                  forceVisible
-                    ? "mb-0.5 h-1.5 w-1.5 rounded-full transition"
-                    : "mb-1 h-1.5 w-1.5 rounded-full transition",
-                  active ? "bg-cyan-300" : "bg-white/25",
-                ].join(" ")}
-              />
-              <span className="block max-w-full text-balance text-center leading-tight whitespace-normal">
-                {item.label}
-              </span>
-            </a>
+              {item.featured ? (
+                <>
+                  <span className="absolute inset-1 rounded-[17px] bg-cyan-300/3.5 shadow-[0_0_28px_rgba(34,211,238,0.12)]" />
+                  <span className="absolute top-2 h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.95)]" />
+                </>
+              ) : active ? (
+                <span className="absolute top-2 h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.8)]" />
+              ) : null}
+
+              <span className="relative mt-1">{item.icon}</span>
+              <span className="relative">{item.label}</span>
+            </Link>
           );
         })}
-
-        <button
-          type="button"
-          onClick={openSigi}
-          className={[
-            "col-span-1 flex flex-col items-center justify-center border border-cyan-400/20 bg-cyan-400/12 px-0.5 py-1 font-semibold text-cyan-100 text-center shadow-[0_0_18px_rgba(34,211,238,0.16)] transition hover:bg-cyan-400/18",
-            forceVisible
-              ? "min-h-9 rounded-[18px] text-[8px]"
-              : "min-h-11 rounded-2xl text-[8px]",
-          ].join(" ")}
-        >
-          <span className={[
-            "h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.8)]",
-            forceVisible ? "mb-0.5" : "mb-1",
-          ].join(" ")} />
-          <span className="block max-w-full text-balance text-center leading-tight whitespace-normal">
-            Sigi
-          </span>
-        </button>
       </div>
     </nav>
   );

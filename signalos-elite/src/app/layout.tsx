@@ -1,10 +1,12 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { LiveMarketProvider } from "@/components/market/LiveMarketProvider";
 import MarketContextSyncBridge from "@/components/providers/MarketContextSyncBridge";
 import AppQuoteBootstrap from "@/components/providers/AppQuoteBootstrap";
 import AuthSplashReset from "@/components/providers/AuthSplashReset";
 import { MarketDataProvider } from "@/components/providers/MarketDataProvider";
+import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 import { GlobalTickerProvider } from "@/components/sigi/GlobalTickerContext";
 import { SelectedTickerProvider } from "@/components/sigi/SelectedTickerContext";
 import { SignalProvider } from "@/context/SignalContext";
@@ -45,6 +47,9 @@ export default function RootLayout({
                   <AppQuoteBootstrap />
                   <AuthSplashReset />
                   {children}
+                  <Suspense fallback={null}>
+                    <MobileBottomNav />
+                  </Suspense>
                 </GlobalTickerProvider>
               </SelectedTickerProvider>
             </LiveMarketProvider>

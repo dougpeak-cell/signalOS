@@ -16,6 +16,7 @@ const MOBILE_PREVIEW_STORAGE_KEY = "signalos-dev-mobile-preview-today";
 
 const navItems = [
   { href: "/today", label: "Today" },
+  { href: "/vision", label: "Vision" },
   { href: "/stocks", label: "Stocks" },
   { href: "/screener", label: "Screener" },
   { href: "/watchlist", label: "Watchlist" },
@@ -73,9 +74,6 @@ export default function TopNav({
 
   const navDefault =
     "rounded-full px-3 py-2 text-sm font-semibold text-white/65 transition hover:bg-white/10 hover:text-white";
-
-  const navActive =
-    "rounded-full bg-white/10 px-3 py-2 text-sm font-semibold text-white transition";
 
   const cryptoActive =
     "rounded-full bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-200 ring-1 ring-cyan-400/30 shadow-[0_0_24px_rgba(34,211,238,0.18)] transition";
