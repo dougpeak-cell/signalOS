@@ -19,6 +19,8 @@ export type WatchlistItem =
 export type PortfolioItem = {
   ticker?: string;
   symbol?: string;
+  name?: string | null;
+  sector?: string | null;
   stop?: number | null;
   target?: number | null;
   currentPrice?: number | null;

@@ -1,6 +1,11 @@
 import { getCompanyProfile } from "@/lib/getCompanyProfile";
 import type { PortfolioItem } from "@/lib/intelligence/buildMarketIntel";
 import type { VisionOpportunity, VisionPortfolioIntelligence } from "@/lib/intelligence/visionOverview";
+import {
+  normalizeSector,
+  resolveSector,
+  type NormalizedSector,
+} from "@/lib/market/resolve-sector";
 import type { VisionSector } from "@/lib/market/sectorComparison";
 import type { ServerQuoteMap } from "@/lib/market/serverQuote";
 
@@ -14,34 +19,13 @@ type UpcomingEarningsRow = {
 type PortfolioHoldingRow = {
   symbol: string;
   name: string;
-  sector: string;
+  sector: NormalizedSector;
   marketValue: number;
   weight: number;
   changePercent: number | null;
   alignment: "aligned" | "watch" | "weakening";
   earningsDateLabel: string | null;
   earningsTiming: string | null;
-};
-
-const SECTOR_ALIASES: Record<string, string> = {
-  "COMMUNICATION SERVICES": "Communication",
-  COMMUNICATION: "Communication",
-  "CONSUMER CYCLICAL": "Consumer Discretionary",
-  "CONSUMER DISCRETIONARY": "Consumer Discretionary",
-  "CONSUMER DEFENSIVE": "Consumer Staples",
-  "CONSUMER STAPLES": "Consumer Staples",
-  ENERGY: "Energy",
-  FINANCIAL: "Financials",
-  FINANCIALS: "Financials",
-  "FINANCIAL SERVICES": "Financials",
-  HEALTHCARE: "Healthcare",
-  INDUSTRIAL: "Industrials",
-  INDUSTRIALS: "Industrials",
-  MATERIALS: "Materials",
-  "BASIC MATERIALS": "Materials",
-  "REAL ESTATE": "Real Estate",
-  TECHNOLOGY: "Technology",
-  UTILITIES: "Utilities",
 };
 
 function normalizeTicker(value: unknown) {
@@ -57,19 +41,17 @@ function getNumber(value: unknown): number | null {
   return null;
 }
 
-function normalizeSectorName(value: string | null | undefined) {
-  const normalized = String(value ?? "").trim();
-  if (!normalized) return "Unclassified";
-
-  return SECTOR_ALIASES[normalized.toUpperCase()] ?? normalized;
-}
-
 function formatWeight(value: number) {
   return `${value.toFixed(value >= 10 ? 0 : 1)}%`;
 }
 
 function pluralize(word: string, count: number) {
   return `${count} ${word}${count === 1 ? "" : "s"}`;
+}
+
+function countWord(count: number) {
+  const labels = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+  return labels[count] ?? String(count);
 }
 
 function getWeightLevel(value: number): "Low" | "Moderate" | "High" {
@@ -228,6 +210,9 @@ export async function buildVisionPortfolioIntelligence(args: {
     return {
       hasPortfolio: false,
       holdingsCount: 0,
+      classifiedHoldingsCount: 0,
+      classificationCoverage: 0,
+      sectorAnalysisAvailable: false,
       totalValue: 0,
       topSector: null,
       topSectorWeight: 0,
@@ -236,6 +221,7 @@ export async function buildVisionPortfolioIntelligence(args: {
       sensitivityLevel: "Low",
       alignedHoldings: 0,
       weakeningHoldings: 0,
+      nearbyEarningsCount: 0,
       exposureSummary: "No synced portfolio holdings are available yet.",
       concentrationSummary: "Connect a portfolio to measure sector concentration and exposure.",
       sectorAlignmentSummary: "Portfolio alignment needs holdings before Vision can compare them with market leadership.",
@@ -243,6 +229,7 @@ export async function buildVisionPortfolioIntelligence(args: {
       earningsSummary: "Upcoming earnings proximity will appear after portfolio holdings are connected.",
       correlationSummary: "Correlation analysis needs a connected portfolio.",
       sensitivitySummary: "Portfolio sensitivity needs a connected portfolio.",
+      sectorExposure: [],
       topSectors: [],
       riskConflicts: [],
       holdings: [],
@@ -256,26 +243,40 @@ export async function buildVisionPortfolioIntelligence(args: {
 
   const profileMap = new Map(profiles);
   const sectorMoveMap = new Map(
-    args.sectors.map((sector) => [normalizeSectorName(sector.sector), sector.today])
+    args.sectors.map((sector) => [normalizeSector(sector.sector), sector.today] as const)
   );
-  const leadingSectors = new Set([
-    normalizeSectorName(args.leader),
-    ...args.improving.map((sector) => normalizeSectorName(sector)),
-  ].filter((sector) => sector !== "Unclassified"));
-  const weakeningSectors = new Set(
-    args.weakening.map((sector) => normalizeSectorName(sector)).filter(
-      (sector) => sector !== "Unclassified"
+  const leadingSectors = new Set<NormalizedSector>(
+    [normalizeSector(args.leader), ...args.improving.map((sector) => normalizeSector(sector))].filter(
+      (sector): sector is Exclude<NormalizedSector, "Unclassified"> => sector !== "Unclassified"
+    )
+  );
+  const weakeningSectors = new Set<NormalizedSector>(
+    args.weakening.map((sector) => normalizeSector(sector)).filter(
+      (sector): sector is Exclude<NormalizedSector, "Unclassified"> => sector !== "Unclassified"
     )
   );
 
-  const rawRows = args.portfolio.reduce<PortfolioHoldingRow[]>((result, item) => {
-      const symbol = getHoldingSymbol(item);
+  const classifiedHoldings = args.portfolio.map((item) => {
+    const symbol = getHoldingSymbol(item);
+    const profile = symbol ? profileMap.get(symbol) : null;
+
+    return {
+      item,
+      symbol,
+      profile,
+      sector: resolveSector({
+        symbol,
+        sector: profile?.sector ?? item.sector ?? null,
+      }),
+    };
+  });
+
+  const rawRows = classifiedHoldings.reduce<PortfolioHoldingRow[]>((result, holding) => {
+      const { item, symbol, profile, sector } = holding;
       if (!symbol) return result;
 
-      const profile = profileMap.get(symbol);
       const price = args.quoteMap[symbol]?.price ?? getNumber(item.currentPrice) ?? getNumber(item.price);
       const marketValue = getHoldingMarketValue(item, price);
-      const sector = normalizeSectorName(profile?.sector);
       const sectorToday = sectorMoveMap.get(sector) ?? null;
       const changePercent = args.quoteMap[symbol]?.changePct ?? null;
       const relativeLag =
@@ -293,7 +294,7 @@ export async function buildVisionPortfolioIntelligence(args: {
 
       result.push({
         symbol,
-        name: profile?.name ?? symbol,
+        name: profile?.name ?? item.name ?? symbol,
         sector,
         marketValue,
         weight: 0,
@@ -305,6 +306,10 @@ export async function buildVisionPortfolioIntelligence(args: {
 
       return result;
     }, []);
+
+  const classifiedCount = rawRows.filter((row) => row.sector !== "Unclassified").length;
+  const classificationCoverage = rawRows.length > 0 ? classifiedCount / rawRows.length : 0;
+  const sectorAnalysisAvailable = classificationCoverage >= 0.8;
 
   const totalValue = rawRows.reduce((sum, row) => sum + row.marketValue, 0);
   const weightedRows = rawRows.map((row) => ({
@@ -326,21 +331,36 @@ export async function buildVisionPortfolioIntelligence(args: {
     .map(([sector, weight]) => ({ sector, weight }))
     .sort((left, right) => right.weight - left.weight)
     .slice(0, 3);
+  const sectorExposure = [...sectorWeights.entries()]
+    .filter(([sector]) => sector !== "Unclassified")
+    .map(([sector, weight]) => ({ sector, weight }))
+    .sort((left, right) => right.weight - left.weight);
 
-  const topSector = topSectors[0]?.sector ?? null;
-  const topSectorWeight = topSectors[0]?.weight ?? 0;
-  const topTwoWeight = topSectors.slice(0, 2).reduce((sum, row) => sum + row.weight, 0);
-  const alignedHoldings = weightedRows.filter((row) => row.alignment === "aligned").length;
-  const weakeningHoldings = weightedRows.filter((row) => row.alignment === "weakening").length;
-  const weakeningWeight = weightedRows
-    .filter((row) => row.alignment === "weakening")
-    .reduce((sum, row) => sum + row.weight, 0);
+  const topSector = sectorAnalysisAvailable ? topSectors[0]?.sector ?? null : null;
+  const topSectorWeight = sectorAnalysisAvailable ? topSectors[0]?.weight ?? 0 : 0;
+  const topTwoWeight = sectorAnalysisAvailable
+    ? topSectors.slice(0, 2).reduce((sum, row) => sum + row.weight, 0)
+    : 0;
+  const alignedHoldings = sectorAnalysisAvailable
+    ? weightedRows.filter((row) => row.alignment === "aligned").length
+    : 0;
+  const weakeningHoldings = sectorAnalysisAvailable
+    ? weightedRows.filter((row) => row.alignment === "weakening").length
+    : 0;
+  const weakeningWeight = sectorAnalysisAvailable
+    ? weightedRows
+        .filter((row) => row.alignment === "weakening")
+        .reduce((sum, row) => sum + row.weight, 0)
+    : 0;
   const leadingOpportunity = args.opportunities[0] ?? null;
-  const leadingOpportunitySector = normalizeSectorName(leadingOpportunity?.sector);
+  const leadingOpportunitySector = resolveSector({
+    symbol: leadingOpportunity?.symbol ?? "",
+    sector: leadingOpportunity?.sector ?? null,
+  });
   const concentrationLevel = getWeightLevel(topSectorWeight);
   const correlationLevel = getWeightLevel(topTwoWeight);
   const sensitivityLevel =
-    args.leader && normalizeSectorName(args.leader) === topSector && topSectorWeight >= 35
+    args.leader && normalizeSector(args.leader) === topSector && topSectorWeight >= 35
       ? "High"
       : topTwoWeight >= 55 || topSectorWeight >= 28
         ? "Moderate"
@@ -349,6 +369,7 @@ export async function buildVisionPortfolioIntelligence(args: {
   const riskConflicts: string[] = [];
 
   if (
+    sectorAnalysisAvailable &&
     leadingOpportunity &&
     topSector &&
     topSectorWeight >= 35 &&
@@ -359,13 +380,13 @@ export async function buildVisionPortfolioIntelligence(args: {
     );
   }
 
-  if (weakeningWeight >= 20) {
+  if (sectorAnalysisAvailable && weakeningWeight >= 20) {
     riskConflicts.push(
       `${formatWeight(weakeningWeight)} of tracked portfolio value is tied to holdings that are weakening against their sectors.`
     );
   }
 
-  if (topTwoWeight >= 60) {
+  if (sectorAnalysisAvailable && topTwoWeight >= 60) {
     riskConflicts.push(
       `The top two sectors account for ${formatWeight(topTwoWeight)} of portfolio exposure, which raises correlation risk.`
     );
@@ -376,32 +397,55 @@ export async function buildVisionPortfolioIntelligence(args: {
     .sort((left, right) => left.weight - right.weight)
     .reverse()
     .slice(0, 3);
+  const nearbyEarningsCount = weightedRows.filter((row) => row.earningsDateLabel).length;
 
-  const exposureSummary = topSector
+  const coveragePercent = Math.round(classificationCoverage * 100);
+  const coverageSummary = `Vision classified ${coveragePercent}% of tracked holdings. At least 80% is required before sector alignment and concentration conclusions are displayed.`;
+  const secondarySector = sectorAnalysisAvailable ? topSectors[1]?.sector ?? null : null;
+  const exposureSummary = sectorAnalysisAvailable && topSector
     ? `${topSector} is your largest exposure at ${formatWeight(topSectorWeight)} of tracked portfolio value.`
-    : "Tracked portfolio exposures are still being classified by sector.";
-  const concentrationSummary = topSector
-    ? `${concentrationLevel} concentration: ${topSector} represents ${formatWeight(topSectorWeight)} of tracked exposure.`
-    : "Concentration cannot be measured until holdings receive sector mapping.";
-  const sectorAlignmentSummary = `${pluralize("holding", alignedHoldings)} aligned with current leadership. ${weakeningHoldings > 0 ? `${pluralize("holding", weakeningHoldings)} weakening against its sector.` : "No tracked holdings are materially lagging their sectors right now."}`;
-  const riskConflictSummary =
-    riskConflicts[0] ??
-    (topSector && leadingOpportunity && leadingOpportunitySector !== topSector
-      ? `${leadingOpportunity.symbol} adds exposure in ${leadingOpportunitySector}, which is less concentrated than your current ${topSector} bias.`
-      : "No immediate portfolio-to-Vision conflict stands out right now." );
+    : coverageSummary;
+  const concentrationSummary = sectorAnalysisAvailable && topSector
+    ? secondarySector
+      ? `${topSector} and ${secondarySector} represent ${formatWeight(topTwoWeight)} of tracked exposure.`
+      : `${topSector} represents ${formatWeight(topSectorWeight)} of tracked exposure.`
+    : coverageSummary;
+  const sectorAlignmentSummary = sectorAnalysisAvailable
+    ? `${countWord(alignedHoldings).charAt(0).toUpperCase()}${countWord(alignedHoldings).slice(1)} holdings are positioned in sectors currently showing positive leadership.${weakeningHoldings > 0 ? ` ${countWord(weakeningHoldings).charAt(0).toUpperCase()}${countWord(weakeningHoldings).slice(1)} holdings are weakening against their sector backdrop.` : ""}`
+    : coverageSummary;
+  if (sectorAnalysisAvailable && topSectorWeight >= 30 && topSector) {
+    riskConflicts.push(`${topSector} concentration could increase volatility.`);
+  }
+
+  if (nearbyEarningsCount >= 2) {
+    riskConflicts.push(`${nearbyEarningsCount} nearby earnings events could increase volatility.`);
+  }
+
+  const riskConflictSummary = sectorAnalysisAvailable
+    ? riskConflicts.length >= 2
+      ? `${riskConflicts[0].replace(/\.$/, "")} and ${riskConflicts[1].charAt(0).toLowerCase()}${riskConflicts[1].slice(1)}`
+      : riskConflicts[0] ??
+        (topSector && leadingOpportunity && leadingOpportunitySector !== topSector
+          ? `${leadingOpportunity.symbol} adds exposure in ${leadingOpportunitySector}, which is less concentrated than your current ${topSector} bias.`
+          : "No immediate portfolio-to-Vision conflict stands out right now.")
+    : coverageSummary;
   const earningsSummary = earningsRows.length
     ? `${pluralize("holding", earningsRows.length)} report${earningsRows.length === 1 ? "s" : ""} within the next three weeks: ${earningsRows
         .map((row) => `${row.symbol} ${row.earningsDateLabel}`)
         .join(", ")}.`
     : "No near-term earnings dates were detected for tracked portfolio holdings.";
   const correlationSummary =
-    correlationLevel === "High"
+    !sectorAnalysisAvailable
+      ? coverageSummary
+      : correlationLevel === "High"
       ? `Correlation is elevated because your top two sectors represent ${formatWeight(topTwoWeight)} of tracked exposure.`
       : correlationLevel === "Moderate"
         ? `Correlation is moderate with ${formatWeight(topTwoWeight)} of tracked exposure concentrated in the top two sectors.`
         : "Correlation is relatively contained because exposure is spread across multiple sectors.";
   const sensitivitySummary =
-    sensitivityLevel === "High" && topSector
+    !sectorAnalysisAvailable
+      ? coverageSummary
+      : sensitivityLevel === "High" && topSector
       ? `Portfolio sensitivity is high to ${topSector} and broad risk appetite because that sector remains your dominant exposure.`
       : sensitivityLevel === "Moderate" && topSector
         ? `Portfolio sensitivity is moderate to ${topSector} leadership and sector rotation.`
@@ -410,6 +454,9 @@ export async function buildVisionPortfolioIntelligence(args: {
   return {
     hasPortfolio: weightedRows.length > 0,
     holdingsCount: weightedRows.length,
+    classifiedHoldingsCount: classifiedCount,
+    classificationCoverage,
+    sectorAnalysisAvailable,
     totalValue,
     topSector,
     topSectorWeight,
@@ -418,6 +465,7 @@ export async function buildVisionPortfolioIntelligence(args: {
     sensitivityLevel,
     alignedHoldings,
     weakeningHoldings,
+    nearbyEarningsCount,
     exposureSummary,
     concentrationSummary,
     sectorAlignmentSummary,
@@ -425,8 +473,9 @@ export async function buildVisionPortfolioIntelligence(args: {
     earningsSummary,
     correlationSummary,
     sensitivitySummary,
-    topSectors,
-    riskConflicts,
+    sectorExposure: sectorAnalysisAvailable ? sectorExposure : [],
+    topSectors: sectorAnalysisAvailable ? topSectors : [],
+    riskConflicts: sectorAnalysisAvailable ? riskConflicts : [],
     holdings: weightedRows
       .sort((left, right) => right.weight - left.weight)
       .slice(0, 5)

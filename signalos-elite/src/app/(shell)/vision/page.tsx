@@ -1236,68 +1236,100 @@ export default function VisionPage() {
 
           {portfolioState === "ready" && portfolioIntelligence ? (
             <>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300">
-                    Exposure awareness
+              {!portfolioIntelligence.sectorAnalysisAvailable ? (
+                <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-500/5 p-4">
+                  <p className="font-semibold text-amber-200">
+                    Sector analysis is still loading
                   </p>
-                  <h3 className="mt-2 text-lg font-semibold text-white">
-                    {portfolioIntelligence.topSector ?? "Unclassified"}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    {portfolioIntelligence.exposureSummary}
-                  </p>
-                </div>
 
-                <div className="rounded-2xl border border-amber-400/20 bg-amber-500/5 p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-amber-300">
-                    Concentration
-                  </p>
-                  <h3 className="mt-2 text-lg font-semibold text-white">
-                    {portfolioIntelligence.concentrationLevel}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    {portfolioIntelligence.concentrationSummary}
+                  <p className="mt-2 text-sm text-slate-400">
+                    Vision classified {Math.round(portfolioIntelligence.classificationCoverage * 100)}% of tracked holdings.
+                    At least 80% is required before sector alignment and concentration conclusions are displayed.
                   </p>
                 </div>
+              ) : (
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300">
+                      Exposure awareness
+                    </p>
+                    <h3 className="mt-2 text-lg font-semibold text-white">
+                      {portfolioIntelligence.topSector ?? "Unclassified"}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">
+                      {portfolioIntelligence.exposureSummary}
+                    </p>
+                  </div>
 
-                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-300">
-                    Sector alignment
-                  </p>
-                  <h3 className="mt-2 text-lg font-semibold text-white">
-                    {portfolioIntelligence.alignedHoldings} aligned
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    {portfolioIntelligence.sectorAlignmentSummary}
-                  </p>
-                </div>
+                  <div className="rounded-2xl border border-amber-400/20 bg-amber-500/5 p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-amber-300">
+                      Concentration
+                    </p>
+                    <h3 className="mt-2 text-lg font-semibold text-white">
+                      {portfolioIntelligence.concentrationLevel}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">
+                      {portfolioIntelligence.concentrationSummary}
+                    </p>
+                  </div>
 
-                <div className="rounded-2xl border border-rose-400/20 bg-rose-500/5 p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-rose-300">
-                    Risk conflicts
-                  </p>
-                  <h3 className="mt-2 text-lg font-semibold text-white">
-                    {portfolioIntelligence.riskConflicts.length ? "Active" : "Clear"}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    {portfolioIntelligence.riskConflictSummary}
-                  </p>
+                  <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-300">
+                      Sector alignment
+                    </p>
+                    <h3 className="mt-2 text-lg font-semibold text-white">
+                      {portfolioIntelligence.alignedHoldings} aligned
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">
+                      {portfolioIntelligence.sectorAlignmentSummary}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-rose-400/20 bg-rose-500/5 p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-rose-300">
+                      Risk conflicts
+                    </p>
+                    <h3 className="mt-2 text-lg font-semibold text-white">
+                      {portfolioIntelligence.riskConflicts.length
+                        ? `${portfolioIntelligence.riskConflicts.length} detected`
+                        : "Clear"}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">
+                      {portfolioIntelligence.riskConflictSummary}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="mt-4 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4 sm:p-5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {portfolioIntelligence.topSectors.map((sector) => (
-                      <span
-                        key={sector.sector}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-200"
-                      >
-                        {sector.sector} {formatWeight(sector.weight)}
-                      </span>
-                    ))}
-                  </div>
+                  {portfolioIntelligence.sectorAnalysisAvailable ? (
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                        Sector exposure
+                      </p>
+
+                      <div className="mt-4">
+                        {portfolioIntelligence.sectorExposure.map((sector) => (
+                          <div key={sector.sector} className="mb-3 last:mb-0">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-300">{sector.sector}</span>
+                              <span className="font-semibold text-white">
+                                {sector.weight.toFixed(1)}%
+                              </span>
+                            </div>
+
+                            <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-800">
+                              <div
+                                className="h-full rounded-full bg-linear-to-r from-cyan-400 to-emerald-300"
+                                style={{ width: `${sector.weight}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     <div>
@@ -1311,20 +1343,24 @@ export default function VisionPage() {
 
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                        Correlation
+                        {portfolioIntelligence.sectorAnalysisAvailable ? "Correlation" : "Sector coverage"}
                       </p>
                       <p className="mt-2 text-sm leading-6 text-slate-300">
-                        {portfolioIntelligence.correlationSummary}
+                        {portfolioIntelligence.sectorAnalysisAvailable
+                          ? portfolioIntelligence.correlationSummary
+                          : `Vision classified ${Math.round(portfolioIntelligence.classificationCoverage * 100)}% of tracked holdings. Sector conclusions unlock at 80% coverage.`}
                       </p>
                     </div>
                   </div>
 
                   <div className="mt-4 rounded-2xl border border-white/10 bg-white/2.5 p-4">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                      Portfolio sensitivity
+                      {portfolioIntelligence.sectorAnalysisAvailable ? "Portfolio sensitivity" : "Classification status"}
                     </p>
                     <p className="mt-2 text-sm leading-6 text-slate-300">
-                      {portfolioIntelligence.sensitivitySummary}
+                      {portfolioIntelligence.sectorAnalysisAvailable
+                        ? portfolioIntelligence.sensitivitySummary
+                        : `${portfolioIntelligence.classifiedHoldingsCount} of ${portfolioIntelligence.holdingsCount} tracked holdings have usable sector classifications.`}
                     </p>
                   </div>
                 </div>

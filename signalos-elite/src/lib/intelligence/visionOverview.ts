@@ -61,6 +61,9 @@ export type VisionPortfolioHolding = {
 export type VisionPortfolioIntelligence = {
   hasPortfolio: boolean;
   holdingsCount: number;
+  classifiedHoldingsCount: number;
+  classificationCoverage: number;
+  sectorAnalysisAvailable: boolean;
   totalValue: number;
   topSector: string | null;
   topSectorWeight: number;
@@ -69,6 +72,7 @@ export type VisionPortfolioIntelligence = {
   sensitivityLevel: "Low" | "Moderate" | "High";
   alignedHoldings: number;
   weakeningHoldings: number;
+  nearbyEarningsCount: number;
   exposureSummary: string;
   concentrationSummary: string;
   sectorAlignmentSummary: string;
@@ -76,6 +80,10 @@ export type VisionPortfolioIntelligence = {
   earningsSummary: string;
   correlationSummary: string;
   sensitivitySummary: string;
+  sectorExposure: Array<{
+    sector: string;
+    weight: number;
+  }>;
   topSectors: Array<{
     sector: string;
     weight: number;
