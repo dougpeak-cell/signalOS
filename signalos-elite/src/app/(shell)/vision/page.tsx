@@ -55,6 +55,8 @@ type Catalyst = {
   importance: "Low" | "Medium" | "High";
 };
 
+type SectorFlow = VisionSector;
+
 type LiveSectionStatusProps = {
   state: DataState;
   updatedAt: string | null;
@@ -412,43 +414,134 @@ function MarketHealthGauge({
   );
 }
 
-function FlowBar({ sector }: { sector: VisionSector }) {
+type FlowWindow = "Today" | "Week" | "Month";
+
+function getWindowValue(
+  sector: SectorFlow,
+  activeWindow: FlowWindow,
+) {
+  if (activeWindow === "Week") return sector.week;
+  if (activeWindow === "Month") return sector.month;
+  return sector.today;
+}
+
+function getWindowLabel(activeWindow: FlowWindow) {
+  if (activeWindow === "Week") return "1 WEEK";
+  if (activeWindow === "Month") return "1 MONTH";
+  return "TODAY";
+}
+
+function calculateWindowScore(
+  sector: SectorFlow,
+  activeWindow: FlowWindow,
+) {
+  const value = getWindowValue(sector, activeWindow);
+
+  const multiplier =
+    activeWindow === "Today"
+      ? 10
+      : activeWindow === "Week"
+        ? 5
+        : 2.5;
+
+  return Math.max(
+    0,
+    Math.min(100, Math.round(50 + value * multiplier)),
+  );
+}
+
+function FlowBar({
+  sector,
+  activeWindow,
+}: {
+  sector: SectorFlow;
+  activeWindow: FlowWindow;
+}) {
+  const activeValue = getWindowValue(sector, activeWindow);
+  const activeScore = calculateWindowScore(sector, activeWindow);
+  const activeLabel = getWindowLabel(activeWindow);
+
+  const secondaryPeriods =
+    activeWindow === "Today"
+      ? [
+          { label: "1W", value: sector.week },
+          { label: "1M", value: sector.month },
+        ]
+      : activeWindow === "Week"
+        ? [
+            { label: "Today", value: sector.today },
+            { label: "1M", value: sector.month },
+          ]
+        : [
+            { label: "Today", value: sector.today },
+            { label: "1W", value: sector.week },
+          ];
+
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/2.5 p-3.5">
-      <div className="flex items-center justify-between gap-4">
+    <div className="rounded-2xl border border-white/10 bg-white/2.5 p-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="font-semibold text-white">{sector.sector}</div>
-          <div className="mt-0.5 text-xs text-slate-500">{sector.symbol}</div>
+          <div className="font-semibold text-white">
+            {sector.sector}
+          </div>
+
+          <div className="mt-1 text-xs text-slate-500">
+            {sector.symbol}
+          </div>
         </div>
 
         <div className="text-right">
-          <div className={`font-semibold ${changeClass(sector.today)}`}>
-            {formatPercent(sector.today)}
+          <div
+            className={`text-lg font-semibold ${changeClass(
+              activeValue,
+            )}`}
+          >
+            {formatPercent(activeValue)}
           </div>
-          <div className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-slate-500">
-            Today
+
+          <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-500">
+            {activeLabel}
           </div>
         </div>
       </div>
 
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800">
+      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-800">
         <div
-          className="h-full rounded-full bg-linear-to-r from-cyan-400 to-emerald-300"
-          style={{ width: `${Math.max(10, sector.score)}%` }}
+          className="h-full rounded-full bg-linear-to-r from-cyan-400 to-emerald-300 transition-all duration-500"
+          style={{
+            width: `${Math.max(3, activeScore)}%`,
+          }}
         />
       </div>
 
-      <div className="mt-2 flex items-center justify-between text-xs">
+      <div className="mt-3 flex items-center justify-between gap-3 text-xs">
         <span className="text-slate-500">
-          1W <span className={changeClass(sector.week)}>{formatPercent(sector.week)}</span>
+          {secondaryPeriods[0].label}{" "}
+          <span
+            className={changeClass(
+              secondaryPeriods[0].value,
+            )}
+          >
+            {formatPercent(secondaryPeriods[0].value)}
+          </span>
         </span>
 
         <span className="text-slate-500">
-          1M <span className={changeClass(sector.month)}>{formatPercent(sector.month)}</span>
+          {secondaryPeriods[1].label}{" "}
+          <span
+            className={changeClass(
+              secondaryPeriods[1].value,
+            )}
+          >
+            {formatPercent(secondaryPeriods[1].value)}
+          </span>
         </span>
 
-        <span className={`font-semibold ${scoreTone(sector.score)}`}>
-          {sector.score}
+        <span
+          className={`font-semibold ${scoreTone(activeScore)}`}
+          title={`${activeLabel} strength score`}
+        >
+          {activeScore}
         </span>
       </div>
     </div>
@@ -763,9 +856,7 @@ export default function VisionPage() {
 
   const sortedSectors = useMemo(() => {
     return [...sectors].sort((a, b) => {
-      if (activeWindow === "Week") return b.week - a.week;
-      if (activeWindow === "Month") return b.month - a.month;
-      return b.today - a.today;
+      return getWindowValue(b, activeWindow) - getWindowValue(a, activeWindow);
     });
   }, [activeWindow, sectors]);
 
@@ -1379,7 +1470,15 @@ export default function VisionPage() {
           <SectionHeading
             eyebrow="Rotation radar"
             title="Where money is flowing"
-            description="Compare short-term leadership and developing sector rotation."
+            description={
+              <>
+                Comparing sector leadership across the selected{" "}
+                <span className="font-semibold text-cyan-200">
+                  {activeWindow.toLowerCase()}
+                </span>{" "}
+                timeframe.
+              </>
+            }
             status={
               <LiveSectionStatus
                 state={sectorState}
@@ -1428,7 +1527,7 @@ export default function VisionPage() {
           {sectorState === "ready" && sortedSectors.length ? (
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {sortedSectors.map((sector) => (
-                <FlowBar key={sector.symbol} sector={sector} />
+                <FlowBar key={sector.symbol} sector={sector} activeWindow={activeWindow} />
               ))}
             </div>
           ) : (
