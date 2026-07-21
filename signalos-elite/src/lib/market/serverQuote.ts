@@ -295,7 +295,7 @@ export async function fetchServerQuoteState(
 
     if (price != null) {
       const prevClose =
-        toNumber(payload?.prevClose) ?? directQuote?.prevClose ?? yahooQuote?.prevClose;
+        toNumber(payload?.prevClose) ?? directQuote?.prevClose ?? yahooQuote?.prevClose ?? null;
       const change =
         toNumber(payload?.change) ??
         directQuote?.change ??
