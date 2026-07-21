@@ -3,12 +3,14 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import { isStale, type DataState } from "@/lib/dataState";
 import type {
   VisionChange,
   VisionHorizon,
   VisionOverview,
   VisionOpportunity,
+  VisionPortfolioHolding,
   VisionPortfolioIntelligence,
   VisionRegime,
   VisionRisk,
@@ -758,6 +760,7 @@ function OpportunityCard({
 }
 
 export default function VisionPage() {
+  const { quoteMap, ensureQuotes } = useLiveMarket();
   const [activeWindow, setActiveWindow] = useState<"Today" | "Week" | "Month">("Today");
   const [selectedHorizon, setSelectedHorizon] = useState<VisionHorizon>("swing");
   const [overview, setOverview] = useState<VisionOverview | null>(null);
@@ -780,6 +783,28 @@ export default function VisionPage() {
     [overview]
   );
   const portfolioIntelligence: VisionPortfolioIntelligence | null = overview?.portfolio ?? null;
+  const liveHoldingTickers = useMemo(
+    () =>
+      Array.from(
+        new Set((portfolioIntelligence?.holdings ?? []).map((holding) => holding.symbol).filter(Boolean))
+      ),
+    [portfolioIntelligence?.holdings]
+  );
+  const displayedHoldings = useMemo(
+    () =>
+      (portfolioIntelligence?.holdings ?? []).map((holding) => {
+        const liveQuote = quoteMap[holding.symbol];
+
+        return {
+          ...holding,
+          changePercent:
+            typeof liveQuote?.changePct === "number"
+              ? liveQuote.changePct
+              : holding.changePercent,
+        } satisfies VisionPortfolioHolding;
+      }),
+    [portfolioIntelligence?.holdings, quoteMap]
+  );
   const displayedOpportunities = useMemo(() => {
     return [...opportunities].sort((left, right) => {
       const scoreDelta =
@@ -853,6 +878,14 @@ export default function VisionPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!liveHoldingTickers.length) {
+      return;
+    }
+
+    ensureQuotes(liveHoldingTickers);
+  }, [ensureQuotes, liveHoldingTickers]);
 
   const sortedSectors = useMemo(() => {
     return [...sectors].sort((a, b) => {
@@ -1278,7 +1311,7 @@ export default function VisionPage() {
                   </p>
 
                   <div className="mt-4 space-y-3">
-                    {portfolioIntelligence.holdings.map((holding) => (
+                    {displayedHoldings.map((holding) => (
                       <div
                         key={holding.symbol}
                         className="rounded-2xl border border-white/10 bg-white/2.5 p-4"

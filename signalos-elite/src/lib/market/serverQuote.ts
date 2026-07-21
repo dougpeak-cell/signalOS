@@ -226,25 +226,25 @@ export async function fetchServerQuoteMap(
       if (!ticker) continue;
 
       const price =
+        toNumber(row.routeQuote?.price) ??
         row.directQuote?.price ??
-        row.yahooQuote?.price ??
-        toNumber(row.routeQuote?.price);
+        row.yahooQuote?.price;
       if (price == null) continue;
 
       const prevClose =
+        toNumber(row.routeQuote?.prevClose) ??
         row.directQuote?.prevClose ??
         row.yahooQuote?.prevClose ??
-        toNumber(row.routeQuote?.prevClose) ??
         null;
       const change =
+        toNumber(row.routeQuote?.change) ??
         row.directQuote?.change ??
         row.yahooQuote?.change ??
-        toNumber(row.routeQuote?.change) ??
         (prevClose != null && prevClose !== 0 ? price - prevClose : null);
       const changePct =
+        toNumber(row.routeQuote?.changePct) ??
         row.directQuote?.changePct ??
         row.yahooQuote?.changePct ??
-        toNumber(row.routeQuote?.changePct) ??
         (change != null && prevClose != null && prevClose !== 0
           ? (change / prevClose) * 100
           : null);
@@ -291,20 +291,20 @@ export async function fetchServerQuoteState(
           includePoints: false,
           includeFundamentals: false,
         });
-    const price = directQuote?.price ?? yahooQuote?.price ?? toNumber(payload?.price);
+    const price = toNumber(payload?.price) ?? directQuote?.price ?? yahooQuote?.price;
 
     if (price != null) {
       const prevClose =
-        directQuote?.prevClose ?? yahooQuote?.prevClose ?? toNumber(payload?.prevClose);
+        toNumber(payload?.prevClose) ?? directQuote?.prevClose ?? yahooQuote?.prevClose;
       const change =
+        toNumber(payload?.change) ??
         directQuote?.change ??
         yahooQuote?.change ??
-        toNumber(payload?.change) ??
         (prevClose != null && prevClose !== 0 ? price - prevClose : null);
       const changePct =
+        toNumber(payload?.changePct) ??
         directQuote?.changePct ??
         yahooQuote?.changePct ??
-        toNumber(payload?.changePct) ??
         (change != null && prevClose != null && prevClose !== 0
           ? (change / prevClose) * 100
           : null);
