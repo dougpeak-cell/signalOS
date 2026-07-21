@@ -62,8 +62,10 @@ type SectorFlow = VisionSector;
 type LiveSectionStatusProps = {
   state: DataState;
   updatedAt: string | null;
-  emptyLabel: string;
+  emptyLabel?: string;
   errorLabel?: string | null;
+  emptyStateLabel?: string;
+  readyLabel?: string;
 };
 
 const riskSeed: RiskItem[] = [
@@ -290,10 +292,18 @@ function LiveSectionStatus({
   updatedAt,
   emptyLabel,
   errorLabel,
+  emptyStateLabel,
+  readyLabel,
 }: LiveSectionStatusProps) {
   const stale =
     typeof updatedAt === "string" && updatedAt.length > 0 && state !== "loading" && isStale(updatedAt);
   const updatedLabel = formatUpdatedAt(updatedAt);
+  const statusLabel =
+    state === "empty"
+      ? emptyStateLabel ?? getStatusLabel(state, stale)
+      : state === "ready"
+        ? readyLabel ?? getStatusLabel(state, stale)
+        : getStatusLabel(state, stale);
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
@@ -303,7 +313,7 @@ function LiveSectionStatus({
           stale
         )}`}
       >
-        {getStatusLabel(state, stale)}
+        {statusLabel}
       </span>
 
       {updatedLabel ? <span className="text-slate-500">Updated {updatedLabel}</span> : null}
@@ -950,6 +960,13 @@ export default function VisionPage() {
   const intelligenceUpdatedAt = overviewUpdatedAt;
   const anyLiveDataStale = overviewUpdatedAt ? isStale(overviewUpdatedAt) : false;
   const intelligenceError = overviewError;
+  const formattedChangeUpdatedAt = formatUpdatedAt(overviewUpdatedAt);
+  const changeStatusLabel = changes.length
+    ? `${changes.length} material ${changes.length === 1 ? "change" : "changes"}`
+    : undefined;
+  const changeEmptySummary = formattedChangeUpdatedAt
+    ? `No meaningful changes detected since ${formattedChangeUpdatedAt}.`
+    : "No meaningful changes have been detected since the previous Vision snapshot.";
   const marketContext = {
     marketHealth: marketHealth ?? 0,
     regime: regime ?? "Balanced",
@@ -1157,7 +1174,8 @@ export default function VisionPage() {
               <LiveSectionStatus
                 state={changeState}
                 updatedAt={overviewUpdatedAt}
-                emptyLabel="No material changes since the last stored Vision snapshot."
+                emptyStateLabel="Stable"
+                readyLabel={changeStatusLabel}
                 errorLabel={overviewError}
               />
             }
@@ -1185,12 +1203,18 @@ export default function VisionPage() {
               ))}
             </div>
           ) : (
-            <div className="mt-5 rounded-2xl border border-white/10 bg-white/2.5 px-4 py-3 text-sm text-slate-300">
+            <div className="mt-5 rounded-2xl border border-white/10 bg-white/2.5 p-5">
               {changeState === "loading"
-                ? "Comparing the current Vision snapshot with the last stored snapshot..."
+                ? <p className="text-sm text-slate-300">Comparing the current Vision snapshot with the last stored snapshot...</p>
                 : changeState === "empty"
-                  ? "No material changes since the last stored Vision snapshot."
-                  : overviewError ?? "Change detection is temporarily unavailable."}
+                  ? (
+                      <>
+                        <p className="font-semibold text-white">Market structure is stable</p>
+                        <p className="mt-2 text-sm text-slate-400">{changeEmptySummary}</p>
+                        <p className="mt-2 text-sm text-slate-500">Next comparison will run when Vision refreshes.</p>
+                      </>
+                    )
+                  : <p className="text-sm text-slate-300">{overviewError ?? "Change detection is temporarily unavailable."}</p>}
             </div>
           )}
         </GlassPanel>
