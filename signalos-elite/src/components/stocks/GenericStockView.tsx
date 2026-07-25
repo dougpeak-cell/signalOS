@@ -2,6 +2,8 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { SelectedSignalProvider } from "@/components/chart/SelectedSignalContext";
+import LiveFutureMap from "@/components/amsa/LiveFutureMap";
+import SigiPulseCard from "@/components/amsa/SigiPulseCard";
 import FundamentalIntelligenceCard from "@/components/stocks/FundamentalIntelligenceCard";
 import StockFundamentalsGrid from "@/components/stocks/StockFundamentalsGrid";
 import StockDetailLivePanels from "@/components/stocks/StockDetailLivePanels";
@@ -650,6 +652,17 @@ export default async function GenericStockView({
           hasLiveData={hasLiveData}
           fallbackMessage={isUnavailableTicker ? fallbackThesis : null}
         />
+
+        <section className="px-4 sm:px-6 xl:px-0">
+          <SigiPulseCard symbol={liveTicker} />
+        </section>
+
+        <section className="px-4 sm:px-6 xl:px-0">
+          <LiveFutureMap
+            symbol={liveTicker}
+            initialHorizon="swing"
+          />
+        </section>
 
         <section className={["grid gap-8", isMobilePreview ? "" : "xl:grid-cols-[1.25fr_0.9fr]"].join(" ")}>
           <div className="space-y-8">
