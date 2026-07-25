@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { getTopAnalystPickBySector, type SigiAnalystLeader } from "@/lib/experts/topAnalystPick";
+import { getTopAnalystPickBySector } from "@/lib/experts/topAnalystPick";
 import { getSigiPlanSummaryForCurrentUser } from "@/lib/sigi/settings";
 
 export const runtime = "nodejs";
@@ -39,6 +39,41 @@ type SigiRequestBody = {
   watchlistContext?: unknown;
   stock?: LegacyStockContext | null;
   context?: LegacyTodayContext | null;
+};
+
+type SigiFutureMapPromptPayload = {
+  futureMap?: {
+    symbol: string;
+    primaryScenario: "bull" | "base" | "bear";
+    bullProbability: number;
+    baseProbability: number;
+    bearProbability: number;
+    bias: string;
+    confidence: number;
+    grade: string;
+    riskLevel: string;
+    bull: {
+      targetPrice?: number | null;
+      invalidationPrice?: number | null;
+      riskReward?: {
+        rewardToRisk?: number | null;
+      } | null;
+    };
+    base: {
+      targetPrice?: number | null;
+      invalidationPrice?: number | null;
+      riskReward?: {
+        rewardToRisk?: number | null;
+      } | null;
+    };
+    bear: {
+      targetPrice?: number | null;
+      invalidationPrice?: number | null;
+      riskReward?: {
+        rewardToRisk?: number | null;
+      } | null;
+    };
+  } | null;
 };
 
 function getSigiModel(plan: Plan) {
@@ -119,6 +154,7 @@ async function handleExpertAnalystLeader(message: string, sector: string, plan: 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as SigiRequestBody;
+    const origin = new URL(req.url).origin;
 
     const question = extractQuestion(body);
     const ticker = extractTicker(body);
@@ -142,6 +178,40 @@ export async function POST(req: Request) {
     if (body.mode === "expert_analyst_leader") {
       return handleExpertAnalystLeader(question, sector || ticker || "Technology", plan);
     }
+
+    const futurePayload = ticker
+      ? await loadFutureMapPromptPayload(origin, ticker)
+      : null;
+
+    const futureMapContext = futurePayload?.futureMap
+      ? `
+FUTUREMAP
+Symbol: ${futurePayload.futureMap.symbol}
+Primary scenario: ${futurePayload.futureMap.primaryScenario}
+Bull probability: ${futurePayload.futureMap.bullProbability}%
+Base probability: ${futurePayload.futureMap.baseProbability}%
+Bear probability: ${futurePayload.futureMap.bearProbability}%
+Bias: ${futurePayload.futureMap.bias}
+Confidence: ${futurePayload.futureMap.confidence}%
+Grade: ${futurePayload.futureMap.grade}
+Risk: ${futurePayload.futureMap.riskLevel}
+Primary target: ${
+          futurePayload.futureMap[
+            futurePayload.futureMap.primaryScenario
+          ].targetPrice ?? "Unavailable"
+        }
+Invalidation: ${
+          futurePayload.futureMap[
+            futurePayload.futureMap.primaryScenario
+          ].invalidationPrice ?? "Unavailable"
+        }
+Reward-to-risk: ${
+          futurePayload.futureMap[
+            futurePayload.futureMap.primaryScenario
+          ].riskReward?.rewardToRisk ?? "Unavailable"
+        }
+`
+      : "FUTUREMAP: Unavailable";
 
     const model = getSigiModel(plan);
 
@@ -171,6 +241,9 @@ Rules:
 - If a ticker focus is provided, the answer must stay focused on that exact ticker.
 - Do not replace the requested ticker with other stocks, sector leaders, watchlist ideas, or thematic baskets unless the user explicitly asks for alternatives or comparisons.
 - If the user asks why a specific stock is a top pick, explain that stock directly instead of naming different companies.
+- Describe FutureMap probabilities as model-relative scenarios.
+- Never describe FutureMap probabilities as guaranteed outcomes.
+- Never fabricate missing targets, catalysts, or probabilities.
           `,
         },
         {
@@ -192,6 +265,8 @@ ${JSON.stringify(portfolioContext ?? {}, null, 2)}
 
 Watchlist context:
 ${JSON.stringify(watchlistContext ?? {}, null, 2)}
+
+${futureMapContext}
           `,
         },
       ],
@@ -205,15 +280,42 @@ ${JSON.stringify(watchlistContext ?? {}, null, 2)}
       answerMode,
       mode: "future-ai",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const detail =
+      error instanceof Error
+        ? error.message
+        : "Unknown error";
+
     console.error("Sigi API error:", error);
 
     return NextResponse.json(
       {
         error: "Sigi could not complete the request.",
-        detail: error?.message || "Unknown error",
+        detail,
       },
       { status: 500 }
     );
+  }
+}
+
+async function loadFutureMapPromptPayload(
+  origin: string,
+  symbol: string,
+): Promise<SigiFutureMapPromptPayload | null> {
+  try {
+    const futureResponse = await fetch(
+      `${origin}/api/amsa/future/${encodeURIComponent(symbol)}?horizon=swing&record=false`,
+      {
+        cache: "no-store",
+      },
+    );
+
+    const futurePayload =
+      (await futureResponse.json()) as SigiFutureMapPromptPayload;
+
+    return futurePayload;
+  } catch (error) {
+    console.warn("Sigi FutureMap context unavailable:", error);
+    return null;
   }
 }
