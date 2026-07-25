@@ -2,10 +2,16 @@
 
 import FutureMapTradePlan from "@/components/amsa/FutureMapTradePlan";
 import SigiPulseCard from "@/components/amsa/SigiPulseCard";
+import { FutureScenarioCard } from "@/components/vision/FutureScenarioCard";
+import { OpportunityMeter } from "@/components/vision/OpportunityMeter";
+import StockPulseTimeline from "@/components/vision/StockPulseTimeline";
+import { TodaysVision } from "@/components/vision/TodaysVision";
+import { VisionTimestamp } from "@/components/vision/VisionTimestamp";
 import type {
   AMSAFutureMap,
   AMSAFutureMapHorizon,
 } from "@/lib/amsa";
+import { calculateOpportunityScore } from "@/lib/vision/opportunityScore";
 import Link from "next/link";
 import {
   FormEvent,
@@ -30,6 +36,7 @@ import {
 
 type DataStatus = "live" | "partial" | "unavailable";
 type Direction = "rising" | "falling" | "stable";
+type ScenarioName = "Bull" | "Base" | "Bear";
 type PulseState =
   | "Elite"
   | "Strong"
@@ -39,7 +46,6 @@ type PulseState =
   | "Critical";
 type RiskLevel = "Low" | "Moderate" | "Elevated" | "High";
 type Horizon = AMSAFutureMapHorizon;
-type ScenarioName = "Bull" | "Base" | "Bear";
 type ChangeImportance = "low" | "medium" | "high";
 
 type PulseComponent = {
@@ -258,23 +264,6 @@ function formatMoney(value: number | null | undefined) {
   }).format(Number(value));
 }
 
-function formatUpdatedAt(value: string | null | undefined) {
-  if (!value) return "Awaiting live update";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "Update time unavailable";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    month: "short",
-    day: "numeric",
-  }).format(date);
-}
-
 function pulseStateFromScore(score: number | null): PulseState | null {
   if (score === null) return null;
   if (score >= 90) return "Elite";
@@ -352,18 +341,6 @@ function changeImportanceClass(importance: ChangeImportance) {
   return "border-cyan-400/15 bg-cyan-500/[0.035]";
 }
 
-function scenarioClass(name: ScenarioName) {
-  if (name === "Bull") {
-    return "border-emerald-400/20 bg-emerald-500/[0.055]";
-  }
-
-  if (name === "Bear") {
-    return "border-rose-400/20 bg-rose-500/[0.055]";
-  }
-
-  return "border-cyan-400/20 bg-cyan-500/[0.045]";
-}
-
 /* =========================================================
    Reusable UI
 ========================================================= */
@@ -433,31 +410,39 @@ function StatusBadge({
   status: DataStatus;
   updatedAt: string | null;
 }) {
-  const label =
-    status === "live"
-      ? "Live intelligence"
-      : status === "partial"
-        ? "Partial intelligence"
-        : "Awaiting live intelligence";
+  const hasValidUpdatedAt =
+    typeof updatedAt === "string" &&
+    !Number.isNaN(new Date(updatedAt).getTime());
 
-  const classes =
-    status === "live"
-      ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200"
-      : status === "partial"
-        ? "border-amber-400/25 bg-amber-500/10 text-amber-200"
-        : "border-slate-500/25 bg-slate-500/10 text-slate-300";
+  const statusLabel =
+    status === "partial"
+      ? "Partial"
+      : status === "unavailable"
+        ? "Awaiting"
+        : null;
+
+  const statusClasses =
+    status === "partial"
+      ? "border-amber-400/25 bg-amber-500/10 text-amber-200"
+      : "border-slate-500/25 bg-slate-500/10 text-slate-300";
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span
-        className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${classes}`}
-      >
-        {label}
-      </span>
+      {hasValidUpdatedAt ? (
+        <VisionTimestamp updatedAt={updatedAt} />
+      ) : (
+        <span className="rounded-full border border-slate-500/25 bg-slate-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-300">
+          Awaiting live intelligence
+        </span>
+      )}
 
-      <span className="text-xs text-slate-500">
-        {formatUpdatedAt(updatedAt)}
-      </span>
+      {statusLabel ? (
+        <span
+          className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${statusClasses}`}
+        >
+          {statusLabel}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -721,143 +706,6 @@ function SectorPulseCard({
           </span>
         ) : null}
       </div>
-    </article>
-  );
-}
-
-/* =========================================================
-   Stock Pulse
-========================================================= */
-
-function StockPulseCard({ stock }: { stock: StockPulse }) {
-  const pulseChange =
-    Number.isFinite(stock.score) && Number.isFinite(stock.previousScore)
-      ? Number(stock.score) - Number(stock.previousScore)
-      : null;
-
-  return (
-    <article className="rounded-2xl border border-white/10 bg-white/2.5 p-4 transition hover:-translate-y-0.5 hover:border-cyan-400/30">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            href={`/stocks/${stock.symbol}`}
-            className="text-lg font-bold text-white hover:text-cyan-200"
-          >
-            {stock.symbol}
-          </Link>
-
-          <p className="mt-0.5 truncate text-xs text-slate-500">
-            {stock.company ?? "Company unavailable"}
-          </p>
-
-          <p className="mt-1 text-[10px] uppercase tracking-[0.17em] text-cyan-300">
-            {stock.sector ?? "Sector unavailable"}
-          </p>
-        </div>
-
-        <div className="text-right">
-          <div className={`text-3xl font-bold ${scoreTextClass(stock.score)}`}>
-            {safeScore(stock.score) ?? "—"}
-          </div>
-
-          <div className="text-[9px] uppercase tracking-[0.17em] text-slate-500">
-            Pulse
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        <div className="rounded-xl bg-black/25 p-2.5">
-          <p className="text-[9px] uppercase tracking-[0.15em] text-slate-500">
-            Price
-          </p>
-          <p className="mt-1 text-sm font-semibold text-white">
-            {Number.isFinite(stock.price) ? `$${Number(stock.price).toFixed(2)}` : "—"}
-          </p>
-        </div>
-
-        <div className="rounded-xl bg-black/25 p-2.5">
-          <p className="text-[9px] uppercase tracking-[0.15em] text-slate-500">
-            Day
-          </p>
-          <p className={`mt-1 text-sm font-semibold ${changeTextClass(stock.changePercent)}`}>
-            {formatPercent(stock.changePercent)}
-          </p>
-        </div>
-
-        <div className="rounded-xl bg-black/25 p-2.5">
-          <p className="text-[9px] uppercase tracking-[0.15em] text-slate-500">
-            Pulse Δ
-          </p>
-          <p className={`mt-1 text-sm font-semibold ${changeTextClass(pulseChange)}`}>
-            {pulseChange === null ? "—" : `${pulseChange > 0 ? "+" : ""}${pulseChange}`}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <ScoreBar score={stock.score} />
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded-xl border border-emerald-400/15 bg-emerald-500/4 p-3">
-          <p className="text-slate-500">Opportunity</p>
-          <p className={`mt-1 font-semibold ${scoreTextClass(stock.opportunityScore)}`}>
-            {safeScore(stock.opportunityScore) ?? "—"}
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-rose-400/15 bg-rose-500/4 p-3">
-          <p className="text-slate-500">Risk</p>
-          <p
-            className={`mt-1 font-semibold ${scoreTextClass(
-              stock.riskScore === null || stock.riskScore === undefined
-                ? null
-                : 100 - stock.riskScore,
-            )}`}
-          >
-            {safeScore(stock.riskScore) ?? "—"}
-          </p>
-        </div>
-      </div>
-
-      <details className="mt-4 overflow-hidden rounded-xl border border-white/10">
-        <summary className="cursor-pointer px-3 py-3 text-xs font-semibold text-cyan-200">
-          Why Sigi reads this Pulse
-        </summary>
-
-        <div className="border-t border-white/10 px-3 py-3">
-          {stock.reasons?.length ? (
-            <>
-              <p className="text-[9px] uppercase tracking-[0.18em] text-emerald-300">
-                Supporting evidence
-              </p>
-
-              <ul className="mt-2 space-y-2 text-xs leading-5 text-slate-300">
-                {stock.reasons.map((reason) => (
-                  <li key={reason}>✓ {reason}</li>
-                ))}
-              </ul>
-            </>
-          ) : (
-            <p className="text-xs text-slate-500">
-              Supporting evidence is not available yet.
-            </p>
-          )}
-
-          {stock.invalidation ? (
-            <>
-              <p className="mt-4 text-[9px] uppercase tracking-[0.18em] text-rose-300">
-                What changes the read
-              </p>
-
-              <p className="mt-2 text-xs leading-5 text-slate-300">
-                {stock.invalidation}
-              </p>
-            </>
-          ) : null}
-        </div>
-      </details>
     </article>
   );
 }
@@ -1130,45 +978,18 @@ function FutureMapPanel({
 
       <div className="mt-4 grid gap-3 lg:grid-cols-3">
         {scenarios.map(({ name, scenario }) => (
-          <article
+          <FutureScenarioCard
             key={name}
-            className={`rounded-2xl border p-4 ${scenarioClass(name)}`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400">
-                  Scenario
-                </p>
-                <h3 className="mt-1 text-lg font-semibold text-white">
-                  {scenario.label}
-                </h3>
-              </div>
-
-              <div className="text-right">
-                <p className="text-2xl font-bold text-white">
-                  {safeScore(scenario.probability) ?? "—"}%
-                </p>
-                <p className="text-[9px] uppercase tracking-[0.16em] text-slate-500">
-                  Probability
-                </p>
-              </div>
-            </div>
-
-            {Number.isFinite(scenario.expectedLow) && Number.isFinite(scenario.expectedHigh) ? (
-              <p className="mt-4 text-sm text-slate-300">
-                Possible zone:{" "}
-                <strong className="text-white">
-                  ${Number(scenario.expectedLow).toFixed(2)}–${Number(scenario.expectedHigh).toFixed(2)}
-                </strong>
-              </p>
-            ) : null}
-
-            <ul className="mt-4 space-y-2 text-xs leading-5 text-slate-300">
-              {scenario.requirements.map((condition) => (
-                <li key={condition}>• {condition}</li>
-              ))}
-            </ul>
-          </article>
+            type={name.toLowerCase() as "bull" | "base" | "bear"}
+            probability={scenario.probability}
+            title={scenario.label}
+            zone={
+              Number.isFinite(scenario.expectedLow) && Number.isFinite(scenario.expectedHigh)
+                ? `$${Number(scenario.expectedLow).toFixed(2)}–$${Number(scenario.expectedHigh).toFixed(2)}`
+                : null
+            }
+            conditions={scenario.requirements}
+          />
         ))}
       </div>
 
@@ -1374,6 +1195,42 @@ export default function VisionPage() {
     return Number(current) - Number(previous);
   }, [overview.marketPulse]);
 
+  const selectedVisionStock = useMemo(
+    () =>
+      selectedFutureMapSymbol
+        ? overview.stocks.find((stock) => stock.symbol === selectedFutureMapSymbol) ?? null
+        : null,
+    [overview.stocks, selectedFutureMapSymbol],
+  );
+
+  const opportunityMeter = useMemo(() => {
+    if (!selectedFutureMapSymbol || !liveFutureMap || liveFutureMap.symbol !== selectedFutureMapSymbol) {
+      return null;
+    }
+
+    const primaryScenario = liveFutureMap[liveFutureMap.primaryScenario];
+    const score = calculateOpportunityScore({
+      stockPulse: selectedVisionStock?.score ?? null,
+      alignment:
+        primaryScenario.quality?.alignmentScore ??
+        overview.marketPulse?.alignment ??
+        null,
+      bullProbability: liveFutureMap.bullProbability,
+      confidence: liveFutureMap.confidence,
+      riskControl: primaryScenario.quality?.riskControlScore ?? null,
+      rewardRisk:
+        primaryScenario.riskReward?.rewardToRisk ??
+        liveFutureMap.tradePlan?.rewardToRisk ??
+        null,
+    });
+
+    return {
+      symbol: selectedFutureMapSymbol,
+      score,
+      explanation: `${selectedFutureMapSymbol} combines Stock Pulse, alignment, bull probability, confidence, risk control, and reward-to-risk from the current live FutureMap.`,
+    };
+  }, [liveFutureMap, overview.marketPulse?.alignment, selectedFutureMapSymbol, selectedVisionStock]);
+
   async function submitQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -1420,6 +1277,17 @@ export default function VisionPage() {
   }
 
   const marketPulse = overview.marketPulse;
+  const todaysVision =
+    overview.intelligence?.headline && overview.intelligence.summary
+      ? {
+          headline: overview.intelligence.headline,
+          summary: overview.intelligence.summary,
+          opportunity: overview.intelligence.opportunity ?? null,
+          risk: overview.intelligence.risk ?? null,
+          marketScore: overview.marketPulse?.score ?? null,
+          marketState: overview.marketPulse?.state ?? null,
+        }
+      : null;
 
   return (
     <main className="min-h-screen bg-black pb-28 text-white lg:pb-12">
@@ -1495,6 +1363,19 @@ export default function VisionPage() {
           </div>
         </GlassPanel>
 
+        {todaysVision ? (
+          <div className="mt-5">
+            <TodaysVision
+              headline={todaysVision.headline}
+              summary={todaysVision.summary}
+              opportunity={null}
+              risk={null}
+              marketScore={todaysVision.marketScore}
+              marketState={todaysVision.marketState}
+            />
+          </div>
+        ) : null}
+
         {loadError ? (
           <div className="mt-5 rounded-2xl border border-rose-400/20 bg-rose-500/5.5 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1512,7 +1393,17 @@ export default function VisionPage() {
         ) : null}
 
         <div className="mt-5">
-          <SigiPulseCard symbol="NVDA" />
+          <SigiPulseCard
+            symbol={selectedFutureMapSymbol ?? "NVDA"}
+            aside={
+              opportunityMeter ? (
+                <OpportunityMeter
+                  score={opportunityMeter.score}
+                  explanation={opportunityMeter.explanation}
+                />
+              ) : null
+            }
+          />
         </div>
 
         <div className="mt-5 grid gap-5 xl:grid-cols-[0.72fr_1.28fr]">
@@ -1721,44 +1612,6 @@ export default function VisionPage() {
 
         <GlassPanel className="mt-5 p-5 sm:p-6">
           <SectionHeading
-            eyebrow="Opportunity radar"
-            title="Stock Pulse"
-            description="Qualified stocks where multiple independent AMSA systems agree."
-            action={
-              <Link
-                href="/screener"
-                className="hidden rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs font-semibold text-cyan-200 sm:inline-flex"
-              >
-                Open Screener
-              </Link>
-            }
-          />
-
-          {overview.stocks.length ? (
-            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {overview.stocks.slice(0, 6).map((stock) => (
-                <StockPulseCard key={stock.symbol} stock={stock} />
-              ))}
-            </div>
-          ) : (
-            <div className="mt-5">
-              <UnavailableState
-                title="No qualified Stock Pulse readings"
-                description="Vision will display stocks only after security-type filters, minimum data quality, opportunity thresholds, confidence thresholds, and risk limits are satisfied."
-              />
-            </div>
-          )}
-
-          <Link
-            href="/screener"
-            className="mt-4 flex min-h-12 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 text-sm font-semibold text-cyan-200 sm:hidden"
-          >
-            Open full Screener
-          </Link>
-        </GlassPanel>
-
-        <GlassPanel className="mt-5 p-5 sm:p-6">
-          <SectionHeading
             eyebrow="Personal intelligence"
             title="Portfolio Pulse"
             description="How your holdings align with current market and sector Pulse conditions."
@@ -1897,37 +1750,9 @@ export default function VisionPage() {
           ) : null}
         </GlassPanel>
 
-        {overview.lesson ? (
-        <GlassPanel className="mt-5 overflow-hidden p-5 sm:p-6">
-          <SectionHeading
-            eyebrow="Prediction classroom"
-            title="Today's Pulse lesson"
-            description="Sigi explains one market principle through current, measurable evidence."
-          />
-
-            <div className="mt-5 rounded-2xl border border-cyan-400/15 bg-cyan-500/[0.035] p-5">
-              <h3 className="text-lg font-semibold text-white">
-                {overview.lesson.title}
-              </h3>
-
-              <p className="mt-3 text-sm leading-7 text-slate-300">
-                {overview.lesson.explanation}
-              </p>
-
-              {overview.lesson.example ? (
-                <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4">
-                  <p className="text-[9px] uppercase tracking-[0.2em] text-cyan-300">
-                    Watch it happen
-                  </p>
-
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    {overview.lesson.example}
-                  </p>
-                </div>
-              ) : null}
-            </div>
-        </GlassPanel>
-        ) : null}
+        <div className="mt-5">
+          <StockPulseTimeline symbol={selectedFutureMapSymbol ?? "NVDA"} />
+        </div>
 
         <GlassPanel
           id="ask-sigi"
@@ -1992,7 +1817,6 @@ export default function VisionPage() {
                   <p className="text-[9px] uppercase tracking-[0.2em] text-cyan-300">
                     Sigi Pulse analysis
                   </p>
-
                   <h3 className="mt-2 text-xl font-semibold text-white">
                     {answer.headline}
                   </h3>
@@ -2000,44 +1824,42 @@ export default function VisionPage() {
 
                 {Number.isFinite(answer.confidence) ? (
                   <span className="rounded-full border border-cyan-400/20 bg-cyan-500/6 px-3 py-1 text-xs font-semibold text-cyan-200">
-                    {safeScore(answer.confidence)}% confidence
+                    Confidence {safeScore(answer.confidence) ?? "—"}%
                   </span>
                 ) : null}
               </div>
 
-              <p className="mt-4 text-sm leading-7 text-slate-300">
+              <p className="mt-4 text-sm leading-7 text-slate-200">
                 {answer.summary}
               </p>
 
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                {answer.reasons?.length ? (
+              {answer.reasons?.length ? (
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <div>
-                    <p className="text-[9px] uppercase tracking-[0.2em] text-emerald-300">
-                      Supporting evidence
+                    <p className="text-[9px] uppercase tracking-[0.2em] text-cyan-300">
+                      Why
                     </p>
-
                     <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
                       {answer.reasons.map((reason) => (
-                        <li key={reason}>✓ {reason}</li>
+                        <li key={reason}>• {reason}</li>
                       ))}
                     </ul>
                   </div>
-                ) : null}
 
-                {answer.risks?.length ? (
-                  <div>
-                    <p className="text-[9px] uppercase tracking-[0.2em] text-rose-300">
-                      Risks and conflicts
-                    </p>
-
-                    <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
-                      {answer.risks.map((risk) => (
-                        <li key={risk}>• {risk}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </div>
+                  {answer.risks?.length ? (
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.2em] text-rose-300">
+                        Risks
+                      </p>
+                      <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
+                        {answer.risks.map((risk) => (
+                          <li key={risk}>• {risk}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               {answer.relatedSymbols?.length ? (
                 <div className="mt-5 flex flex-wrap gap-2">
