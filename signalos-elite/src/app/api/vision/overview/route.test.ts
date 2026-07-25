@@ -38,6 +38,10 @@ vi.mock("@/lib/vision/personal/classificationFallbacks", () => ({
   getClassificationFallback: vi.fn(() => null),
 }));
 
+vi.mock("@/lib/vision/personal/resolveSymbolClassification", () => ({
+  resolveSymbolClassification: vi.fn(() => null),
+}));
+
 vi.mock("@/lib/intelligence/market-health", () => ({
   calculateMarketHealth: vi.fn(() => 0),
   getMarketRegime: vi.fn(() => "Balanced"),

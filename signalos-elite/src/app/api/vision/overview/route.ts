@@ -22,7 +22,9 @@ import { buildVisionPortfolioIntelligence } from "@/lib/intelligence/visionPortf
 import { getStoredMarketContext } from "@/lib/intelligence/contextStore";
 import { buildPersonalIntelligence } from "@/lib/vision/personal/buildPersonalIntelligence";
 import { getClassificationFallback } from "@/lib/vision/personal/classificationFallbacks";
+import { resolveSymbolClassification } from "@/lib/vision/personal/resolveSymbolClassification";
 import type { PersonalIntelligenceResult } from "@/lib/vision/personal/types";
+import type { PortfolioItem } from "@/lib/intelligence/buildMarketIntel";
 import type {
   VisionChange,
   VisionOpportunity,
@@ -194,6 +196,8 @@ type ApiLesson = {
   explanation: string;
   example?: string | null;
 };
+
+const PORTFOLIO_CLASSIFICATION_CONCURRENCY = 4;
 
 type ApiVisionOverview = {
   status: ApiDataStatus;
@@ -579,6 +583,77 @@ function buildApiVisionOverview(
 
 function canPersistVisionSnapshots() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+async function classifyMissingHoldings(
+  holdings: PortfolioItem[],
+): Promise<Array<PortfolioItem & {
+  symbol?: string;
+  companyName?: string | null;
+  industry?: string | null;
+}>> {
+  const results = [...holdings];
+
+  for (let index = 0; index < holdings.length; index += PORTFOLIO_CLASSIFICATION_CONCURRENCY) {
+    const batch = holdings.slice(index, index + PORTFOLIO_CLASSIFICATION_CONCURRENCY);
+
+    const resolvedBatch = await Promise.all(
+      batch.map(async (holding) => {
+        const symbol = (
+          holding.symbol ??
+          holding.ticker ??
+          ""
+        )
+          .trim()
+          .toUpperCase();
+
+        if (!symbol || (holding.sector && (holding as { industry?: string | null }).industry)) {
+          return {
+            ...holding,
+            symbol,
+          };
+        }
+
+        try {
+          const classification = await resolveSymbolClassification(symbol);
+
+          return {
+            ...holding,
+            symbol,
+            companyName:
+              (holding as { companyName?: string | null }).companyName ??
+              holding.name ??
+              classification?.companyName ??
+              null,
+            sector:
+              holding.sector ??
+              classification?.sector ??
+              null,
+            industry:
+              (holding as { industry?: string | null }).industry ??
+              classification?.industry ??
+              null,
+          };
+        } catch (error) {
+          console.error("Portfolio classification failed", {
+            symbol,
+            error,
+          });
+
+          return {
+            ...holding,
+            symbol,
+          };
+        }
+      }),
+    );
+
+    resolvedBatch.forEach((holding, batchIndex) => {
+      results[index + batchIndex] = holding;
+    });
+  }
+
+  return results;
 }
 
 function toNumber(value: unknown, fallback = 0) {
@@ -1233,7 +1308,10 @@ function getOverviewStatus({
 export async function GET() {
   const storedMarketContext = await getStoredMarketContext();
   const portfolioHoldings = storedMarketContext.portfolio;
-  const portfolioHoldingsWithClassification = portfolioHoldings.map((holding) => {
+  const liveClassifiedHoldings = await classifyMissingHoldings(
+    portfolioHoldings,
+  );
+  const portfolioHoldingsWithClassification = liveClassifiedHoldings.map((holding) => {
     const symbol = (
       holding.symbol ??
       holding.ticker ??
@@ -1247,7 +1325,13 @@ export async function GET() {
     return {
       ...holding,
       symbol,
+      name:
+        holding.name ??
+        holding.companyName ??
+        fallback?.companyName ??
+        null,
       companyName:
+        holding.companyName ??
         holding.name ??
         fallback?.companyName ??
         null,
@@ -1256,10 +1340,24 @@ export async function GET() {
         fallback?.sector ??
         null,
       industry:
+        holding.industry ??
         fallback?.industry ??
         null,
     };
   });
+
+  const unresolvedSymbols = portfolioHoldingsWithClassification
+    .filter((holding) => !holding.sector || !holding.industry)
+    .map((holding) => holding.symbol ?? holding.ticker ?? "")
+    .filter(Boolean);
+
+  console.info("Portfolio classification summary", {
+    total: portfolioHoldingsWithClassification.length,
+    classified:
+      portfolioHoldingsWithClassification.length - unresolvedSymbols.length,
+    unresolvedSymbols,
+  });
+
   const personalIntelligence = buildPersonalIntelligence(
     portfolioHoldingsWithClassification,
   );
