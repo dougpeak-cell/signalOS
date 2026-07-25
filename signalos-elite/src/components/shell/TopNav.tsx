@@ -256,9 +256,6 @@ export default function TopNav({
                 className="text-[13px] font-medium text-white/72 transition hover:text-white"
               >
                 {item.label}
-                {item.href === "/vision" && features.visionBeta ? (
-                  <span className="ml-1 text-[9px] text-cyan-300">BETA</span>
-                ) : null}
               </Link>
             ))}
 

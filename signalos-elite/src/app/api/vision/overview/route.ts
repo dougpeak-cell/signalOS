@@ -20,6 +20,9 @@ import {
 import { buildVisionHorizonViews } from "@/lib/intelligence/visionHorizons";
 import { buildVisionPortfolioIntelligence } from "@/lib/intelligence/visionPortfolio";
 import { getStoredMarketContext } from "@/lib/intelligence/contextStore";
+import { buildPersonalIntelligence } from "@/lib/vision/personal/buildPersonalIntelligence";
+import { getClassificationFallback } from "@/lib/vision/personal/classificationFallbacks";
+import type { PersonalIntelligenceResult } from "@/lib/vision/personal/types";
 import type {
   VisionChange,
   VisionOpportunity,
@@ -91,6 +94,7 @@ type ApiPulseReading = {
   confidence: number | null;
   stability?: number | null;
   alignment?: number | null;
+  calculatedAt?: string | null;
   updatedAt?: string | null;
   components?: ApiPulseComponent[];
   reasons?: string[];
@@ -208,6 +212,7 @@ type ApiVisionOverview = {
     opportunity?: string | null;
     risk?: string | null;
   } | null;
+  personalIntelligence: PersonalIntelligenceResult;
   lesson: ApiLesson | null;
 };
 
@@ -280,6 +285,7 @@ function buildMarketPulse(
     confidence: snapshot.market.confidence,
     stability: getAverage([snapshot.market.trend, snapshot.market.volatility]),
     alignment: getAverage([snapshot.market.breadth, sectorAlignment]),
+    calculatedAt: updatedAt,
     updatedAt,
     regime: snapshot.market.regime,
     breadth: snapshot.market.breadth,
@@ -365,6 +371,7 @@ function buildSectorPulses(snapshot: VisionOverview, previousSnapshot: VisionOve
       confidence: snapshot.market.confidence,
       stability: getAverage([sector.week, sector.month, sector.year]),
       alignment: getAverage([sector.score, snapshot.market.health]),
+      calculatedAt: updatedAt,
       updatedAt,
     };
   });
@@ -405,6 +412,7 @@ function buildStockPulses(snapshot: VisionOverview, previousSnapshot: VisionOver
         opportunity.scores.opportunity,
         snapshot.market.health,
       ]),
+      calculatedAt: updatedAt,
       updatedAt,
       reasons: opportunity.reasons,
       risks: opportunity.risks,
@@ -491,6 +499,7 @@ function buildPortfolioPulse(
       portfolio.holdingsCount > 0
         ? clampScore((portfolio.alignedHoldings / portfolio.holdingsCount) * 100)
         : null,
+    calculatedAt: updatedAt,
     updatedAt,
     trackedValue: portfolio.totalValue,
     dayChangePercent: getPortfolioDayChangePercent(portfolio),
@@ -536,6 +545,7 @@ function buildApiChanges(changes: VisionChange[]): ApiVisionChange[] {
 function buildApiVisionOverview(
   snapshot: VisionOverview,
   previousSnapshot: VisionOverview | null,
+  personalIntelligence: PersonalIntelligenceResult,
 ): ApiVisionOverview {
   const marketPulse = buildMarketPulse(snapshot, previousSnapshot, snapshot.updatedAt);
   const sectors = buildSectorPulses(snapshot, previousSnapshot, snapshot.updatedAt);
@@ -544,7 +554,10 @@ function buildApiVisionOverview(
 
   return {
     status: snapshot.status,
-    updatedAt: snapshot.updatedAt,
+    updatedAt:
+      marketPulse?.calculatedAt ??
+      marketPulse?.updatedAt ??
+      snapshot.updatedAt,
     marketOpen: null,
     marketPulse,
     sectors,
@@ -559,6 +572,7 @@ function buildApiVisionOverview(
       opportunity: snapshot.summary.opportunityRead,
       risk: snapshot.summary.riskRead,
     },
+    personalIntelligence,
     lesson: null,
   };
 }
@@ -1217,11 +1231,41 @@ function getOverviewStatus({
 }
 
 export async function GET() {
-  const updatedAt = new Date().toISOString();
   const storedMarketContext = await getStoredMarketContext();
+  const portfolioHoldings = storedMarketContext.portfolio;
+  const portfolioHoldingsWithClassification = portfolioHoldings.map((holding) => {
+    const symbol = (
+      holding.symbol ??
+      holding.ticker ??
+      ""
+    )
+      .trim()
+      .toUpperCase();
+
+    const fallback = getClassificationFallback(symbol);
+
+    return {
+      ...holding,
+      symbol,
+      companyName:
+        holding.name ??
+        fallback?.companyName ??
+        null,
+      sector:
+        holding.sector ??
+        fallback?.sector ??
+        null,
+      industry:
+        fallback?.industry ??
+        null,
+    };
+  });
+  const personalIntelligence = buildPersonalIntelligence(
+    portfolioHoldingsWithClassification,
+  );
   const portfolioTickers = Array.from(
     new Set(
-      storedMarketContext.portfolio
+      portfolioHoldingsWithClassification
         .map((item) => normalizeTicker(item.ticker ?? item.symbol ?? ""))
         .filter(Boolean)
     )
@@ -1304,6 +1348,12 @@ export async function GET() {
   const sectorStrengthMap = new Map(
     sectorRows.map((row) => [row.sector.toLowerCase(), row.score])
   );
+  const previousSnapshotRecord = await getLatestVisionSnapshot();
+  const previousSnapshot = previousSnapshotRecord?.snapshot ?? null;
+  const calculationUpdatedAt =
+    sectorComparison?.generatedAt ??
+    previousSnapshot?.updatedAt ??
+    new Date().toISOString();
 
   let opportunities: VisionOpportunity[] = [];
 
@@ -1350,7 +1400,7 @@ export async function GET() {
         const weekClose = getCloseOnOrBefore(bars, shiftDays(now, 7));
         const monthClose = getCloseOnOrBefore(bars, shiftDays(now, 30));
 
-        return buildVisionOpportunity(item, candidate, updatedAt, {
+        return buildVisionOpportunity(item, candidate, calculationUpdatedAt, {
           changeWeek: computePercentDelta(currentPrice, weekClose),
           changeMonth: computePercentDelta(currentPrice, monthClose),
           sectorStrength: sectorStrengthMap.get((item.sector ?? "Unclassified").toLowerCase()) ?? 50,
@@ -1430,7 +1480,7 @@ export async function GET() {
     riskRead: risks[0]?.explanation ?? "Risk conditions are not fully available right now.",
   };
   const portfolio = await buildVisionPortfolioIntelligence({
-    portfolio: storedMarketContext.portfolio,
+    portfolio: portfolioHoldingsWithClassification,
     quoteMap: quoteMap ?? {},
     sectors: sectors.snapshot,
     leader,
@@ -1447,7 +1497,7 @@ export async function GET() {
 
   const payload: VisionOverview = {
     status,
-    updatedAt,
+    updatedAt: calculationUpdatedAt,
     market,
     sectors,
     opportunities,
@@ -1457,10 +1507,12 @@ export async function GET() {
     summary,
   };
 
-  const previousSnapshotRecord = await getLatestVisionSnapshot();
-  const previousSnapshot = previousSnapshotRecord?.snapshot ?? null;
   const currentFingerprint = getSnapshotFingerprint(payload);
   const previousFingerprint = previousSnapshotRecord?.fingerprint ?? null;
+
+  if (currentFingerprint === previousFingerprint && previousSnapshot?.updatedAt) {
+    payload.updatedAt = previousSnapshot.updatedAt;
+  }
 
   payload.changes = buildVisionChanges(previousSnapshot, payload);
 
@@ -1468,7 +1520,11 @@ export async function GET() {
     await persistVisionSnapshot(payload, currentFingerprint);
   }
 
-  const apiPayload = buildApiVisionOverview(payload, previousSnapshot);
+  const apiPayload = buildApiVisionOverview(
+    payload,
+    previousSnapshot,
+    personalIntelligence,
+  );
 
   return NextResponse.json(apiPayload);
 }

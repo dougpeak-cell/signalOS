@@ -158,7 +158,9 @@ export type AMSAStockPulse = {
    */
   invalidationConditions: string[];
 
+  updatedAt?: string | null;
   calculatedAt: string;
+  recordedAt?: string | null;
 };
 
 /* =========================================================

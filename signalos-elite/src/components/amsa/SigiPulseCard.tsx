@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import type { AMSAStockPulse } from "@/lib/amsa";
 import { VisionPulseHero } from "@/components/vision/VisionPulseHero";
+import { formatMarketTimestamp } from "@/lib/market/formatMarketTimestamp";
 
 type SigiPulseCardProps = {
   symbol: string;
@@ -34,25 +35,6 @@ function toPulseDirection(
   }
 
   return "stable";
-}
-
-function formatPulseUpdatedAt(value: string | null | undefined) {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    month: "short",
-    day: "numeric",
-  }).format(date);
 }
 
 export default function SigiPulseCard({
@@ -135,6 +117,15 @@ export default function SigiPulseCard({
     );
   }
 
+  const pulseUpdatedAt =
+    pulse.updatedAt ??
+    pulse.calculatedAt ??
+    pulse.recordedAt ??
+    null;
+
+  const formattedPulseUpdatedAt =
+    formatMarketTimestamp(pulseUpdatedAt);
+
   return (
     <section className="space-y-5">
       <div className={aside ? "grid gap-5 xl:grid-cols-[1fr_320px] xl:items-start" : ""}>
@@ -144,7 +135,7 @@ export default function SigiPulseCard({
           state={pulse.state}
           confidence={pulse.confidence}
           direction={toPulseDirection(pulse.direction)}
-          updatedAt={formatPulseUpdatedAt(pulse.calculatedAt)}
+          updatedAt={formattedPulseUpdatedAt}
         />
 
         {aside ? <div>{aside}</div> : null}

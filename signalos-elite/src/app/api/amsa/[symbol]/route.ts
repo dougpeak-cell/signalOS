@@ -133,6 +133,7 @@ export async function GET(
     return NextResponse.json({
       success: true,
       pulse,
+      updatedAt: pulse.calculatedAt,
     });
   } catch (error) {
     console.error("AMSA route error:", error);

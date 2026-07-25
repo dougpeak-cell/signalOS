@@ -92,8 +92,8 @@ export function VisionPulseHero({
             </p>
 
             {updatedAt ? (
-              <p className="mt-3 text-[10px] uppercase tracking-[0.16em] text-slate-600">
-                Updated {updatedAt}
+              <p className="mt-3 text-[9px] font-medium uppercase tracking-[0.18em] text-slate-600">
+                Updated {updatedAt} ET
               </p>
             ) : null}
           </div>

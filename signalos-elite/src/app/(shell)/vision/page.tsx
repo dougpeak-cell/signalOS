@@ -4,14 +4,17 @@ import FutureMapTradePlan from "@/components/amsa/FutureMapTradePlan";
 import SigiPulseCard from "@/components/amsa/SigiPulseCard";
 import { FutureScenarioCard } from "@/components/vision/FutureScenarioCard";
 import { OpportunityMeter } from "@/components/vision/OpportunityMeter";
+import { PersonalIntelligenceHoldings } from "@/components/vision/PersonalIntelligenceHoldings";
+import { PortfolioClassificationProgress } from "@/components/vision/PortfolioClassificationProgress";
 import StockPulseTimeline from "@/components/vision/StockPulseTimeline";
 import { TodaysVision } from "@/components/vision/TodaysVision";
-import { VisionTimestamp } from "@/components/vision/VisionTimestamp";
 import type {
   AMSAFutureMap,
   AMSAFutureMapHorizon,
 } from "@/lib/amsa";
+import { formatMarketTimestamp } from "@/lib/market/formatMarketTimestamp";
 import { calculateOpportunityScore } from "@/lib/vision/opportunityScore";
+import type { PersonalIntelligenceResult } from "@/lib/vision/personal/types";
 import Link from "next/link";
 import {
   FormEvent,
@@ -65,6 +68,7 @@ type PulseReading = {
   stability?: number | null;
   alignment?: number | null;
   updatedAt?: string | null;
+  calculatedAt?: string | null;
   components?: PulseComponent[];
   reasons?: string[];
   risks?: string[];
@@ -173,6 +177,7 @@ type Lesson = {
 type VisionOverview = {
   status: DataStatus;
   updatedAt: string | null;
+  generatedAt?: string | null;
   marketOpen?: boolean | null;
 
   marketPulse: MarketPulse | null;
@@ -189,6 +194,8 @@ type VisionOverview = {
     opportunity?: string | null;
     risk?: string | null;
   } | null;
+
+  personalIntelligence?: PersonalIntelligenceResult | null;
 
   lesson: Lesson | null;
 };
@@ -223,6 +230,7 @@ const EMPTY_OVERVIEW: VisionOverview = {
   changes: [],
   futureMap: null,
   intelligence: null,
+  personalIntelligence: null,
   lesson: null,
 };
 
@@ -399,50 +407,6 @@ function SectionHeading({
       </div>
 
       {action}
-    </div>
-  );
-}
-
-function StatusBadge({
-  status,
-  updatedAt,
-}: {
-  status: DataStatus;
-  updatedAt: string | null;
-}) {
-  const hasValidUpdatedAt =
-    typeof updatedAt === "string" &&
-    !Number.isNaN(new Date(updatedAt).getTime());
-
-  const statusLabel =
-    status === "partial"
-      ? "Partial"
-      : status === "unavailable"
-        ? "Awaiting"
-        : null;
-
-  const statusClasses =
-    status === "partial"
-      ? "border-amber-400/25 bg-amber-500/10 text-amber-200"
-      : "border-slate-500/25 bg-slate-500/10 text-slate-300";
-
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {hasValidUpdatedAt ? (
-        <VisionTimestamp updatedAt={updatedAt} />
-      ) : (
-        <span className="rounded-full border border-slate-500/25 bg-slate-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-300">
-          Awaiting live intelligence
-        </span>
-      )}
-
-      {statusLabel ? (
-        <span
-          className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${statusClasses}`}
-        >
-          {statusLabel}
-        </span>
-      ) : null}
     </div>
   );
 }
@@ -714,39 +678,25 @@ function SectorPulseCard({
    Portfolio Pulse
 ========================================================= */
 
-function PortfolioPulsePanel({
+function ReliablePortfolioSummary({
+  intelligence,
   portfolio,
 }: {
+  intelligence: PersonalIntelligenceResult;
   portfolio: PortfolioPulse | null;
 }) {
   if (!portfolio) {
     return (
-      <UnavailableState
-        title="Portfolio Pulse unavailable"
-        description="Add holdings to Portfolio and connect sector classification before Vision can calculate alignment, concentration, and portfolio sensitivity."
+      <PendingCard
+        eyebrow="Portfolio Pulse"
+        title="Reliable summary unavailable"
+        description="Portfolio Pulse details will appear when aligned portfolio analytics are available."
       />
     );
   }
 
-  const coverage = safeScore(portfolio.classificationCoverage);
-  const analysisReady = coverage !== null && coverage >= 80;
-
   return (
     <div>
-      {!analysisReady ? (
-        <div className="mb-4 rounded-2xl border border-amber-400/20 bg-amber-500/5.5 p-4">
-          <p className="font-semibold text-amber-200">
-            Portfolio classification incomplete
-          </p>
-
-          <p className="mt-2 text-sm leading-6 text-slate-400">
-            Vision classified {coverage ?? 0}% of tracked holdings. At least 80%
-            classification coverage is required before sector alignment and
-            concentration conclusions are considered reliable.
-          </p>
-        </div>
-      ) : null}
-
       <div className="grid gap-5 lg:grid-cols-[0.65fr_1.35fr]">
         <div className="rounded-2xl border border-white/10 bg-white/2.5 p-5">
           <PulseGauge pulse={portfolio} label="Portfolio Pulse" size="small" />
@@ -757,7 +707,7 @@ function PortfolioPulsePanel({
                 Tracked value
               </p>
               <p className="mt-1 font-semibold text-white">
-                {formatMoney(portfolio.trackedValue)}
+                {formatMoney(intelligence.trackedValue ?? portfolio.trackedValue)}
               </p>
             </div>
 
@@ -786,7 +736,7 @@ function PortfolioPulsePanel({
               <span
                 className={`mt-1 inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold ${riskClass(portfolio.concentrationLevel)}`}
               >
-                {portfolio.concentrationLevel ?? "Unavailable"}
+                {intelligence.concentrationLevel ?? portfolio.concentrationLevel ?? "Unavailable"}
               </span>
             </div>
           </div>
@@ -800,15 +750,15 @@ function PortfolioPulsePanel({
               </p>
 
               <p className="mt-2 text-lg font-semibold text-white">
-                {analysisReady
-                  ? portfolio.largestSector ?? "Unavailable"
-                  : "Awaiting classification"}
+                {intelligence.largestExposure?.sector ?? portfolio.largestSector ?? "Unavailable"}
               </p>
 
               <p className="mt-1 text-sm text-slate-500">
-                {analysisReady && Number.isFinite(portfolio.largestSectorWeight)
-                  ? `${Number(portfolio.largestSectorWeight).toFixed(1)}% of tracked value`
-                  : "Reliable exposure analysis is not available yet."}
+                {Number.isFinite(intelligence.largestExposure?.weight)
+                  ? `${Number(intelligence.largestExposure?.weight).toFixed(1)}% of tracked value`
+                  : Number.isFinite(portfolio.largestSectorWeight)
+                    ? `${Number(portfolio.largestSectorWeight).toFixed(1)}% of tracked value`
+                    : "Reliable exposure analysis is not available yet."}
               </p>
             </div>
 
@@ -818,9 +768,7 @@ function PortfolioPulsePanel({
               </p>
 
               <p className="mt-2 text-lg font-semibold text-white">
-                {analysisReady
-                  ? `${portfolio.alignedHoldings ?? "—"} holdings aligned`
-                  : "Analysis paused"}
+                {`${portfolio.alignedHoldings ?? "—"} holdings aligned`}
               </p>
 
               <p className="mt-1 text-sm text-slate-500">
@@ -830,7 +778,7 @@ function PortfolioPulsePanel({
             </div>
           </div>
 
-          {analysisReady && portfolio.sectorExposure?.length ? (
+          {portfolio.sectorExposure?.length ? (
             <div className="mt-4 rounded-2xl border border-white/10 bg-white/2.5 p-4">
               <p className="text-[9px] uppercase tracking-[0.2em] text-cyan-300">
                 Sector exposure
@@ -913,6 +861,32 @@ function PortfolioPulsePanel({
           </ul>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function PendingCard({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-slate-950/30 p-5">
+      <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300">
+        {eyebrow}
+      </p>
+
+      <h3 className="mt-3 text-lg font-semibold text-white">
+        {title}
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        {description}
+      </p>
     </div>
   );
 }
@@ -1289,6 +1263,18 @@ export default function VisionPage() {
         }
       : null;
 
+  const visionUpdatedAt =
+    overview?.updatedAt ??
+    overview?.generatedAt ??
+    overview?.marketPulse?.updatedAt ??
+    overview?.marketPulse?.calculatedAt ??
+    null;
+
+  const formattedVisionUpdatedAt =
+    formatMarketTimestamp(visionUpdatedAt);
+  const personalIntelligence =
+    overview?.personalIntelligence;
+
   return (
     <main className="min-h-screen bg-black pb-28 text-white lg:pb-12">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(14,165,233,0.12),transparent_34%),radial-gradient(circle_at_85%_18%,rgba(45,212,191,0.075),transparent_31%)]" />
@@ -1299,10 +1285,17 @@ export default function VisionPage() {
           <div className="pointer-events-none absolute right-20 top-14 h-44 w-44 rounded-full border border-cyan-300/10" />
 
           <div className="relative">
-            <StatusBadge
-              status={overview.status}
-              updatedAt={overview.updatedAt}
-            />
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="rounded-full border border-cyan-400/30 bg-cyan-400/[0.06] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-200">
+                Latest Market Intelligence
+              </span>
+
+              {formattedVisionUpdatedAt ? (
+                <span className="text-xs text-slate-500">
+                  Updated {formattedVisionUpdatedAt} ET
+                </span>
+              ) : null}
+            </div>
 
             <div className="mt-6 grid gap-8 xl:grid-cols-[1.25fr_0.75fr] xl:items-center">
               <div>
@@ -1611,23 +1604,82 @@ export default function VisionPage() {
         </GlassPanel>
 
         <GlassPanel className="mt-5 p-5 sm:p-6">
-          <SectionHeading
-            eyebrow="Personal intelligence"
-            title="Portfolio Pulse"
-            description="How your holdings align with current market and sector Pulse conditions."
-            action={
-              <Link
-                href="/portfolio"
-                className="text-xs font-semibold text-cyan-300 hover:text-cyan-100"
-              >
-                Open Portfolio →
-              </Link>
-            }
-          />
+          {personalIntelligence ? (
+            <section className="rounded-[28px] border border-cyan-400/20 bg-[#020b18] p-6 md:p-8">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-cyan-300">
+                    Personal Intelligence
+                  </p>
 
-          <div className="mt-5">
-            <PortfolioPulsePanel portfolio={overview.portfolioPulse} />
-          </div>
+                  <h2 className="mt-3 text-2xl font-semibold text-white">
+                    Portfolio Pulse
+                  </h2>
+
+                  <p className="mt-2 text-sm text-slate-400">
+                    How your holdings align with current market and
+                    sector Pulse conditions.
+                  </p>
+                </div>
+
+                <a
+                  href="/portfolio"
+                  className="text-sm font-semibold text-cyan-300 transition hover:text-cyan-200"
+                >
+                  Open Portfolio →
+                </a>
+              </div>
+
+              <div className="mt-6">
+                <PortfolioClassificationProgress
+                  coverage={personalIntelligence.coverage}
+                />
+              </div>
+
+              {personalIntelligence.coverage.isReliable ? (
+                <div className="mt-6">
+                  <ReliablePortfolioSummary
+                    intelligence={personalIntelligence}
+                    portfolio={overview.portfolioPulse}
+                  />
+                </div>
+              ) : (
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  <PendingCard
+                    eyebrow="Largest Exposure"
+                    title="Building exposure analysis"
+                    description="Reliable sector exposure will appear after classification coverage reaches the required level."
+                  />
+
+                  <PendingCard
+                    eyebrow="Pulse Alignment"
+                    title="Analysis paused"
+                    description="Alignment compares your holdings with current market, sector, industry, and stock Pulse conditions."
+                  />
+                </div>
+              )}
+
+              <div className="mt-6">
+                <PersonalIntelligenceHoldings
+                  holdings={personalIntelligence.holdings}
+                />
+              </div>
+            </section>
+          ) : (
+            <SectionHeading
+              eyebrow="Personal intelligence"
+              title="Portfolio Pulse"
+              description="How your holdings align with current market and sector Pulse conditions."
+              action={
+                <Link
+                  href="/portfolio"
+                  className="text-xs font-semibold text-cyan-300 hover:text-cyan-100"
+                >
+                  Open Portfolio →
+                </Link>
+              }
+            />
+          )}
         </GlassPanel>
 
         {overview.watchlistChanges.length ? (
