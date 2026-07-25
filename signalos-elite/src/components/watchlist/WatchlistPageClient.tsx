@@ -9,6 +9,7 @@ import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import ReturnToContextButton from "@/components/shared/ReturnToContextButton";
 import TickerLogo from "@/components/stocks/TickerLogo";
 import TickerHover from "@/components/sigi/TickerHover";
+import WatchlistPulseMovers from "@/components/amsa/WatchlistPulseMovers";
 import { buildTargetEngine } from "@/lib/engines/targetEngine";
 import {
   isOpportunitiesView,
@@ -259,7 +260,13 @@ function WatchlistStockCard({
 
   useEffect(() => {
     if (forceQuickView) {
-      setQuickViewOpen(true);
+      const frame = window.requestAnimationFrame(() => {
+        setQuickViewOpen(true);
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frame);
+      };
     }
   }, [forceQuickView]);
 
@@ -599,8 +606,11 @@ export default function WatchlistPageClient({
       setWatchlist(readWatchlist());
     };
 
+    const frame = window.requestAnimationFrame(() => {
+      setMounted(true);
+    });
+
     sync();
-    setMounted(true);
 
     const onStorage = () => sync();
     const onCustomUpdate = () => sync();
@@ -612,6 +622,7 @@ export default function WatchlistPageClient({
     );
 
     return () => {
+      window.cancelAnimationFrame(frame);
       window.removeEventListener("storage", onStorage);
       window.removeEventListener(
         "signalos-watchlist-updated",
@@ -794,6 +805,10 @@ export default function WatchlistPageClient({
         {savedStocks.length === 0 ? (
           <section className={isMobilePreview ? "grid gap-4" : "grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]"}>
             <div className="space-y-4">
+              <WatchlistPulseMovers
+                symbols={opportunityAwareRows.map((stock) => stock.ticker)}
+              />
+
               <div className="rounded-3xl border border-white/10 bg-white/4 p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>

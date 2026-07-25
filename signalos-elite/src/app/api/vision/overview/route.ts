@@ -64,8 +64,503 @@ const BREAKOUT_STAGE_WEIGHT: Record<string, number> = {
   "Breakout Active": 3,
 };
 
+type ApiDataStatus = "live" | "partial" | "unavailable";
+type ApiDirection = "rising" | "falling" | "stable";
+type ApiPulseState =
+  | "Elite"
+  | "Strong"
+  | "Constructive"
+  | "Balanced"
+  | "Weak"
+  | "Critical";
+type ApiRiskLevel = "Low" | "Moderate" | "Elevated" | "High";
+
+type ApiPulseComponent = {
+  key: string;
+  label: string;
+  score: number | null;
+  direction?: ApiDirection;
+  explanation?: string;
+};
+
+type ApiPulseReading = {
+  score: number | null;
+  previousScore?: number | null;
+  state: ApiPulseState | null;
+  direction: ApiDirection | null;
+  confidence: number | null;
+  stability?: number | null;
+  alignment?: number | null;
+  updatedAt?: string | null;
+  components?: ApiPulseComponent[];
+  reasons?: string[];
+  risks?: string[];
+  invalidation?: string | null;
+};
+
+type ApiMarketPulse = ApiPulseReading & {
+  regime?: VisionRegime | null;
+  breadth?: number | null;
+  volatility?: number | null;
+};
+
+type ApiSectorPulse = ApiPulseReading & {
+  sector: string;
+  symbol: string;
+  today: number | null;
+  week: number | null;
+  month: number | null;
+  year: number | null;
+  rank: number | null;
+  previousRank?: number | null;
+  valuationState?: string | null;
+  breakoutState?: string | null;
+};
+
+type ApiStockPulse = ApiPulseReading & {
+  symbol: string;
+  company?: string | null;
+  sector?: string | null;
+  price: number | null;
+  changePercent: number | null;
+  opportunityScore?: number | null;
+  riskScore?: number | null;
+};
+
+type ApiPortfolioPulse = ApiPulseReading & {
+  trackedValue?: number | null;
+  dayChangePercent?: number | null;
+  classificationCoverage?: number | null;
+  largestSector?: string | null;
+  largestSectorWeight?: number | null;
+  alignedHoldings?: number | null;
+  totalHoldings?: number | null;
+  concentrationLevel?: ApiRiskLevel | null;
+  sectorExposure?: {
+    sector: string;
+    weight: number;
+  }[];
+  topHoldings?: {
+    symbol: string;
+    weight: number;
+    sector?: string | null;
+    pulse?: number | null;
+    direction?: ApiDirection | null;
+  }[];
+  conflicts?: string[];
+};
+
+type ApiWatchlistPulseChange = {
+  symbol: string;
+  company?: string | null;
+  pulse: number | null;
+  previousPulse: number | null;
+  change: number | null;
+  direction: ApiDirection | null;
+  reason?: string | null;
+};
+
+type ApiVisionChange = {
+  id: string;
+  message: string;
+  importance: VisionChange["importance"];
+  category: "market" | "sector" | "stock" | "portfolio" | "risk" | "data";
+};
+
+type ApiFutureScenario = {
+  name: "Bull" | "Base" | "Bear";
+  probability: number | null;
+  priceLow?: number | null;
+  priceHigh?: number | null;
+  conditions: string[];
+};
+
+type ApiFutureMap = {
+  symbol: string;
+  horizonDays: number;
+  currentDirection: "Bullish" | "Neutral" | "Bearish" | null;
+  confidence: number | null;
+  mostImportantVariable?: string | null;
+  invalidation?: string | null;
+  scenarios: ApiFutureScenario[];
+};
+
+type ApiLesson = {
+  title: string;
+  explanation: string;
+  example?: string | null;
+};
+
+type ApiVisionOverview = {
+  status: ApiDataStatus;
+  updatedAt: string | null;
+  marketOpen?: boolean | null;
+  marketPulse: ApiMarketPulse | null;
+  sectors: ApiSectorPulse[];
+  stocks: ApiStockPulse[];
+  portfolioPulse: ApiPortfolioPulse | null;
+  watchlistChanges: ApiWatchlistPulseChange[];
+  changes: ApiVisionChange[];
+  futureMap: ApiFutureMap | null;
+  intelligence: {
+    headline?: string | null;
+    summary?: string | null;
+    opportunity?: string | null;
+    risk?: string | null;
+  } | null;
+  lesson: ApiLesson | null;
+};
+
 function clampScore(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function pulseStateFromScore(score: number | null): ApiPulseState | null {
+  if (!Number.isFinite(score)) return null;
+  if (Number(score) >= 90) return "Elite";
+  if (Number(score) >= 80) return "Strong";
+  if (Number(score) >= 68) return "Constructive";
+  if (Number(score) >= 48) return "Balanced";
+  if (Number(score) >= 30) return "Weak";
+  return "Critical";
+}
+
+function directionFromDelta(value: number | null | undefined): ApiDirection | null {
+  if (!Number.isFinite(value)) return null;
+  if (Number(value) > 0.25) return "rising";
+  if (Number(value) < -0.25) return "falling";
+  return "stable";
+}
+
+function directionFromScores(current: number | null | undefined, previous: number | null | undefined) {
+  if (!Number.isFinite(current) || !Number.isFinite(previous)) {
+    return null;
+  }
+
+  return directionFromDelta(Number(current) - Number(previous));
+}
+
+function getAverage(values: Array<number | null | undefined>) {
+  const valid = values.filter((value): value is number => Number.isFinite(value));
+
+  if (!valid.length) {
+    return null;
+  }
+
+  return clampScore(valid.reduce((sum, value) => sum + value, 0) / valid.length);
+}
+
+function toApiRiskLevel(level: string | null | undefined, elevated = false): ApiRiskLevel | null {
+  if (level === "High") return "High";
+  if (level === "Moderate") return elevated ? "Elevated" : "Moderate";
+  if (level === "Low") return "Low";
+  return null;
+}
+
+function toChangeCategory(type: VisionChange["type"]): ApiVisionChange["category"] {
+  if (type === "sector-rank") return "sector";
+  if (type === "new-opportunity" || type === "removed-opportunity") return "stock";
+  if (type === "risk-change") return "risk";
+  return "market";
+}
+
+function buildMarketPulse(
+  snapshot: VisionOverview,
+  previousSnapshot: VisionOverview | null,
+  updatedAt: string
+): ApiMarketPulse {
+  const previousScore = previousSnapshot?.market.health ?? null;
+  const sectorAlignment = getAverage(snapshot.sectors.snapshot.slice(0, 3).map((sector) => sector.score));
+
+  return {
+    score: snapshot.market.health,
+    previousScore,
+    state: pulseStateFromScore(snapshot.market.health),
+    direction: directionFromScores(snapshot.market.health, previousScore),
+    confidence: snapshot.market.confidence,
+    stability: getAverage([snapshot.market.trend, snapshot.market.volatility]),
+    alignment: getAverage([snapshot.market.breadth, sectorAlignment]),
+    updatedAt,
+    regime: snapshot.market.regime,
+    breadth: snapshot.market.breadth,
+    volatility: snapshot.market.volatility,
+    components: [
+      {
+        key: "trend",
+        label: "Trend",
+        score: snapshot.market.trend,
+        direction: directionFromDelta(snapshot.market.trend - 50) ?? undefined,
+        explanation: "Major index trend strength is derived from SPY, QQQ, and IWM movement.",
+      },
+      {
+        key: "volume",
+        label: "Volume",
+        score: null,
+        explanation: "A dedicated unified volume component is not connected to Vision Overview yet.",
+      },
+      {
+        key: "breadth",
+        label: "Participation",
+        score: snapshot.market.breadth,
+        direction: directionFromDelta(snapshot.market.breadth - 50) ?? undefined,
+        explanation: "Breadth reflects how many qualified candidates and sectors are participating.",
+      },
+      {
+        key: "structure",
+        label: "Structure",
+        score: snapshot.market.health,
+        direction: directionFromScores(snapshot.market.health, previousScore) ?? undefined,
+        explanation: "Overall market structure combines trend, breadth, sector participation, and volatility.",
+      },
+      {
+        key: "sector",
+        label: "Sector Alignment",
+        score: sectorAlignment,
+        direction: directionFromDelta((sectorAlignment ?? 50) - 50) ?? undefined,
+        explanation: "Alignment reflects whether the strongest sectors confirm the broader market read.",
+      },
+      {
+        key: "risk",
+        label: "Risk Control",
+        score: snapshot.market.volatility,
+        direction: directionFromDelta(snapshot.market.volatility - 50) ?? undefined,
+        explanation: "Higher scores indicate calmer volatility conditions and better risk control.",
+      },
+    ],
+    reasons: [
+      snapshot.sectors.leader ? `${snapshot.sectors.leader} is currently leading sector rotation.` : null,
+      snapshot.sectors.improving[0]
+        ? `${snapshot.sectors.improving[0]} is showing improving participation.`
+        : null,
+      snapshot.summary.marketRead,
+    ].filter((value): value is string => Boolean(value)),
+    risks: snapshot.risks.map((risk) => risk.explanation).slice(0, 3),
+    invalidation: snapshot.risks[0]?.explanation ?? null,
+  };
+}
+
+function buildSectorPulses(snapshot: VisionOverview, previousSnapshot: VisionOverview | null, updatedAt: string) {
+  const previousSectorRanks = previousSnapshot ? getSectorRankMap(previousSnapshot) : new Map();
+
+  return snapshot.sectors.snapshot.map((sector, index): ApiSectorPulse => {
+    const previousSector = previousSectorRanks.get(sector.sector);
+
+    return {
+      sector: sector.sector,
+      symbol: sector.symbol,
+      today: sector.today,
+      week: sector.week,
+      month: sector.month,
+      year: sector.year,
+      rank: index + 1,
+      previousRank: previousSector?.rank ?? null,
+      valuationState: sector.valuation ?? null,
+      breakoutState: sector.breakout ?? null,
+      score: sector.score,
+      previousScore: previousSector?.score ?? null,
+      state: pulseStateFromScore(sector.score),
+      direction:
+        directionFromScores(sector.score, previousSector?.score ?? null) ??
+        directionFromDelta(sector.today),
+      confidence: snapshot.market.confidence,
+      stability: getAverage([sector.week, sector.month, sector.year]),
+      alignment: getAverage([sector.score, snapshot.market.health]),
+      updatedAt,
+    };
+  });
+}
+
+function buildStockPulses(snapshot: VisionOverview, previousSnapshot: VisionOverview | null, updatedAt: string) {
+  const previousOpportunities = new Map(
+    (previousSnapshot?.opportunities ?? []).map((opportunity) => [opportunity.symbol, opportunity])
+  );
+
+  return snapshot.opportunities.map((opportunity): ApiStockPulse => {
+    const previousOpportunity = previousOpportunities.get(opportunity.symbol);
+
+    return {
+      symbol: opportunity.symbol,
+      company: opportunity.company,
+      sector: opportunity.sector,
+      price: opportunity.price,
+      changePercent: opportunity.changePercent,
+      opportunityScore: opportunity.scores.opportunity,
+      riskScore: opportunity.scores.risk,
+      score: opportunity.scores.opportunity,
+      previousScore: previousOpportunity?.scores.opportunity ?? null,
+      state: pulseStateFromScore(opportunity.scores.opportunity),
+      direction:
+        directionFromScores(
+          opportunity.scores.opportunity,
+          previousOpportunity?.scores.opportunity ?? null,
+        ) ?? directionFromDelta(opportunity.changePercent),
+      confidence: opportunity.scores.confidence,
+      stability: getAverage([
+        opportunity.horizons.trader.score,
+        opportunity.horizons.swing.score,
+        opportunity.horizons.investor.score,
+      ]),
+      alignment: getAverage([
+        opportunity.scores.momentum,
+        opportunity.scores.opportunity,
+        snapshot.market.health,
+      ]),
+      updatedAt,
+      reasons: opportunity.reasons,
+      risks: opportunity.risks,
+      invalidation: opportunity.invalidation,
+    };
+  });
+}
+
+function getPortfolioScore(portfolio: VisionOverview["portfolio"]) {
+  if (!portfolio.hasPortfolio || !portfolio.sectorAnalysisAvailable) {
+    return null;
+  }
+
+  const alignmentScore =
+    portfolio.holdingsCount > 0
+      ? (portfolio.alignedHoldings / portfolio.holdingsCount) * 100
+      : 0;
+  const concentrationScore =
+    portfolio.concentrationLevel === "Low"
+      ? 85
+      : portfolio.concentrationLevel === "Moderate"
+        ? 65
+        : 40;
+
+  return clampScore(
+    portfolio.classificationCoverage * 0.25 +
+      alignmentScore * 0.45 +
+      concentrationScore * 0.3,
+  );
+}
+
+function getPortfolioDayChangePercent(portfolio: VisionOverview["portfolio"]) {
+  const weightedMoves = portfolio.holdings
+    .filter(
+      (holding) =>
+        Number.isFinite(holding.weight) && Number.isFinite(holding.changePercent),
+    )
+    .map((holding) => ({
+      weight: holding.weight,
+      changePercent: Number(holding.changePercent),
+    }));
+
+  if (!weightedMoves.length) {
+    return null;
+  }
+
+  const totalWeight = weightedMoves.reduce((sum, item) => sum + item.weight, 0);
+
+  if (!Number.isFinite(totalWeight) || totalWeight <= 0) {
+    return null;
+  }
+
+  return weightedMoves.reduce((sum, item) => sum + item.changePercent * item.weight, 0) / totalWeight;
+}
+
+function buildPortfolioPulse(
+  snapshot: VisionOverview,
+  previousSnapshot: VisionOverview | null,
+  opportunityMap: Map<string, ApiStockPulse>,
+  updatedAt: string,
+): ApiPortfolioPulse | null {
+  const portfolio = snapshot.portfolio;
+
+  if (!portfolio.hasPortfolio) {
+    return null;
+  }
+
+  const score = getPortfolioScore(portfolio);
+  const previousScore = previousSnapshot ? getPortfolioScore(previousSnapshot.portfolio) : null;
+  const elevatedConcentration = portfolio.topSectorWeight >= 35 && portfolio.concentrationLevel === "Moderate";
+
+  return {
+    score,
+    previousScore,
+    state: pulseStateFromScore(score),
+    direction: directionFromScores(score, previousScore),
+    confidence: clampScore(portfolio.classificationCoverage),
+    stability: getAverage([
+      score,
+      previousScore,
+      snapshot.market.health,
+    ]),
+    alignment:
+      portfolio.holdingsCount > 0
+        ? clampScore((portfolio.alignedHoldings / portfolio.holdingsCount) * 100)
+        : null,
+    updatedAt,
+    trackedValue: portfolio.totalValue,
+    dayChangePercent: getPortfolioDayChangePercent(portfolio),
+    classificationCoverage: clampScore(portfolio.classificationCoverage),
+    largestSector: portfolio.topSector,
+    largestSectorWeight: portfolio.topSectorWeight,
+    alignedHoldings: portfolio.alignedHoldings,
+    totalHoldings: portfolio.holdingsCount,
+    concentrationLevel: toApiRiskLevel(portfolio.concentrationLevel, elevatedConcentration),
+    sectorExposure: portfolio.sectorExposure,
+    topHoldings: portfolio.holdings.slice(0, 8).map((holding) => ({
+      symbol: holding.symbol,
+      weight: holding.weight,
+      sector: holding.sector,
+      pulse: opportunityMap.get(holding.symbol)?.score ?? null,
+      direction:
+        directionFromDelta(holding.changePercent) ??
+        (holding.alignment === "aligned"
+          ? "rising"
+          : holding.alignment === "weakening"
+            ? "falling"
+            : "stable"),
+    })),
+    conflicts: portfolio.riskConflicts,
+    risks: [
+      portfolio.riskConflictSummary,
+      portfolio.concentrationSummary,
+      portfolio.correlationSummary,
+    ].filter((value): value is string => Boolean(value)),
+    invalidation: portfolio.riskConflicts[0] ?? null,
+  };
+}
+
+function buildApiChanges(changes: VisionChange[]): ApiVisionChange[] {
+  return changes.map((change, index) => ({
+    id: `${change.type}-${index + 1}`,
+    message: change.message,
+    importance: change.importance,
+    category: toChangeCategory(change.type),
+  }));
+}
+
+function buildApiVisionOverview(
+  snapshot: VisionOverview,
+  previousSnapshot: VisionOverview | null,
+): ApiVisionOverview {
+  const marketPulse = buildMarketPulse(snapshot, previousSnapshot, snapshot.updatedAt);
+  const sectors = buildSectorPulses(snapshot, previousSnapshot, snapshot.updatedAt);
+  const stocks = buildStockPulses(snapshot, previousSnapshot, snapshot.updatedAt);
+  const stockMap = new Map(stocks.map((stock) => [stock.symbol, stock]));
+
+  return {
+    status: snapshot.status,
+    updatedAt: snapshot.updatedAt,
+    marketOpen: null,
+    marketPulse,
+    sectors,
+    stocks,
+    portfolioPulse: buildPortfolioPulse(snapshot, previousSnapshot, stockMap, snapshot.updatedAt),
+    watchlistChanges: [],
+    changes: buildApiChanges(snapshot.changes),
+    futureMap: null,
+    intelligence: {
+      headline: snapshot.summary.headline,
+      summary: snapshot.summary.marketRead,
+      opportunity: snapshot.summary.opportunityRead,
+      risk: snapshot.summary.riskRead,
+    },
+    lesson: null,
+  };
 }
 
 function canPersistVisionSnapshots() {
@@ -973,7 +1468,7 @@ export async function GET() {
     await persistVisionSnapshot(payload, currentFingerprint);
   }
 
-  return NextResponse.json(payload, {
-    status: status === "unavailable" ? 503 : 200,
-  });
+  const apiPayload = buildApiVisionOverview(payload, previousSnapshot);
+
+  return NextResponse.json(apiPayload);
 }
