@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "lint": "eslint .",
     "start": "next start",
     "test:amsa": "vitest run src/lib/amsa",
     "test:smoke": "tsx --test tests/smoke/**/*.test.ts",
