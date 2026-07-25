@@ -177,6 +177,14 @@ export class SupabaseAMSAPulseRepository
   async getSnapshots(
     query: SnapshotQuery,
   ): Promise<AMSAPulseSnapshot[]> {
+    const limit = Math.min(
+      Math.max(
+        query.limit ?? 30,
+        1,
+      ),
+      365,
+    );
+
     let request = this.supabase
       .from(
         "amsa_pulse_snapshots",
@@ -199,13 +207,9 @@ export class SupabaseAMSAPulseRepository
         },
       )
       .limit(
-        Math.min(
-          Math.max(
-            query.limit ?? 30,
-            1,
-          ),
-          365,
-        ),
+        query.frequency
+          ? 365
+          : limit,
       );
 
     if (query.dateFrom) {
@@ -222,13 +226,6 @@ export class SupabaseAMSAPulseRepository
       );
     }
 
-    if (query.frequency) {
-      request = request.eq(
-        "metadata->>frequency",
-        query.frequency,
-      );
-    }
-
     const {
       data,
       error,
@@ -240,10 +237,21 @@ export class SupabaseAMSAPulseRepository
       );
     }
 
-    return (
+    const snapshots = (
       (data ?? []) as SnapshotRow[]
-    )
-      .map(mapRow)
+    ).map(mapRow);
+
+    const filteredSnapshots =
+      query.frequency
+        ? snapshots.filter(
+            (snapshot) =>
+              snapshot.frequency ===
+              query.frequency,
+          )
+        : snapshots;
+
+    return filteredSnapshots
+      .slice(0, limit)
       .reverse();
   }
 
@@ -389,14 +397,6 @@ export class SupabaseAMSAPulseRepository
         );
     }
 
-    if (query.frequency) {
-      latestRequest =
-        latestRequest.eq(
-          "metadata->>frequency",
-          query.frequency,
-        );
-    }
-
     const {
       data,
       error,
@@ -419,6 +419,14 @@ export class SupabaseAMSAPulseRepository
     for (const row of rows) {
       const snapshot =
         mapRow(row);
+
+      if (
+        query.frequency &&
+        snapshot.frequency !==
+          query.frequency
+      ) {
+        continue;
+      }
 
       const key =
         `${snapshot.entityType}:${snapshot.entityKey}`;

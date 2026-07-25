@@ -96,6 +96,13 @@ export async function GET(
         "frequency",
       );
 
+    const requestedFrequency =
+      frequency === "intraday" ||
+      frequency === "manual" ||
+      frequency === "daily"
+        ? frequency
+        : null;
+
     const repository = new SupabaseAMSAPulseRepository();
     const snapshots =
       await repository.getSnapshots({
@@ -104,11 +111,7 @@ export async function GET(
         limit,
 
         frequency:
-          frequency === "intraday" ||
-          frequency === "manual" ||
-          frequency === "daily"
-            ? frequency
-            : undefined,
+          requestedFrequency ?? undefined,
       });
 
     const evolution =
@@ -116,14 +119,47 @@ export async function GET(
         snapshots,
       );
 
-    return NextResponse.json({
-      success: true,
-      evolution,
-    });
+    return NextResponse.json(
+      snapshots.length
+        ? {
+            success: true,
+            entityType,
+            entityKey,
+            frequency:
+              requestedFrequency,
+            snapshots,
+            evolution,
+          }
+        : {
+            success: true,
+            entityType,
+            entityKey,
+            frequency:
+              requestedFrequency,
+            snapshots: [],
+            evolution: null,
+          },
+    );
   } catch (error) {
     console.error(
-      "AMSA evolution route error:",
-      error,
+      "Pulse Evolution retrieval failed",
+      {
+        entityType:
+          (await context.params)
+            .entityType,
+        entityKey:
+          (await context.params)
+            .entityKey,
+        frequency:
+          request.nextUrl.searchParams.get(
+            "frequency",
+          ),
+        limit:
+          request.nextUrl.searchParams.get(
+            "limit",
+          ),
+        error,
+      },
     );
 
     return NextResponse.json(
