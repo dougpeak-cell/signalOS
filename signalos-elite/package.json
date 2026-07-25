@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test:amsa": "vitest run src/lib/amsa",
     "test:smoke": "tsx --test tests/smoke/**/*.test.ts",
     "ingest": "tsx --env-file .env.local scripts/ingest/index.ts",
     "signals": "tsx --env-file .env.local scripts/signals/buildConviction.ts"
@@ -34,6 +35,7 @@
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }
