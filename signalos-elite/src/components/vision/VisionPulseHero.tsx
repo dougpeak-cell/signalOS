@@ -37,7 +37,7 @@ export function VisionPulseHero({
       <div className="grid gap-8 xl:grid-cols-[1fr_auto] xl:items-center">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300">
-            Sigi Pulse(TM)
+            Sigi Pulse
           </p>
 
           <h2 className="mt-3 text-3xl font-semibold text-white">
@@ -45,7 +45,7 @@ export function VisionPulseHero({
           </h2>
 
           <p className="mt-1 text-xs text-slate-500">
-            Powered by AMSA(TM)
+            Powered by AMSA
           </p>
 
           <div className="mt-8">

@@ -128,7 +128,7 @@ export default function LiveFutureMap({
             </p>
 
             <p className="mt-1 text-sm text-slate-500">
-              Powered by SIGI Pulse(TM) and AMSA(TM)
+              Powered by AMSA
             </p>
           </div>
 

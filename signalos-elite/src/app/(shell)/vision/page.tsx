@@ -27,7 +27,7 @@ import {
 
 /* =========================================================
    SIGI VISION
-   Powered by SIGI PULSE(TM) + AMSA(TM)
+    Powered by AMSA
    Adaptive Market State Algorithm
 
    Expected live endpoint:
@@ -1323,7 +1323,7 @@ export default function VisionPage() {
                 </h1>
 
                 <p className="mt-3 text-xl font-semibold text-cyan-200 sm:text-2xl">
-                  Sigi reads it with AMSA(TM).
+                  Sigi reads it with AMSA.
                 </p>
 
                 <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
@@ -1335,11 +1335,11 @@ export default function VisionPage() {
 
                 <div className="mt-5 flex flex-wrap gap-2">
                   <span className="rounded-full border border-cyan-400/20 bg-cyan-500/5.5 px-3 py-1.5 text-xs text-cyan-200">
-                    SIGI PULSE(TM)
+                    SIGI PULSE
                   </span>
 
                   <span className="rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs text-slate-300">
-                    Powered by AMSA(TM)
+                    Powered by AMSA
                   </span>
 
                   <span className="rounded-full border border-white/10 bg-white/3 px-3 py-1.5 text-xs text-slate-300">

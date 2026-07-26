@@ -1,5 +1,5 @@
 /* =========================================================
-   SIGI AMSA(TM)
+    SIGI AMSA
    Adaptive Market State Algorithm
 
    Shared engine types.
