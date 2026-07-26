@@ -373,6 +373,11 @@ export async function GET(
           {
             frequency: "daily",
 
+            sourceUpdatedAt:
+              toSourceUpdatedAt(
+                stockBars.at(-1)?.time,
+              ),
+
             metadata: {
               alignment:
                 stockAlignment,
@@ -512,4 +517,22 @@ function normalizeHistory(
   }
 
   return [];
+}
+
+function toSourceUpdatedAt(
+  value: string | number | undefined,
+): string | null {
+  if (value === undefined) {
+    return null;
+  }
+
+  const numericValue =
+    typeof value === "number" && value < 10_000_000_000
+      ? value * 1000
+      : value;
+  const date = new Date(numericValue);
+
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.toISOString();
 }

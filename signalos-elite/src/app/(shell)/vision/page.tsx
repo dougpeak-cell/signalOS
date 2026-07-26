@@ -6,7 +6,7 @@ import { FutureScenarioCard } from "@/components/vision/FutureScenarioCard";
 import { OpportunityMeter } from "@/components/vision/OpportunityMeter";
 import { PersonalIntelligenceHoldings } from "@/components/vision/PersonalIntelligenceHoldings";
 import { PortfolioClassificationProgress } from "@/components/vision/PortfolioClassificationProgress";
-import StockPulseTimeline from "@/components/vision/StockPulseTimeline";
+import StockPulseExperience from "@/components/vision/StockPulseExperience";
 import { TodaysVision } from "@/components/vision/TodaysVision";
 import type {
   AMSAFutureMap,
@@ -55,8 +55,16 @@ type PulseComponent = {
   key: string;
   label: string;
   score: number | null;
+  previousScore?: number | null;
   direction?: Direction;
   explanation?: string;
+};
+
+type PulseHistoryPoint = {
+  score: number | null;
+  recordedAt: string;
+  price?: number | null;
+  state?: PulseState | null;
 };
 
 type PulseReading = {
@@ -98,10 +106,15 @@ type StockPulse = PulseReading & {
   symbol: string;
   company?: string | null;
   sector?: string | null;
+
   price: number | null;
   changePercent: number | null;
+
   opportunityScore?: number | null;
   riskScore?: number | null;
+
+  history?: PulseHistoryPoint[];
+  changeSummary?: string | null;
 };
 
 type PortfolioPulse = PulseReading & {
@@ -987,6 +1000,7 @@ function FutureMapPanel({
 
 export default function VisionPage() {
   const [overview, setOverview] = useState<VisionOverview>(EMPTY_OVERVIEW);
+  const [loading, setLoading] = useState(true);
   const [liveFutureMap, setLiveFutureMap] = useState<AMSAFutureMap | null>(null);
   const [futureMapLoading, setFutureMapLoading] = useState(false);
   const [futureMapError, setFutureMapError] = useState<string | null>(null);
@@ -1005,6 +1019,7 @@ export default function VisionPage() {
   const [askError, setAskError] = useState<string | null>(null);
 
   const loadVision = useCallback(async () => {
+    setLoading(true);
     setLoadError(null);
 
     try {
@@ -1036,7 +1051,7 @@ export default function VisionPage() {
         "Vision could not retrieve the current market intelligence snapshot.",
       );
     } finally {
-      // no-op: the page renders from the latest successful snapshot or the load error state
+      setLoading(false);
     }
   }, []);
 
@@ -1603,6 +1618,19 @@ export default function VisionPage() {
           )}
         </GlassPanel>
 
+        {/* =================================================
+            STOCK PULSE · HEARTBEAT · DNA
+        ================================================= */}
+
+        <GlassPanel className="mt-5 p-5 sm:p-6 lg:p-7">
+          <StockPulseExperience
+            stocks={overview.stocks}
+            loading={loading}
+            title="Every stock has a price. Sigi reveals its Pulse, Heartbeat, and DNA."
+            description="Pulse measures its current condition. Heartbeat shows how that condition is changing. DNA explains why."
+          />
+        </GlassPanel>
+
         <GlassPanel className="mt-5 p-5 sm:p-6">
           {personalIntelligence ? (
             <section className="rounded-[28px] border border-cyan-400/20 bg-[#020b18] p-6 md:p-8">
@@ -1802,9 +1830,34 @@ export default function VisionPage() {
           ) : null}
         </GlassPanel>
 
-        <div className="mt-5">
-          <StockPulseTimeline symbol={selectedFutureMapSymbol ?? "NVDA"} />
-        </div>
+        <GlassPanel className="mt-5 p-5 sm:p-6">
+          <SectionHeading
+            eyebrow="Today’s lesson"
+            title={overview.lesson?.title ?? "Today’s Lesson"}
+            description="A concise market-state principle grounded in the current Vision snapshot."
+          />
+
+          {overview.lesson ? (
+            <div className="mt-5 rounded-2xl border border-cyan-400/15 bg-cyan-500/4 p-5">
+              <p className="text-sm leading-7 text-slate-200">
+                {overview.lesson.explanation}
+              </p>
+
+              {overview.lesson.example ? (
+                <p className="mt-4 border-l-2 border-cyan-300/30 pl-4 text-sm leading-6 text-slate-400">
+                  {overview.lesson.example}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <div className="mt-5">
+              <UnavailableState
+                title="Today’s Lesson is awaiting verified context"
+                description="The lesson will appear when the Vision endpoint supplies a market-state teaching point."
+              />
+            </div>
+          )}
+        </GlassPanel>
 
         <GlassPanel
           id="ask-sigi"

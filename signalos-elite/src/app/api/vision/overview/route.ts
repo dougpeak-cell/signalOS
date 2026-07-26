@@ -49,6 +49,14 @@ type VisionSnapshotRecord = {
   created_at: string;
 };
 
+type AMSAStockSnapshotRow = {
+  entity_key: string;
+  score: number | null;
+  state: string | null;
+  metadata: unknown;
+  recorded_at: string;
+};
+
 const CHANGE_IMPORTANCE_WEIGHT: Record<VisionChange["importance"], number> = {
   high: 3,
   medium: 2,
@@ -84,8 +92,16 @@ type ApiPulseComponent = {
   key: string;
   label: string;
   score: number | null;
+  previousScore?: number | null;
   direction?: ApiDirection;
   explanation?: string;
+};
+
+type ApiPulseHistoryPoint = {
+  score: number | null;
+  recordedAt: string;
+  price?: number | null;
+  state?: ApiPulseState | null;
 };
 
 type ApiPulseReading = {
@@ -131,6 +147,8 @@ type ApiStockPulse = ApiPulseReading & {
   changePercent: number | null;
   opportunityScore?: number | null;
   riskScore?: number | null;
+  history?: ApiPulseHistoryPoint[];
+  changeSummary?: string | null;
 };
 
 type ApiPortfolioPulse = ApiPulseReading & {
@@ -385,7 +403,115 @@ function buildSectorPulses(snapshot: VisionOverview, previousSnapshot: VisionOve
   });
 }
 
-function buildStockPulses(snapshot: VisionOverview, previousSnapshot: VisionOverview | null, updatedAt: string) {
+function getOpportunityComponentScores(
+  opportunity: VisionOpportunity,
+  snapshot: VisionOverview,
+) {
+  const sectorScore = snapshot.sectors.snapshot.find(
+    (sector) => sector.sector === opportunity.sector,
+  )?.score ?? null;
+
+  return {
+    trend: opportunity.horizons.investor.score,
+    momentum: opportunity.scores.momentum,
+    structure: opportunity.horizons.swing.score,
+    sector: sectorScore,
+    risk: clampScore(100 - opportunity.scores.risk),
+  };
+}
+
+function buildStockComponents(
+  opportunity: VisionOpportunity,
+  previousOpportunity: VisionOpportunity | undefined,
+  snapshot: VisionOverview,
+  previousSnapshot: VisionOverview | null,
+): ApiPulseComponent[] {
+  const current = getOpportunityComponentScores(opportunity, snapshot);
+  const previous = previousOpportunity && previousSnapshot
+    ? getOpportunityComponentScores(previousOpportunity, previousSnapshot)
+    : null;
+
+  return [
+    {
+      key: "trend",
+      label: "Trend",
+      score: current.trend,
+      previousScore: previous?.trend ?? null,
+      direction: directionFromScores(current.trend, previous?.trend ?? null) ?? undefined,
+      explanation: "Trend reflects the verified investor-horizon score for the current setup.",
+    },
+    {
+      key: "momentum",
+      label: "Momentum",
+      score: current.momentum,
+      previousScore: previous?.momentum ?? null,
+      direction: directionFromScores(current.momentum, previous?.momentum ?? null) ?? undefined,
+      explanation: "Momentum combines verified daily, weekly, and monthly price strength with trend alignment.",
+    },
+    {
+      key: "structure",
+      label: "Market Structure",
+      score: current.structure,
+      previousScore: previous?.structure ?? null,
+      direction: directionFromScores(current.structure, previous?.structure ?? null) ?? undefined,
+      explanation: "Structure reflects the verified swing-horizon setup score.",
+    },
+    {
+      key: "sector",
+      label: "Sector Alignment",
+      score: current.sector,
+      previousScore: previous?.sector ?? null,
+      direction: directionFromScores(current.sector, previous?.sector ?? null) ?? undefined,
+      explanation: "Sector alignment uses the current Vision sector comparison score.",
+    },
+    {
+      key: "risk",
+      label: "Risk Control",
+      score: current.risk,
+      previousScore: previous?.risk ?? null,
+      direction: directionFromScores(current.risk, previous?.risk ?? null) ?? undefined,
+      explanation: "Risk control is the inverse of the verified Vision risk score, so higher is more efficient.",
+    },
+  ];
+}
+
+function buildStockChangeSummary(
+  opportunity: VisionOpportunity,
+  previousOpportunity: VisionOpportunity | undefined,
+) {
+  if (!previousOpportunity) {
+    return null;
+  }
+
+  const opportunityChange =
+    opportunity.scores.opportunity - previousOpportunity.scores.opportunity;
+  const momentumChange =
+    opportunity.scores.momentum - previousOpportunity.scores.momentum;
+  const riskChange = opportunity.scores.risk - previousOpportunity.scores.risk;
+  const changes = [
+    { label: "opportunity", value: opportunityChange },
+    { label: "momentum", value: momentumChange },
+    { label: "risk", value: riskChange },
+  ].filter((change) => change.value !== 0);
+
+  if (!changes.length) {
+    return "Opportunity, momentum, and risk scores are unchanged from the previous verified snapshot.";
+  }
+
+  const primaryChange = changes.sort(
+    (left, right) => Math.abs(right.value) - Math.abs(left.value),
+  )[0];
+  const direction = primaryChange.value > 0 ? "improved" : "declined";
+
+  return `${primaryChange.label[0].toUpperCase()}${primaryChange.label.slice(1)} ${direction} by ${Math.abs(primaryChange.value)} points from the previous verified snapshot.`;
+}
+
+function buildStockPulses(
+  snapshot: VisionOverview,
+  previousSnapshot: VisionOverview | null,
+  historyBySymbol: Map<string, ApiPulseHistoryPoint[]>,
+  updatedAt: string,
+) {
   const previousOpportunities = new Map(
     (previousSnapshot?.opportunities ?? []).map((opportunity) => [opportunity.symbol, opportunity])
   );
@@ -422,6 +548,14 @@ function buildStockPulses(snapshot: VisionOverview, previousSnapshot: VisionOver
       ]),
       calculatedAt: updatedAt,
       updatedAt,
+      changeSummary: buildStockChangeSummary(opportunity, previousOpportunity),
+      components: buildStockComponents(
+        opportunity,
+        previousOpportunity,
+        snapshot,
+        previousSnapshot,
+      ),
+      history: historyBySymbol.get(opportunity.symbol.toUpperCase()) ?? [],
       reasons: opportunity.reasons,
       risks: opportunity.risks,
       invalidation: opportunity.invalidation,
@@ -553,11 +687,17 @@ function buildApiChanges(changes: VisionChange[]): ApiVisionChange[] {
 function buildApiVisionOverview(
   snapshot: VisionOverview,
   previousSnapshot: VisionOverview | null,
+  historyBySymbol: Map<string, ApiPulseHistoryPoint[]>,
   personalIntelligence: PersonalIntelligenceResult,
 ): ApiVisionOverview {
   const marketPulse = buildMarketPulse(snapshot, previousSnapshot, snapshot.updatedAt);
   const sectors = buildSectorPulses(snapshot, previousSnapshot, snapshot.updatedAt);
-  const stocks = buildStockPulses(snapshot, previousSnapshot, snapshot.updatedAt);
+  const stocks = buildStockPulses(
+    snapshot,
+    previousSnapshot,
+    historyBySymbol,
+    snapshot.updatedAt,
+  );
   const stockMap = new Map(stocks.map((stock) => [stock.symbol, stock]));
 
   return {
@@ -587,6 +727,76 @@ function buildApiVisionOverview(
 
 function canPersistVisionSnapshots() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+function getSnapshotPrice(metadata: unknown) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+
+  const currentPrice = (metadata as Record<string, unknown>).currentPrice;
+  return typeof currentPrice === "number" && Number.isFinite(currentPrice)
+    ? currentPrice
+    : null;
+}
+
+function toApiPulseState(value: string | null): ApiPulseState | null {
+  if (
+    value === "Elite" ||
+    value === "Strong" ||
+    value === "Constructive" ||
+    value === "Balanced" ||
+    value === "Weak" ||
+    value === "Critical"
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
+async function loadStockPulseHistory(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  symbols: string[],
+) {
+  const grouped = new Map<string, ApiPulseHistoryPoint[]>();
+
+  if (!symbols.length) {
+    return grouped;
+  }
+
+  const normalizedSymbols = Array.from(
+    new Set(symbols.map((symbol) => normalizeTicker(symbol)).filter(Boolean)),
+  );
+  const { data, error } = await supabase
+    .from("amsa_pulse_snapshots")
+    .select("entity_key, score, state, metadata, recorded_at")
+    .eq("entity_type", "stock")
+    .in("entity_key", normalizedSymbols)
+    .order("recorded_at", { ascending: true });
+
+  if (error) {
+    console.error("Stock Pulse history error:", error);
+    return grouped;
+  }
+
+  for (const row of (data ?? []) as AMSAStockSnapshotRow[]) {
+    const symbol = normalizeTicker(row.entity_key);
+    const current = grouped.get(symbol) ?? [];
+
+    current.push({
+      score: typeof row.score === "number" && Number.isFinite(row.score)
+        ? row.score
+        : null,
+      recordedAt: row.recorded_at,
+      price: getSnapshotPrice(row.metadata),
+      state: toApiPulseState(row.state),
+    });
+
+    grouped.set(symbol, current.slice(-12));
+  }
+
+  return grouped;
 }
 
 function toNumber(value: unknown, fallback = 0) {
@@ -783,9 +993,9 @@ function buildVisionChanges(
   return sortChanges(changes).slice(0, 6);
 }
 
-async function getLatestVisionSnapshot(): Promise<VisionSnapshotRecord | null> {
+async function getRecentVisionSnapshots(): Promise<VisionSnapshotRecord[]> {
   if (!canPersistVisionSnapshots()) {
-    return null;
+    return [];
   }
 
   try {
@@ -794,17 +1004,16 @@ async function getLatestVisionSnapshot(): Promise<VisionSnapshotRecord | null> {
       .from("vision_snapshots")
       .select("id, fingerprint, snapshot, created_at")
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(12);
 
-    if (error || !data?.snapshot) {
-      return null;
+    if (error || !data) {
+      return [];
     }
 
-    return data as VisionSnapshotRecord;
+    return data.filter((record) => Boolean(record.snapshot)) as VisionSnapshotRecord[];
   } catch (error) {
     console.error("Vision snapshot load failed", error);
-    return null;
+    return [];
   }
 }
 
@@ -1413,7 +1622,8 @@ export async function GET() {
   const sectorStrengthMap = new Map(
     sectorRows.map((row) => [row.sector.toLowerCase(), row.score])
   );
-  const previousSnapshotRecord = await getLatestVisionSnapshot();
+  const recentSnapshotRecords = await getRecentVisionSnapshots();
+  const previousSnapshotRecord = recentSnapshotRecords[0] ?? null;
   const previousSnapshot = previousSnapshotRecord?.snapshot ?? null;
   const calculationUpdatedAt =
     sectorComparison?.generatedAt ??
@@ -1588,6 +1798,12 @@ export async function GET() {
   const apiPayload = buildApiVisionOverview(
     payload,
     previousSnapshot,
+    canPersistVisionSnapshots()
+      ? await loadStockPulseHistory(
+          createSupabaseAdminClient(),
+          payload.opportunities.map((opportunity) => opportunity.symbol),
+        )
+      : new Map<string, ApiPulseHistoryPoint[]>(),
     personalIntelligence,
   );
 

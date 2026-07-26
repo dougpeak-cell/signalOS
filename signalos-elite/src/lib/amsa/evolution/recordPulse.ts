@@ -36,9 +36,12 @@ export async function recordPulseSnapshot(
     if (
       latest &&
       latest.frequency === "daily" &&
-      sameDate(
-        latest.calculatedAt,
-        snapshot.calculatedAt,
+      (
+        sameDate(
+          latest.calculatedAt,
+          snapshot.calculatedAt,
+        ) ||
+        isDuplicateSourceReading(latest, snapshot)
       )
     ) {
       return {
@@ -58,6 +61,45 @@ export async function recordPulseSnapshot(
     saved: true,
     skipped: false,
     snapshot: saved,
+  };
+}
+
+function isDuplicateSourceReading(
+  previous: AMSAPulseSnapshot,
+  current: AMSAPulseSnapshot,
+): boolean {
+  if (
+    !previous.sourceUpdatedAt ||
+    !current.sourceUpdatedAt ||
+    previous.sourceUpdatedAt !== current.sourceUpdatedAt
+  ) {
+    return false;
+  }
+
+  return JSON.stringify(pulseReadingIdentity(previous)) ===
+    JSON.stringify(pulseReadingIdentity(current));
+}
+
+function pulseReadingIdentity(snapshot: AMSAPulseSnapshot) {
+  const currentPrice =
+    typeof snapshot.metadata.currentPrice === "number" &&
+    Number.isFinite(snapshot.metadata.currentPrice)
+      ? snapshot.metadata.currentPrice
+      : null;
+
+  return {
+    score: snapshot.score,
+    confidence: snapshot.confidence,
+    state: snapshot.state ?? null,
+    direction: snapshot.direction ?? null,
+    status: snapshot.status ?? null,
+    currentPrice,
+    components: snapshot.components.map((component) => ({
+      key: component.key,
+      score: component.score,
+      confidence: component.confidence ?? null,
+      direction: component.direction ?? null,
+    })),
   };
 }
 

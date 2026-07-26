@@ -3,6 +3,7 @@ import {
   fetchSignalsForTickers,
   type SignalDetailRow,
 } from "@/lib/queries/signals";
+import { fetchCompletedPriceStats } from "@/lib/queries/prices";
 import { fetchServerQuoteMap } from "@/lib/market/serverQuote";
 import {
   getIndexFlags,
@@ -178,7 +179,7 @@ export async function getSetupDiscoveryData(
       ])
     );
 
-    const [marketSetupSignalRows, fundamentalsEntries, serverQuoteMap] = await Promise.all([
+    const [marketSetupSignalRows, fundamentalsEntries, serverQuoteMap, completedPriceStats] = await Promise.all([
       time(
         "setupDiscovery.marketSetupSignals",
         fetchSignalsForTickers(combinedSetupUniverse.map((item) => item.ticker))
@@ -193,6 +194,10 @@ export async function getSetupDiscoveryData(
         )
       ),
       time("setupDiscovery.serverQuotes", fetchServerQuoteMap(quoteUniverse)),
+      time(
+        "setupDiscovery.completedPrices",
+        fetchCompletedPriceStats(signalRows.map((row) => row.ticker))
+      ),
     ]);
 
     const marketSetupSignalMap = new Map(
@@ -212,14 +217,29 @@ export async function getSetupDiscoveryData(
       const indexFlags = getIndexFlags(ticker);
       const fundamentals = fundamentalsMap.get(ticker);
       const quote = serverQuoteMap[ticker];
-      const livePrice = quote?.price ?? row.price ?? null;
-      const liveChangePercent = quote?.changePct ?? null;
-      const tone = signalToneFromRow(row, livePrice);
+      const completedPrice = completedPriceStats[ticker];
+      const livePrice = completedPrice?.close ?? quote?.price ?? row.price ?? null;
+      const liveChangePercent = completedPrice?.changePercent ?? quote?.changePct ?? null;
+      const explicitTone = signalToneFromRow(row, livePrice);
+      const tone =
+        explicitTone !== "neutral"
+          ? explicitTone
+          : liveChangePercent != null && liveChangePercent > 0
+            ? "bullish"
+            : liveChangePercent != null && liveChangePercent < 0
+              ? "bearish"
+              : row.momentum_3m != null && row.momentum_3m > 0
+                ? "bullish"
+                : row.momentum_3m != null && row.momentum_3m < 0
+                  ? "bearish"
+                  : "neutral";
       const signal = tone === "bullish" ? "Bullish" : tone === "bearish" ? "Bearish" : "Neutral";
       const catalystFlags = inferCatalystFlags(row);
-      const volume = fundamentals?.volume ?? null;
-      const avgVolume = fundamentals?.avgVolume ?? null;
-      const rvol = volume != null && avgVolume != null && avgVolume > 0 ? volume / avgVolume : null;
+      const volume = completedPrice?.volume ?? fundamentals?.volume ?? null;
+      const avgVolume = completedPrice?.avgVolume ?? fundamentals?.avgVolume ?? null;
+      const rvol =
+        completedPrice?.rvol ??
+        (volume != null && avgVolume != null && avgVolume > 0 ? volume / avgVolume : null);
 
       mergedCandidates.set(
         ticker,

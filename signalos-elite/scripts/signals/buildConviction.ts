@@ -64,6 +64,17 @@ function tierFromScore(score: number) {
   return "Risk";
 }
 
+function universeTickers(): string[] {
+  return Array.from(
+    new Set(
+      (process.env.UNIVERSE_TICKERS ?? "AAPL,MSFT,NVDA,TSLA,AMZN,META,GOOGL")
+        .split(",")
+        .map((ticker) => ticker.trim().toUpperCase())
+        .filter(Boolean)
+    )
+  );
+}
+
 async function main() {
   // Use latest date in prices_daily
   const { data: maxD, error: maxErr } = await supabaseAdmin
@@ -82,7 +93,7 @@ async function main() {
     const { data: symbols, error: symErr } = await supabaseAdmin
       .from("symbols")
       .select("id,ticker")
-      .in("ticker", ["AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "META", "GOOGL"]);
+      .in("ticker", universeTickers());
 
     if (symErr) throw symErr;
 

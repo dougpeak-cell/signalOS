@@ -25,6 +25,7 @@ export type SignalDetailRow = {
   risks: string[] | null;
   tier: string | null;
   as_of_date: string | null;
+  momentum_3m?: number | null;
   created_at?: string | null;
 };
 
@@ -123,21 +124,76 @@ export async function fetchLatestSignals(): Promise<{ asOf: string | null; rows:
 export async function fetchLatestSignalRows(limit = 24): Promise<SignalDetailRow[]> {
   const supabase = await createSupabaseServerClient();
 
-  const { data, error } = await supabase
+  const { data: latestDaily, error: dailyError } = await supabase
+    .from("signals_daily")
+    .select(
+      `
+      d,
+      conviction,
+      tier,
+      thesis_short,
+      ret_3m,
+      symbol:symbols!signals_daily_symbol_id_fkey(
+        ticker,
+        name
+      )
+    `
+    )
+    .order("d", { ascending: false })
+    .order("conviction", { ascending: false })
+    .limit(limit);
+
+  const dailyRows = (latestDaily ?? []).filter((row: any) => row.symbol?.ticker);
+  const latestDate = dailyRows[0]?.d ?? null;
+  const currentDailyRows = latestDate
+    ? dailyRows.filter((row: any) => row.d === latestDate)
+    : [];
+  const dailyTickers = currentDailyRows.map((row: any) => normalizeTicker(row.symbol.ticker));
+
+  const legacyQuery = supabase
     .from("signals")
     .select(SIGNAL_DETAIL_COLUMNS)
     .order("as_of_date", { ascending: false })
     .order("created_at", { ascending: false })
-    .order("conviction", { ascending: false })
-    .limit(limit);
+    .order("conviction", { ascending: false });
+  const { data, error } = dailyTickers.length
+    ? await legacyQuery.in("ticker", dailyTickers)
+    : await legacyQuery.limit(limit);
 
   if (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn("Signals query failed:", message);
-    return [];
   }
 
-  return (data ?? []) as SignalDetailRow[];
+  if (dailyError || !currentDailyRows.length) {
+    if (dailyError) {
+      console.warn("Daily signals query failed:", dailyError.message);
+    }
+    return (data ?? []) as SignalDetailRow[];
+  }
+
+  const legacyByTicker = new Map<string, SignalDetailRow>();
+  for (const row of (data ?? []) as SignalDetailRow[]) {
+    const ticker = normalizeTicker(row.ticker);
+    if (!legacyByTicker.has(ticker)) legacyByTicker.set(ticker, row);
+  }
+
+  return currentDailyRows.map((row: any) => {
+    const ticker = normalizeTicker(row.symbol.ticker);
+    const legacy = legacyByTicker.get(ticker);
+
+    return {
+      ...buildFallbackSignalDetailRow(ticker, row.symbol.name ?? null),
+      ...legacy,
+      ticker,
+      company_name: legacy?.company_name ?? row.symbol.name ?? null,
+      conviction: row.conviction ?? null,
+      thesis: row.thesis_short ?? legacy?.thesis ?? null,
+      tier: row.tier ?? null,
+      as_of_date: row.d,
+      momentum_3m: row.ret_3m ?? null,
+    };
+  });
 }
 
 export async function fetchSignalByTicker(ticker: string): Promise<SignalDetailRow | null> {

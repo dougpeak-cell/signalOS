@@ -11,6 +11,7 @@ export type ProviderSymbol = {
 export type ProviderDailyBar = {
   ticker: string;
   d: string; // YYYY-MM-DD
+  sourceUpdatedAt?: string | null;
   open?: number | null;
   high?: number | null;
   low?: number | null;

@@ -462,3 +462,27 @@ html[data-hide-next-dev-indicator="true"] .nextjs-toast {
 .signalos-rail-spark-live {
   animation: signalos-rail-spark-flash 0.9s ease-out;
 }
+
+/* =========================================================
+   SIGI PULSE HEARTBEAT
+========================================================= */
+
+@keyframes sigiHeartbeatDraw {
+  from {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    opacity: 0.25;
+  }
+
+  to {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[sigiHeartbeatDraw_1\.25s_ease-out_both\] {
+    animation: none !important;
+  }
+}

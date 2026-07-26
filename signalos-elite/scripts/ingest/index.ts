@@ -2,6 +2,8 @@ import { stooqProvider } from "./providers/stooq";
 // scripts/ingest/index.ts
 import { supabaseAdmin } from "./_supabase";
 import { finnhubProvider } from "./providers/finnhub";
+import { fmpProvider } from "./providers/fmp";
+import { massiveProvider } from "./providers/massive";
 import type { MarketDataProvider, ProviderDailyBar } from "./providers/types";
 
 function todayISODate() {
@@ -40,10 +42,11 @@ function envTickers(): string[] {
 }
 
 async function getProvider(): Promise<MarketDataProvider> {
-  // Finnhub only for now
   const p = (process.env.PRICES_PROVIDER ?? "stooq").toLowerCase();
   if (p === "stooq") return stooqProvider;
-  if (p === "finnhub") return finnhubProvider; // if you later upgrade candles
+  if (p === "finnhub") return finnhubProvider;
+  if (p === "fmp") return fmpProvider;
+  if (p === "massive" || p === "polygon") return massiveProvider;
   return stooqProvider;
 }
 
@@ -88,7 +91,11 @@ async function loadSymbolIdMap(tickers: string[]) {
   return m;
 }
 
-async function upsertPricesDaily(symbolIdByTicker: Map<string, number>, bars: ProviderDailyBar[]) {
+async function upsertPricesDaily(
+  symbolIdByTicker: Map<string, number>,
+  bars: ProviderDailyBar[],
+  providerName: string,
+) {
 
   console.log("Example bar tickers:", bars.slice(0, 5).map((b) => b.ticker));
   if (!bars.length) return 0;
@@ -107,7 +114,7 @@ async function upsertPricesDaily(symbolIdByTicker: Map<string, number>, bars: Pr
         close: b.close,
         volume: b.volume,
         vwap: b.vwap,
-        provider: "finnhub",
+        provider: providerName,
       };
     })
     .filter(Boolean) as any[];
@@ -151,7 +158,7 @@ async function main() {
   console.log(`Range: ${from} → ${to}`);
 
   // Ensure symbols exist
-  // await ensureUniverseSymbols(tickers);
+  await ensureUniverseSymbols(tickers);
   const symbolIdByTicker = await loadSymbolIdMap(tickers);
 
   let inserted = 0;
@@ -165,7 +172,7 @@ async function main() {
     console.log("Fetching", group.join(", "));
     const bars = await provider.fetchDailyBars({ tickers: group, from, to });
     console.log("Fetched bars:", bars.length);
-    const n = await upsertPricesDaily(symbolIdByTicker, bars);
+    const n = await upsertPricesDaily(symbolIdByTicker, bars, provider.name);
     inserted += n;
 
     console.log(`Inserted ${n} price rows for ${group.join(", ")}`);
