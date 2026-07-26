@@ -9,6 +9,7 @@ import {
   getIndexFlags,
   isMajorIndexMember,
 } from "@/lib/market/indexMembership";
+import { resolveSector } from "@/lib/market/resolve-sector";
 import { getMarketSetupUniverse, getPreMarketSetupUniverse } from "@/lib/market/movers";
 import { getMassiveFundamentals } from "@/lib/market/massiveFundamentals";
 import {
@@ -246,7 +247,7 @@ export async function getSetupDiscoveryData(
         mergeCandidate(mergedCandidates.get(ticker), {
           ticker,
           name: row.company_name ?? fundamentals?.name ?? ticker,
-          sector: row.sector ?? null,
+          sector: resolveSector({ symbol: ticker, sector: row.sector }),
           price: livePrice,
           changePercent: liveChangePercent,
           volume,
@@ -306,7 +307,10 @@ export async function getSetupDiscoveryData(
         mergeCandidate(mergedCandidates.get(ticker), {
           ticker,
           name: item.name ?? signalRow?.company_name ?? fundamentals?.name ?? ticker,
-          sector: signalRow?.sector ?? item.sector ?? null,
+          sector: resolveSector({
+            symbol: ticker,
+            sector: signalRow?.sector ?? item.sector,
+          }),
           session: item.session ?? null,
           price: livePrice,
           changePercent,

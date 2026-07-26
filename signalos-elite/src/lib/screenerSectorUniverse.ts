@@ -451,6 +451,7 @@ const SECTOR_ALIASES: Record<string, string> = {
 };
 
 const TICKER_SECTOR_OVERRIDES: Record<string, string> = {
+  CRWV: "Technology",
   IBM: "Quantum",
   INFQ: "Quantum",
   IONQ: "Quantum",

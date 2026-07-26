@@ -48,6 +48,7 @@ const SECTOR_ALIASES: Record<string, NormalizedSector> = {
 };
 
 const KNOWN_TICKER_SECTORS: Record<string, NormalizedSector> = {
+  CRWV: "Technology",
   XOM: "Energy",
   PEP: "Consumer Staples",
   MO: "Consumer Staples",
