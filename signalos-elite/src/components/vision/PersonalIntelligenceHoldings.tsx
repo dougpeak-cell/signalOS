@@ -76,25 +76,30 @@ export function PersonalIntelligenceHoldings({
             </div>
 
             <div>
-              {holding.sector ? (
+              {holding.classificationStatus === "partial" ? (
+                <>
+                  <p className="text-sm text-amber-200">
+                    {holding.sector ?? "Sector pending"}
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-600">
+                    {holding.industry
+                      ? holding.industry
+                      : "Industry classification unavailable"}
+                  </p>
+                </>
+              ) : holding.classificationStatus === "pending" ? (
+                <p className="text-sm text-slate-400">
+                  Classification unavailable
+                </p>
+              ) : (
                 <>
                   <p className="text-sm text-slate-300">
                     {holding.sector}
                   </p>
 
                   <p className="mt-1 text-xs text-slate-600">
-                    {holding.industry ??
-                      "Industry classification pending"}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-cyan-200">
-                    Classifying...
-                  </p>
-
-                  <p className="mt-1 text-xs text-slate-600">
-                    Sigi is resolving sector and industry.
+                    {holding.industry}
                   </p>
                 </>
               )}

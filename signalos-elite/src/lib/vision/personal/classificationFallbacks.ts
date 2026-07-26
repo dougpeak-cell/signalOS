@@ -1,5 +1,5 @@
 type Classification = {
-  companyName?: string;
+  companyName: string;
   sector: string;
   industry: string;
 };
@@ -32,6 +32,46 @@ const CLASSIFICATION_FALLBACKS: Record<
     companyName: "Microsoft",
     sector: "Technology",
     industry: "Software",
+  },
+  RTX: {
+    companyName: "RTX",
+    sector: "Industrials",
+    industry: "Aerospace & Defense",
+  },
+  NBIS: {
+    companyName: "Nebius Group",
+    sector: "Technology",
+    industry: "Cloud Infrastructure",
+  },
+  PANW: {
+    companyName: "Palo Alto Networks",
+    sector: "Technology",
+    industry: "Cybersecurity",
+  },
+  TSLA: {
+    companyName: "Tesla",
+    sector: "Consumer Discretionary",
+    industry: "Automobile Manufacturers",
+  },
+  AEP: {
+    companyName: "American Electric Power",
+    sector: "Utilities",
+    industry: "Regulated Electric Utilities",
+  },
+  JOBY: {
+    companyName: "Joby Aviation",
+    sector: "Industrials",
+    industry: "Aerospace & Defense",
+  },
+  INTC: {
+    companyName: "Intel",
+    sector: "Technology",
+    industry: "Semiconductors",
+  },
+  ABBV: {
+    companyName: "AbbVie",
+    sector: "Healthcare",
+    industry: "Drug Manufacturers - General",
   },
 };
 

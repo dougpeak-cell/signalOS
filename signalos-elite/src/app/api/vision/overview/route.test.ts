@@ -34,12 +34,22 @@ vi.mock("@/lib/vision/personal/buildPersonalIntelligence", () => ({
   buildPersonalIntelligence: vi.fn(),
 }));
 
+vi.mock("@/lib/vision/personal/classifyPortfolioHoldings", () => ({
+  classifyPortfolioHoldings: vi.fn(async (holdings: Array<Record<string, unknown>>) => holdings),
+}));
+
 vi.mock("@/lib/vision/personal/classificationFallbacks", () => ({
   getClassificationFallback: vi.fn(() => null),
 }));
 
-vi.mock("@/lib/vision/personal/resolveSymbolClassification", () => ({
-  resolveSymbolClassification: vi.fn(() => null),
+vi.mock("@/lib/vision/personal/resolvePortfolioClassification", () => ({
+  resolvePortfolioClassification: vi.fn(async (symbol: string) => ({
+    symbol,
+    companyName: null,
+    sector: null,
+    industry: null,
+    source: "unresolved",
+  })),
 }));
 
 vi.mock("@/lib/intelligence/market-health", () => ({

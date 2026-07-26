@@ -21,8 +21,8 @@ import { buildVisionHorizonViews } from "@/lib/intelligence/visionHorizons";
 import { buildVisionPortfolioIntelligence } from "@/lib/intelligence/visionPortfolio";
 import { getStoredMarketContext } from "@/lib/intelligence/contextStore";
 import { buildPersonalIntelligence } from "@/lib/vision/personal/buildPersonalIntelligence";
-import { getClassificationFallback } from "@/lib/vision/personal/classificationFallbacks";
-import { resolveSymbolClassification } from "@/lib/vision/personal/resolveSymbolClassification";
+import { classifyPortfolioHoldings } from "@/lib/vision/personal/classifyPortfolioHoldings";
+import { resolvePortfolioClassification } from "@/lib/vision/personal/resolvePortfolioClassification";
 import type { PersonalIntelligenceResult } from "@/lib/vision/personal/types";
 import type { PortfolioItem } from "@/lib/intelligence/buildMarketIntel";
 import type {
@@ -197,8 +197,6 @@ type ApiLesson = {
   example?: string | null;
 };
 
-const PORTFOLIO_CLASSIFICATION_CONCURRENCY = 4;
-
 type ApiVisionOverview = {
   status: ApiDataStatus;
   updatedAt: string | null;
@@ -218,6 +216,12 @@ type ApiVisionOverview = {
   } | null;
   personalIntelligence: PersonalIntelligenceResult;
   lesson: ApiLesson | null;
+};
+
+type ClassifiedPortfolioHolding = PortfolioItem & {
+  symbol: string;
+  companyName?: string | null;
+  industry?: string | null;
 };
 
 function clampScore(value: number) {
@@ -583,77 +587,6 @@ function buildApiVisionOverview(
 
 function canPersistVisionSnapshots() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
-}
-
-async function classifyMissingHoldings(
-  holdings: PortfolioItem[],
-): Promise<Array<PortfolioItem & {
-  symbol?: string;
-  companyName?: string | null;
-  industry?: string | null;
-}>> {
-  const results = [...holdings];
-
-  for (let index = 0; index < holdings.length; index += PORTFOLIO_CLASSIFICATION_CONCURRENCY) {
-    const batch = holdings.slice(index, index + PORTFOLIO_CLASSIFICATION_CONCURRENCY);
-
-    const resolvedBatch = await Promise.all(
-      batch.map(async (holding) => {
-        const symbol = (
-          holding.symbol ??
-          holding.ticker ??
-          ""
-        )
-          .trim()
-          .toUpperCase();
-
-        if (!symbol || (holding.sector && (holding as { industry?: string | null }).industry)) {
-          return {
-            ...holding,
-            symbol,
-          };
-        }
-
-        try {
-          const classification = await resolveSymbolClassification(symbol);
-
-          return {
-            ...holding,
-            symbol,
-            companyName:
-              (holding as { companyName?: string | null }).companyName ??
-              holding.name ??
-              classification?.companyName ??
-              null,
-            sector:
-              holding.sector ??
-              classification?.sector ??
-              null,
-            industry:
-              (holding as { industry?: string | null }).industry ??
-              classification?.industry ??
-              null,
-          };
-        } catch (error) {
-          console.error("Portfolio classification failed", {
-            symbol,
-            error,
-          });
-
-          return {
-            ...holding,
-            symbol,
-          };
-        }
-      }),
-    );
-
-    resolvedBatch.forEach((holding, batchIndex) => {
-      results[index + batchIndex] = holding;
-    });
-  }
-
-  return results;
 }
 
 function toNumber(value: unknown, fallback = 0) {
@@ -1308,10 +1241,50 @@ function getOverviewStatus({
 export async function GET() {
   const storedMarketContext = await getStoredMarketContext();
   const portfolioHoldings = storedMarketContext.portfolio;
-  const liveClassifiedHoldings = await classifyMissingHoldings(
-    portfolioHoldings,
+  const normalizedHoldings: ClassifiedPortfolioHolding[] = portfolioHoldings.map((holding) => ({
+    ...holding,
+    symbol: (
+      holding.symbol ??
+      holding.ticker ??
+      ""
+    )
+      .trim()
+      .toUpperCase(),
+  }));
+  const classifiedHoldings = await classifyPortfolioHoldings(
+    normalizedHoldings,
+    async (symbol) => {
+      const classification = await resolvePortfolioClassification(symbol);
+
+      if (classification.source === "unresolved") {
+        return null;
+      }
+
+      return {
+        companyName: classification.companyName,
+        name: classification.companyName,
+        sector: classification.sector,
+        industry: classification.industry,
+      };
+    },
   );
-  const portfolioHoldingsWithClassification = liveClassifiedHoldings.map((holding) => {
+
+  console.info(
+    "Portfolio classification result",
+    classifiedHoldings.map((holding) => ({
+      symbol: holding.symbol,
+      sector: holding.sector ?? null,
+      industry: holding.industry ?? null,
+      status:
+        holding.sector && holding.industry
+          ? "classified"
+          : holding.sector || holding.industry
+            ? "partial"
+            : "unresolved",
+    })),
+  );
+
+  const portfolioHoldingsWithClassification = classifiedHoldings.map((holding) => {
     const symbol = (
       holding.symbol ??
       holding.ticker ??
@@ -1320,35 +1293,29 @@ export async function GET() {
       .trim()
       .toUpperCase();
 
-    const fallback = getClassificationFallback(symbol);
-
     return {
       ...holding,
       symbol,
       name:
         holding.name ??
         holding.companyName ??
-        fallback?.companyName ??
         null,
       companyName:
         holding.companyName ??
         holding.name ??
-        fallback?.companyName ??
         null,
       sector:
         holding.sector ??
-        fallback?.sector ??
         null,
       industry:
         holding.industry ??
-        fallback?.industry ??
         null,
     };
   });
 
   const unresolvedSymbols = portfolioHoldingsWithClassification
     .filter((holding) => !holding.sector || !holding.industry)
-    .map((holding) => holding.symbol ?? holding.ticker ?? "")
+    .map((holding) => holding.symbol ?? "")
     .filter(Boolean);
 
   console.info("Portfolio classification summary", {

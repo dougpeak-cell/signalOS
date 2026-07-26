@@ -79,18 +79,18 @@ describe("buildPersonalIntelligence", () => {
 
     expect(result.holdings).toHaveLength(13);
     expect(result.coverage.totalHoldings).toBe(13);
-    expect(result.coverage.classifiedHoldings).toBe(5);
-    expect(result.coverage.partialHoldings).toBe(1);
-    expect(result.coverage.pendingHoldings).toBe(7);
-    expect(result.coverage.holdingCoveragePercent).toBe(38.5);
-    expect(result.coverage.valueCoveragePercent).toBe(67.2);
+    expect(result.coverage.classifiedHoldings).toBe(8);
+    expect(result.coverage.partialHoldings).toBe(0);
+    expect(result.coverage.pendingHoldings).toBe(5);
+    expect(result.coverage.holdingCoveragePercent).toBe(61.5);
+    expect(result.coverage.valueCoveragePercent).toBe(80);
     expect(result.coverage.isReliable).toBe(false);
     expect(result.largestExposure).toBeNull();
     expect(result.concentrationLevel).toBeNull();
     expect(result.holdings.filter((entry) => entry.symbol === "TSLA")).toHaveLength(2);
     expect(result.holdings.find((entry) => entry.symbol === "ABBV")).toMatchObject({
-      classificationStatus: "partial",
-      classificationReason: "Additional industry information is still being resolved.",
+      classificationStatus: "classified",
+      classificationReason: null,
     });
     expect(result.holdings.find((entry) => entry.symbol === "MSFT")?.pulseScore).toBeNull();
   });
