@@ -236,4 +236,33 @@ describe("GET /api/vision/overview", () => {
       "no-store, no-cache, must-revalidate",
     );
   });
+
+  it("keeps the Vision response available when Portfolio Pulse lookup fails", async () => {
+    const query = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      in: vi.fn(),
+      order: vi.fn(),
+    };
+    query.select.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    query.in.mockReturnValue(query);
+    query.order.mockRejectedValue(new Error("Snapshot service unavailable"));
+    vi.mocked(createSupabaseAdminClient).mockReturnValue({
+      from: vi.fn(() => query),
+    } as unknown as ReturnType<typeof createSupabaseAdminClient>);
+
+    const response = await GET();
+    const payload = await response.json();
+    const latestBuilderCall = vi.mocked(buildPersonalIntelligence).mock.calls.at(-1);
+
+    expect(response.status).toBe(200);
+    expect(payload.status).toBeTruthy();
+    expect(latestBuilderCall?.[0]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ symbol: "XOM", pulseStatus: "error" }),
+        expect.objectContaining({ symbol: "MSFT", pulseStatus: "error" }),
+      ]),
+    );
+  });
 });

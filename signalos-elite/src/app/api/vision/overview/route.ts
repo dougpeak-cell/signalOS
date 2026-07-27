@@ -870,22 +870,27 @@ async function loadPortfolioHoldingPulses(
     return resolvePortfolioHoldingPulses(symbols, []);
   }
 
-  const { data, error } = await supabase
-    .from("amsa_pulse_snapshots")
-    .select("entity_key, score, state, direction, status, calculated_at")
-    .eq("entity_type", "stock")
-    .in("entity_key", normalizedSymbols)
-    .order("calculated_at", { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from("amsa_pulse_snapshots")
+      .select("entity_key, score, state, direction, status, calculated_at")
+      .eq("entity_type", "stock")
+      .in("entity_key", normalizedSymbols)
+      .order("calculated_at", { ascending: false });
 
-  if (error) {
-    console.error("Portfolio Pulse snapshot error:", error);
+    if (error) {
+      console.error("Portfolio Pulse snapshot error:", error);
+      return resolvePortfolioHoldingPulses(symbols, [], new Date(), true);
+    }
+
+    return resolvePortfolioHoldingPulses(
+      symbols,
+      (data ?? []) as PortfolioPulseSnapshotRow[],
+    );
+  } catch (error) {
+    console.error("Portfolio Pulse snapshot request failed:", error);
     return resolvePortfolioHoldingPulses(symbols, [], new Date(), true);
   }
-
-  return resolvePortfolioHoldingPulses(
-    symbols,
-    (data ?? []) as PortfolioPulseSnapshotRow[],
-  );
 }
 
 function toNumber(value: unknown, fallback = 0) {
@@ -1655,10 +1660,22 @@ export async function GET() {
     )
   );
 
-  const holdingPulses = await loadPortfolioHoldingPulses(
-    createSupabaseAdminClient(),
-    portfolioTickers,
-  );
+  let holdingPulses;
+
+  try {
+    holdingPulses = await loadPortfolioHoldingPulses(
+      createSupabaseAdminClient(),
+      portfolioTickers,
+    );
+  } catch (error) {
+    console.error("Portfolio Pulse client initialization failed:", error);
+    holdingPulses = resolvePortfolioHoldingPulses(
+      portfolioTickers,
+      [],
+      new Date(),
+      true,
+    );
+  }
   const personalIntelligence = buildPersonalIntelligence(
     portfolioHoldingsWithClassification.map((holding) => ({
       ...holding,

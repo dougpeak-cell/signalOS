@@ -1108,7 +1108,6 @@ export default function VisionPage() {
       } catch (error) {
         console.error("Vision load error:", error);
 
-        setOverview(EMPTY_OVERVIEW);
         setLoadError(
           "Vision could not retrieve the current market intelligence snapshot.",
         );
