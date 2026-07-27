@@ -8,6 +8,8 @@ import { PersonalIntelligenceHoldings } from "@/components/vision/PersonalIntell
 import { PortfolioClassificationProgress } from "@/components/vision/PortfolioClassificationProgress";
 import StockPulseExperience from "@/components/vision/StockPulseExperience";
 import { TodaysVision } from "@/components/vision/TodaysVision";
+import { FeaturedPulseCard } from "@/components/vision/featured-pulse-card";
+import { FeaturedPulseRanking } from "@/components/vision/featured-pulse-ranking";
 import type {
   AMSAFutureMap,
   AMSAFutureMapHorizon,
@@ -22,6 +24,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -187,7 +190,33 @@ type Lesson = {
   example?: string | null;
 };
 
-type VisionOverview = {
+export type FeaturedPulse = {
+  symbol: string;
+  companyName?: string | null;
+
+  pulseScore?: number | null;
+  opportunityScore?: number | null;
+  confidence?: number | null;
+  dnaAlignment?: number | null;
+
+  rvol?: number | null;
+  dailyChangePercent?: number | null;
+
+  direction?: string | null;
+  heartbeatDelta?: number | null;
+
+  liquidityScore?: number | null;
+  riskScore?: number | null;
+
+  classification?: string | null;
+  asOf?: string | Date | null;
+
+  featuredScore: number;
+  selectionReasons: string[];
+  rank: number;
+};
+
+export type VisionOverviewResponse = {
   status: DataStatus;
   updatedAt: string | null;
   generatedAt?: string | null;
@@ -211,6 +240,8 @@ type VisionOverview = {
   personalIntelligence?: PersonalIntelligenceResult | null;
 
   lesson: Lesson | null;
+  featuredPulse: FeaturedPulse | null;
+  featuredPulseRanking: FeaturedPulse[];
 };
 
 type VisionAnswer = {
@@ -232,7 +263,7 @@ type LiveFutureMapResponse = {
    Helpers
 ========================================================= */
 
-const EMPTY_OVERVIEW: VisionOverview = {
+const EMPTY_OVERVIEW: VisionOverviewResponse = {
   status: "unavailable",
   updatedAt: null,
   marketPulse: null,
@@ -245,6 +276,8 @@ const EMPTY_OVERVIEW: VisionOverview = {
   intelligence: null,
   personalIntelligence: null,
   lesson: null,
+  featuredPulse: null,
+  featuredPulseRanking: [],
 };
 
 const FUTURE_MAP_SYMBOL_FALLBACKS = ["NVDA", "AAPL", "MSFT", "TSLA"];
@@ -999,7 +1032,11 @@ function FutureMapPanel({
 ========================================================= */
 
 export default function VisionPage() {
-  const [overview, setOverview] = useState<VisionOverview>(EMPTY_OVERVIEW);
+  const [overview, setOverview] = useState<VisionOverviewResponse>(EMPTY_OVERVIEW);
+  const visionRequestRef = useRef<Promise<void> | null>(null);
+  const lastVisionRequestAtRef = useRef(0);
+  const featuredPulse = overview.featuredPulse ?? null;
+  const [viewedSymbol, setViewedSymbol] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [liveFutureMap, setLiveFutureMap] = useState<AMSAFutureMap | null>(null);
   const [futureMapLoading, setFutureMapLoading] = useState(false);
@@ -1018,40 +1055,76 @@ export default function VisionPage() {
   const [answer, setAnswer] = useState<VisionAnswer | null>(null);
   const [askError, setAskError] = useState<string | null>(null);
 
-  const loadVision = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
+  useEffect(() => {
+    if (!viewedSymbol && featuredPulse?.symbol) {
+      setViewedSymbol(featuredPulse.symbol);
+    }
+  }, [featuredPulse?.symbol, viewedSymbol]);
+
+  const activeSymbol = viewedSymbol ?? featuredPulse?.symbol ?? null;
+
+  const loadVision = useCallback(async (force = false) => {
+    const now = Date.now();
+
+    if (!force && now - lastVisionRequestAtRef.current < 15_000) {
+      return;
+    }
+
+    if (visionRequestRef.current) {
+      await visionRequestRef.current;
+      return;
+    }
+
+    lastVisionRequestAtRef.current = now;
+
+    const request = (async () => {
+      setLoading(true);
+      setLoadError(null);
+
+      try {
+        const response = await fetch("/api/vision/overview", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Vision request failed: ${response.status}`);
+        }
+
+        const payload = (await response.json()) as VisionOverviewResponse;
+
+        setOverview({
+          ...EMPTY_OVERVIEW,
+          ...payload,
+          sectors: Array.isArray(payload.sectors) ? payload.sectors : [],
+          stocks: Array.isArray(payload.stocks) ? payload.stocks : [],
+          watchlistChanges: Array.isArray(payload.watchlistChanges)
+            ? payload.watchlistChanges
+            : [],
+          changes: Array.isArray(payload.changes) ? payload.changes : [],
+          featuredPulseRanking: Array.isArray(payload.featuredPulseRanking)
+            ? payload.featuredPulseRanking
+            : [],
+        });
+      } catch (error) {
+        console.error("Vision load error:", error);
+
+        setOverview(EMPTY_OVERVIEW);
+        setLoadError(
+          "Vision could not retrieve the current market intelligence snapshot.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    visionRequestRef.current = request;
 
     try {
-      const response = await fetch("/api/vision/overview", {
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Vision request failed: ${response.status}`);
-      }
-
-      const payload = (await response.json()) as VisionOverview;
-
-      setOverview({
-        ...EMPTY_OVERVIEW,
-        ...payload,
-        sectors: Array.isArray(payload.sectors) ? payload.sectors : [],
-        stocks: Array.isArray(payload.stocks) ? payload.stocks : [],
-        watchlistChanges: Array.isArray(payload.watchlistChanges)
-          ? payload.watchlistChanges
-          : [],
-        changes: Array.isArray(payload.changes) ? payload.changes : [],
-      });
-    } catch (error) {
-      console.error("Vision load error:", error);
-
-      setOverview(EMPTY_OVERVIEW);
-      setLoadError(
-        "Vision could not retrieve the current market intelligence snapshot.",
-      );
+      await request;
     } finally {
-      setLoading(false);
+      if (visionRequestRef.current === request) {
+        visionRequestRef.current = null;
+      }
     }
   }, []);
 
@@ -1062,7 +1135,22 @@ export default function VisionPage() {
       void loadVision();
     }, 60_000);
 
-    return () => window.clearInterval(interval);
+    const refreshVisibleVision = () => {
+      if (document.visibilityState === "visible") {
+        void loadVision();
+      }
+    };
+
+    window.addEventListener("focus", refreshVisibleVision);
+    window.addEventListener("online", refreshVisibleVision);
+    document.addEventListener("visibilitychange", refreshVisibleVision);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshVisibleVision);
+      window.removeEventListener("online", refreshVisibleVision);
+      document.removeEventListener("visibilitychange", refreshVisibleVision);
+    };
   }, [loadVision]);
 
   const sortedSectors = useMemo(() => {
@@ -1322,6 +1410,16 @@ export default function VisionPage() {
                   The market has a Pulse.
                 </h1>
 
+                <div className="vision-featured-explanation">
+                  <span>How today&apos;s stock is chosen</span>
+
+                  <p>
+                    Sigi ranks every qualified stock using opportunity, current Pulse,
+                    confidence, DNA alignment, Heartbeat direction, relative volume,
+                    risk efficiency, and snapshot freshness.
+                  </p>
+                </div>
+
                 <p className="mt-3 text-xl font-semibold text-cyan-200 sm:text-2xl">
                   Sigi reads it with AMSA.
                 </p>
@@ -1384,6 +1482,22 @@ export default function VisionPage() {
           </div>
         ) : null}
 
+        <div className="mt-5">
+          <FeaturedPulseCard
+            stock={featuredPulse}
+            isViewedStock={activeSymbol === featuredPulse?.symbol}
+            onOpen={(symbol) => {
+              setViewedSymbol(symbol);
+            }}
+          />
+
+          <FeaturedPulseRanking
+            stocks={overview.featuredPulseRanking}
+            activeSymbol={activeSymbol}
+            onSelect={setViewedSymbol}
+          />
+        </div>
+
         {loadError ? (
           <div className="mt-5 rounded-2xl border border-rose-400/20 bg-rose-500/5.5 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1391,7 +1505,7 @@ export default function VisionPage() {
 
               <button
                 type="button"
-                onClick={() => void loadVision()}
+                onClick={() => void loadVision(true)}
                 className="rounded-xl border border-rose-300/25 bg-rose-400/10 px-4 py-2 text-xs font-semibold text-rose-100"
               >
                 Retry
@@ -1625,9 +1739,12 @@ export default function VisionPage() {
         <GlassPanel className="mt-5 p-5 sm:p-6 lg:p-7">
           <StockPulseExperience
             stocks={overview.stocks}
+            viewedSymbol={activeSymbol}
+            featuredSymbol={featuredPulse?.symbol}
             loading={loading}
             title="Every stock has a price. Sigi reveals its Pulse, Heartbeat, and DNA."
-            description="Pulse measures its current condition. Heartbeat shows how that condition is changing. DNA explains why."
+            description="Sigi continuously ranks verified market opportunities. The highest composite reading becomes today’s Featured Pulse."
+            onSelectSymbol={setViewedSymbol}
           />
         </GlassPanel>
 

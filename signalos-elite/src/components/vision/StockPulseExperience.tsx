@@ -4,9 +4,7 @@ import Link from "next/link";
 import {
   CSSProperties,
   ReactNode,
-  useEffect,
   useMemo,
-  useState,
 } from "react";
 
 /* =========================================================
@@ -77,7 +75,8 @@ export type StockPulseExperienceItem = {
 
 type StockPulseExperienceProps = {
   stocks: StockPulseExperienceItem[];
-  initialSymbol?: string | null;
+  viewedSymbol?: string | null;
+  featuredSymbol?: string | null;
   loading?: boolean;
   title?: string;
   description?: string;
@@ -866,10 +865,12 @@ function PulseDNAHelix({
 function StockPulseSelectorCard({
   stock,
   active,
+  featured,
   onSelect,
 }: {
   stock: StockPulseExperienceItem;
   active: boolean;
+  featured: boolean;
   onSelect: () => void;
 }) {
   const score = safeScore(stock.score);
@@ -899,9 +900,9 @@ function StockPulseSelectorCard({
               {stock.symbol}
             </p>
 
-            {active ? (
+            {featured || active ? (
               <span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-cyan-200">
-                Selected
+                {featured ? "Today’s Featured Pulse" : "Viewing"}
               </span>
             ) : null}
           </div>
@@ -967,13 +968,15 @@ function StockPulseSelectorCard({
 }
 
 /* =========================================================
-   Selected Stock Intelligence
+  Viewed Stock Intelligence
 ========================================================= */
 
-function SelectedStockPulse({
+function ViewedStockPulse({
   stock,
+  featured,
 }: {
   stock: StockPulseExperienceItem;
+  featured: boolean;
 }) {
   const score = safeScore(stock.score);
   const opportunity = safeScore(stock.opportunityScore);
@@ -996,7 +999,7 @@ function SelectedStockPulse({
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-cyan-300">
-                  Selected Stock Pulse
+                  {featured ? "Featured Stock Pulse" : "Viewed Stock Pulse"}
                 </p>
 
                 <div className="mt-2 flex flex-wrap items-baseline gap-2">
@@ -1270,40 +1273,19 @@ function SelectedStockPulse({
 
 export default function StockPulseExperience({
   stocks,
-  initialSymbol,
+  viewedSymbol,
+  featuredSymbol,
   loading = false,
   title = "Every stock has a Pulse",
   description = "Pulse measures its current condition. Heartbeat shows how that condition is changing. DNA explains why.",
   onSelectSymbol,
 }: StockPulseExperienceProps) {
-  const firstSymbol = stocks[0]?.symbol ?? null;
-
-  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(
-    initialSymbol ?? firstSymbol,
-  );
-
-  useEffect(() => {
-    if (!stocks.length) {
-      setSelectedSymbol(null);
-      return;
-    }
-
-    const stillExists = stocks.some(
-      (stock) => stock.symbol === selectedSymbol,
-    );
-
-    if (!stillExists) {
-      setSelectedSymbol(initialSymbol ?? stocks[0].symbol);
-    }
-  }, [initialSymbol, selectedSymbol, stocks]);
-
-  const selectedStock =
-    stocks.find((stock) => stock.symbol === selectedSymbol) ??
+  const viewedStock =
+    stocks.find((stock) => stock.symbol === viewedSymbol) ??
     stocks[0] ??
     null;
 
   function selectStock(symbol: string) {
-    setSelectedSymbol(symbol);
     onSelectSymbol?.(symbol);
   }
 
@@ -1352,16 +1334,20 @@ export default function StockPulseExperience({
                 <StockPulseSelectorCard
                   key={stock.symbol}
                   stock={stock}
-                  active={stock.symbol === selectedStock?.symbol}
+                  active={stock.symbol === viewedStock?.symbol}
+                  featured={stock.symbol === featuredSymbol}
                   onSelect={() => selectStock(stock.symbol)}
                 />
               ))}
             </div>
           </div>
 
-          {selectedStock ? (
+          {viewedStock ? (
             <div className="mt-5">
-              <SelectedStockPulse stock={selectedStock} />
+              <ViewedStockPulse
+                stock={viewedStock}
+                featured={viewedStock.symbol === featuredSymbol}
+              />
             </div>
           ) : null}
         </>

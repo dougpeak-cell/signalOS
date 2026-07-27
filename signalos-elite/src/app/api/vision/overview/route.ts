@@ -24,6 +24,12 @@ import { buildPersonalIntelligence } from "@/lib/vision/personal/buildPersonalIn
 import { classifyPortfolioHoldings } from "@/lib/vision/personal/classifyPortfolioHoldings";
 import { resolvePortfolioClassification } from "@/lib/vision/personal/resolvePortfolioClassification";
 import type { PersonalIntelligenceResult } from "@/lib/vision/personal/types";
+import {
+  rankFeaturedPulseCandidates,
+  selectFeaturedPulse,
+  type FeaturedPulseCandidate,
+} from "@/lib/vision/select-featured-pulse";
+import { calculateMarketVolumeScore } from "@/lib/vision/market-volume-score";
 import type { PortfolioItem } from "@/lib/intelligence/buildMarketIntel";
 import type {
   VisionChange,
@@ -40,7 +46,15 @@ import type {
 } from "@/lib/today/setupDiscovery";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export const runtime = "nodejs";
+
+const MARKET_VOLUME_CACHE_TTL_MS = 5 * 60_000;
+
+let marketVolumeScoreCache: {
+  expiresAt: number;
+  value: Promise<number | null>;
+} | null = null;
 
 type VisionSnapshotRecord = {
   id: number;
@@ -145,6 +159,7 @@ type ApiStockPulse = ApiPulseReading & {
   sector?: string | null;
   price: number | null;
   changePercent: number | null;
+  relativeVolume?: number | null;
   opportunityScore?: number | null;
   riskScore?: number | null;
   history?: ApiPulseHistoryPoint[];
@@ -217,6 +232,7 @@ type ApiLesson = {
 
 type ApiVisionOverview = {
   status: ApiDataStatus;
+  generatedAt: string;
   updatedAt: string | null;
   marketOpen?: boolean | null;
   marketPulse: ApiMarketPulse | null;
@@ -234,6 +250,8 @@ type ApiVisionOverview = {
   } | null;
   personalIntelligence: PersonalIntelligenceResult;
   lesson: ApiLesson | null;
+  featuredPulse: ReturnType<typeof selectFeaturedPulse>;
+  featuredPulseRanking: ReturnType<typeof rankFeaturedPulseCandidates>;
 };
 
 type ClassifiedPortfolioHolding = PortfolioItem & {
@@ -327,8 +345,12 @@ function buildMarketPulse(
       {
         key: "volume",
         label: "Volume",
-        score: null,
-        explanation: "A dedicated unified volume component is not connected to Vision Overview yet.",
+        score: snapshot.market.volume ?? null,
+        direction: directionFromScores(
+          snapshot.market.volume ?? null,
+          previousSnapshot?.market.volume ?? null,
+        ) ?? undefined,
+        explanation: "SPY, QQQ, and IWM daily volume is compared with each index ETF's prior 20-session average, then weighted 40%, 35%, and 25%.",
       },
       {
         key: "breadth",
@@ -525,6 +547,7 @@ function buildStockPulses(
       sector: opportunity.sector,
       price: opportunity.price,
       changePercent: opportunity.changePercent,
+      relativeVolume: opportunity.relativeVolume ?? null,
       opportunityScore: opportunity.scores.opportunity,
       riskScore: opportunity.scores.risk,
       score: opportunity.scores.opportunity,
@@ -699,9 +722,33 @@ function buildApiVisionOverview(
     snapshot.updatedAt,
   );
   const stockMap = new Map(stocks.map((stock) => [stock.symbol, stock]));
+  const featuredCandidates: FeaturedPulseCandidate[] = stocks.map((stock) => ({
+    symbol: stock.symbol,
+    companyName: stock.company ?? null,
+    pulseScore: stock.score,
+    opportunityScore: stock.opportunityScore ?? null,
+    confidence: stock.confidence,
+    dnaAlignment: stock.alignment ?? null,
+    rvol: stock.relativeVolume ?? null,
+    dailyChangePercent: stock.changePercent,
+    direction: stock.direction,
+    heartbeatDelta:
+      stock.score != null && stock.previousScore != null
+        ? stock.score - stock.previousScore
+        : null,
+    liquidityScore: null,
+    riskScore: stock.riskScore ?? null,
+    classification: stock.state,
+    qualified: true,
+    asOf: stock.updatedAt ?? stock.calculatedAt ?? null,
+    reasons: stock.reasons ?? [],
+  }));
+  const featuredPulse = selectFeaturedPulse(featuredCandidates);
+  const featuredPulseRanking = rankFeaturedPulseCandidates(featuredCandidates).slice(0, 5);
 
   return {
     status: snapshot.status,
+    generatedAt: new Date().toISOString(),
     updatedAt:
       marketPulse?.calculatedAt ??
       marketPulse?.updatedAt ??
@@ -722,6 +769,8 @@ function buildApiVisionOverview(
     },
     personalIntelligence,
     lesson: null,
+    featuredPulse,
+    featuredPulseRanking,
   };
 }
 
@@ -1356,6 +1405,7 @@ function buildVisionOpportunity(
     sector: item.sector ?? "Unclassified",
     price: item.price,
     changePercent: item.changePercent,
+    relativeVolume: scoreInputs.relativeVolume,
     bias: item.bias,
     scores,
     setupType: item.structureLabel,
@@ -1445,6 +1495,29 @@ function getOverviewStatus({
   }
 
   return "unavailable";
+}
+
+async function getMarketVolumeScore(): Promise<number | null> {
+  const now = Date.now();
+
+  if (marketVolumeScoreCache && marketVolumeScoreCache.expiresAt > now) {
+    return marketVolumeScoreCache.value;
+  }
+
+  const value = Promise.all([
+    getHistoryBars("SPY", "3mo"),
+    getHistoryBars("QQQ", "3mo"),
+    getHistoryBars("IWM", "3mo"),
+  ]).then(([spy, qqq, iwm]) =>
+    calculateMarketVolumeScore({ spy, qqq, iwm }),
+  );
+
+  marketVolumeScoreCache = {
+    expiresAt: now + MARKET_VOLUME_CACHE_TTL_MS,
+    value,
+  };
+
+  return value;
 }
 
 export async function GET() {
@@ -1545,15 +1618,18 @@ export async function GET() {
     )
   );
 
-  const [sectorResult, discoveryResult, quoteMapResult] = await Promise.allSettled([
+  const [sectorResult, discoveryResult, quoteMapResult, marketVolumeResult] = await Promise.allSettled([
     buildSectorComparisonData(),
     getSetupDiscoveryData(),
     fetchServerQuoteMap([...portfolioTickers, "SPY", "QQQ", "IWM", "^VIX"]),
+    getMarketVolumeScore(),
   ]);
 
   const sectorComparison = sectorResult.status === "fulfilled" ? sectorResult.value : null;
   const discovery = discoveryResult.status === "fulfilled" ? discoveryResult.value : null;
   const quoteMap = quoteMapResult.status === "fulfilled" ? quoteMapResult.value : null;
+  const marketVolumeScore =
+    marketVolumeResult.status === "fulfilled" ? marketVolumeResult.value : null;
 
   const bullishCount = discovery
     ? discovery.candidates.filter((candidate) => candidate.signal?.toLowerCase().includes("bull")).length
@@ -1658,8 +1734,7 @@ export async function GET() {
         });
       })
       .filter((item) => meetsConvictionGate(item, candidateMap.get(item.ticker)))
-      .sort((left, right) => right.score - left.score)
-      .slice(0, 10);
+      .sort((left, right) => right.score - left.score);
 
     const historyEntries = await Promise.all(
       rankedUniverse.map(async (item) => [item.ticker, await getHistoryBars(item.ticker, "3mo")] as const)
@@ -1705,8 +1780,7 @@ export async function GET() {
         }
 
         return right.scores.confidence - left.scores.confidence;
-      })
-      .slice(0, 5);
+      });
   }
 
   const market = {
@@ -1714,6 +1788,7 @@ export async function GET() {
     regime: regime as VisionRegime,
     confidence: marketConfidence,
     trend,
+    volume: marketVolumeScore,
     breadth: marketInputs.breadthPercent,
     volatility,
   };
@@ -1807,5 +1882,9 @@ export async function GET() {
     personalIntelligence,
   );
 
-  return NextResponse.json(apiPayload);
+  return NextResponse.json(apiPayload, {
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    },
+  });
 }

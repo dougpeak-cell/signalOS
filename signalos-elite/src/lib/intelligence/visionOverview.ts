@@ -16,6 +16,7 @@ export type VisionOpportunity = {
   sector: string;
   price: number | null;
   changePercent: number | null;
+  relativeVolume?: number | null;
   bias: "bullish" | "bearish" | "neutral";
   scores: SigiScores;
   setupType: string;
@@ -100,6 +101,7 @@ export type VisionOverview = {
     regime: VisionRegime;
     confidence: number;
     trend: number;
+    volume?: number | null;
     breadth: number;
     volatility: number;
   };

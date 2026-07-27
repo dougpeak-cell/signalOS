@@ -34,6 +34,14 @@ vi.mock("@/lib/vision/personal/buildPersonalIntelligence", () => ({
   buildPersonalIntelligence: vi.fn(),
 }));
 
+vi.mock("@/lib/vision/select-featured-pulse", async () =>
+  import("../../../../lib/vision/select-featured-pulse"),
+);
+
+vi.mock("@/lib/vision/market-volume-score", async () =>
+  import("../../../../lib/vision/market-volume-score"),
+);
+
 vi.mock("@/lib/vision/personal/classifyPortfolioHoldings", () => ({
   classifyPortfolioHoldings: vi.fn(async (holdings: Array<Record<string, unknown>>) => holdings),
 }));
@@ -186,5 +194,11 @@ describe("GET /api/vision/overview", () => {
     expect(payload.personalIntelligence.holdings).toHaveLength(13);
     expect(payload.personalIntelligence.coverage.holdingCoveragePercent).toBe(38.5);
     expect(payload.personalIntelligence.coverage.valueCoveragePercent).toBe(67.2);
+    expect(payload.featuredPulse).toBeNull();
+    expect(payload.featuredPulseRanking).toEqual([]);
+    expect(payload.generatedAt).toEqual(expect.any(String));
+    expect(response.headers.get("Cache-Control")).toBe(
+      "no-store, no-cache, must-revalidate",
+    );
   });
 });
