@@ -29,6 +29,15 @@ function getPulseDirection(
   };
 }
 
+function getPulseStatusLabel(
+  status: PersonalIntelligenceHolding["pulseStatus"],
+) {
+  if (status === "stale") return "Stale Pulse";
+  if (status === "unsupported") return "Not supported";
+  if (status === "error") return "Pulse unavailable";
+  return "Awaiting first Pulse";
+}
+
 export function PersonalIntelligenceHoldings({
   holdings,
 }: {
@@ -131,18 +140,25 @@ export function PersonalIntelligenceHoldings({
               </p>
 
               {holding.pulseScore != null ? (
-                <div className="inline-flex items-center gap-2">
-                  <span className="font-semibold text-cyan-200">
-                    {holding.pulseScore.toFixed(0)}
-                  </span>
+                <div>
+                  <div className="inline-flex items-center gap-2">
+                    <span className="font-semibold text-cyan-200">
+                      {holding.pulseScore.toFixed(0)}
+                    </span>
 
-                  <span className={direction.className}>
-                    {direction.symbol}
-                  </span>
+                    <span className={direction.className}>
+                      {direction.symbol}
+                    </span>
+                  </div>
+                  {holding.pulseStatus === "stale" && (
+                    <p className="mt-1 text-[10px] text-amber-300/70">
+                      Stale
+                    </p>
+                  )}
                 </div>
               ) : (
                 <span className="text-xs text-slate-600">
-                  Awaiting Pulse
+                  {getPulseStatusLabel(holding.pulseStatus)}
                 </span>
               )}
             </div>

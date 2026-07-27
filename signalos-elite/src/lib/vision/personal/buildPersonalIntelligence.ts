@@ -25,6 +25,9 @@ type RawPortfolioHolding = {
 
   pulseScore?: number | null;
   pulseDirection?: "improving" | "weakening" | "stable" | null;
+  pulseDelta?: number | null;
+  snapshotAt?: string | null;
+  pulseStatus?: PersonalIntelligenceHolding["pulseStatus"];
 };
 
 function clamp(value: number, min = 0, max = 100) {
@@ -181,6 +184,9 @@ export function buildPersonalIntelligence(
 
         pulseScore: holding.pulseScore ?? null,
         pulseDirection: holding.pulseDirection ?? null,
+        pulseDelta: holding.pulseDelta ?? null,
+        snapshotAt: holding.snapshotAt ?? null,
+        pulseStatus: holding.pulseStatus ?? "awaiting_first_snapshot",
 
         classificationStatus: status,
         classificationReason:

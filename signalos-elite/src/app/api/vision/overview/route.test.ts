@@ -42,6 +42,10 @@ vi.mock("@/lib/vision/market-volume-score", async () =>
   import("../../../../lib/vision/market-volume-score"),
 );
 
+vi.mock("@/lib/vision/personal/portfolioPulseSnapshots", async () =>
+  import("../../../../lib/vision/personal/portfolioPulseSnapshots"),
+);
+
 vi.mock("@/lib/vision/personal/classifyPortfolioHoldings", () => ({
   classifyPortfolioHoldings: vi.fn(async (holdings: Array<Record<string, unknown>>) => holdings),
 }));
@@ -91,10 +95,32 @@ import { fetchServerQuoteMap } from "@/lib/market/serverQuote";
 import { getSetupDiscoveryData } from "@/lib/today/setupDiscoveryData";
 import { buildVisionPortfolioIntelligence } from "@/lib/intelligence/visionPortfolio";
 import { buildPersonalIntelligence } from "@/lib/vision/personal/buildPersonalIntelligence";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { GET } from "./route";
 
 describe("GET /api/vision/overview", () => {
   beforeEach(() => {
+    const snapshotRows = [
+      { entity_key: "XOM", score: 72, state: "Strong", direction: "improving", status: "ready", calculated_at: new Date().toISOString() },
+      { entity_key: "XOM", score: 68, state: "Constructive", direction: "stable", status: "ready", calculated_at: new Date(Date.now() - 86_400_000).toISOString() },
+      { entity_key: "PEP", score: 64, state: "Constructive", direction: "improving", status: "ready", calculated_at: new Date().toISOString() },
+      { entity_key: "MO", score: 59, state: "Balanced", direction: "weakening", status: "ready", calculated_at: new Date(Date.now() - 6 * 86_400_000).toISOString() },
+      { entity_key: "NVDA", score: 81, state: "Elite", direction: "improving", status: "ready", calculated_at: new Date().toISOString() },
+    ];
+    const query = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      in: vi.fn(),
+      order: vi.fn(),
+    };
+    query.select.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    query.in.mockReturnValue(query);
+    query.order.mockResolvedValue({ data: snapshotRows, error: null });
+    vi.mocked(createSupabaseAdminClient).mockReturnValue({
+      from: vi.fn(() => query),
+    } as unknown as ReturnType<typeof createSupabaseAdminClient>);
+
     vi.mocked(getStoredMarketContext).mockResolvedValue({
       portfolio: [
         { symbol: "XOM", marketValue: 100 },
@@ -190,6 +216,15 @@ describe("GET /api/vision/overview", () => {
 
     expect(buildPersonalIntelligence).toHaveBeenCalledTimes(1);
     expect(vi.mocked(buildPersonalIntelligence).mock.calls[0]?.[0]).toHaveLength(13);
+    expect(vi.mocked(buildPersonalIntelligence).mock.calls[0]?.[0]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ symbol: "XOM", pulseScore: 72, pulseDelta: 4, pulseStatus: "ready" }),
+        expect.objectContaining({ symbol: "PEP", pulseScore: 64, pulseStatus: "ready" }),
+        expect.objectContaining({ symbol: "MO", pulseScore: 59, pulseStatus: "stale" }),
+        expect.objectContaining({ symbol: "NVDA", pulseScore: 81, pulseStatus: "ready" }),
+        expect.objectContaining({ symbol: "MSFT", pulseScore: null, pulseStatus: "awaiting_first_snapshot" }),
+      ]),
+    );
     expect(payload.personalIntelligence).toBeTruthy();
     expect(payload.personalIntelligence.holdings).toHaveLength(13);
     expect(payload.personalIntelligence.coverage.holdingCoveragePercent).toBe(38.5);

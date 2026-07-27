@@ -8,6 +8,11 @@ const CLASSIFICATION_FALLBACKS: Record<
   string,
   Classification
 > = {
+  CRWV: {
+    companyName: "CoreWeave",
+    sector: "Technology",
+    industry: "Cloud Infrastructure",
+  },
   XOM: {
     companyName: "Exxon Mobil",
     sector: "Energy",

@@ -22,6 +22,12 @@ import { buildVisionPortfolioIntelligence } from "@/lib/intelligence/visionPortf
 import { getStoredMarketContext } from "@/lib/intelligence/contextStore";
 import { buildPersonalIntelligence } from "@/lib/vision/personal/buildPersonalIntelligence";
 import { classifyPortfolioHoldings } from "@/lib/vision/personal/classifyPortfolioHoldings";
+import {
+  isSupportedPortfolioSymbol,
+  normalizePortfolioSymbol,
+  resolvePortfolioHoldingPulses,
+  type PortfolioPulseSnapshotRow,
+} from "@/lib/vision/personal/portfolioPulseSnapshots";
 import { resolvePortfolioClassification } from "@/lib/vision/personal/resolvePortfolioClassification";
 import type { PersonalIntelligenceResult } from "@/lib/vision/personal/types";
 import {
@@ -848,6 +854,40 @@ async function loadStockPulseHistory(
   return grouped;
 }
 
+async function loadPortfolioHoldingPulses(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  symbols: string[],
+) {
+  const normalizedSymbols = Array.from(
+    new Set(
+      symbols
+        .map(normalizePortfolioSymbol)
+        .filter(isSupportedPortfolioSymbol),
+    ),
+  );
+
+  if (!normalizedSymbols.length) {
+    return resolvePortfolioHoldingPulses(symbols, []);
+  }
+
+  const { data, error } = await supabase
+    .from("amsa_pulse_snapshots")
+    .select("entity_key, score, state, direction, status, calculated_at")
+    .eq("entity_type", "stock")
+    .in("entity_key", normalizedSymbols)
+    .order("calculated_at", { ascending: false });
+
+  if (error) {
+    console.error("Portfolio Pulse snapshot error:", error);
+    return resolvePortfolioHoldingPulses(symbols, [], new Date(), true);
+  }
+
+  return resolvePortfolioHoldingPulses(
+    symbols,
+    (data ?? []) as PortfolioPulseSnapshotRow[],
+  );
+}
+
 function toNumber(value: unknown, fallback = 0) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
@@ -1607,15 +1647,23 @@ export async function GET() {
     unresolvedSymbols,
   });
 
-  const personalIntelligence = buildPersonalIntelligence(
-    portfolioHoldingsWithClassification,
-  );
   const portfolioTickers = Array.from(
     new Set(
       portfolioHoldingsWithClassification
         .map((item) => normalizeTicker(item.ticker ?? item.symbol ?? ""))
         .filter(Boolean)
     )
+  );
+
+  const holdingPulses = await loadPortfolioHoldingPulses(
+    createSupabaseAdminClient(),
+    portfolioTickers,
+  );
+  const personalIntelligence = buildPersonalIntelligence(
+    portfolioHoldingsWithClassification.map((holding) => ({
+      ...holding,
+      ...holdingPulses.get(normalizePortfolioSymbol(holding.symbol ?? "")),
+    })),
   );
 
   const [sectorResult, discoveryResult, quoteMapResult, marketVolumeResult] = await Promise.allSettled([

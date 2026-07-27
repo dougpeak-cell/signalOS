@@ -3,6 +3,13 @@ export type PortfolioClassificationStatus =
   | "partial"
   | "pending";
 
+export type PortfolioPulseStatus =
+  | "ready"
+  | "awaiting_first_snapshot"
+  | "stale"
+  | "unsupported"
+  | "error";
+
 export type PersonalIntelligenceHolding = {
   symbol: string;
   companyName?: string | null;
@@ -17,6 +24,9 @@ export type PersonalIntelligenceHolding = {
 
   pulseScore?: number | null;
   pulseDirection?: "improving" | "weakening" | "stable" | null;
+  pulseDelta?: number | null;
+  snapshotAt?: string | null;
+  pulseStatus: PortfolioPulseStatus;
 
   classificationStatus: PortfolioClassificationStatus;
   classificationReason?: string | null;

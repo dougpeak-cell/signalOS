@@ -60,6 +60,20 @@ describe("buildPersonalIntelligence", () => {
     expect(result.concentrationLevel).toBe("High");
   });
 
+  it("classifies CRWV as Technology when provider classification is missing", () => {
+    const result = buildPersonalIntelligence([
+      holding({ symbol: "crwv", marketValue: 100 }),
+    ]);
+
+    expect(result.holdings[0]).toMatchObject({
+      symbol: "CRWV",
+      companyName: "CoreWeave",
+      sector: "Technology",
+      industry: "Cloud Infrastructure",
+      classificationStatus: "classified",
+    });
+  });
+
   it("preserves all 13 holdings and separates holding coverage from value coverage", () => {
     const result = buildPersonalIntelligence([
       holding({ symbol: "XOM", marketValue: 100, pulseScore: null }),
