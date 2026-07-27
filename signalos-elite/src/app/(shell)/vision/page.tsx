@@ -1314,6 +1314,11 @@ export default function VisionPage() {
 
     if (!trimmed || asking) return;
 
+    if (!overview.marketPulse || overview.status === "unavailable") {
+      setAskError("Sigi is still loading verified market context. Please try again shortly.");
+      return;
+    }
+
     setAsking(true);
     setAnswer(null);
     setAskError(null);
@@ -1326,14 +1331,53 @@ export default function VisionPage() {
         },
         body: JSON.stringify({
           question: trimmed,
-          horizon,
-          context: {
-            updatedAt: overview.updatedAt,
-            marketPulse: overview.marketPulse,
-            leadingSectors: overview.sectors.slice(0, 5),
-            leadingStocks: overview.stocks.slice(0, 5),
-            portfolioPulse: overview.portfolioPulse,
-            changes: overview.changes.slice(0, 6),
+          marketContext: {
+            marketHealth: overview.marketPulse?.score ?? 0,
+            regime:
+              overview.marketPulse?.regime ??
+              overview.marketPulse?.state ??
+              "Unknown",
+            sectorLeaders: [...overview.sectors]
+              .sort((left, right) => (right.score ?? 0) - (left.score ?? 0))
+              .slice(0, 3)
+              .map((sector) => sector.sector),
+            sectorLaggards: [...overview.sectors]
+              .sort((left, right) => (left.score ?? 0) - (right.score ?? 0))
+              .slice(0, 3)
+              .map((sector) => sector.sector),
+            opportunities: overview.stocks.slice(0, 5).map((stock) => stock.symbol),
+            risks: overview.marketPulse?.risks ?? [],
+            portfolio: overview.portfolioPulse
+              ? {
+                  hasPortfolio: (overview.portfolioPulse.totalHoldings ?? 0) > 0,
+                  holdingsCount: overview.portfolioPulse.totalHoldings ?? 0,
+                  topSector: overview.portfolioPulse.largestSector ?? null,
+                  topSectorWeight: overview.portfolioPulse.largestSectorWeight ?? 0,
+                  concentrationLevel:
+                    overview.portfolioPulse.concentrationLevel === "High" ||
+                    overview.portfolioPulse.concentrationLevel === "Moderate"
+                      ? overview.portfolioPulse.concentrationLevel
+                      : "Low",
+                  alignedHoldings: overview.portfolioPulse.alignedHoldings ?? 0,
+                  weakeningHoldings: overview.portfolioPulse.topHoldings?.filter(
+                    (holding) => holding.direction === "falling",
+                  ).length ?? 0,
+                  riskConflicts: overview.portfolioPulse.conflicts ?? [],
+                  exposureSummary:
+                    overview.portfolioPulse.reasons?.[0] ??
+                    "Portfolio exposure details are still being resolved.",
+                  concentrationSummary:
+                    overview.portfolioPulse.reasons?.[1] ?? "",
+                  sectorAlignmentSummary:
+                    overview.portfolioPulse.reasons?.[2] ?? "",
+                  riskConflictSummary:
+                    overview.portfolioPulse.conflicts?.[0] ??
+                    "No immediate portfolio conflict is flagged.",
+                  earningsSummary: "",
+                  correlationSummary: "",
+                  sensitivitySummary: "",
+                }
+              : undefined,
           },
         }),
       });
@@ -1342,8 +1386,15 @@ export default function VisionPage() {
         throw new Error(`Ask Vision failed: ${response.status}`);
       }
 
-      const payload = (await response.json()) as VisionAnswer;
-      setAnswer(payload);
+      const payload = (await response.json()) as {
+        answer?: VisionAnswer;
+      };
+
+      if (!payload.answer) {
+        throw new Error("Ask Vision returned no answer");
+      }
+
+      setAnswer(payload.answer);
     } catch (error) {
       console.error("Ask Vision error:", error);
       setAskError("Sigi could not complete the analysis.");
@@ -1998,7 +2049,12 @@ export default function VisionPage() {
 
               <button
                 type="submit"
-                disabled={!question.trim() || asking}
+                disabled={
+                  !question.trim() ||
+                  asking ||
+                  !overview.marketPulse ||
+                  overview.status === "unavailable"
+                }
                 className="mt-2 min-h-12 w-full rounded-xl border border-cyan-300/30 bg-cyan-400/15 px-6 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50 sm:mt-0 sm:w-auto"
               >
                 {asking ? "Reading Pulse..." : "Analyze"}

@@ -31,6 +31,10 @@ type VisionAskRequest = {
   };
 };
 
+type LegacyVisionAskRequest = Partial<VisionAskRequest> & {
+  context?: VisionAskRequest["marketContext"];
+};
+
 export type VisionAnswer = {
   headline: string;
   summary: string;
@@ -281,9 +285,9 @@ function buildAnswer(question: string, context: VisionAskRequest["marketContext"
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as Partial<VisionAskRequest>;
+    const body = (await req.json()) as LegacyVisionAskRequest;
     const question = normalizeText(body.question);
-    const marketContext = body.marketContext;
+    const marketContext = body.marketContext ?? body.context;
 
     if (!question) {
       return NextResponse.json({ error: "Question is required." }, { status: 400 });
