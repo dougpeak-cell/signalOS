@@ -36,6 +36,11 @@ import {
   type FeaturedPulseCandidate,
 } from "@/lib/vision/select-featured-pulse";
 import { calculateMarketVolumeScore } from "@/lib/vision/market-volume-score";
+import {
+  buildFeaturedPulseMeta,
+  isUsMarketOpen,
+  type FeaturedPulseMeta,
+} from "@/lib/vision/featured-pulse-meta";
 import type { PortfolioItem } from "@/lib/intelligence/buildMarketIntel";
 import type {
   VisionChange,
@@ -161,6 +166,8 @@ type ApiSectorPulse = ApiPulseReading & {
 
 type ApiStockPulse = ApiPulseReading & {
   symbol: string;
+  marketDataAsOf?: string | null;
+  marketDataSource?: "intraday" | "completed-session" | "fallback" | null;
   company?: string | null;
   sector?: string | null;
   price: number | null;
@@ -258,6 +265,7 @@ type ApiVisionOverview = {
   lesson: ApiLesson | null;
   featuredPulse: ReturnType<typeof selectFeaturedPulse>;
   featuredPulseRanking: ReturnType<typeof rankFeaturedPulseCandidates>;
+  featuredPulseMeta: FeaturedPulseMeta;
 };
 
 type ClassifiedPortfolioHolding = PortfolioItem & {
@@ -549,6 +557,8 @@ function buildStockPulses(
 
     return {
       symbol: opportunity.symbol,
+      marketDataAsOf: opportunity.marketDataAsOf ?? null,
+      marketDataSource: opportunity.marketDataSource ?? null,
       company: opportunity.company,
       sector: opportunity.sector,
       price: opportunity.price,
@@ -718,6 +728,13 @@ function buildApiVisionOverview(
   previousSnapshot: VisionOverview | null,
   historyBySymbol: Map<string, ApiPulseHistoryPoint[]>,
   personalIntelligence: PersonalIntelligenceResult,
+  audit: {
+    generatedAt: string;
+    candidateUniverseCount: number;
+    rankedUniverseCount: number;
+    newCalculationOccurred: boolean;
+    persistedSnapshotAt: string | null;
+  },
 ): ApiVisionOverview {
   const marketPulse = buildMarketPulse(snapshot, previousSnapshot, snapshot.updatedAt);
   const sectors = buildSectorPulses(snapshot, previousSnapshot, snapshot.updatedAt);
@@ -746,20 +763,44 @@ function buildApiVisionOverview(
     riskScore: stock.riskScore ?? null,
     classification: stock.state,
     qualified: true,
-    asOf: stock.updatedAt ?? stock.calculatedAt ?? null,
+    asOf: stock.marketDataAsOf ?? stock.updatedAt ?? stock.calculatedAt ?? null,
     reasons: stock.reasons ?? [],
   }));
-  const featuredPulse = selectFeaturedPulse(featuredCandidates);
-  const featuredPulseRanking = rankFeaturedPulseCandidates(featuredCandidates).slice(0, 5);
+  const allRankedCandidates = rankFeaturedPulseCandidates(featuredCandidates);
+  const featuredPulse = allRankedCandidates[0] ?? null;
+  const featuredPulseRanking = allRankedCandidates.slice(0, 5);
+  const marketDataAsOf = featuredPulse
+    ? stockMap.get(featuredPulse.symbol)?.marketDataAsOf ?? null
+    : null;
+  const marketDataSource = featuredPulse
+    ? stockMap.get(featuredPulse.symbol)?.marketDataSource ?? null
+    : null;
+  const marketOpen = isUsMarketOpen();
+  const featuredPulseMeta = buildFeaturedPulseMeta({
+    generatedAt: audit.generatedAt,
+    marketDataAsOf,
+    marketDataSource,
+    amsaCalculatedAt: featuredPulse ? audit.generatedAt : null,
+    persistedSnapshotAt: featuredPulse
+      ? historyBySymbol.get(featuredPulse.symbol)?.at(-1)?.recordedAt ??
+        audit.persistedSnapshotAt
+      : audit.persistedSnapshotAt,
+    candidateUniverseCount: audit.candidateUniverseCount,
+    rankedUniverseCount: audit.rankedUniverseCount,
+    qualifiedCandidateCount: allRankedCandidates.length,
+    rankedCandidateSymbols: allRankedCandidates.map((candidate) => candidate.symbol),
+    newCalculationOccurred: audit.newCalculationOccurred,
+    marketOpen,
+  });
 
   return {
     status: snapshot.status,
-    generatedAt: new Date().toISOString(),
+    generatedAt: audit.generatedAt,
     updatedAt:
       marketPulse?.calculatedAt ??
       marketPulse?.updatedAt ??
       snapshot.updatedAt,
-    marketOpen: null,
+    marketOpen,
     marketPulse,
     sectors,
     stocks,
@@ -777,6 +818,7 @@ function buildApiVisionOverview(
     lesson: null,
     featuredPulse,
     featuredPulseRanking,
+    featuredPulseMeta,
   };
 }
 
@@ -1446,6 +1488,11 @@ function buildVisionOpportunity(
 
   return {
     symbol: item.ticker,
+    marketDataAsOf:
+      candidate.marketDataAsOf && /^\d{4}-\d{2}-\d{2}$/.test(candidate.marketDataAsOf)
+        ? `${candidate.marketDataAsOf}T20:00:00.000Z`
+        : candidate.marketDataAsOf ?? updatedAt,
+    marketDataSource: candidate.marketDataSource ?? "fallback",
     company: item.name,
     sector: item.sector ?? "Unclassified",
     price: item.price,
@@ -1772,8 +1819,11 @@ export async function GET() {
     new Date().toISOString();
 
   let opportunities: VisionOpportunity[] = [];
+  let candidateUniverseCount = 0;
+  let rankedUniverseCount = 0;
 
   if (discovery) {
+    candidateUniverseCount = discovery.candidates.length;
     const candidateMap = new Map(
       discovery.candidates.map((candidate) => [normalizeTicker(candidate.ticker), candidate])
     );
@@ -1800,6 +1850,7 @@ export async function GET() {
       })
       .filter((item) => meetsConvictionGate(item, candidateMap.get(item.ticker)))
       .sort((left, right) => right.score - left.score);
+    rankedUniverseCount = rankedUniverse.length;
 
     const historyEntries = await Promise.all(
       rankedUniverse.map(async (item) => [item.ticker, await getHistoryBars(item.ticker, "3mo")] as const)
@@ -1935,6 +1986,8 @@ export async function GET() {
     await persistVisionSnapshot(payload, currentFingerprint);
   }
 
+  const generatedAt = new Date().toISOString();
+  const newCalculationOccurred = currentFingerprint !== previousFingerprint;
   const apiPayload = buildApiVisionOverview(
     payload,
     previousSnapshot,
@@ -1945,7 +1998,18 @@ export async function GET() {
         )
       : new Map<string, ApiPulseHistoryPoint[]>(),
     personalIntelligence,
+    {
+      generatedAt,
+      candidateUniverseCount,
+      rankedUniverseCount,
+      newCalculationOccurred: Boolean(discovery),
+      persistedSnapshotAt: newCalculationOccurred
+        ? generatedAt
+        : previousSnapshotRecord?.created_at ?? null,
+    },
   );
+
+  console.info("Featured Pulse refresh audit", apiPayload.featuredPulseMeta);
 
   return NextResponse.json(apiPayload, {
     headers: {

@@ -1,5 +1,7 @@
 "use client";
 
+import type { FeaturedPulseMeta } from "@/lib/vision/featured-pulse-meta";
+
 type FeaturedPulseCardProps = {
   stock: {
     symbol: string;
@@ -24,6 +26,30 @@ type FeaturedPulseCardProps = {
 
   isViewedStock?: boolean;
   onOpen?: (symbol: string) => void;
+  meta?: FeaturedPulseMeta | null;
+  refreshMessage?: string | null;
+};
+
+const DATA_STATE_LABELS: Record<FeaturedPulseMeta["dataState"], string> = {
+  live: "LIVE PULSE",
+  "completed-session": "COMPLETED-SESSION PULSE",
+  "market-closed": "MARKET CLOSED",
+  delayed: "DATA DELAYED",
+};
+
+const formatCentralTime = (value: string | null | undefined): string => {
+  if (!value) return "Unavailable";
+
+  const timestamp = new Date(value);
+  if (!Number.isFinite(timestamp.getTime())) return "Unavailable";
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(timestamp);
 };
 
 const formatScore = (value: number | null | undefined): string => {
@@ -42,6 +68,8 @@ export function FeaturedPulseCard({
   stock,
   isViewedStock = false,
   onOpen,
+  meta,
+  refreshMessage,
 }: FeaturedPulseCardProps) {
   if (!stock) {
     return (
@@ -101,6 +129,26 @@ export function FeaturedPulseCard({
           <span>Stock Pulse</span>
         </div>
       </div>
+
+      {meta ? (
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-cyan-300/10 py-3 text-[11px] text-slate-400">
+          <strong className="text-cyan-200">
+            {DATA_STATE_LABELS[meta.dataState]}
+          </strong>
+          <span>Updated {formatCentralTime(meta.generatedAt)} CT</span>
+          <span>Market data through {formatCentralTime(meta.marketDataAsOf)} CT</span>
+          <span>
+            {meta.qualifiedCandidateCount} qualified from {meta.candidateUniverseCount} scanned
+          </span>
+          {meta.singleCandidateUniverse ? (
+            <span className="text-amber-200">One-candidate qualified universe</span>
+          ) : null}
+        </div>
+      ) : null}
+
+      {refreshMessage ? (
+        <p className="mt-3 text-xs text-slate-500">{refreshMessage}</p>
+      ) : null}
 
       <div className="featured-pulse-card__heartbeat">
         <div>

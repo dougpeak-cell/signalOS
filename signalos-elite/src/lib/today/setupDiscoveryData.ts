@@ -67,6 +67,8 @@ function mergeCandidate(
   return {
     ...previous,
     ...next,
+    marketDataAsOf: next.marketDataAsOf ?? previous.marketDataAsOf ?? null,
+    marketDataSource: next.marketDataSource ?? previous.marketDataSource ?? null,
     name: next.name ?? previous.name ?? null,
     sector: next.sector ?? previous.sector ?? null,
     price: next.price ?? previous.price ?? null,
@@ -246,6 +248,12 @@ export async function getSetupDiscoveryData(
         ticker,
         mergeCandidate(mergedCandidates.get(ticker), {
           ticker,
+          marketDataAsOf: completedPrice?.date ?? null,
+          marketDataSource: completedPrice
+            ? "completed-session"
+            : quote?.source === "api"
+              ? "intraday"
+              : "fallback",
           name: row.company_name ?? fundamentals?.name ?? ticker,
           sector: resolveSector({ symbol: ticker, sector: row.sector }),
           price: livePrice,
@@ -306,6 +314,13 @@ export async function getSetupDiscoveryData(
         ticker,
         mergeCandidate(mergedCandidates.get(ticker), {
           ticker,
+          marketDataAsOf: null,
+          marketDataSource:
+            item.session === "regular" || item.session === "pre-market"
+              ? "intraday"
+              : quote?.source === "api"
+                ? "intraday"
+                : "fallback",
           name: item.name ?? signalRow?.company_name ?? fundamentals?.name ?? ticker,
           sector: resolveSector({
             symbol: ticker,

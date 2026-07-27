@@ -42,6 +42,10 @@ vi.mock("@/lib/vision/market-volume-score", async () =>
   import("../../../../lib/vision/market-volume-score"),
 );
 
+vi.mock("@/lib/vision/featured-pulse-meta", async () =>
+  import("../../../../lib/vision/featured-pulse-meta"),
+);
+
 vi.mock("@/lib/vision/personal/portfolioPulseSnapshots", async () =>
   import("../../../../lib/vision/personal/portfolioPulseSnapshots"),
 );
@@ -231,6 +235,13 @@ describe("GET /api/vision/overview", () => {
     expect(payload.personalIntelligence.coverage.valueCoveragePercent).toBe(67.2);
     expect(payload.featuredPulse).toBeNull();
     expect(payload.featuredPulseRanking).toEqual([]);
+    expect(payload.featuredPulseMeta).toMatchObject({
+      candidateUniverseCount: 0,
+      rankedUniverseCount: 0,
+      qualifiedCandidateCount: 0,
+      rankedCandidateSymbols: [],
+      singleCandidateUniverse: false,
+    });
     expect(payload.generatedAt).toEqual(expect.any(String));
     expect(response.headers.get("Cache-Control")).toBe(
       "no-store, no-cache, must-revalidate",

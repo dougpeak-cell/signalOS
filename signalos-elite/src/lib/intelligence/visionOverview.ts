@@ -12,6 +12,8 @@ export type VisionHorizonView = {
 
 export type VisionOpportunity = {
   symbol: string;
+  marketDataAsOf?: string | null;
+  marketDataSource?: "intraday" | "completed-session" | "fallback" | null;
   company: string;
   sector: string;
   price: number | null;

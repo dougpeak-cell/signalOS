@@ -16,6 +16,11 @@ import type {
 } from "@/lib/amsa";
 import { formatMarketTimestamp } from "@/lib/market/formatMarketTimestamp";
 import { calculateOpportunityScore } from "@/lib/vision/opportunityScore";
+import {
+  getFeaturedPulseFingerprint,
+  getFeaturedPulseRefreshMessage,
+  type FeaturedPulseMeta,
+} from "@/lib/vision/featured-pulse-meta";
 import type { PersonalIntelligenceResult } from "@/lib/vision/personal/types";
 import Link from "next/link";
 import {
@@ -242,6 +247,7 @@ export type VisionOverviewResponse = {
   lesson: Lesson | null;
   featuredPulse: FeaturedPulse | null;
   featuredPulseRanking: FeaturedPulse[];
+  featuredPulseMeta?: FeaturedPulseMeta | null;
 };
 
 type VisionAnswer = {
@@ -278,6 +284,7 @@ const EMPTY_OVERVIEW: VisionOverviewResponse = {
   lesson: null,
   featuredPulse: null,
   featuredPulseRanking: [],
+  featuredPulseMeta: null,
 };
 
 const FUTURE_MAP_SYMBOL_FALLBACKS = ["NVDA", "AAPL", "MSFT", "TSLA"];
@@ -1035,6 +1042,8 @@ export default function VisionPage() {
   const [overview, setOverview] = useState<VisionOverviewResponse>(EMPTY_OVERVIEW);
   const visionRequestRef = useRef<Promise<void> | null>(null);
   const lastVisionRequestAtRef = useRef(0);
+  const hasLoadedVisionRef = useRef(false);
+  const featuredPulseFingerprintRef = useRef<string | null>(null);
   const featuredPulse = overview.featuredPulse ?? null;
   const [viewedSymbol, setViewedSymbol] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1043,6 +1052,7 @@ export default function VisionPage() {
   const [futureMapError, setFutureMapError] = useState<string | null>(null);
   const [selectedFutureMapSymbol, setSelectedFutureMapSymbol] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [featuredRefreshMessage, setFeaturedRefreshMessage] = useState<string | null>(null);
 
   const [selectedSectorWindow, setSelectedSectorWindow] = useState<
     "Today" | "Week" | "Month" | "Year"
@@ -1076,9 +1086,10 @@ export default function VisionPage() {
     }
 
     lastVisionRequestAtRef.current = now;
+    const isInitialLoad = !hasLoadedVisionRef.current;
 
     const request = (async () => {
-      setLoading(true);
+      if (isInitialLoad) setLoading(true);
       setLoadError(null);
 
       try {
@@ -1091,6 +1102,19 @@ export default function VisionPage() {
         }
 
         const payload = (await response.json()) as VisionOverviewResponse;
+        const nextFeaturedFingerprint = getFeaturedPulseFingerprint({
+          featuredPulse: payload.featuredPulse,
+          featuredPulseRanking: payload.featuredPulseRanking,
+        });
+
+        setFeaturedRefreshMessage(
+          getFeaturedPulseRefreshMessage(
+            featuredPulseFingerprintRef.current,
+            nextFeaturedFingerprint,
+          ),
+        );
+        featuredPulseFingerprintRef.current = nextFeaturedFingerprint;
+        hasLoadedVisionRef.current = true;
 
         setOverview({
           ...EMPTY_OVERVIEW,
@@ -1112,7 +1136,7 @@ export default function VisionPage() {
           "Vision could not retrieve the current market intelligence snapshot.",
         );
       } finally {
-        setLoading(false);
+        if (isInitialLoad) setLoading(false);
       }
     })();
 
@@ -1535,6 +1559,8 @@ export default function VisionPage() {
         <div className="mt-5">
           <FeaturedPulseCard
             stock={featuredPulse}
+            meta={overview.featuredPulseMeta}
+            refreshMessage={featuredRefreshMessage}
             isViewedStock={activeSymbol === featuredPulse?.symbol}
             onOpen={(symbol) => {
               setViewedSymbol(symbol);

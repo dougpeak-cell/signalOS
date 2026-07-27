@@ -6,6 +6,8 @@ export type SetupBucket = "top" | "emerging" | "watch";
 
 export type SetupDiscoveryCandidate = {
   ticker: string;
+  marketDataAsOf?: string | null;
+  marketDataSource?: "intraday" | "completed-session" | "fallback" | null;
   name?: string | null;
   sector?: string | null;
   session?: string | null;
