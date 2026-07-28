@@ -7,13 +7,14 @@ export const revalidate = 0;
 
 type PulseSnapshotRow = {
   entity_key: string;
-  snapshot_date: string;
+  snapshot_date?: string;
   score: number | null;
   confidence: number | null;
   state: string | null;
   direction: string | null;
   status: string | null;
   metadata: unknown;
+  calculated_at: string;
   recorded_at: string;
 };
 
@@ -72,6 +73,19 @@ function getChicagoDate(date = new Date()): string {
   }).format(date);
 }
 
+function getSnapshotDate(row: PulseSnapshotRow): string {
+  if (row.snapshot_date) return row.snapshot_date;
+
+  const calculatedAt = new Date(row.calculated_at);
+  return Number.isFinite(calculatedAt.getTime())
+    ? getChicagoDate(calculatedAt)
+    : "";
+}
+
+function isDailySnapshot(row: PulseSnapshotRow): boolean {
+  return asMetadata(row.metadata).frequency === "daily";
+}
+
 function isRegularSessionComplete(date = new Date()): boolean {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Chicago",
@@ -123,7 +137,7 @@ function isQualified(row: PulseSnapshotRow): boolean {
 
   return Boolean(
     symbol &&
-    row.snapshot_date &&
+    getSnapshotDate(row) &&
     pulse !== null &&
     pulse >= MINIMUM_PULSE_SCORE &&
     confidence !== null &&
@@ -136,7 +150,7 @@ function isQualified(row: PulseSnapshotRow): boolean {
 function isDisplayable(row: PulseSnapshotRow): boolean {
   return Boolean(
     normalizeSymbol(row.entity_key) &&
-    row.snapshot_date &&
+    getSnapshotDate(row) &&
     asFiniteNumber(row.score) !== null &&
     (row.status === null || row.status === "ready"),
   );
@@ -161,12 +175,12 @@ export function selectPreviousPulseLeaders(
   const leadersByDate = new Map<string, PulseSnapshotRow>();
   const displayableRows = rows.filter(isDisplayable);
   const latestPersistedDate = displayableRows
-    .map((row) => row.snapshot_date)
+    .map(getSnapshotDate)
     .sort()
     .at(-1);
   const latestQualifiedDate = displayableRows
     .filter(isQualified)
-    .map((row) => row.snapshot_date)
+    .map(getSnapshotDate)
     .sort()
     .at(-1);
 
@@ -174,13 +188,14 @@ export function selectPreviousPulseLeaders(
     (row) =>
       isQualified(row) ||
       (latestQualifiedDate
-        ? row.snapshot_date > latestQualifiedDate
-        : row.snapshot_date === latestPersistedDate),
+        ? getSnapshotDate(row) > latestQualifiedDate
+        : getSnapshotDate(row) === latestPersistedDate),
   )) {
-    const currentLeader = leadersByDate.get(row.snapshot_date);
+    const snapshotDate = getSnapshotDate(row);
+    const currentLeader = leadersByDate.get(snapshotDate);
 
     if (!currentLeader || compareRows(row, currentLeader) < 0) {
-      leadersByDate.set(row.snapshot_date, row);
+      leadersByDate.set(snapshotDate, row);
     }
   }
 
@@ -218,17 +233,12 @@ export async function GET(request: Request) {
     let query = supabase
       .from("amsa_pulse_snapshots")
       .select(
-        "entity_key, snapshot_date, score, confidence, state, direction, status, metadata, recorded_at",
+        "entity_key, score, confidence, state, direction, status, metadata, calculated_at, recorded_at",
       )
       .eq("entity_type", "stock")
-      .eq("metadata->>frequency", "daily")
-      .order("snapshot_date", { ascending: false })
+      .order("calculated_at", { ascending: false })
       .order("score", { ascending: false })
       .order("recorded_at", { ascending: false });
-
-    query = isRegularSessionComplete()
-      ? query.lte("snapshot_date", getChicagoDate())
-      : query.lt("snapshot_date", getChicagoDate());
 
     const { data, error } = await query.limit(500);
 
@@ -240,10 +250,16 @@ export async function GET(request: Request) {
       );
     }
 
-    const leaders = selectPreviousPulseLeaders(
-      (data ?? []) as PulseSnapshotRow[],
-      limit,
-    );
+    const sessionCutoff = getChicagoDate();
+    const includeCurrentDate = isRegularSessionComplete();
+    const rows = ((data ?? []) as PulseSnapshotRow[])
+      .filter(isDailySnapshot)
+      .filter((row) =>
+        includeCurrentDate
+          ? getSnapshotDate(row) <= sessionCutoff
+          : getSnapshotDate(row) < sessionCutoff,
+      );
+    const leaders = selectPreviousPulseLeaders(rows, limit);
 
     return NextResponse.json(
       { ok: true, leaders, count: leaders.length },

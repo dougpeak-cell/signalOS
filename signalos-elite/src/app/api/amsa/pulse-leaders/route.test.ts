@@ -23,6 +23,7 @@ function buildRow(overrides: Partial<SnapshotRow> = {}): SnapshotRow {
       relativeVolume: 12.8,
       marketRegime: "Constructive",
     },
+    calculated_at: "2026-07-24T21:00:00.000Z",
     recorded_at: "2026-07-24T21:05:00.000Z",
     ...overrides,
   };
@@ -164,5 +165,16 @@ describe("selectPreviousPulseLeaders", () => {
       opportunity: null,
       rvol: null,
     });
+  });
+
+  it("derives the session date when the generated column is unavailable", () => {
+    const leaders = selectPreviousPulseLeaders([
+      buildRow({
+        snapshot_date: undefined,
+        calculated_at: "2026-07-27T20:00:00.000Z",
+      }),
+    ], 1);
+
+    expect(leaders[0]?.date).toBe("2026-07-27");
   });
 });
