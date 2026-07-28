@@ -6,6 +6,7 @@ import { FutureScenarioCard } from "@/components/vision/FutureScenarioCard";
 import { OpportunityMeter } from "@/components/vision/OpportunityMeter";
 import { PersonalIntelligenceHoldings } from "@/components/vision/PersonalIntelligenceHoldings";
 import { PortfolioClassificationProgress } from "@/components/vision/PortfolioClassificationProgress";
+import PreviousPulseLeaders from "@/components/vision/PreviousPulseLeaders";
 import StockPulseExperience from "@/components/vision/StockPulseExperience";
 import { TodaysVision } from "@/components/vision/TodaysVision";
 import { FeaturedPulseCard } from "@/components/vision/featured-pulse-card";
@@ -1566,6 +1567,13 @@ export default function VisionPage() {
               setViewedSymbol(symbol);
             }}
           />
+
+          <div className="mt-3">
+            <PreviousPulseLeaders
+              limit={7}
+              currentSymbol={featuredPulse?.symbol}
+            />
+          </div>
 
           <FeaturedPulseRanking
             stocks={overview.featuredPulseRanking}
