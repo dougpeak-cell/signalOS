@@ -6,6 +6,8 @@ type FeaturedPulseCardProps = {
   stock: {
     symbol: string;
     companyName?: string | null;
+    sector?: string | null;
+    industry?: string | null;
 
     pulseScore?: number | null;
     opportunityScore?: number | null;
@@ -14,6 +16,15 @@ type FeaturedPulseCardProps = {
 
     rvol?: number | null;
     dailyChangePercent?: number | null;
+    snapshotPrice?: number | null;
+    snapshotChangePercent?: number | null;
+    snapshotAsOf?: string | null;
+    snapshotSessionDate?: string | null;
+    livePrice?: number | null;
+    liveChangePercent?: number | null;
+    liveAsOf?: string | null;
+    isCurrentSession?: boolean;
+    isStale?: boolean;
 
     direction?: string | null;
     heartbeatDelta?: number | null;
@@ -64,6 +75,39 @@ const formatRvol = (value: number | null | undefined): string => {
   return Number.isFinite(value) ? `${Number(value).toFixed(1)}x` : "—";
 };
 
+const formatPrice = (value: number | null | undefined): string => {
+  return Number.isFinite(value)
+    ? Number(value).toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    : "Unavailable";
+};
+
+const formatMove = (value: number | null | undefined): string => {
+  if (!Number.isFinite(value)) return "Move unavailable";
+
+  const numericValue = Number(value);
+  return `${numericValue >= 0 ? "+" : ""}${numericValue.toFixed(2)}%`;
+};
+
+const formatEasternTime = (value: string | null | undefined): string => {
+  if (!value) return "time unavailable";
+
+  const timestamp = new Date(value);
+  if (!Number.isFinite(timestamp.getTime())) return "time unavailable";
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(timestamp);
+};
+
 export function FeaturedPulseCard({
   stock,
   isViewedStock = false,
@@ -72,10 +116,14 @@ export function FeaturedPulseCard({
   refreshMessage,
 }: FeaturedPulseCardProps) {
   if (!stock) {
+    const emptyEyebrow = meta?.dataState === "live"
+      ? "Today’s Featured Pulse"
+      : "Latest Verified Pulse Leader";
+
     return (
       <section className="featured-pulse-card featured-pulse-card--empty">
         <div className="featured-pulse-card__eyebrow">
-          Today&apos;s Featured Pulse
+          {emptyEyebrow}
         </div>
 
         <h2>No stock currently meets the verified Pulse thresholds.</h2>
@@ -96,13 +144,17 @@ export function FeaturedPulseCard({
     direction.toLowerCase().includes("rising") ||
     direction.toLowerCase().includes("strength") ||
     Number(stock.heartbeatDelta) > 0;
+  const isLiveSession = meta?.dataState === "live" && !stock.isStale;
+  const eyebrow = isLiveSession
+    ? "Today’s Featured Pulse"
+    : "Latest Verified Pulse Leader";
 
   return (
     <section className="featured-pulse-card">
       <div className="featured-pulse-card__top">
         <div>
           <div className="featured-pulse-card__eyebrow">
-            Today&apos;s Featured Pulse
+            {eyebrow}
           </div>
 
           <div className="featured-pulse-card__identity">
@@ -149,6 +201,48 @@ export function FeaturedPulseCard({
       {refreshMessage ? (
         <p className="mt-3 text-xs text-slate-500">{refreshMessage}</p>
       ) : null}
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-cyan-300/15 bg-cyan-300/5 p-4">
+          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-cyan-200">
+            Latest price
+          </span>
+          <div className="mt-2 flex items-baseline justify-between gap-3">
+            <strong className="text-2xl text-white">
+              {formatPrice(stock.livePrice)}
+            </strong>
+            <span
+              className={
+                Number(stock.liveChangePercent) >= 0
+                  ? "text-sm font-semibold text-emerald-300"
+                  : "text-sm font-semibold text-rose-300"
+              }
+            >
+              {formatMove(stock.liveChangePercent)}
+            </span>
+          </div>
+          <p className="mt-2 text-[11px] text-slate-500">
+            Quote checked {formatCentralTime(stock.liveAsOf)} CT
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+            Pulse calculated from
+          </span>
+          <div className="mt-2 flex items-baseline justify-between gap-3">
+            <strong className="text-xl text-slate-100">
+              {formatPrice(stock.snapshotPrice)} close
+            </strong>
+            <span className="text-sm font-semibold text-slate-300">
+              {formatMove(stock.snapshotChangePercent)}
+            </span>
+          </div>
+          <p className="mt-2 text-[11px] text-slate-500">
+            {formatEasternTime(stock.snapshotAsOf)} ET
+          </p>
+        </div>
+      </div>
 
       <div className="featured-pulse-card__heartbeat">
         <div>

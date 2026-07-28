@@ -14,6 +14,7 @@ type PulseLeader = {
   rvol: number | null;
   regime: string | null;
   direction: string | null;
+  qualified: boolean;
 };
 
 type PulseLeadersResponse = {
@@ -147,7 +148,8 @@ export default function PreviousPulseLeaders({
 
           <p className="previous-pulse-leaders__description">
             The highest-qualified stock identified by Sigi after each completed
-            market session.
+            market session. Newer sessions without a qualifier show their strongest
+            persisted reading as below threshold.
           </p>
         </div>
 
@@ -229,7 +231,11 @@ export default function PreviousPulseLeaders({
                       {isCurrentSymbol ? (
                         <small>CURRENT VIEW</small>
                       ) : (
-                        <small>{leader.regime ?? "Qualified"}</small>
+                        <small>
+                          {leader.qualified
+                            ? leader.regime ?? "Qualified"
+                            : "Below threshold"}
+                        </small>
                       )}
                     </span>
 
@@ -277,7 +283,11 @@ export default function PreviousPulseLeaders({
                       <div className="previous-pulse-leaders__card-symbol">
                         <strong>{leader.symbol}</strong>
 
-                        {isCurrentSymbol ? <span>CURRENT VIEW</span> : null}
+                        {isCurrentSymbol ? (
+                          <span>CURRENT VIEW</span>
+                        ) : !leader.qualified ? (
+                          <span>BELOW THRESHOLD</span>
+                        ) : null}
                       </div>
                     </div>
 

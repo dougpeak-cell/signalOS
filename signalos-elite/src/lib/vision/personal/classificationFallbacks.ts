@@ -13,6 +13,11 @@ const CLASSIFICATION_FALLBACKS: Record<
     sector: "Technology",
     industry: "Cloud Infrastructure",
   },
+  DLR: {
+    companyName: "Digital Realty Trust",
+    sector: "Real Estate",
+    industry: "Data Center REITs",
+  },
   XOM: {
     companyName: "Exxon Mobil",
     sector: "Energy",

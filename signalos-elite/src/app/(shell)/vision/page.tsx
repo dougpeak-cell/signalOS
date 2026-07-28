@@ -199,6 +199,8 @@ type Lesson = {
 export type FeaturedPulse = {
   symbol: string;
   companyName?: string | null;
+  sector?: string | null;
+  industry?: string | null;
 
   pulseScore?: number | null;
   opportunityScore?: number | null;
@@ -207,6 +209,15 @@ export type FeaturedPulse = {
 
   rvol?: number | null;
   dailyChangePercent?: number | null;
+  snapshotPrice?: number | null;
+  snapshotChangePercent?: number | null;
+  snapshotAsOf?: string | null;
+  snapshotSessionDate?: string | null;
+  livePrice?: number | null;
+  liveChangePercent?: number | null;
+  liveAsOf?: string | null;
+  isCurrentSession?: boolean;
+  isStale?: boolean;
 
   direction?: string | null;
   heartbeatDelta?: number | null;

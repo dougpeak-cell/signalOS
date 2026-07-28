@@ -35,6 +35,40 @@ export function isUsMarketOpen(now = new Date()): boolean {
   return minutes >= 8 * 60 + 30 && minutes < 15 * 60;
 }
 
+export function getLatestEligibleMarketSessionDate(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const minutes = Number(values.hour) * 60 + Number(values.minute);
+  const beforeCurrentSession =
+    values.weekday === "Sat" ||
+    values.weekday === "Sun" ||
+    minutes < 8 * 60 + 30;
+  const date = new Date(Date.UTC(
+    Number(values.year),
+    Number(values.month) - 1,
+    Number(values.day),
+  ));
+
+  if (beforeCurrentSession) {
+    date.setUTCDate(date.getUTCDate() - 1);
+  }
+
+  while (date.getUTCDay() === 0 || date.getUTCDay() === 6) {
+    date.setUTCDate(date.getUTCDate() - 1);
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
 type FeaturedPulseMetaInput = Omit<
   FeaturedPulseMeta,
   "dataState" | "singleCandidateUniverse"

@@ -26,6 +26,7 @@ export type PreviousPulseLeader = {
   rvol: number | null;
   regime: string | null;
   direction: string | null;
+  qualified: boolean;
 };
 
 const DEFAULT_LIMIT = 7;
@@ -132,8 +133,18 @@ function isQualified(row: PulseSnapshotRow): boolean {
   );
 }
 
+function isDisplayable(row: PulseSnapshotRow): boolean {
+  return Boolean(
+    normalizeSymbol(row.entity_key) &&
+    row.snapshot_date &&
+    asFiniteNumber(row.score) !== null &&
+    (row.status === null || row.status === "ready"),
+  );
+}
+
 function compareRows(left: PulseSnapshotRow, right: PulseSnapshotRow): number {
   return (
+    Number(isQualified(right)) - Number(isQualified(left)) ||
     (getOpportunity(right) ?? -1) - (getOpportunity(left) ?? -1) ||
     (asFiniteNumber(right.score) ?? -1) - (asFiniteNumber(left.score) ?? -1) ||
     (asFiniteNumber(right.confidence) ?? -1) -
@@ -148,8 +159,24 @@ export function selectPreviousPulseLeaders(
   limit: number,
 ): PreviousPulseLeader[] {
   const leadersByDate = new Map<string, PulseSnapshotRow>();
+  const displayableRows = rows.filter(isDisplayable);
+  const latestPersistedDate = displayableRows
+    .map((row) => row.snapshot_date)
+    .sort()
+    .at(-1);
+  const latestQualifiedDate = displayableRows
+    .filter(isQualified)
+    .map((row) => row.snapshot_date)
+    .sort()
+    .at(-1);
 
-  for (const row of rows.filter(isQualified)) {
+  for (const row of displayableRows.filter(
+    (row) =>
+      isQualified(row) ||
+      (latestQualifiedDate
+        ? row.snapshot_date > latestQualifiedDate
+        : row.snapshot_date === latestPersistedDate),
+  )) {
     const currentLeader = leadersByDate.get(row.snapshot_date);
 
     if (!currentLeader || compareRows(row, currentLeader) < 0) {
@@ -179,6 +206,7 @@ export function selectPreviousPulseLeaders(
               ? metadata.marketRegime
               : leader.state,
         direction: leader.direction,
+        qualified: isQualified(leader),
       };
     });
 }

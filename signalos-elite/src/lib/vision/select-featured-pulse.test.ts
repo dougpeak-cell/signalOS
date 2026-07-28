@@ -26,6 +26,24 @@ function candidate(
 }
 
 describe("Featured Pulse ranking", () => {
+  it("ranks only candidates from the latest qualified session", () => {
+    const ranked = rankFeaturedPulseCandidates([
+      candidate("DLR", {
+        pulseScore: 95,
+        opportunityScore: 95,
+        snapshotSessionDate: "2026-07-24",
+      }),
+      candidate("NVDA", {
+        pulseScore: 72,
+        opportunityScore: 74,
+        snapshotSessionDate: "2026-07-27",
+      }),
+    ], NOW);
+
+    expect(ranked).toHaveLength(1);
+    expect(ranked[0]?.symbol).toBe("NVDA");
+  });
+
   it("ranks multiple current candidates", () => {
     const ranked = rankFeaturedPulseCandidates([
       candidate("DLR"),

@@ -1,6 +1,8 @@
 export type FeaturedPulseCandidate = {
   symbol: string;
   companyName?: string | null;
+  sector?: string | null;
+  industry?: string | null;
 
   pulseScore?: number | null;
   opportunityScore?: number | null;
@@ -9,6 +11,16 @@ export type FeaturedPulseCandidate = {
 
   rvol?: number | null;
   dailyChangePercent?: number | null;
+
+  snapshotPrice?: number | null;
+  snapshotChangePercent?: number | null;
+  snapshotAsOf?: string | null;
+  snapshotSessionDate?: string | null;
+  livePrice?: number | null;
+  liveChangePercent?: number | null;
+  liveAsOf?: string | null;
+  isCurrentSession?: boolean;
+  isStale?: boolean;
 
   direction?: string | null;
   heartbeatDelta?: number | null;
@@ -268,7 +280,19 @@ export function rankFeaturedPulseCandidates(
 ): FeaturedPulseResult[] {
   const qualifiedCandidates = candidates
     .filter((candidate) => candidate.symbol)
-    .filter((candidate) => isCandidateQualified(candidate, now))
+    .filter((candidate) => isCandidateQualified(candidate, now));
+  const latestSessionDate = qualifiedCandidates
+    .map((candidate) => candidate.snapshotSessionDate)
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .at(-1);
+  const currentSessionCandidates = latestSessionDate
+    ? qualifiedCandidates.filter(
+        (candidate) => candidate.snapshotSessionDate === latestSessionDate,
+      )
+    : qualifiedCandidates;
+
+  const rankedCandidates = currentSessionCandidates
     .map((candidate) => ({
       ...candidate,
       featuredScore: scoreCandidate(candidate, now),
@@ -288,7 +312,7 @@ export function rankFeaturedPulseCandidates(
       return safeNumber(b.pulseScore) - safeNumber(a.pulseScore);
     });
 
-  return qualifiedCandidates.map((candidate, index) => ({
+  return rankedCandidates.map((candidate, index) => ({
     ...candidate,
     rank: index + 1,
   }));

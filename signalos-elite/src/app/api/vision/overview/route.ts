@@ -4,7 +4,10 @@ import {
   buildSectorComparisonData,
   type SectorComparisonRow,
 } from "@/lib/market/sectorComparison";
-import { fetchServerQuoteMap } from "@/lib/market/serverQuote";
+import {
+  fetchServerQuoteMap,
+  type ServerQuoteMap,
+} from "@/lib/market/serverQuote";
 import {
   calculateMarketHealth,
   getMarketRegime,
@@ -28,7 +31,10 @@ import {
   resolvePortfolioHoldingPulses,
   type PortfolioPulseSnapshotRow,
 } from "@/lib/vision/personal/portfolioPulseSnapshots";
-import { resolvePortfolioClassification } from "@/lib/vision/personal/resolvePortfolioClassification";
+import {
+  resolvePortfolioClassification,
+  type ResolvedClassification,
+} from "@/lib/vision/personal/resolvePortfolioClassification";
 import type { PersonalIntelligenceResult } from "@/lib/vision/personal/types";
 import {
   rankFeaturedPulseCandidates,
@@ -38,6 +44,7 @@ import {
 import { calculateMarketVolumeScore } from "@/lib/vision/market-volume-score";
 import {
   buildFeaturedPulseMeta,
+  getLatestEligibleMarketSessionDate,
   isUsMarketOpen,
   type FeaturedPulseMeta,
 } from "@/lib/vision/featured-pulse-meta";
@@ -728,6 +735,8 @@ function buildApiVisionOverview(
   previousSnapshot: VisionOverview | null,
   historyBySymbol: Map<string, ApiPulseHistoryPoint[]>,
   personalIntelligence: PersonalIntelligenceResult,
+  liveQuoteMap: ServerQuoteMap,
+  classificationBySymbol: Map<string, ResolvedClassification>,
   audit: {
     generatedAt: string;
     candidateUniverseCount: number;
@@ -745,27 +754,52 @@ function buildApiVisionOverview(
     snapshot.updatedAt,
   );
   const stockMap = new Map(stocks.map((stock) => [stock.symbol, stock]));
-  const featuredCandidates: FeaturedPulseCandidate[] = stocks.map((stock) => ({
-    symbol: stock.symbol,
-    companyName: stock.company ?? null,
-    pulseScore: stock.score,
-    opportunityScore: stock.opportunityScore ?? null,
-    confidence: stock.confidence,
-    dnaAlignment: stock.alignment ?? null,
-    rvol: stock.relativeVolume ?? null,
-    dailyChangePercent: stock.changePercent,
-    direction: stock.direction,
-    heartbeatDelta:
-      stock.score != null && stock.previousScore != null
-        ? stock.score - stock.previousScore
-        : null,
-    liquidityScore: null,
-    riskScore: stock.riskScore ?? null,
-    classification: stock.state,
-    qualified: true,
-    asOf: stock.marketDataAsOf ?? stock.updatedAt ?? stock.calculatedAt ?? null,
-    reasons: stock.reasons ?? [],
-  }));
+  const featuredCandidates: FeaturedPulseCandidate[] = stocks.map((stock) => {
+    const symbol = normalizeTicker(stock.symbol);
+    const quote = liveQuoteMap[symbol];
+    const classification = classificationBySymbol.get(symbol);
+    const snapshotAsOf = stock.marketDataAsOf ?? stock.updatedAt ?? stock.calculatedAt ?? null;
+    const snapshotSessionDate = snapshotAsOf?.slice(0, 10) ?? null;
+    const isCurrentSession =
+      snapshotSessionDate ===
+      getLatestEligibleMarketSessionDate(new Date(audit.generatedAt));
+
+    return {
+      symbol,
+      companyName: classification?.companyName ?? stock.company ?? null,
+      sector: classification?.sector ?? stock.sector ?? null,
+      industry: classification?.industry ?? null,
+      pulseScore: stock.score,
+      opportunityScore: stock.opportunityScore ?? null,
+      confidence: stock.confidence,
+      dnaAlignment: stock.alignment ?? null,
+      rvol: stock.relativeVolume ?? null,
+      dailyChangePercent: stock.changePercent,
+      snapshotPrice: stock.price,
+      snapshotChangePercent: stock.changePercent,
+      snapshotAsOf,
+      snapshotSessionDate,
+      livePrice: quote?.price ?? null,
+      liveChangePercent: quote?.changePct ?? null,
+      liveAsOf: quote?.source === "api" ? audit.generatedAt : null,
+      isCurrentSession,
+      isStale: !isCurrentSession,
+      direction: stock.direction,
+      heartbeatDelta:
+        stock.score != null && stock.previousScore != null
+          ? stock.score - stock.previousScore
+          : null,
+      liquidityScore: null,
+      riskScore: stock.riskScore ?? null,
+      classification:
+        [classification?.sector, classification?.industry]
+          .filter(Boolean)
+          .join(" / ") || stock.sector || null,
+      qualified: true,
+      asOf: snapshotAsOf,
+      reasons: stock.reasons ?? [],
+    };
+  });
   const allRankedCandidates = rankFeaturedPulseCandidates(featuredCandidates);
   const featuredPulse = allRankedCandidates[0] ?? null;
   const featuredPulseRanking = allRankedCandidates.slice(0, 5);
@@ -1988,6 +2022,16 @@ export async function GET() {
 
   const generatedAt = new Date().toISOString();
   const newCalculationOccurred = currentFingerprint !== previousFingerprint;
+  const opportunitySymbols = payload.opportunities.map((opportunity) => opportunity.symbol);
+  const [featuredQuoteMap, featuredClassifications] = await Promise.all([
+    fetchServerQuoteMap(opportunitySymbols),
+    Promise.all(
+      opportunitySymbols.map(async (symbol) => [
+        normalizeTicker(symbol),
+        await resolvePortfolioClassification(symbol),
+      ] as const),
+    ),
+  ]);
   const apiPayload = buildApiVisionOverview(
     payload,
     previousSnapshot,
@@ -1998,6 +2042,8 @@ export async function GET() {
         )
       : new Map<string, ApiPulseHistoryPoint[]>(),
     personalIntelligence,
+    featuredQuoteMap,
+    new Map(featuredClassifications),
     {
       generatedAt,
       candidateUniverseCount,

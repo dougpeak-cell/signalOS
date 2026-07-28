@@ -1,4 +1,5 @@
 import { getMassiveFundamentals } from "@/lib/market/massiveFundamentals";
+import { getClassificationFallback } from "./classificationFallbacks";
 
 type RawClassificationProfile = {
   symbol?: string | null;
@@ -84,21 +85,30 @@ export async function resolvePortfolioClassification(
   const fundamentals = await getMassiveFundamentals(normalizedSymbol, {
     profile: "discovery",
   });
+  const fallback = getClassificationFallback(normalizedSymbol);
+  const providerIndustry = fundamentals.industry?.trim() ?? null;
+  const industry =
+    providerIndustry?.toUpperCase() === "REAL ESTATE INVESTMENT TRUSTS"
+      ? fallback?.industry ?? providerIndustry
+      : providerIndustry ?? fallback?.industry;
 
   const resolved = normalizeClassificationProfile(normalizedSymbol, {
     symbol: normalizedSymbol,
-    name: fundamentals.name,
-    companyName: fundamentals.name,
-    sector: fundamentals.sector,
-    industry: fundamentals.industry,
-    sicDescription: fundamentals.industry,
+    name: fundamentals.name ?? fallback?.companyName,
+    companyName: fundamentals.name ?? fallback?.companyName,
+    sector: fundamentals.sector ?? fallback?.sector,
+    industry,
+    sicDescription: industry,
   });
 
   const value: ResolvedClassification =
     resolved.companyName || resolved.sector || resolved.industry
       ? {
           ...resolved,
-          source: "provider",
+          source:
+            fundamentals.name || fundamentals.sector || fundamentals.industry
+              ? "provider"
+              : "fallback",
         }
       : {
           ...resolved,
