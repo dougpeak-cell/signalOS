@@ -7,6 +7,10 @@ export type HistoryBar = {
   volume: number;
 };
 
+type HistoryBarsOptions = {
+  throwOnError?: boolean;
+};
+
 function formatDate(value: Date) {
   return value.toISOString().slice(0, 10);
 }
@@ -28,7 +32,8 @@ function rangeToDays(range: string) {
 
 export async function getHistoryBars(
   ticker: string,
-  range = "6mo"
+  range = "6mo",
+  options: HistoryBarsOptions = {},
 ): Promise<HistoryBar[]> {
   const normalizedTicker = ticker.trim().toUpperCase();
   const apiKey =
@@ -37,6 +42,11 @@ export async function getHistoryBars(
     "";
 
   if (!normalizedTicker || !apiKey) {
+    if (options.throwOnError) {
+      throw new Error(
+        normalizedTicker ? "MASSIVE_API_KEY is not configured." : "Ticker is required.",
+      );
+    }
     return [];
   }
 
@@ -51,6 +61,9 @@ export async function getHistoryBars(
     const res = await fetch(url, { cache: "no-store" });
 
     if (!res.ok) {
+      if (options.throwOnError) {
+        throw new Error(`History API returned HTTP ${res.status}.`);
+      }
       return [];
     }
 
@@ -64,7 +77,8 @@ export async function getHistoryBars(
       close: Number(item.c ?? 0),
       volume: Number(item.v ?? 0),
     }));
-  } catch {
+  } catch (error) {
+    if (options.throwOnError) throw error;
     return [];
   }
 }

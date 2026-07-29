@@ -29,6 +29,7 @@ import {
   isSupportedPortfolioSymbol,
   normalizePortfolioSymbol,
   resolvePortfolioHoldingPulses,
+  type PortfolioHoldingPulse,
   type PortfolioPulseSnapshotRow,
 } from "@/lib/vision/personal/portfolioPulseSnapshots";
 import {
@@ -36,6 +37,7 @@ import {
   type ResolvedClassification,
 } from "@/lib/vision/personal/resolvePortfolioClassification";
 import type { PersonalIntelligenceResult } from "@/lib/vision/personal/types";
+import { processPortfolioPulseSnapshots } from "@/lib/vision/personal/processPortfolioPulseSnapshots";
 import {
   rankFeaturedPulseCandidates,
   selectFeaturedPulse,
@@ -1746,13 +1748,23 @@ export async function GET() {
     )
   );
 
-  let holdingPulses;
+  let holdingPulses: Map<string, PortfolioHoldingPulse>;
 
   try {
+    const admin = createSupabaseAdminClient();
     holdingPulses = await loadPortfolioHoldingPulses(
-      createSupabaseAdminClient(),
+      admin,
       portfolioTickers,
     );
+    const symbolsNeedingSnapshots = portfolioTickers.filter((symbol) => {
+      const status = holdingPulses.get(symbol)?.pulseStatus;
+      return status === "awaiting_first_snapshot" || status === "stale";
+    });
+
+    if (symbolsNeedingSnapshots.length) {
+      await processPortfolioPulseSnapshots(symbolsNeedingSnapshots);
+      holdingPulses = await loadPortfolioHoldingPulses(admin, portfolioTickers);
+    }
   } catch (error) {
     console.error("Portfolio Pulse client initialization failed:", error);
     holdingPulses = resolvePortfolioHoldingPulses(

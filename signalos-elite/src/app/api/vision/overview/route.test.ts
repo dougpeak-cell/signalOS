@@ -68,6 +68,10 @@ vi.mock("@/lib/vision/personal/resolvePortfolioClassification", () => ({
   })),
 }));
 
+vi.mock("@/lib/vision/personal/processPortfolioPulseSnapshots", () => ({
+  processPortfolioPulseSnapshots: vi.fn(async () => []),
+}));
+
 vi.mock("@/lib/intelligence/market-health", () => ({
   calculateMarketHealth: vi.fn(() => 0),
   getMarketRegime: vi.fn(() => "Balanced"),
