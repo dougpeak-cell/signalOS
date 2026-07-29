@@ -177,6 +177,7 @@ type ApiStockPulse = ApiPulseReading & {
   marketDataSource?: "intraday" | "completed-session" | "fallback" | null;
   company?: string | null;
   sector?: string | null;
+  industry?: string | null;
   price: number | null;
   changePercent: number | null;
   relativeVolume?: number | null;
@@ -752,12 +753,20 @@ function buildApiVisionOverview(
     previousSnapshot,
     historyBySymbol,
     snapshot.updatedAt,
-  );
+  ).map((stock) => {
+    const classification = classificationBySymbol.get(normalizeTicker(stock.symbol));
+
+    return {
+      ...stock,
+      company: classification?.companyName ?? stock.company,
+      sector: classification?.sector ?? stock.sector,
+      industry: classification?.industry ?? null,
+    };
+  });
   const stockMap = new Map(stocks.map((stock) => [stock.symbol, stock]));
   const featuredCandidates: FeaturedPulseCandidate[] = stocks.map((stock) => {
     const symbol = normalizeTicker(stock.symbol);
     const quote = liveQuoteMap[symbol];
-    const classification = classificationBySymbol.get(symbol);
     const snapshotAsOf = stock.marketDataAsOf ?? stock.updatedAt ?? stock.calculatedAt ?? null;
     const snapshotSessionDate = snapshotAsOf?.slice(0, 10) ?? null;
     const isCurrentSession =
@@ -766,9 +775,9 @@ function buildApiVisionOverview(
 
     return {
       symbol,
-      companyName: classification?.companyName ?? stock.company ?? null,
-      sector: classification?.sector ?? stock.sector ?? null,
-      industry: classification?.industry ?? null,
+      companyName: stock.company ?? null,
+      sector: stock.sector ?? null,
+      industry: stock.industry ?? null,
       pulseScore: stock.score,
       opportunityScore: stock.opportunityScore ?? null,
       confidence: stock.confidence,

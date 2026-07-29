@@ -46,6 +46,7 @@ export type StockPulseExperienceItem = {
   symbol: string;
   company?: string | null;
   sector?: string | null;
+  industry?: string | null;
 
   price: number | null;
   changePercent: number | null;
@@ -988,6 +989,9 @@ function ViewedStockPulse({
 
   const state =
     stock.state ?? pulseStateFromScore(score) ?? "Awaiting data";
+  const classification = [stock.sector, stock.industry]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .join(" / ");
 
   return (
     <div>
@@ -1016,7 +1020,7 @@ function ViewedStockPulse({
                 </div>
 
                 <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
-                  {stock.sector ?? "Sector unavailable"}
+                  {classification || "Classification unavailable"}
                 </p>
               </div>
 
