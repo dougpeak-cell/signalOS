@@ -733,6 +733,28 @@ function buildApiChanges(changes: VisionChange[]): ApiVisionChange[] {
   }));
 }
 
+function applyOpportunityClassifications(
+  snapshot: VisionOverview | null,
+  classificationBySymbol: Map<string, ResolvedClassification>,
+): VisionOverview | null {
+  if (!snapshot) return null;
+
+  return {
+    ...snapshot,
+    opportunities: snapshot.opportunities.map((opportunity) => {
+      const classification = classificationBySymbol.get(
+        normalizeTicker(opportunity.symbol),
+      );
+
+      return {
+        ...opportunity,
+        company: classification?.companyName ?? opportunity.company,
+        sector: classification?.sector ?? opportunity.sector,
+      };
+    }),
+  };
+}
+
 function buildApiVisionOverview(
   snapshot: VisionOverview,
   previousSnapshot: VisionOverview | null,
@@ -748,11 +770,19 @@ function buildApiVisionOverview(
     persistedSnapshotAt: string | null;
   },
 ): ApiVisionOverview {
+  const classifiedSnapshot = applyOpportunityClassifications(
+    snapshot,
+    classificationBySymbol,
+  )!;
+  const classifiedPreviousSnapshot = applyOpportunityClassifications(
+    previousSnapshot,
+    classificationBySymbol,
+  );
   const marketPulse = buildMarketPulse(snapshot, previousSnapshot, snapshot.updatedAt);
   const sectors = buildSectorPulses(snapshot, previousSnapshot, snapshot.updatedAt);
   const stocks = buildStockPulses(
-    snapshot,
-    previousSnapshot,
+    classifiedSnapshot,
+    classifiedPreviousSnapshot,
     historyBySymbol,
     snapshot.updatedAt,
   ).map((stock) => {
