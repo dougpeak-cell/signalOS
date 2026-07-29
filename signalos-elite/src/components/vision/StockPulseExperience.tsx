@@ -4,7 +4,9 @@ import Link from "next/link";
 import {
   CSSProperties,
   ReactNode,
+  useEffect,
   useMemo,
+  useState,
 } from "react";
 
 /* =========================================================
@@ -199,7 +201,168 @@ function normalizedHistory(history?: PulseHistoryPoint[]) {
         new Date(first.recordedAt).getTime() -
         new Date(second.recordedAt).getTime(),
     )
-    .slice(-12);
+    .slice(-90);
+}
+
+type EvolutionFrequency = "five_minute" | "daily";
+
+type EvolutionSnapshot = {
+  score: number | null;
+  calculatedAt: string;
+  recordedAt?: string | null;
+};
+
+function useEvolutionHistory(
+  symbol: string,
+  frequency: EvolutionFrequency,
+  limit: number,
+  pollMs?: number,
+) {
+  const [history, setHistory] = useState<PulseHistoryPoint[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const response = await fetch(
+          `/api/amsa/evolution/stock/${encodeURIComponent(symbol)}` +
+            `?frequency=${frequency}&limit=${limit}`,
+          { cache: "no-store" },
+        );
+        if (!response.ok) return;
+        const payload = await response.json() as { snapshots?: EvolutionSnapshot[] };
+        const nextHistory = (payload.snapshots ?? []).map((snapshot) => ({
+          score: snapshot.score,
+          recordedAt: snapshot.calculatedAt ?? snapshot.recordedAt ?? "",
+        }));
+        if (!cancelled) setHistory(nextHistory);
+      } catch {
+        // Preserve the last verified graph when polling temporarily fails.
+      }
+    };
+
+    void load();
+    const timer = pollMs ? window.setInterval(load, pollMs) : null;
+
+    return () => {
+      cancelled = true;
+      if (timer !== null) window.clearInterval(timer);
+    };
+  }, [frequency, limit, pollMs, symbol]);
+
+  return history;
+}
+
+function easternDate(value: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(value));
+}
+
+function formatEasternTime(value: string | null | undefined): string {
+  if (!value) return "Awaiting first reading";
+  return `${new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value))} ET`;
+}
+
+function isRegularMarketHours(now: Date): boolean {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  if (values.weekday === "Sat" || values.weekday === "Sun") return false;
+  const minutes = Number(values.hour) * 60 + Number(values.minute);
+  return minutes >= 9 * 60 + 30 && minutes < 16 * 60;
+}
+
+function DailyHeartbeat({ stock }: { stock: StockPulseExperienceItem }) {
+  const allHistory = useEvolutionHistory(stock.symbol, "five_minute", 78, 30_000);
+  const latestSessionDate = allHistory.at(-1)?.recordedAt
+    ? easternDate(allHistory.at(-1)!.recordedAt)
+    : null;
+  const history = latestSessionDate
+    ? allHistory.filter((point) => easternDate(point.recordedAt) === latestSessionDate)
+    : [];
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const marketOpen = isRegularMarketHours(now);
+  const nextEvaluation = (Math.floor(now.getTime() / 300_000) + 1) * 300_000;
+  const secondsRemaining = Math.max(0, Math.ceil((nextEvaluation - now.getTime()) / 1_000));
+  const statusLine = marketOpen
+    ? `Pulse Live · Next evaluation in ${Math.floor(secondsRemaining / 60)}:${String(secondsRemaining % 60).padStart(2, "0")}`
+    : `Final daily rhythm · Last verified ${formatEasternTime(history.at(-1)?.recordedAt)}`;
+
+  return (
+    <PulseHeartbeat
+      stock={stock}
+      history={history}
+      compact
+      eyebrow="Daily Heartbeat"
+      description="5-minute Pulse rhythm"
+      statusLine={statusLine}
+      readingCountLabel={`${history.length} verified readings`}
+    />
+  );
+}
+
+type EvolutionRange = "Daily" | "1 Week" | "1 Month" | "3 Months";
+const EVOLUTION_RANGE_DAYS: Record<EvolutionRange, number> = {
+  Daily: 2,
+  "1 Week": 7,
+  "1 Month": 31,
+  "3 Months": 93,
+};
+
+function PulseEvolution({ stock }: { stock: StockPulseExperienceItem }) {
+  const allHistory = useEvolutionHistory(stock.symbol, "daily", 30);
+  const [range, setRange] = useState<EvolutionRange>("1 Month");
+  const cutoff = Date.now() - EVOLUTION_RANGE_DAYS[range] * 86_400_000;
+  const history = allHistory.filter((point) => Date.parse(point.recordedAt) >= cutoff);
+
+  return (
+    <>
+      <div className="mb-4 flex flex-wrap gap-2" aria-label="Pulse Evolution range">
+        {(Object.keys(EVOLUTION_RANGE_DAYS) as EvolutionRange[]).map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => setRange(option)}
+            className={[
+              "rounded-lg border px-3 py-1.5 text-xs font-semibold transition",
+              range === option
+                ? "border-cyan-300/35 bg-cyan-400/10 text-cyan-100"
+                : "border-white/10 text-slate-500 hover:text-white",
+            ].join(" ")}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+      <PulseHeartbeat
+        stock={stock}
+        history={history}
+        eyebrow="Pulse Evolution"
+        description="Verified daily AMSA snapshots"
+        readingCountLabel={`${history.length} verified sessions`}
+      />
+    </>
+  );
 }
 
 function getPulseChange(stock: StockPulseExperienceItem) {
@@ -402,13 +565,23 @@ function buildHeartbeatPath(
 function PulseHeartbeat({
   stock,
   compact = false,
+  history: providedHistory,
+  eyebrow = "Pulse Heartbeat",
+  description,
+  statusLine,
+  readingCountLabel,
 }: {
   stock: StockPulseExperienceItem;
   compact?: boolean;
+  history?: PulseHistoryPoint[];
+  eyebrow?: string;
+  description?: string;
+  statusLine?: string;
+  readingCountLabel?: string;
 }) {
   const history = useMemo(
-    () => normalizedHistory(stock.history),
-    [stock.history],
+    () => normalizedHistory(providedHistory ?? stock.history),
+    [providedHistory, stock.history],
   );
 
   const width = compact ? 460 : 980;
@@ -416,7 +589,7 @@ function PulseHeartbeat({
 
   const scores = history.map((point) => Number(point.score));
   const path = buildHeartbeatPath(scores, width, height);
-  const status = getHeartbeatStatus(stock);
+  const status = getHeartbeatStatus({ ...stock, history });
 
   const latestScore =
     history.length > 0
@@ -458,8 +631,12 @@ function PulseHeartbeat({
         <div className="relative flex min-h-20 items-center justify-between gap-4">
           <div>
             <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300">
-              Pulse Heartbeat
+              {eyebrow}
             </p>
+
+            {description ? (
+              <p className="mt-1 text-[10px] text-slate-500">{description}</p>
+            ) : null}
 
             <p className="mt-2 font-semibold text-slate-300">
               Building historical rhythm
@@ -507,8 +684,12 @@ function PulseHeartbeat({
       <div className="relative flex items-start justify-between gap-4">
         <div>
           <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-cyan-300">
-            Pulse Heartbeat
+            {eyebrow}
           </p>
+
+          {description ? (
+            <p className="mt-1 text-[10px] text-slate-500">{description}</p>
+          ) : null}
 
           <p className="mt-1 text-sm font-semibold text-white">
             {status.label}
@@ -539,6 +720,15 @@ function PulseHeartbeat({
           </p>
         </div>
       </div>
+
+      {readingCountLabel || statusLine ? (
+        <div className="relative mt-3 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500">
+          <span>{readingCountLabel}</span>
+          <span className={statusLine?.startsWith("Pulse Live") ? "text-emerald-300" : undefined}>
+            {statusLine}
+          </span>
+        </div>
+      ) : null}
 
       <div
         className={
@@ -639,7 +829,12 @@ function PulseHeartbeat({
         </svg>
       </div>
 
-      {!compact ? (
+      {compact ? (
+        <div className="mt-2 flex items-center justify-between text-[9px] text-slate-600">
+          <span>9:30 AM ET</span>
+          <span>{formatEasternTime(history.at(-1)?.recordedAt)}</span>
+        </div>
+      ) : (
         <div className="mt-3 flex items-center justify-between gap-3 text-[10px] text-slate-600">
           <span>
             {formatCompactTime(history[0]?.recordedAt)}
@@ -653,7 +848,7 @@ function PulseHeartbeat({
             {formatCompactTime(history.at(-1)?.recordedAt)}
           </span>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -929,7 +1124,11 @@ function StockPulseSelectorCard({
       </div>
 
       <div className="mt-4">
-        <PulseHeartbeat stock={stock} compact />
+        {featured ? (
+          <DailyHeartbeat stock={stock} />
+        ) : (
+          <PulseHeartbeat stock={stock} compact />
+        )}
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
@@ -1140,18 +1339,18 @@ function ViewedStockPulse({
               </h3>
 
               <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-                This is the movement of Sigi’s AMSA reading—not the
-                stock’s price chart.
+                How Sigi’s conviction has changed across completed
+                market sessions—not the stock’s price chart.
               </p>
             </div>
 
             <span className="w-fit rounded-full border border-cyan-400/15 bg-cyan-500/[0.04] px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-cyan-200">
-              Verified snapshots
+              Verified daily AMSA snapshots
             </span>
           </div>
 
           <div className="mt-5">
-            <PulseHeartbeat stock={stock} />
+            <PulseEvolution stock={stock} />
           </div>
         </GlowPanel>
       </div>

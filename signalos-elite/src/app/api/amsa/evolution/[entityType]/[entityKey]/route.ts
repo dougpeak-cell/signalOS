@@ -97,7 +97,7 @@ export async function GET(
       );
 
     const requestedFrequency =
-      frequency === "intraday" ||
+      frequency === "five_minute" ||
       frequency === "manual" ||
       frequency === "daily"
         ? frequency
