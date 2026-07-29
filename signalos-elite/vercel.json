@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/amsa-five-minute",
+      "schedule": "*/5 13-21 * * 1-5"
+    }
+  ]
+}

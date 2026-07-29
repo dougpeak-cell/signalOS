@@ -45,6 +45,8 @@ type SnapshotRow = {
   metadata: unknown;
 
   source_updated_at: string | null;
+  frequency: string;
+  interval_bucket: string | null;
   calculated_at: string;
   recorded_at: string;
 };
@@ -62,7 +64,8 @@ export function getAMSASupabaseClient(): SupabaseClient {
     process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   const serviceRoleKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY;
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.SUPRABASE_SERVICE_ROLE_KEY;
 
   if (!url || !serviceRoleKey) {
     throw new Error(
@@ -140,6 +143,12 @@ export class SupabaseAMSAPulseRepository
       source_updated_at:
         snapshot.sourceUpdatedAt ?? null,
 
+      frequency:
+        snapshot.frequency,
+
+      interval_bucket:
+        snapshot.intervalBucket ?? null,
+
       calculated_at:
         snapshot.calculatedAt,
     };
@@ -164,6 +173,21 @@ export class SupabaseAMSAPulseRepository
     } = await query;
 
     if (error) {
+      if (error.code === "23505" && snapshot.intervalBucket) {
+        const { data: existing, error: existingError } = await this.supabase
+          .from("amsa_pulse_snapshots")
+          .select("*")
+          .eq("entity_type", snapshot.entityType)
+          .eq("entity_key", normalizeEntityKey(snapshot.entityKey))
+          .eq("frequency", snapshot.frequency)
+          .eq("interval_bucket", snapshot.intervalBucket)
+          .maybeSingle();
+
+        if (!existingError && existing) {
+          return mapRow(existing as SnapshotRow);
+        }
+      }
+
       throw new Error(
         `AMSA snapshot save failed: ${error.message}`,
       );
@@ -199,7 +223,16 @@ export class SupabaseAMSAPulseRepository
         normalizeEntityKey(
           query.entityKey,
         ),
-      )
+      );
+
+    if (query.frequency) {
+      request = request.eq(
+        "frequency",
+        query.frequency,
+      );
+    }
+
+    request = request
       .order(
         "calculated_at",
         {
@@ -207,9 +240,7 @@ export class SupabaseAMSAPulseRepository
         },
       )
       .limit(
-        query.frequency
-          ? 365
-          : limit,
+        limit,
       );
 
     if (query.dateFrom) {
@@ -241,17 +272,7 @@ export class SupabaseAMSAPulseRepository
       (data ?? []) as SnapshotRow[]
     ).map(mapRow);
 
-    const filteredSnapshots =
-      query.frequency
-        ? snapshots.filter(
-            (snapshot) =>
-              snapshot.frequency ===
-              query.frequency,
-          )
-        : snapshots;
-
-    return filteredSnapshots
-      .slice(0, limit)
+    return snapshots
       .reverse();
   }
 
@@ -536,12 +557,10 @@ function mapRow(
       ? row.metadata
       : {};
 
+  const rawFrequency = row.frequency ?? metadata.frequency;
   const frequency =
-    metadata.frequency ===
-      "intraday" ||
-    metadata.frequency ===
-      "manual"
-      ? metadata.frequency
+    rawFrequency === "five_minute" || rawFrequency === "manual"
+      ? rawFrequency
       : "daily";
 
   return {
@@ -596,6 +615,9 @@ function mapRow(
 
     sourceUpdatedAt:
       row.source_updated_at,
+
+    intervalBucket:
+      row.interval_bucket,
 
     calculatedAt:
       row.calculated_at,

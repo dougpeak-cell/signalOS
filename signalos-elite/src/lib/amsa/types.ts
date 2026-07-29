@@ -480,7 +480,7 @@ export type AMSAPulseEntityType =
   | "crypto";
 
 export type AMSASnapshotFrequency =
-  | "intraday"
+  | "five_minute"
   | "daily"
   | "manual";
 
@@ -536,6 +536,7 @@ export type AMSAPulseSnapshot = {
   metadata: Record<string, unknown>;
 
   sourceUpdatedAt?: string | null;
+  intervalBucket?: string | null;
   calculatedAt: string;
   recordedAt?: string | null;
 
