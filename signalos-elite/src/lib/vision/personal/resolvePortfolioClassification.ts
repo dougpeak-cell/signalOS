@@ -75,7 +75,7 @@ export async function resolvePortfolioClassification(
 
   const existing = normalizeClassificationProfile(normalizedSymbol, existingProfile);
 
-  if (existing.companyName || existing.sector || existing.industry) {
+  if (existing.companyName && existing.sector && existing.industry) {
     return {
       ...existing,
       source: "existing",
@@ -86,7 +86,7 @@ export async function resolvePortfolioClassification(
     profile: "discovery",
   });
   const fallback = getClassificationFallback(normalizedSymbol);
-  const providerIndustry = fundamentals.industry?.trim() ?? null;
+  const providerIndustry = existing.industry ?? fundamentals.industry?.trim() ?? null;
   const industry =
     providerIndustry?.toUpperCase() === "REAL ESTATE INVESTMENT TRUSTS"
       ? fallback?.industry ?? providerIndustry
@@ -94,9 +94,9 @@ export async function resolvePortfolioClassification(
 
   const resolved = normalizeClassificationProfile(normalizedSymbol, {
     symbol: normalizedSymbol,
-    name: fundamentals.name ?? fallback?.companyName,
-    companyName: fundamentals.name ?? fallback?.companyName,
-    sector: fundamentals.sector ?? fallback?.sector,
+    name: existing.companyName ?? fundamentals.name ?? fallback?.companyName,
+    companyName: existing.companyName ?? fundamentals.name ?? fallback?.companyName,
+    sector: existing.sector ?? fundamentals.sector ?? fallback?.sector,
     industry,
     sicDescription: industry,
   });
@@ -106,7 +106,9 @@ export async function resolvePortfolioClassification(
       ? {
           ...resolved,
           source:
-            fundamentals.name || fundamentals.sector || fundamentals.industry
+            existing.companyName || existing.sector || existing.industry
+              ? "existing"
+              : fundamentals.name || fundamentals.sector || fundamentals.industry
               ? "provider"
               : "fallback",
         }

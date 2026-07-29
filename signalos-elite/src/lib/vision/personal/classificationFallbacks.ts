@@ -8,6 +8,11 @@ const CLASSIFICATION_FALLBACKS: Record<
   string,
   Classification
 > = {
+  ACHR: {
+    companyName: "Archer Aviation",
+    sector: "Industrials",
+    industry: "Aerospace & Defense",
+  },
   CRWV: {
     companyName: "CoreWeave",
     sector: "Technology",
@@ -37,6 +42,11 @@ const CLASSIFICATION_FALLBACKS: Record<
     companyName: "NVIDIA",
     sector: "Technology",
     industry: "Semiconductors",
+  },
+  ORCL: {
+    companyName: "Oracle",
+    sector: "Technology",
+    industry: "Software - Infrastructure",
   },
   MSFT: {
     companyName: "Microsoft",
