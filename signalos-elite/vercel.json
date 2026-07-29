@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/amsa-daily",
+      "schedule": "15 22 * * 1-5"
+    },
+    {
       "path": "/api/cron/amsa-five-minute",
       "schedule": "*/5 13-21 * * 1-5"
     }

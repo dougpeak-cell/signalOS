@@ -102,6 +102,7 @@ export async function GET(
       frequency === "daily"
         ? frequency
         : null;
+    const effectiveFrequency = requestedFrequency ?? "daily";
 
     const repository = new SupabaseAMSAPulseRepository();
     const snapshots =
@@ -111,23 +112,28 @@ export async function GET(
         limit,
 
         frequency:
-          requestedFrequency ?? undefined,
+          effectiveFrequency,
       });
+
+    const verifiedSnapshots = snapshots.filter(
+      (snapshot) => snapshot.metadata.verified === true,
+    );
 
     const evolution =
       calculatePulseEvolution(
-        snapshots,
+        verifiedSnapshots,
       );
 
     return NextResponse.json(
-      snapshots.length
+      verifiedSnapshots.length
         ? {
             success: true,
             entityType,
             entityKey,
             frequency:
-              requestedFrequency,
-            snapshots,
+              effectiveFrequency,
+            verifiedSnapshotCount: verifiedSnapshots.length,
+            snapshots: verifiedSnapshots,
             evolution,
           }
         : {
@@ -135,7 +141,8 @@ export async function GET(
             entityType,
             entityKey,
             frequency:
-              requestedFrequency,
+              effectiveFrequency,
+            verifiedSnapshotCount: 0,
             snapshots: [],
             evolution: null,
           },

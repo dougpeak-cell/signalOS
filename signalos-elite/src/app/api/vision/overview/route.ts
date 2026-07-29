@@ -37,7 +37,6 @@ import {
   type ResolvedClassification,
 } from "@/lib/vision/personal/resolvePortfolioClassification";
 import type { PersonalIntelligenceResult } from "@/lib/vision/personal/types";
-import { processPortfolioPulseSnapshots } from "@/lib/vision/personal/processPortfolioPulseSnapshots";
 import {
   rankFeaturedPulseCandidates,
   selectFeaturedPulse,
@@ -85,6 +84,7 @@ type VisionSnapshotRecord = {
 
 type AMSAStockSnapshotRow = {
   entity_key: string;
+  frequency: string;
   score: number | null;
   state: string | null;
   metadata: unknown;
@@ -878,6 +878,15 @@ function getSnapshotPrice(metadata: unknown) {
     : null;
 }
 
+function isVerifiedSnapshot(metadata: unknown): boolean {
+  return Boolean(
+    metadata &&
+    typeof metadata === "object" &&
+    !Array.isArray(metadata) &&
+    (metadata as Record<string, unknown>).verified === true,
+  );
+}
+
 function toApiPulseState(value: string | null): ApiPulseState | null {
   if (
     value === "Elite" ||
@@ -908,8 +917,9 @@ async function loadStockPulseHistory(
   );
   const { data, error } = await supabase
     .from("amsa_pulse_snapshots")
-    .select("entity_key, score, state, metadata, recorded_at")
+    .select("entity_key, frequency, score, state, metadata, recorded_at")
     .eq("entity_type", "stock")
+    .eq("frequency", "daily")
     .in("entity_key", normalizedSymbols)
     .order("recorded_at", { ascending: true });
 
@@ -919,6 +929,8 @@ async function loadStockPulseHistory(
   }
 
   for (const row of (data ?? []) as AMSAStockSnapshotRow[]) {
+    if (row.frequency !== "daily" || !isVerifiedSnapshot(row.metadata)) continue;
+
     const symbol = normalizeTicker(row.entity_key);
     const current = grouped.get(symbol) ?? [];
 
@@ -1756,15 +1768,6 @@ export async function GET() {
       admin,
       portfolioTickers,
     );
-    const symbolsNeedingSnapshots = portfolioTickers.filter((symbol) => {
-      const status = holdingPulses.get(symbol)?.pulseStatus;
-      return status === "awaiting_first_snapshot" || status === "stale";
-    });
-
-    if (symbolsNeedingSnapshots.length) {
-      await processPortfolioPulseSnapshots(symbolsNeedingSnapshots);
-      holdingPulses = await loadPortfolioHoldingPulses(admin, portfolioTickers);
-    }
   } catch (error) {
     console.error("Portfolio Pulse client initialization failed:", error);
     holdingPulses = resolvePortfolioHoldingPulses(

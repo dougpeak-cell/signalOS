@@ -231,8 +231,15 @@ function useEvolutionHistory(
           { cache: "no-store" },
         );
         if (!response.ok) return;
-        const payload = await response.json() as { snapshots?: EvolutionSnapshot[] };
-        const nextHistory = (payload.snapshots ?? []).map((snapshot) => ({
+        const payload = await response.json() as {
+          verifiedSnapshotCount?: number;
+          snapshots?: EvolutionSnapshot[];
+        };
+        const verifiedSnapshotCount = Math.max(
+          0,
+          payload.verifiedSnapshotCount ?? payload.snapshots?.length ?? 0,
+        );
+        const nextHistory = (payload.snapshots ?? []).slice(0, verifiedSnapshotCount).map((snapshot) => ({
           score: snapshot.score,
           recordedAt: snapshot.calculatedAt ?? snapshot.recordedAt ?? "",
         }));
@@ -316,7 +323,7 @@ function DailyHeartbeat({ stock }: { stock: StockPulseExperienceItem }) {
       eyebrow="Daily Heartbeat"
       description="5-minute Pulse rhythm"
       statusLine={statusLine}
-      readingCountLabel={`${history.length} verified readings`}
+      readingCountLabel={`${history.length} VERIFIED 5-MINUTE READINGS`}
     />
   );
 }
@@ -332,7 +339,8 @@ const EVOLUTION_RANGE_DAYS: Record<EvolutionRange, number> = {
 function PulseEvolution({ stock }: { stock: StockPulseExperienceItem }) {
   const allHistory = useEvolutionHistory(stock.symbol, "daily", 30);
   const [range, setRange] = useState<EvolutionRange>("1 Month");
-  const cutoff = Date.now() - EVOLUTION_RANGE_DAYS[range] * 86_400_000;
+  const latestReadingAt = Date.parse(allHistory.at(-1)?.recordedAt ?? "");
+  const cutoff = latestReadingAt - EVOLUTION_RANGE_DAYS[range] * 86_400_000;
   const history = allHistory.filter((point) => Date.parse(point.recordedAt) >= cutoff);
 
   return (
@@ -359,7 +367,7 @@ function PulseEvolution({ stock }: { stock: StockPulseExperienceItem }) {
         history={history}
         eyebrow="Pulse Evolution"
         description="Verified daily AMSA snapshots"
-        readingCountLabel={`${history.length} verified sessions`}
+        readingCountLabel={`${history.length} VERIFIED DAILY SNAPSHOTS`}
       />
     </>
   );
