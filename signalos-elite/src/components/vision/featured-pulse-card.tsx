@@ -29,7 +29,6 @@ type FeaturedPulseCardProps = {
     direction?: string | null;
     heartbeatDelta?: number | null;
 
-    classification?: string | null;
     featuredScore: number;
     selectionReasons: string[];
     rank: number;
@@ -148,6 +147,9 @@ export function FeaturedPulseCard({
   const eyebrow = isLiveSession
     ? "Today’s Featured Pulse"
     : "Latest Verified Pulse Leader";
+  const classification = [stock.sector, stock.industry]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .join(" / ");
 
   return (
     <section className="featured-pulse-card">
@@ -172,7 +174,7 @@ export function FeaturedPulseCard({
           ) : null}
 
           <p className="featured-pulse-card__classification">
-            {stock.classification || "Adaptive market-state reading"}
+            {classification || "Classification unavailable"}
           </p>
         </div>
 

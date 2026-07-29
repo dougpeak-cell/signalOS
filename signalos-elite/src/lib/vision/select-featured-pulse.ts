@@ -28,7 +28,6 @@ export type FeaturedPulseCandidate = {
   liquidityScore?: number | null;
   riskScore?: number | null;
 
-  classification?: string | null;
   qualified?: boolean | null;
 
   asOf?: string | Date | null;

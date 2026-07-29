@@ -791,10 +791,6 @@ function buildApiVisionOverview(
           : null,
       liquidityScore: null,
       riskScore: stock.riskScore ?? null,
-      classification:
-        [classification?.sector, classification?.industry]
-          .filter(Boolean)
-          .join(" / ") || stock.sector || null,
       qualified: true,
       asOf: snapshotAsOf,
       reasons: stock.reasons ?? [],
