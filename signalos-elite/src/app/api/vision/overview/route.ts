@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  getCurrentStockPulse,
+  type CurrentStockPulse,
+} from "@/lib/amsa/get-current-stock-pulse";
 import { getHistoryBars, type HistoryBar } from "@/lib/market/historyBars";
 import {
   buildSectorComparisonData,
@@ -556,6 +560,7 @@ function buildStockPulses(
   snapshot: VisionOverview,
   previousSnapshot: VisionOverview | null,
   historyBySymbol: Map<string, ApiPulseHistoryPoint[]>,
+  currentPulseBySymbol: Map<string, CurrentStockPulse>,
   updatedAt: string,
 ) {
   const previousOpportunities = new Map(
@@ -564,11 +569,18 @@ function buildStockPulses(
 
   return snapshot.opportunities.map((opportunity): ApiStockPulse => {
     const previousOpportunity = previousOpportunities.get(opportunity.symbol);
+    const currentPulse = currentPulseBySymbol.get(
+      normalizeTicker(opportunity.symbol),
+    );
+    const pulseHistory = historyBySymbol.get(opportunity.symbol.toUpperCase()) ?? [];
+    const previousPulseScore = pulseHistory.length >= 2
+      ? pulseHistory.at(-2)?.score ?? null
+      : null;
 
     return {
       symbol: opportunity.symbol,
-      marketDataAsOf: opportunity.marketDataAsOf ?? null,
-      marketDataSource: opportunity.marketDataSource ?? null,
+      marketDataAsOf: currentPulse?.asOf ?? opportunity.marketDataAsOf ?? null,
+      marketDataSource: currentPulse ? "completed-session" : opportunity.marketDataSource ?? null,
       company: opportunity.company,
       sector: opportunity.sector,
       price: opportunity.price,
@@ -576,15 +588,11 @@ function buildStockPulses(
       relativeVolume: opportunity.relativeVolume ?? null,
       opportunityScore: opportunity.scores.opportunity,
       riskScore: opportunity.scores.risk,
-      score: opportunity.scores.opportunity,
-      previousScore: previousOpportunity?.scores.opportunity ?? null,
-      state: pulseStateFromScore(opportunity.scores.opportunity),
-      direction:
-        directionFromScores(
-          opportunity.scores.opportunity,
-          previousOpportunity?.scores.opportunity ?? null,
-        ) ?? directionFromDelta(opportunity.changePercent),
-      confidence: opportunity.scores.confidence,
+      score: currentPulse?.rawPulse ?? null,
+      previousScore: previousPulseScore,
+      state: currentPulse?.label ?? null,
+      direction: currentPulse?.direction ?? null,
+      confidence: currentPulse?.confidence ?? null,
       stability: getAverage([
         opportunity.horizons.trader.score,
         opportunity.horizons.swing.score,
@@ -595,8 +603,8 @@ function buildStockPulses(
         opportunity.scores.opportunity,
         snapshot.market.health,
       ]),
-      calculatedAt: updatedAt,
-      updatedAt,
+      calculatedAt: currentPulse?.asOf ?? updatedAt,
+      updatedAt: currentPulse?.asOf ?? updatedAt,
       changeSummary: buildStockChangeSummary(opportunity, previousOpportunity),
       components: buildStockComponents(
         opportunity,
@@ -604,7 +612,7 @@ function buildStockPulses(
         snapshot,
         previousSnapshot,
       ),
-      history: historyBySymbol.get(opportunity.symbol.toUpperCase()) ?? [],
+      history: pulseHistory,
       reasons: opportunity.reasons,
       risks: opportunity.risks,
       invalidation: opportunity.invalidation,
@@ -762,6 +770,7 @@ function buildApiVisionOverview(
   personalIntelligence: PersonalIntelligenceResult,
   liveQuoteMap: ServerQuoteMap,
   classificationBySymbol: Map<string, ResolvedClassification>,
+  currentPulseBySymbol: Map<string, CurrentStockPulse>,
   audit: {
     generatedAt: string;
     candidateUniverseCount: number;
@@ -784,6 +793,7 @@ function buildApiVisionOverview(
     classifiedSnapshot,
     classifiedPreviousSnapshot,
     historyBySymbol,
+    currentPulseBySymbol,
     snapshot.updatedAt,
   ).map((stock) => {
     const classification = classificationBySymbol.get(normalizeTicker(stock.symbol));
@@ -832,7 +842,7 @@ function buildApiVisionOverview(
           : null,
       liquidityScore: null,
       riskScore: stock.riskScore ?? null,
-      qualified: true,
+      qualified: stock.score !== null,
       asOf: snapshotAsOf,
       reasons: stock.reasons ?? [],
     };
@@ -851,7 +861,9 @@ function buildApiVisionOverview(
     generatedAt: audit.generatedAt,
     marketDataAsOf,
     marketDataSource,
-    amsaCalculatedAt: featuredPulse ? audit.generatedAt : null,
+    amsaCalculatedAt: featuredPulse
+      ? currentPulseBySymbol.get(featuredPulse.symbol)?.asOf ?? null
+      : null,
     persistedSnapshotAt: featuredPulse
       ? historyBySymbol.get(featuredPulse.symbol)?.at(-1)?.recordedAt ??
         audit.persistedSnapshotAt
@@ -2073,13 +2085,26 @@ export async function GET() {
   const generatedAt = new Date().toISOString();
   const newCalculationOccurred = currentFingerprint !== previousFingerprint;
   const opportunitySymbols = payload.opportunities.map((opportunity) => opportunity.symbol);
-  const [featuredQuoteMap, featuredClassifications] = await Promise.all([
+  const [featuredQuoteMap, featuredClassifications, currentPulseEntries] = await Promise.all([
     fetchServerQuoteMap(opportunitySymbols),
     Promise.all(
       opportunitySymbols.map(async (symbol) => [
         normalizeTicker(symbol),
         await resolvePortfolioClassification(symbol),
       ] as const),
+    ),
+    Promise.all(
+      opportunitySymbols.map(async (symbol) => {
+        try {
+          return [normalizeTicker(symbol), await getCurrentStockPulse(symbol)] as const;
+        } catch (error) {
+          console.error("Current Stock Pulse unavailable", {
+            symbol,
+            error: error instanceof Error ? error.message : "Unknown AMSA failure.",
+          });
+          return [normalizeTicker(symbol), null] as const;
+        }
+      }),
     ),
   ]);
   const apiPayload = buildApiVisionOverview(
@@ -2094,6 +2119,11 @@ export async function GET() {
     personalIntelligence,
     featuredQuoteMap,
     new Map(featuredClassifications),
+    new Map(
+      currentPulseEntries.filter(
+        (entry): entry is readonly [string, CurrentStockPulse] => entry[1] !== null,
+      ),
+    ),
     {
       generatedAt,
       candidateUniverseCount,

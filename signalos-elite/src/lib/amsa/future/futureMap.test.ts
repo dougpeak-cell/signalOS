@@ -43,6 +43,7 @@ describe(
             result.baseProbability +
             result.bearProbability,
         ).toBe(100);
+        expect(result.stockPulse).toBe(82);
       },
     );
 

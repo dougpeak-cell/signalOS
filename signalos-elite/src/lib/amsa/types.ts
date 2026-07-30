@@ -1123,6 +1123,8 @@ export type AMSAFutureMap = {
 
   currentPrice: number | null;
 
+  stockPulse: number | null;
+
   bias: AMSAFutureMapBias;
   grade: AMSAFutureMapGrade;
   riskLevel: AMSAFutureMapRiskLevel;

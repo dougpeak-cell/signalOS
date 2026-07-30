@@ -64,7 +64,7 @@ export async function GET(
     const recordSnapshot =
       request.nextUrl
         .searchParams
-        .get("record") !== "false";
+        .get("record") === "true";
 
     const result =
       await calculateLiveFutureMap({

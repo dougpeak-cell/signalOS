@@ -14,6 +14,10 @@ vi.mock("@/lib/market/historyBars", () => ({
   getHistoryBars: vi.fn(),
 }));
 
+vi.mock("@/lib/amsa/get-current-stock-pulse", () => ({
+  getCurrentStockPulse: vi.fn(),
+}));
+
 vi.mock("@/lib/market/sectorComparison", () => ({
   buildSectorComparisonData: vi.fn(),
 }));

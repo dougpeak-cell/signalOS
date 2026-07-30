@@ -7,6 +7,7 @@ export * from "./risk";
 export * from "./trend";
 export * from "./types";
 export * from "./volume";
+export * from "./get-current-stock-pulse";
 
 export * from "./contextEngine";
 

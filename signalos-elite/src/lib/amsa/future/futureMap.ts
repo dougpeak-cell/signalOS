@@ -168,6 +168,9 @@ export function calculateFutureMap(
 		currentPrice:
 			input.currentPrice ?? null,
 
+		stockPulse:
+			input.stockPulse ?? null,
+
 		bias,
 		grade,
 		riskLevel,

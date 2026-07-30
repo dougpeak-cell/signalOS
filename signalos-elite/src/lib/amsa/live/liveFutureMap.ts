@@ -23,6 +23,10 @@ import {
 } from "../engine";
 
 import {
+  resolveCurrentStockPulse,
+} from "../get-current-stock-pulse";
+
+import {
   createFutureMapInput,
 } from "../future/fromStockPulse";
 
@@ -100,7 +104,7 @@ export async function calculateLiveFutureMap({
   origin,
   symbol: rawSymbol,
   horizon = "swing",
-  recordSnapshot = true,
+  recordSnapshot = false,
 }: {
   origin: string;
   symbol: string;
@@ -488,7 +492,7 @@ export async function calculateLiveFutureMap({
   const finalStockStart =
     performance.now();
 
-  const stock =
+  const contextualStock =
     stockBars.length >= 20
       ? calculateStockPulse(
           stockBars,
@@ -516,6 +520,24 @@ export async function calculateLiveFutureMap({
           },
         )
       : null;
+
+  const currentStockPulse =
+    stockBars.length >= 20
+      ? await resolveCurrentStockPulse(symbol, { bars: stockBars })
+      : null;
+
+  const stock =
+    contextualStock && currentStockPulse
+      ? {
+          ...contextualStock,
+          score: currentStockPulse.current.rawPulse,
+          state: currentStockPulse.current.label,
+          direction: currentStockPulse.current.direction,
+          confidence: currentStockPulse.current.confidence,
+          calculatedAt: currentStockPulse.current.asOf,
+          updatedAt: currentStockPulse.current.asOf,
+        }
+      : contextualStock;
 
   timings.stockPulse =
     elapsed(
@@ -620,6 +642,10 @@ export async function calculateLiveFutureMap({
     futureMap =
       calculateFutureMap({
         ...futureInput,
+
+        stockPulse:
+          currentStockPulse?.current.rawPulse ??
+          futureInput.stockPulse,
 
         currentPrice:
           livePrice,
