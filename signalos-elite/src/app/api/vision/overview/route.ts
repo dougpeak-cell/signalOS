@@ -590,8 +590,8 @@ function buildStockPulses(
       riskScore: opportunity.scores.risk,
       score: currentPulse?.rawPulse ?? null,
       previousScore: previousPulseScore,
-      state: currentPulse?.label ?? null,
-      direction: currentPulse?.direction ?? null,
+      state: toApiPulseState(currentPulse?.label ?? null),
+      direction: toApiDirection(currentPulse?.direction ?? null),
       confidence: currentPulse?.confidence ?? null,
       stability: getAverage([
         opportunity.horizons.trader.score,
@@ -938,6 +938,16 @@ function toApiPulseState(value: string | null): ApiPulseState | null {
     value === "Weak" ||
     value === "Critical"
   ) {
+    return value;
+  }
+
+  return null;
+}
+
+function toApiDirection(value: string | null): ApiDirection | null {
+  if (value === "strongly-rising") return "rising";
+  if (value === "strongly-falling") return "falling";
+  if (value === "rising" || value === "falling" || value === "stable") {
     return value;
   }
 
