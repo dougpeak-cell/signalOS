@@ -5,13 +5,27 @@ import {
   type SigiIntelligenceRouteClient,
 } from "@/app/api/sigi/intelligence/route";
 
+type ResponsesCreateCall = {
+  model?: string;
+  text?: {
+    format?: {
+      type?: string;
+      strict?: boolean;
+    };
+  };
+  input?: Array<{
+    role?: string;
+    content?: string;
+  }>;
+};
+
 test("/api/sigi/intelligence returns a structured card from a mocked response surface", async () => {
-  let createCall: Parameters<SigiIntelligenceRouteClient["responses"]["create"]>[0] | null = null;
+  const createCalls: ResponsesCreateCall[] = [];
 
   const mockClient: SigiIntelligenceRouteClient = {
     responses: {
-      create: async (input) => {
-        createCall = input;
+      create: async (input: unknown) => {
+        createCalls.push(input as ResponsesCreateCall);
 
         return {
           output_text: JSON.stringify({
@@ -68,10 +82,12 @@ test("/api/sigi/intelligence returns a structured card from a mocked response su
   assert.equal(data.card?.ticker, "NVDA");
   assert.equal(data.card?.signalOSScore, 84);
   assert.equal(data.card?.suggestedAction, "Research");
-  assert.equal(createCall?.model, "gpt-4o-mini");
-  assert.equal(createCall?.text.format.type, "json_schema");
-  assert.equal(createCall?.text.format.strict, true);
-  assert.match(createCall?.input[1]?.content ?? "", /Give me a quick NVDA read/);
+  const createCall = createCalls[0];
+  assert.ok(createCall, "Expected responses.create to be called");
+  assert.equal(createCall.model, "gpt-4o-mini");
+  assert.equal(createCall.text?.format?.type, "json_schema");
+  assert.equal(createCall.text?.format?.strict, true);
+  assert.match(createCall.input?.[1]?.content ?? "", /Give me a quick NVDA read/);
 });
 
 test("/api/sigi/intelligence returns the expected 500 shape when provider output is malformed", async () => {
