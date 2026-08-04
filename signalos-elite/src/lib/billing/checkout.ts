@@ -536,7 +536,7 @@ export async function createCheckoutSessionForPlan(
       plan: tier,
     },
     subscription_data: {
-      trial_period_days: 30,
+      trial_period_days: 7,
       trial_settings: tier === "pro"
         ? {
             end_behavior: {

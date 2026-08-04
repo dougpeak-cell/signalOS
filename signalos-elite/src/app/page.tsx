@@ -182,7 +182,7 @@ export default function LandingPage() {
                 </div>
 
                 <p className="max-w-md text-sm leading-6 text-white/62 sm:text-right">
-                  Create free account and enjoy Sigi Pro at no cost for 30 days, no credit card required.
+                  Explore SigiOS free for 7 days. Cancel anytime before your trial ends.
                 </p>
               </div>
             </div>
@@ -529,21 +529,25 @@ export default function LandingPage() {
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
               <h2 className="text-3xl font-black sm:text-4xl">
-                Start with the market story. Grow with Sigi.
+                Start Your 7-Day Free Trial
               </h2>
 
               <p className="mt-4 max-w-2xl text-base leading-8 text-slate-900/76">
-                Try SigiOS free and experience AI-powered market intelligence before
-                upgrading to Smart or Pro.
+                Explore SigiOS free for 7 days. Cancel anytime before your trial ends.
               </p>
             </div>
 
-            <Link
-              href={LANDING_PRO_TRIAL_HREF}
-              className="inline-flex min-h-12 items-center justify-center rounded-full bg-slate-950 px-6 text-sm font-bold text-white transition hover:bg-slate-800"
-            >
-              Create Free Account
-            </Link>
+            <div className="max-w-sm lg:text-right">
+              <Link
+                href={LANDING_PRO_TRIAL_HREF}
+                className="inline-flex min-h-12 items-center justify-center rounded-full bg-slate-950 px-6 text-sm font-bold text-white transition hover:bg-slate-800"
+              >
+                Start My 7-Day Free Trial
+              </Link>
+              <p className="mt-3 text-xs leading-5 text-slate-900/68">
+                Free for 7 days, then $9/month for Smart or $24/month for Pro. Cancel anytime.
+              </p>
+            </div>
           </div>
         </div>
       </section>
