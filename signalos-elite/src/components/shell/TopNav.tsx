@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { X } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -222,7 +223,8 @@ export default function TopNav({
 
       setSupportMessage("");
       setSupportUserEmail("");
-      setSupportStatus("Support message sent.");
+      setSupportStatus("");
+      setContactOpen(false);
     } catch {
       setSupportStatus("Could not send message. Please try again.");
     } finally {
@@ -307,8 +309,19 @@ export default function TopNav({
 
               {contactOpen ? (
                 <div className="absolute right-0 top-full z-50 mt-3 w-82 rounded-3xl border border-cyan-400/16 bg-slate-950/96 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/78">
-                    Client Support
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/78">
+                      Client Support
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="Close contact form"
+                      title="Close"
+                      onClick={() => setContactOpen(false)}
+                      className="-mr-1 -mt-1 inline-flex size-9 shrink-0 items-center justify-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white"
+                    >
+                      <X aria-hidden="true" className="size-4" />
+                    </button>
                   </div>
                   <div className="mt-2 text-xl font-semibold text-white">
                     Contact SigiOS
