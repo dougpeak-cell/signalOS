@@ -147,6 +147,7 @@ const secondaryMobileShowcases = mobileShowcases.filter(
   (item) => item.title !== featuredMobileShowcase.title
 );
 
+const LANDING_FREE_ACCOUNT_HREF = "/auth?next=%2Ftoday";
 const LANDING_PRO_TRIAL_HREF = "/auth/upgrade?plan=pro&returnTo=%2Ftoday";
 
 export default function LandingPage() {
@@ -174,7 +175,7 @@ export default function LandingPage() {
                   </Link>
 
                   <Link
-                    href={LANDING_PRO_TRIAL_HREF}
+                    href={LANDING_FREE_ACCOUNT_HREF}
                     className="inline-flex min-h-11 items-center justify-center rounded-full bg-teal-300 px-5 text-sm font-bold text-slate-950 transition hover:bg-teal-200"
                   >
                     Create Free Account
@@ -182,7 +183,7 @@ export default function LandingPage() {
                 </div>
 
                 <p className="max-w-md text-sm leading-6 text-white/62 sm:text-right">
-                  Explore SigiOS free for 7 days. Cancel anytime before your trial ends.
+                  Create your free SigiOS account. Upgrade to Smart or Pro anytime with a 7-day free trial.
                 </p>
               </div>
             </div>
@@ -221,7 +222,7 @@ export default function LandingPage() {
 
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Link
-                    href={LANDING_PRO_TRIAL_HREF}
+                    href={LANDING_FREE_ACCOUNT_HREF}
                     className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#f2e8c9] px-6 text-sm font-bold text-slate-950 transition hover:bg-[#f7efd7]"
                   >
                     Create Free Account
@@ -300,7 +301,7 @@ export default function LandingPage() {
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
-                  href={LANDING_PRO_TRIAL_HREF}
+                  href={LANDING_FREE_ACCOUNT_HREF}
                   className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#f2e8c9] px-6 text-sm font-bold text-slate-950 transition hover:bg-[#f7efd7]"
                 >
                   Create Free Account
