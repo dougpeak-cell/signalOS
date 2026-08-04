@@ -70,9 +70,9 @@ function getInitials(name: string): string {
 }
 
 function resolveTierLabel(tier: string): string {
-  if (tier === "pro") return "Elite Member";
+  if (tier === "pro") return "Pro Member";
   if (tier === "smart") return "Smart Member";
-  return "Standard Member";
+  return "Sigi (Free)";
 }
 
 function getHeaderName(hasClientSession: boolean, userName: string): string {
