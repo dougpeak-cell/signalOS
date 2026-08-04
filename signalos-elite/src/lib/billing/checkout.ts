@@ -525,7 +525,7 @@ export async function createCheckoutSessionForPlan(
     customer_update: {
       address: "auto",
     },
-    payment_method_collection: tier === "pro" ? "if_required" : undefined,
+    payment_method_collection: "always",
     allow_promotion_codes: true,
     success_url: getStripeCheckoutSuccessUrl({ returnTo: getSafeReturnTo(returnTo), plan: tier }),
     cancel_url: getStripeCheckoutCancelUrl(),
@@ -537,13 +537,6 @@ export async function createCheckoutSessionForPlan(
     },
     subscription_data: {
       trial_period_days: 7,
-      trial_settings: tier === "pro"
-        ? {
-            end_behavior: {
-              missing_payment_method: "cancel",
-            },
-          }
-        : undefined,
       metadata: {
         supabase_user_id: user.id,
         sigi_plan: tier,
