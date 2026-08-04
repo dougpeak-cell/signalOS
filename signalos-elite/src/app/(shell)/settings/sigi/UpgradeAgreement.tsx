@@ -5,9 +5,11 @@ import { useState } from "react";
 
 export function UpgradeAgreement({
   onUpgrade,
+  buttonLabel,
   busy = false,
 }: {
   onUpgrade: () => void;
+  buttonLabel: string;
   busy?: boolean;
 }) {
   const [agreed, setAgreed] = useState(false);
@@ -52,7 +54,7 @@ export function UpgradeAgreement({
         disabled={!agreed || busy}
         className="mt-4 inline-flex w-full justify-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 px-5 py-3 text-sm font-bold text-cyan-200 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {busy ? "Starting checkout" : "Continue to Secure Checkout"}
+        {busy ? "Starting checkout" : buttonLabel}
       </button>
     </div>
   );

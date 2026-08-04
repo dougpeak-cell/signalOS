@@ -34,7 +34,7 @@ export const SIGI_TIER_CARDS: SigiTierCard[] = [
     tagline: "Helpful assistant",
     eyebrow: "Helpful",
     emotionalTakeaway: "Nice, this is useful.",
-    cta: "Start free",
+    cta: "Continue with Free",
     bullets: [
       "Basic rail and standard answers",
       "Limited follow-ups and short memory window",

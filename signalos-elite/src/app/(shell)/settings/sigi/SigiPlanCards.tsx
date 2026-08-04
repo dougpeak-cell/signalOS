@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { scheduleStripeDowngrade, startStripeUpgradeCheckout } from "@/lib/billing/client";
+import { startStripeUpgradeCheckout } from "@/lib/billing/client";
 import { SIGI_PRICING } from "@/lib/billing/pricing";
 import type { SigiTier } from "@/lib/sigi/gates";
-import { getSigiTierCard } from "@/lib/sigi/plans";
 import type { SigiTierCard } from "@/lib/sigi/plans";
 import { UpgradeAgreement } from "./UpgradeAgreement";
 
@@ -20,10 +19,6 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
   const [pendingPlan, setPendingPlan] = useState<"smart" | "pro" | "downgrade-smart" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function getIdentityCta(plan: "smart" | "pro"): string {
-    return plan === "smart" ? "Become a Smart user" : "Become a Pro user";
-  }
-
   async function startUpgrade(plan: "smart" | "pro") {
     setPendingPlan(plan);
     setError(null);
@@ -32,19 +27,6 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
       await startStripeUpgradeCheckout(plan);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to start checkout");
-      setPendingPlan(null);
-    }
-  }
-
-  async function startDowngrade(plan: "smart") {
-    setPendingPlan(`downgrade-${plan}`);
-    setError(null);
-
-    try {
-      await scheduleStripeDowngrade(plan);
-      window.location.reload();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to schedule downgrade");
       setPendingPlan(null);
     }
   }
@@ -60,7 +42,6 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
       <section id="plans" className="grid gap-4 lg:grid-cols-3">
         {cards.map((card) => {
           const isCurrent = currentTier === card.tier;
-          const isRecommended = card.tier === "smart";
           const isElite = card.tier === "pro";
           const isPaidTier = card.tier === "smart" || card.tier === "pro";
           const paidTier: "smart" | "pro" | null =
@@ -73,24 +54,26 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
                 ? "For serious operators"
                 : null;
           const urgencyCopy =
-            card.tier === "smart"
-              ? isCurrent
-                ? null
-                : "Upgrade now to unlock this instantly"
-              : card.tier === "pro"
-                ? "Available immediately with Sigi Pro"
-                : null;
+            card.tier === "pro" && currentTier === "smart"
+              ? "Available immediately with Sigi Pro"
+              : null;
           const socialProofCopy =
             card.tier === "smart"
               ? "Most active users upgrade to Smart"
               : card.tier === "pro"
                 ? "Power users rely on Pro"
                 : null;
-          const paidTierIdentityCta = paidTier ? getIdentityCta(paidTier) : null;
           const isBusy = pendingPlan === card.tier;
-          const isScheduledDowngradeTarget = currentTier === "pro" && card.tier === "smart";
           const hasScheduledDowngrade = pendingTier === "smart";
           const isIncludedWithPro = currentTier === "pro" && card.tier === "smart";
+          const isTrialEligible = currentTier === "free" && paidTier !== null;
+          const paidButtonLabel = isTrialEligible
+            ? paidTier === "smart"
+              ? "Start 7-Day Free Trial"
+              : "Start Pro Free Trial"
+            : paidTier === "pro"
+              ? "Upgrade to Pro"
+              : "Upgrade to Smart";
 
           return (
             <article
@@ -124,7 +107,15 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
               </div>
 
               <div className="mt-4 text-3xl font-semibold tracking-tight text-white">{card.name}</div>
-              {pricing ? (
+              {pricing && isTrialEligible ? (
+                <div className="mt-2 grid gap-1">
+                  <div className="text-sm font-bold text-cyan-200">7-Day Free Trial</div>
+                  <div className="text-sm font-medium text-white/78">
+                    Then only ${pricing.priceMonthly}/month
+                  </div>
+                  <div className="text-xs text-white/58">Cancel anytime.</div>
+                </div>
+              ) : pricing ? (
                 <div className="mt-2 text-2xl font-bold text-white">
                   ${pricing.priceMonthly}
                   <span className="ml-1 text-sm font-medium text-white/60">/mo</span>
@@ -163,16 +154,9 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
                   </div>
                 ) : isPaidTier && paidTier ? (
                   <div className="grid gap-3">
-                    <div
-                      className={[
-                        "text-sm font-medium",
-                        isRecommended ? "text-cyan-100" : "text-amber-50",
-                      ].join(" ")}
-                    >
-                      {paidTierIdentityCta}
-                    </div>
                     <UpgradeAgreement
                       onUpgrade={() => void startUpgrade(paidTier)}
+                      buttonLabel={paidButtonLabel}
                       busy={isBusy}
                     />
                   </div>
@@ -184,7 +168,7 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
                     {card.cta}
                   </Link>
                 )}
-                {isPaidTier && !isIncludedWithPro ? (
+                {isPaidTier && !isIncludedWithPro && !isTrialEligible ? (
                   <div className="mt-2 text-xs text-white/52">Cancel anytime. No commitment.</div>
                 ) : null}
               </div>
