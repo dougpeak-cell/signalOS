@@ -346,7 +346,22 @@ async function getOrCreateStripeCustomerId(args: {
   existingCustomerId: string | null;
 }): Promise<string> {
   const { userId, email, existingCustomerId } = args;
-  if (existingCustomerId) return existingCustomerId;
+  const stripe = getStripeServer();
+
+  if (existingCustomerId) {
+    try {
+      const existingCustomer = await stripe.customers.retrieve(existingCustomerId);
+
+      if (!existingCustomer.deleted) {
+        return existingCustomer.id;
+      }
+    } catch (error) {
+      console.warn(
+        `Stored Stripe customer ${existingCustomerId} was not found. Replacing it.`,
+        error
+      );
+    }
+  }
 
   const existingByEmail = await findStripeCustomerIdByEmail(email);
   if (existingByEmail) {
@@ -354,7 +369,6 @@ async function getOrCreateStripeCustomerId(args: {
     return existingByEmail;
   }
 
-  const stripe = getStripeServer();
   const customer = await stripe.customers.create({
     email,
     metadata: { supabase_user_id: userId },
@@ -439,12 +453,21 @@ export async function createCheckoutSessionForPlan(
     billingProfile?.stripe_subscription_id ?? fallbackSubscription?.id ?? null;
 
   if (effectiveSubscriptionId) {
-    const existingSubscription = await stripe.subscriptions.retrieve(
-      effectiveSubscriptionId,
-      { expand: ["items.data.price", "schedule"] }
-    );
+    let existingSubscription: Stripe.Subscription | null = null;
 
-    if (isStripeSubscriptionActive(existingSubscription.status)) {
+    try {
+      existingSubscription = await stripe.subscriptions.retrieve(
+        effectiveSubscriptionId,
+        { expand: ["items.data.price", "schedule"] }
+      );
+    } catch (error) {
+      console.warn(
+        `Stored Stripe subscription ${effectiveSubscriptionId} was not found. Continuing with a new checkout.`,
+        error
+      );
+    }
+
+    if (existingSubscription && isStripeSubscriptionActive(existingSubscription.status)) {
       const currentTier = getTierFromStripeSubscription(existingSubscription);
 
       if (currentTier === tier) {
