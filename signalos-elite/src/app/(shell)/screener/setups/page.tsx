@@ -120,6 +120,67 @@ function formatPercent(value?: number | null): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 }
 
+function SetupRankingCards({
+  rows,
+  isMobilePreview,
+}: {
+  rows: RankedSetupItem[];
+  isMobilePreview: boolean;
+}): ReactElement {
+  return (
+    <div className="divide-y divide-white/6">
+      {rows.map((row, index) => (
+        <div key={row.ticker} className="space-y-3 px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-white/35">#{index + 1}</div>
+              <Link href={`/stocks/${row.ticker}${isMobilePreview ? "?mobilePreview=1" : ""}`} className="mt-1 block text-2xl font-semibold text-cyan-200 hover:text-cyan-100">
+                {row.ticker}
+              </Link>
+              <div className="mt-1 text-sm leading-6 text-white/70">{row.name}</div>
+            </div>
+            <div className="shrink-0 text-right">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-white/35">Price</div>
+              <div className="mt-1 text-xl font-semibold text-white">{formatPrice(row.price)}</div>
+              <div className="mt-1 text-sm font-medium text-cyan-200">{formatPercent(row.changePercent)}</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-sm text-white/80">
+            <div className="rounded-2xl border border-white/8 bg-white/3 px-3 py-2">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">RVOL</div>
+              <div className="mt-1 font-medium">{row.rvol != null ? `${row.rvol.toFixed(1)}x` : "--"}</div>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/3 px-3 py-2">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Volume</div>
+              <div className="mt-1 font-medium">{formatNumber(row.volume)}</div>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/3 px-3 py-2">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Setup Score</div>
+              <div className="mt-1 font-medium">{row.score.toFixed(1)}</div>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/3 px-3 py-2">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Bias</div>
+              <div className="mt-1 font-medium">{row.setupBiasLabel}</div>
+            </div>
+          </div>
+
+          <div className="grid gap-2 text-sm text-white/75">
+            <div className="rounded-2xl border border-white/8 bg-white/3 px-3 py-2">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Catalyst</div>
+              <div className="mt-1">{row.catalystLabel}</div>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-white/3 px-3 py-2">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Structure</div>
+              <div className="mt-1">{row.structureLabel}</div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function matchesPriceRange(price: number | null | undefined, priceRange: PriceRangeKey | null) {
   if (priceRange == null) return true;
 
@@ -608,58 +669,14 @@ export default async function SetupsPage({
 
         <div className={`overflow-hidden rounded-3xl border border-white/8 bg-black/20 ${isMobilePreview ? "mt-4" : "mt-5"}`}>
           {isMobilePreview ? (
-            <div className="divide-y divide-white/6">
-              {filteredRows.map((row, index) => (
-                <div key={row.ticker} className="space-y-3 px-4 py-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-[11px] uppercase tracking-[0.18em] text-white/35">#{index + 1}</div>
-                      <Link href={`/stocks/${row.ticker}${isMobilePreview ? "?mobilePreview=1" : ""}`} className="mt-1 block text-2xl font-semibold text-cyan-200 hover:text-cyan-100">
-                        {row.ticker}
-                      </Link>
-                      <div className="mt-1 text-sm leading-6 text-white/70">{row.name}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[11px] uppercase tracking-[0.18em] text-white/35">Price</div>
-                      <div className="mt-1 text-xl font-semibold text-white">{formatPrice(row.price)}</div>
-                      <div className="mt-1 text-sm font-medium text-cyan-200">{formatPercent(row.changePercent)}</div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-sm text-white/80">
-                    <div className="rounded-2xl border border-white/8 bg-white/3 px-3 py-2">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">RVOL</div>
-                      <div className="mt-1 font-medium">{row.rvol != null ? `${row.rvol.toFixed(1)}x` : "--"}</div>
-                    </div>
-                    <div className="rounded-2xl border border-white/8 bg-white/3 px-3 py-2">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Volume</div>
-                      <div className="mt-1 font-medium">{formatNumber(row.volume)}</div>
-                    </div>
-                    <div className="rounded-2xl border border-white/8 bg-white/3 px-3 py-2">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Setup Score</div>
-                      <div className="mt-1 font-medium">{row.score.toFixed(1)}</div>
-                    </div>
-                    <div className="rounded-2xl border border-white/8 bg-white/3 px-3 py-2">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Bias</div>
-                      <div className="mt-1 font-medium">{row.setupBiasLabel}</div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-2 text-sm text-white/75">
-                    <div className="rounded-2xl border border-white/8 bg-white/3 px-3 py-2">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Catalyst</div>
-                      <div className="mt-1">{row.catalystLabel}</div>
-                    </div>
-                    <div className="rounded-2xl border border-white/8 bg-white/3 px-3 py-2">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Structure</div>
-                      <div className="mt-1">{row.structureLabel}</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <SetupRankingCards rows={filteredRows} isMobilePreview />
           ) : (
-          <table className="min-w-full divide-y divide-white/8 text-left text-sm text-white/80">
+          <>
+          <div className="md:hidden">
+            <SetupRankingCards rows={filteredRows} isMobilePreview={false} />
+          </div>
+          <div className="hidden overflow-x-auto md:block">
+          <table className="min-w-275 divide-y divide-white/8 text-left text-sm text-white/80">
             <thead className="bg-white/4 text-[11px] uppercase tracking-[0.2em] text-white/45">
               <tr>
                 <th className="px-4 py-3">Rank</th>
@@ -697,6 +714,8 @@ export default async function SetupsPage({
               ))}
             </tbody>
           </table>
+          </div>
+          </>
           )}
 
           {!filteredRows.length ? (
