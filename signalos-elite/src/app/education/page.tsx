@@ -416,7 +416,11 @@ function EducationPageContent() {
   const isMobilePreview = searchParams.get("mobilePreview") === "1" || hasStoredMobilePreview;
   const shouldUseCompactCategoryMenu = isMobilePreview || isMobilePhoneView;
   const mobilePreviewFrame = useResponsiveMobilePreviewFrame(isMobilePreview);
-  const fallbackExitHref = isMobilePreview ? "/?mobilePreview=1" : "/";
+  const fallbackExitHref = isMobilePreview
+    ? "/?mobilePreview=1"
+    : isMobilePhoneView
+      ? "/markets"
+      : "/";
   const exitHref = returnTo ?? fallbackExitHref;
 
   useEffect(() => {
