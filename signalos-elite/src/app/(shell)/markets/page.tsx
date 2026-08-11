@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight, BookOpen } from "lucide-react";
 
 const marketTools = [
   {
@@ -82,6 +83,42 @@ export default function MarketsPage() {
               </div>
             </Link>
           ))}
+        </section>
+
+        <section className="mt-6 sm:hidden">
+          <Link
+            href="/education"
+            className="group block rounded-2xl border border-white/10 bg-white/[0.035] p-5 transition-all duration-300 hover:border-cyan-400/30 hover:bg-white/5.5 hover:shadow-[0_0_28px_rgba(34,211,238,0.08)]"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-300">
+                  <BookOpen aria-hidden="true" className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-base font-semibold text-white">
+                      Sigi Encyclopedia
+                    </h2>
+                    <span className="rounded-full bg-cyan-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-300">
+                      Learn
+                    </span>
+                  </div>
+
+                  <p className="mt-1 text-sm leading-5 text-white/55">
+                    Understand market terms, indicators, trading concepts, and
+                    Sigi intelligence.
+                  </p>
+                </div>
+              </div>
+
+              <ArrowRight
+                aria-hidden="true"
+                className="h-5 w-5 shrink-0 text-white/35 transition-all duration-300 group-hover:translate-x-1 group-hover:text-cyan-300"
+              />
+            </div>
+          </Link>
         </section>
       </div>
     </main>
