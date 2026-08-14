@@ -12,3 +12,13 @@ describe("CRWV sector classification", () => {
     expect(getDisplaySectorForTicker("CRWV", "Unclassified")).toBe("Technology");
   });
 });
+
+describe("TE sector classification", () => {
+  it("classifies TE as Energy for Vision when provider sector is missing", () => {
+    expect(resolveSector({ symbol: "TE", sector: null })).toBe("Energy");
+  });
+
+  it("classifies TE as Energy for Screener", () => {
+    expect(getDisplaySectorForTicker("TE", "Unclassified")).toBe("Energy");
+  });
+});
