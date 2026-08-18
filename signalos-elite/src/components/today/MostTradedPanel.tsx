@@ -1,8 +1,12 @@
 "use client";
 
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
+import { useSelectedTicker } from "@/components/sigi/SelectedTickerContext";
 import { SectionHeader } from "@/components/today/SectionHeader";
+import { prefetchCompanyProfile } from "@/lib/companyCache";
 import type { TickerNewsPulse } from "@/lib/news/tickerNewsPulse";
 import { isPreMarketNow } from "@/lib/today/marketPhase";
 
@@ -86,6 +90,8 @@ export default function MostTradedPanel({
   const [sessionView, setSessionView] = useState<"regular" | "pre">(() =>
     isPreMarketNow() ? "pre" : "regular"
   );
+  const searchParams = useSearchParams();
+  const { setActiveTicker } = useSelectedTicker();
   const { ensureQuotes, quoteMap } = useLiveMarket();
   const regularMostTraded = regularRows.map((row) => ({
     ...row,
@@ -148,6 +154,19 @@ export default function MostTradedPanel({
       ? "Early session activity and gap leaders"
       : "Highest activity on the tape right now";
 
+  function buildStockHref(ticker: string) {
+    const nextParams = new URLSearchParams({
+      source: "/today",
+      session: sessionView,
+    });
+
+    if (searchParams.get("mobilePreview") === "1") {
+      nextParams.set("mobilePreview", "1");
+    }
+
+    return `/stocks/${encodeURIComponent(ticker)}?${nextParams.toString()}`;
+  }
+
   return (
     <section className="rounded-2xl border border-cyan-500/20 bg-black p-4 shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
       <SectionHeader
@@ -175,9 +194,12 @@ export default function MostTradedPanel({
       <div className="space-y-1.5">
         {displayedRows.length ? (
           displayedRows.slice(0, MAX_MOST_TRADED_ROWS).map((row) => (
-            <button
-              type="button"
+            <Link
               key={`${sessionView}-${row.ticker}`}
+              href={buildStockHref(row.ticker)}
+              onClick={() => setActiveTicker(row.ticker)}
+              onMouseEnter={() => prefetchCompanyProfile(row.ticker)}
+              onFocus={() => prefetchCompanyProfile(row.ticker)}
               className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-transparent px-3.5 py-1.5 text-left transition hover:border-cyan-400/20 hover:bg-cyan-400/3"
             >
               <div className="min-w-0">
@@ -224,7 +246,7 @@ export default function MostTradedPanel({
                   {formatCompactNumber(row.volume)}
                 </div>
               </div>
-            </button>
+            </Link>
           ))
         ) : (
           <div className="rounded-2xl border border-white/10 bg-transparent px-4 py-3 text-sm text-white/45">
