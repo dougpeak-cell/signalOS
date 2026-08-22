@@ -224,77 +224,6 @@ type PortfolioHydratedQuote = {
   updatedAt: number | null;
 };
 
-export function TalentPortfolioCard() {
-  return (
-    <section className="mt-6">
-      <div className="rounded-3xl border border-cyan-400/15 bg-gradient-to-br from-cyan-400/[0.07] via-white/[0.03] to-transparent p-6 shadow-[0_0_40px_rgba(34,211,238,0.05)]">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="max-w-2xl">
-            <div className="mb-2 flex items-center gap-2">
-              <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300">
-                Optional Training
-              </span>
-            </div>
-
-            <h2 className="text-xl font-semibold tracking-tight text-white">
-              Practice with Talents
-            </h2>
-
-            <p className="mt-2 max-w-xl text-sm leading-6 text-white/55">
-              Build a separate simulated portfolio using live market prices.
-              Your existing Portfolio remains completely unchanged.
-            </p>
-
-            <div className="mt-4 flex flex-wrap gap-4 text-sm">
-              <div>
-                <div className="text-[11px] uppercase tracking-wider text-white/35">
-                  Starting Balance
-                </div>
-
-                <div className="mt-1 font-semibold text-white">
-                  100,000 Talents
-                </div>
-              </div>
-
-              <div>
-                <div className="text-[11px] uppercase tracking-wider text-white/35">
-                  Training Value
-                </div>
-
-                <div className="mt-1 font-semibold text-white">
-                  1 Talent = $1 simulated
-                </div>
-              </div>
-
-              <div>
-                <div className="text-[11px] uppercase tracking-wider text-white/35">
-                  Risk
-                </div>
-
-                <div className="mt-1 font-semibold text-emerald-300">
-                  No real money
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <Link
-            href="/talents"
-            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
-          >
-            Open Talent Portfolio →
-          </Link>
-        </div>
-
-        <div className="mt-5 border-t border-white/[0.06] pt-4 text-xs leading-5 text-white/35">
-          Talents are simulated educational credits. They are not U.S.
-          dollars, cannot be withdrawn, and have no cash value.
-        </div>
-      </div>
-    </section>
-  );
-}
-
 async function fetchLiveCreatePrice(ticker: string): Promise<number | null> {
   const normalizedTicker = normalizeTicker(ticker);
 
@@ -1934,8 +1863,6 @@ function PortfolioPageContent() {
                   totalPnlPercent={totalPnlPercent}
                 />
               ) : null}
-
-              <TalentPortfolioCard />
 
               <div className="overflow-hidden rounded-[28px] border border-cyan-400/14 bg-linear-to-b from-cyan-500/4 via-black to-black shadow-[0_0_0_1px_rgba(34,211,238,0.03)]">
                 <div className="border-b border-white/6 px-4 py-3 sm:px-5 sm:py-4">

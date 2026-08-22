@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
-import { PracticeWithTalents } from "@/components/talents/PracticeWithTalents";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
 import LockedLiveChart from "@/components/upgrade/LockedLiveChart";
 import TickerLogo from "@/components/stocks/TickerLogo";
@@ -620,10 +619,6 @@ export default function StockDetailLivePanels({
                     >
                       Open Portfolio
                     </Link>
-                    <PracticeWithTalents
-                      symbol={liveTicker}
-                      price={analysisPrice}
-                    />
                   </div>
                 ) : null}
                 <button
@@ -780,13 +775,6 @@ export default function StockDetailLivePanels({
             >
               Open Portfolio
             </Link>
-
-            {analysisPrice != null ? (
-              <PracticeWithTalents
-                symbol={liveTicker}
-                price={analysisPrice}
-              />
-            ) : null}
 
             <Link
               href={canUseTradingWorkspace ? workspaceHref : workspaceUpgradeHref}
