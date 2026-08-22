@@ -32,6 +32,9 @@ function parseNumber(value: FormDataEntryValue | null) {
 
 export async function addHolding(formData: FormData) {
   const supabase = await createSupabaseServerClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) throw new Error("You must be signed in to manage holdings.");
 
   const ticker = String(formData.get("ticker") ?? "").trim().toUpperCase();
   const shares = parseNumber(formData.get("shares"));
@@ -42,6 +45,7 @@ export async function addHolding(formData: FormData) {
   if (shares == null || shares < 0) throw new Error("Shares must be 0 or greater.");
 
   const { error } = await supabase.from("portfolio_holdings").insert({
+    user_id: user.id,
     ticker,
     shares,
     avg_cost: avgCost,
@@ -57,6 +61,9 @@ export async function addHolding(formData: FormData) {
 
 export async function updateHolding(formData: FormData) {
   const supabase = await createSupabaseServerClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) throw new Error("You must be signed in to manage holdings.");
 
   const id = parseNumber(formData.get("id"));
   const ticker = String(formData.get("ticker") ?? "").trim().toUpperCase();
@@ -76,7 +83,8 @@ export async function updateHolding(formData: FormData) {
       avg_cost: avgCost,
       notes: notesRaw || null,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("user_id", user.id);
 
   if (error) {
     throw new Error(error.message);
@@ -87,11 +95,18 @@ export async function updateHolding(formData: FormData) {
 
 export async function deleteHolding(formData: FormData) {
   const supabase = await createSupabaseServerClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) throw new Error("You must be signed in to manage holdings.");
 
   const id = parseNumber(formData.get("id"));
   if (id == null) throw new Error("Holding id is required.");
 
-  const { error } = await supabase.from("portfolio_holdings").delete().eq("id", id);
+  const { error } = await supabase
+    .from("portfolio_holdings")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
 
   if (error) {
     throw new Error(error.message);
