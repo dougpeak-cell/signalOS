@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
+import { PracticeWithTalents } from "@/components/talents/PracticeWithTalents";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
 import LockedLiveChart from "@/components/upgrade/LockedLiveChart";
 import TickerLogo from "@/components/stocks/TickerLogo";
@@ -611,6 +612,20 @@ export default function StockDetailLivePanels({
                 >
                   Live Day Chart
                 </a>
+                {analysisPrice != null ? (
+                  <div className="hidden flex-wrap items-start gap-3 md:flex">
+                    <Link
+                      href={`/portfolio?focus=${liveTicker}`}
+                      className="inline-flex min-h-11 items-center rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:border-amber-300/35 hover:bg-amber-400/16 hover:text-white"
+                    >
+                      Open Portfolio
+                    </Link>
+                    <PracticeWithTalents
+                      symbol={liveTicker}
+                      price={analysisPrice}
+                    />
+                  </div>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => addStoredWatchlistTicker(liveTicker)}
@@ -765,6 +780,13 @@ export default function StockDetailLivePanels({
             >
               Open Portfolio
             </Link>
+
+            {analysisPrice != null ? (
+              <PracticeWithTalents
+                symbol={liveTicker}
+                price={analysisPrice}
+              />
+            ) : null}
 
             <Link
               href={canUseTradingWorkspace ? workspaceHref : workspaceUpgradeHref}
