@@ -245,7 +245,6 @@ export default function StockDetailLivePanels({
   }
 
   const workspaceHref = buildPreviewHref(`/stocks/${liveTicker.toLowerCase()}/workspace`);
-  const mobileLiveChartHref = buildPreviewHref(`/stocks/${liveTicker.toLowerCase()}/day`);
   const workspaceUpgradeHref = buildPreviewHref("/auth/upgrade?plan=pro&feature=trading-workspace");
 
   useEffect(() => {
@@ -697,7 +696,7 @@ export default function StockDetailLivePanels({
             </h2>
             <p className="mt-1 text-sm text-white/55">
               {isCompactMobileSurface
-                ? "Watch live candles, monitor price action, and jump into a focused full-screen chart without leaving the stock detail workflow."
+                ? "Watch live candles and monitor price action in the full chart embedded below."
                 : "Intraday chart stays inside the stock detail page so you can keep signal context, target levels, and execution guidance in view."}
             </p>
           </div>
@@ -706,12 +705,6 @@ export default function StockDetailLivePanels({
             <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-cyan-200">
               {isCompactMobileSurface ? "Phone-Ready Live View" : "Detail Page Embedded"}
             </div>
-            <Link
-              href={mobileLiveChartHref}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-white/75 transition hover:border-cyan-300/30 hover:bg-cyan-400/10 hover:text-white"
-            >
-              Open Full Live Chart
-            </Link>
             <Link
               href={canUseTradingWorkspace ? workspaceHref : workspaceUpgradeHref}
               className={`rounded-full border px-3 py-1.5 transition ${
@@ -744,7 +737,7 @@ export default function StockDetailLivePanels({
                 Quick Actions
               </div>
               <div className="mt-1 text-sm text-white/58">
-                Open the full mobile chart, workspace, watchlist, and portfolio actions.
+                Open workspace, watchlist, and portfolio actions.
               </div>
             </div>
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
@@ -753,13 +746,6 @@ export default function StockDetailLivePanels({
           </summary>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href={mobileLiveChartHref}
-              className="inline-flex min-h-11 items-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/15 hover:text-white"
-            >
-              Open Full Live Chart
-            </Link>
-
             <button
               type="button"
               onClick={() => addStoredWatchlistTicker(liveTicker)}
