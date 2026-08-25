@@ -8,6 +8,12 @@ vi.mock("@/lib/market/massiveFundamentals", () => ({
           sector: null,
           industry: "REAL ESTATE INVESTMENT TRUSTS",
         }
+      : symbol === "MU"
+      ? {
+          name: "Micron Technology, Inc.",
+          sector: null,
+          industry: "SEMICONDUCTORS & RELATED DEVICES",
+        }
       : {
           name: null,
           sector: null,
@@ -46,6 +52,16 @@ describe("resolvePortfolioClassification", () => {
       sector,
       industry,
       source: "existing",
+    });
+  });
+
+  it("infers a sector when the provider only returns an industry", async () => {
+    await expect(resolvePortfolioClassification("MU")).resolves.toEqual({
+      symbol: "MU",
+      companyName: "Micron Technology, Inc.",
+      sector: "Technology",
+      industry: "SEMICONDUCTORS & RELATED DEVICES",
+      source: "provider",
     });
   });
 });

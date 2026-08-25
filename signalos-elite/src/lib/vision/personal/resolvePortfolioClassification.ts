@@ -41,6 +41,28 @@ function normalizeIndustry(profile: RawClassificationProfile): string | null {
   );
 }
 
+function inferSectorFromIndustry(industry?: string | null): string | null {
+  const value = industry?.trim().toLowerCase();
+
+  if (!value) return null;
+
+  const rules: Array<[RegExp, string]> = [
+    [/semiconductor|computer|software|electronic|optical|data processing/, "Technology"],
+    [/surgical|medical|pharmaceutical|biological|health|hospital/, "Healthcare"],
+    [/petroleum|oil|gas|coal/, "Energy"],
+    [/electric service|natural gas distribution|water supply|utility/, "Utilities"],
+    [/bank|insurance|security broker|investment|credit/, "Financials"],
+    [/real estate|reit/, "Real Estate"],
+    [/aircraft|aerospace|transportation|machinery|construction/, "Industrials"],
+    [/chemical|metal|mining|paper|forest product/, "Materials"],
+    [/telecommunication|broadcast|publishing|media/, "Communication Services"],
+    [/food|beverage|tobacco|grocery|household product/, "Consumer Staples"],
+    [/retail|apparel|automobile|hotel|restaurant|recreation/, "Consumer Discretionary"],
+  ];
+
+  return rules.find(([pattern]) => pattern.test(value))?.[1] ?? null;
+}
+
 export function normalizeClassificationProfile(
   symbol: string,
   profile: RawClassificationProfile | null | undefined,
@@ -91,12 +113,17 @@ export async function resolvePortfolioClassification(
     providerIndustry?.toUpperCase() === "REAL ESTATE INVESTMENT TRUSTS"
       ? fallback?.industry ?? providerIndustry
       : providerIndustry ?? fallback?.industry;
+  const sector =
+    existing.sector ??
+    fundamentals.sector ??
+    fallback?.sector ??
+    inferSectorFromIndustry(industry);
 
   const resolved = normalizeClassificationProfile(normalizedSymbol, {
     symbol: normalizedSymbol,
     name: existing.companyName ?? fundamentals.name ?? fallback?.companyName,
     companyName: existing.companyName ?? fundamentals.name ?? fallback?.companyName,
-    sector: existing.sector ?? fundamentals.sector ?? fallback?.sector,
+    sector,
     industry,
     sicDescription: industry,
   });

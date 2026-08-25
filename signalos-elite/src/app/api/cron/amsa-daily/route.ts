@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { processDailyPulseSnapshots } from "@/lib/amsa/dailySnapshotJob";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { getSetupDiscoveryData } from "@/lib/today/setupDiscoveryData";
 
 export const dynamic = "force-dynamic";
@@ -22,13 +23,46 @@ function configuredSymbols(): string[] {
     .filter(Boolean);
 }
 
+type MarketContextPortfolioRow = {
+  portfolio: Array<{
+    symbol?: string | null;
+    ticker?: string | null;
+  }> | null;
+};
+
+async function getPortfolioSymbols(): Promise<string[]> {
+  try {
+    const { data, error } = await createSupabaseAdminClient()
+      .from("user_market_contexts")
+      .select("portfolio");
+
+    if (error) {
+      console.error("Daily AMSA portfolio universe query failed", error);
+      return [];
+    }
+
+    return ((data ?? []) as MarketContextPortfolioRow[])
+      .flatMap((row) => Array.isArray(row.portfolio) ? row.portfolio : [])
+      .map((holding) => (holding.symbol ?? holding.ticker ?? "").trim().toUpperCase())
+      .filter(Boolean);
+  } catch (error) {
+    console.error("Daily AMSA portfolio universe unavailable", error);
+    return [];
+  }
+}
+
 async function getDailyUniverse(): Promise<string[]> {
-  const discovery = await getSetupDiscoveryData({
-    setupUniverseLimit: 100,
-    fundamentalsTickerLimit: 100,
-  });
+  const [discovery, portfolioSymbols] = await Promise.all([
+    getSetupDiscoveryData({
+      setupUniverseLimit: 100,
+      fundamentalsTickerLimit: 100,
+    }),
+    getPortfolioSymbols(),
+  ]);
+
   return Array.from(new Set([
     ...configuredSymbols(),
+    ...portfolioSymbols,
     ...discovery.candidates.map((candidate) => candidate.ticker.trim().toUpperCase()),
   ].filter(Boolean)));
 }
