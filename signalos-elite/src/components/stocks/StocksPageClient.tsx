@@ -162,7 +162,7 @@ export default function StocksPageClient({
   const [filter, setFilter] = useState<"all" | StockIdea["bucket"]>("all");
   const router = useRouter();
   const { addTicker, hasTicker } = useSyncedWatchlist();
-  const { ensureQuotes, quoteMap } = useLiveMarket();
+  const { ensureQuotes, quoteMap, refreshQuotesNow } = useLiveMarket();
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
 
   const normalizedSearchTicker = normalizeTicker(query).toUpperCase();
@@ -182,8 +182,11 @@ export default function StocksPageClient({
   }
 
   useEffect(() => {
-    ensureQuotes(ideas.map((idea) => idea.ticker));
-  }, [ensureQuotes, ideas]);
+    const tickers = ideas.map((idea) => idea.ticker);
+
+    ensureQuotes(tickers);
+    void refreshQuotesNow(tickers);
+  }, [ensureQuotes, ideas, refreshQuotesNow]);
 
   const hydratedIdeas = useMemo(
     () =>
