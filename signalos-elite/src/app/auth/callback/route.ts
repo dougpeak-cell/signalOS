@@ -3,8 +3,25 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 const DEFAULT_AUTH_REDIRECT = "/settings/sigi#profile";
+const AUTH_EXCHANGE_TIMEOUT_MS = 10_000;
 
 type UpgradePlan = "smart" | "pro";
+
+async function withAuthTimeout<T>(operation: Promise<T>): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error("Sign-in verification timed out. Please request a new email and try again.")),
+      AUTH_EXCHANGE_TIMEOUT_MS
+    );
+  });
+
+  try {
+    return await Promise.race([operation, timeout]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 function getSafePlan(value: string | null): UpgradePlan | null {
   return value === "smart" || value === "pro" ? value : null;
@@ -184,19 +201,25 @@ export async function GET(request: NextRequest) {
 
   let error: Error | null = null;
 
-  if (tokenHash && otpType) {
-    const result = await supabase.auth.verifyOtp({
-      token_hash: tokenHash,
-      type: otpType,
-    });
-    error = result.error;
-  } else if (code) {
-    const result = await supabase.auth.exchangeCodeForSession(code);
-    error = result.error;
-  } else {
-    return NextResponse.redirect(
-      buildRetryUrl(requestUrl, nextPath, plan, returnTo, "Missing sign-in token.")
-    );
+  try {
+    if (tokenHash && otpType) {
+      const result = await withAuthTimeout(
+        supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: otpType,
+        })
+      );
+      error = result.error;
+    } else if (code) {
+      const result = await withAuthTimeout(supabase.auth.exchangeCodeForSession(code));
+      error = result.error;
+    } else {
+      return NextResponse.redirect(
+        buildRetryUrl(requestUrl, nextPath, plan, returnTo, "Missing sign-in token.")
+      );
+    }
+  } catch (cause) {
+    error = cause instanceof Error ? cause : new Error("Unable to verify sign-in.");
   }
 
   if (error) {
