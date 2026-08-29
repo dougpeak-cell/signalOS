@@ -5,6 +5,41 @@ const DEFAULT_AUTH_REDIRECT = "/settings/sigi#profile";
 
 type UpgradePlan = "smart" | "pro";
 
+function normalizeCallbackUrl(requestUrl: URL): URL {
+  const hasParsedAuthValue =
+    requestUrl.searchParams.has("code") ||
+    requestUrl.searchParams.has("token_hash") ||
+    requestUrl.searchParams.has("error") ||
+    requestUrl.searchParams.has("error_description");
+
+  if (hasParsedAuthValue || !requestUrl.search) {
+    return requestUrl;
+  }
+
+  try {
+    const entries = Array.from(requestUrl.searchParams.entries());
+    const encodedParameterKey =
+      entries.length === 1 && entries[0][1] === "" ? entries[0][0] : null;
+    const decodedQuery = encodedParameterKey ?? decodeURIComponent(requestUrl.search.slice(1));
+    const decodedParams = new URLSearchParams(decodedQuery);
+    const hasDecodedAuthValue =
+      decodedParams.has("code") ||
+      decodedParams.has("token_hash") ||
+      decodedParams.has("error") ||
+      decodedParams.has("error_description");
+
+    if (!hasDecodedAuthValue) {
+      return requestUrl;
+    }
+
+    const normalizedUrl = new URL(requestUrl);
+    normalizedUrl.search = decodedParams.toString();
+    return normalizedUrl;
+  } catch {
+    return requestUrl;
+  }
+}
+
 function getSafePlan(value: string | null): UpgradePlan | null {
   return value === "smart" || value === "pro" ? value : null;
 }
@@ -139,7 +174,7 @@ function buildRetryUrl(
 }
 
 export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url);
+  const requestUrl = normalizeCallbackUrl(new URL(request.url));
   const plan = getSafePlan(requestUrl.searchParams.get("plan"));
   const returnTo = getSafeReturnTo(requestUrl.searchParams.get("returnTo"));
   const redirectTo = mergeRedirectPathQuery(
