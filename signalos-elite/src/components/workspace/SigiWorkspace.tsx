@@ -37,6 +37,7 @@ function formatNumber(value: number | null | undefined, digits = 0) {
 }
 
 function formatPrice(value: number | null | undefined) {
+  if (value === null || value === undefined) return "—";
 
   return new Intl.NumberFormat("en-US", {
     style: "currency",
