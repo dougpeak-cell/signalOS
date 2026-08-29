@@ -33,6 +33,8 @@ type EmailAuthShellProps = EmailAuthEntryProps & {
 
 type UpgradePlan = "smart" | "pro";
 
+const SESSION_CHECK_TIMEOUT_MS = 8_000;
+
 function getSafePlan(value: string | null): UpgradePlan | null {
   return value === "smart" || value === "pro" ? value : null;
 }
@@ -91,29 +93,43 @@ function EmailAuthContent(props: EmailAuthEntryProps) {
     }
 
     let cancelled = false;
+    const timeout = window.setTimeout(() => {
+      if (!cancelled) {
+        setIsCheckingSession(false);
+      }
+    }, SESSION_CHECK_TIMEOUT_MS);
 
     const syncSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      if (cancelled) {
-        return;
+        if (cancelled) {
+          return;
+        }
+
+        if (session) {
+          router.replace(nextPath);
+          router.refresh();
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Account status could not be checked. You can still continue with email.");
+        }
+      } finally {
+        window.clearTimeout(timeout);
+        if (!cancelled) {
+          setIsCheckingSession(false);
+        }
       }
-
-      if (session) {
-        router.replace(nextPath);
-        router.refresh();
-        return;
-      }
-
-      setIsCheckingSession(false);
     };
 
     void syncSession();
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timeout);
     };
   }, [nextPath, router, supabase]);
 
