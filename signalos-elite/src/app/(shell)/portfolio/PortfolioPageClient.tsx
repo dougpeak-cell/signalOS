@@ -1643,7 +1643,7 @@ function PortfolioPageContent() {
                     </Link>
 
                     <Link
-                      href={buildPortfolioHref("/")}
+                      href={buildPortfolioHref("/today")}
                       className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10"
                     >
                       Today
