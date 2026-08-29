@@ -1601,10 +1601,7 @@ function PortfolioPageContent() {
 
                       {showAddPositionHelp ? (
                         <div className="mt-3 rounded-2xl border border-cyan-400/15 bg-black/20 p-4 text-sm leading-6 text-white/72">
-                          <p>1. Go to the Stocks page from the top menu.</p>
-                          <p>2. Type the stock in search and click + Add Stock.</p>
-                          <p>3. Click Open Watchlist.</p>
-                          <p>4. Find the stock in Watchlist and click + Portfolio.</p>
+                          <p>Add positions from your Watchlist or from the + Add Position tab.</p>
                           <p className="mt-3 text-white/72">
                             Quickest way to add true stock purchase quantity and average price value, is found in your brokerage account Gain/Loss page.
                           </p>
