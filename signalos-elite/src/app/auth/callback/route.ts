@@ -198,9 +198,9 @@ export async function GET(request: NextRequest) {
   const otpType = getSafeOtpType(requestUrl.searchParams.get("type"));
 
   if ((!tokenHash || !otpType) && !code) {
-    return NextResponse.redirect(
-      buildRetryUrl(requestUrl, nextPath, plan, returnTo, "Missing sign-in token.")
-    );
+    const confirmUrl = new URL("/auth/confirm", requestUrl.origin);
+    confirmUrl.searchParams.set("next", nextPath);
+    return NextResponse.redirect(confirmUrl);
   }
 
   const confirmUrl = new URL("/auth/confirm", requestUrl.origin);

@@ -37,6 +37,35 @@ function getRetryPath(nextPath: string, message: string): string {
   return `/auth?${params.toString()}`;
 }
 
+function getAuthParamsFromUrl(url: URL): URLSearchParams {
+  if (url.searchParams.has("code") || url.searchParams.has("token_hash")) {
+    return url.searchParams;
+  }
+
+  const entries = Array.from(url.searchParams.entries());
+  if (entries.length === 1 && entries[0][1] === "") {
+    return new URLSearchParams(entries[0][0]);
+  }
+
+  return url.searchParams;
+}
+
+function getReferrerAuthParams(referrer: string, currentOrigin: string): URLSearchParams {
+  try {
+    const referrerUrl = new URL(referrer);
+    const wrappedTarget = referrerUrl.searchParams.get("q") ?? referrerUrl.searchParams.get("url");
+    const callbackUrl = wrappedTarget ? new URL(wrappedTarget) : referrerUrl;
+
+    if (callbackUrl.origin !== currentOrigin) {
+      return new URLSearchParams();
+    }
+
+    return getAuthParamsFromUrl(callbackUrl);
+  } catch {
+    return new URLSearchParams();
+  }
+}
+
 export default function AuthConfirm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,25 +80,46 @@ export default function AuthConfirm() {
 
     async function confirmSignIn() {
       const nextPath = getSafeNextPath(searchParams.get("next"));
-      const code = searchParams.get("code");
-      const tokenHash = searchParams.get("token_hash");
-      const otpType = getSafeOtpType(searchParams.get("type"));
+      const referrerParams = getReferrerAuthParams(document.referrer, window.location.origin);
+      const code = searchParams.get("code") ?? referrerParams.get("code");
+      const tokenHash = searchParams.get("token_hash") ?? referrerParams.get("token_hash");
+      const otpType = getSafeOtpType(searchParams.get("type") ?? referrerParams.get("type"));
 
       if (!supabase) {
         router.replace(getRetryPath(nextPath, "Sign-in is temporarily unavailable."));
         return;
       }
 
-      const operation = tokenHash && otpType
-        ? supabase.auth.verifyOtp({ token_hash: tokenHash, type: otpType })
-        : code
-          ? supabase.auth.exchangeCodeForSession(code)
-          : null;
+      const hashParams = new URLSearchParams(window.location.hash.slice(1));
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
 
-      if (!operation) {
-        router.replace(getRetryPath(nextPath, "Missing sign-in token."));
-        return;
-      }
+      const operation = async () => {
+        if (tokenHash && otpType) {
+          return supabase.auth.verifyOtp({ token_hash: tokenHash, type: otpType });
+        }
+
+        if (code) {
+          return supabase.auth.exchangeCodeForSession(code);
+        }
+
+        if (accessToken && refreshToken) {
+          return supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+        }
+
+        const sessionResult = await supabase.auth.getSession();
+        if (!sessionResult.error && !sessionResult.data.session) {
+          return {
+            ...sessionResult,
+            error: new Error("Missing sign-in token."),
+          };
+        }
+
+        return sessionResult;
+      };
 
       const timeout = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(
@@ -79,7 +129,7 @@ export default function AuthConfirm() {
       });
 
       try {
-        const result = await Promise.race([operation, timeout]);
+        const result = await Promise.race([operation(), timeout]);
 
         if (cancelled) {
           return;
