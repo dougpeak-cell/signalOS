@@ -3,6 +3,7 @@ import { getStoredMarketContext } from "@/lib/intelligence/contextStore";
 import { calculateDNAAlignment } from "@/lib/vision/dnaAlignment";
 import { calculateOpportunityScore } from "@/lib/vision/opportunityScore";
 import { getCurrentMarketPhase } from "@/lib/today/marketPhase";
+import { resolveStockTickerAlias } from "@/lib/stocks/symbolAliases";
 import {
   getWorkspacePulseMeaning,
   normalizeWorkspaceDirection,
@@ -88,8 +89,9 @@ async function safeJson(url: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const symbol =
-    request.nextUrl.searchParams.get("symbol")?.trim().toUpperCase() || "NVDA";
+  const symbol = resolveStockTickerAlias(
+    request.nextUrl.searchParams.get("symbol") || "NVDA"
+  );
 
   const origin = request.nextUrl.origin;
 
@@ -300,8 +302,9 @@ export async function GET(request: NextRequest) {
     new Set(
       storedMarketContext.watchlist
         .map((item) =>
-          text(typeof item === "string" ? item : item.ticker ?? item.symbol)
-            .toUpperCase()
+          resolveStockTickerAlias(
+            typeof item === "string" ? item : item.ticker ?? item.symbol
+          )
         )
         .filter(Boolean)
     )
