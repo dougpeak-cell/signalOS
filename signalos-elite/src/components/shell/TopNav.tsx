@@ -80,6 +80,8 @@ export default function TopNav({
 
   const navDefault =
     "rounded-full px-3 py-2 text-sm font-semibold text-white/65 transition hover:bg-white/10 hover:text-white";
+  const navActive =
+    "rounded-full bg-cyan-400/15 px-3 py-2 text-[13px] font-semibold text-cyan-100 ring-1 ring-cyan-400/30 shadow-[0_0_20px_rgba(34,211,238,0.14)]";
 
   const cryptoActive =
     "rounded-full bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-200 ring-1 ring-cyan-400/30 shadow-[0_0_24px_rgba(34,211,238,0.18)] transition";
@@ -234,7 +236,7 @@ export default function TopNav({
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-cyan-400/10 bg-black/84 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
+    <header className="sticky top-0 z-100 border-b border-cyan-400/10 bg-black/95 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
       <div className="mx-auto flex min-h-12 w-full items-center justify-between max-w-430 px-3 sm:px-5 md:min-h-13 md:px-6 xl:px-6 2xl:px-7">
         <div className="flex items-center gap-4 md:gap-6">
           <Link
@@ -250,13 +252,16 @@ export default function TopNav({
             </span>
           </Link>
 
-          <nav className={forceMobilePreview ? "hidden" : "hidden sm:flex items-center gap-5"}>
+          <nav className={forceMobilePreview ? "hidden" : "hidden items-center gap-5 xl:flex"}>
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={buildNavHref(item.href)}
                 onClick={(event) => handlePrimaryNavClick(event, buildNavHref(item.href))}
-                className="text-[13px] font-medium text-white/72 transition hover:text-white"
+                aria-current={activeLabel === item.label ? "page" : undefined}
+                className={activeLabel === item.label
+                  ? navActive
+                  : "text-[13px] font-medium text-white/72 transition hover:text-white"}
               >
                 {item.label}
               </Link>
@@ -285,19 +290,19 @@ export default function TopNav({
             <>
               <Link
                 href={buildAuthHref()}
-                className="hidden min-h-9 items-center rounded-full border border-emerald-300/22 bg-emerald-400/10 px-4 text-sm font-semibold text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.1)] transition hover:border-emerald-300/36 hover:bg-emerald-400/16 sm:inline-flex"
+                className="hidden min-h-9 items-center rounded-full border border-emerald-300/22 bg-emerald-400/10 px-4 text-sm font-semibold text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.1)] transition hover:border-emerald-300/36 hover:bg-emerald-400/16 2xl:inline-flex"
               >
                 Sign In
               </Link>
               <DiscordInviteButton
                 label="Join Discord"
-                className="hidden min-h-9 items-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 text-sm font-semibold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.1)] transition hover:border-cyan-300/36 hover:bg-cyan-400/16 sm:inline-flex"
+                className="hidden min-h-9 items-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 text-sm font-semibold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.1)] transition hover:border-cyan-300/36 hover:bg-cyan-400/16 2xl:inline-flex"
               />
             </>
           ) : null}
 
           {!forceMobilePreview ? (
-            <div className="relative hidden sm:block">
+            <div className="relative hidden 2xl:block">
               <button
                 type="button"
                 aria-expanded={contactOpen}
@@ -382,7 +387,9 @@ export default function TopNav({
               type="button"
               onClick={toggleMobilePreview}
               className={[
-                "inline-flex min-h-9 items-center rounded-full border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] transition",
+                forceMobilePreview
+                  ? "inline-flex min-h-9 items-center rounded-full border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] transition"
+                  : "hidden min-h-9 items-center rounded-full border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] transition 2xl:inline-flex",
                 isMobilePreviewEnabled
                   ? "border-cyan-400/30 bg-cyan-400/12 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.14)]"
                   : "border-white/10 bg-white/4 text-white/70 hover:bg-white/8 hover:text-white",

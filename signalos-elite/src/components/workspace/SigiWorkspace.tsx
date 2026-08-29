@@ -455,7 +455,12 @@ export default function SigiWorkspace({ initialSymbol = "NVDA" }: Props) {
                 </Panel>
 
                 <Panel title="Watchlist" eyebrow="Quick Access">
-                  <div className="space-y-1">
+                  <div
+                    role="region"
+                    aria-label="Workspace watchlist"
+                    tabIndex={0}
+                    className="max-h-[calc(100vh-260px)] space-y-1 overflow-y-auto overscroll-contain pr-1"
+                  >
                     {data.watchlist.map((item) => (
                       <button
                         key={item.symbol}
