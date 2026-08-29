@@ -21,6 +21,7 @@ const MARKET_ITEMS = [
   { ticker: "^VIX", symbol: "VIX", label: "VIX" },
   { ticker: "^TNX", symbol: "TNX", label: "10Y" },
   { ticker: "X:BTCUSD", symbol: "BTC", label: "BTC" },
+  { ticker: "GLD", symbol: "GLD", label: "Gold" },
 ] as const;
 
 const WORKSPACE_UPSTREAM_TIMEOUT_MS = 10_000;
