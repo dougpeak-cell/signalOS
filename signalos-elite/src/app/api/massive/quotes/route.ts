@@ -5,12 +5,14 @@ import { resolveMassiveQuote, type MassiveQuoteResponse } from "@/app/api/massiv
 type NormalizedQuote = {
   ticker: string;
   name?: string;
+  source: MassiveQuoteResponse["source"];
   price: number | null;
   change: number | null;
   changePercent: number | null;
   volume: number | null;
   avgVolume: number | null;
   updatedMs: number | null;
+  isMarketOpen: boolean | null;
 };
 
 function normalizeTicker(value: string): string {
@@ -53,12 +55,14 @@ function normalizeQuote(
 
   return {
     ticker,
+    source: raw.source,
     price: price != null && price > 0 ? price : null,
     change,
     changePercent,
     volume,
     avgVolume,
     updatedMs,
+    isMarketOpen: raw.isMarketOpen,
   };
 }
 
@@ -72,12 +76,14 @@ async function fetchSingleQuote(ticker: string): Promise<NormalizedQuote> {
     if (!quote) {
       return {
         ticker,
+        source: "stock",
         price: null,
         change: null,
         changePercent: null,
         volume: null,
         avgVolume: null,
         updatedMs: null,
+        isMarketOpen: null,
       };
     }
 
@@ -85,12 +91,14 @@ async function fetchSingleQuote(ticker: string): Promise<NormalizedQuote> {
   } catch {
     return {
       ticker,
+      source: "stock",
       price: null,
       change: null,
       changePercent: null,
       volume: null,
       avgVolume: null,
       updatedMs: null,
+      isMarketOpen: null,
     };
   }
 }

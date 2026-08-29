@@ -77,7 +77,7 @@ function normalizeTicker(value: string): string {
 
 function isIndexTicker(ticker: string): boolean {
   const normalized = normalizeTicker(ticker);
-  return normalized in INDEX_MAP || normalized === "^VIX";
+  return normalized in INDEX_MAP || normalized === "^VIX" || normalized === "^TNX";
 }
 
 function normalizeChangePercent(value: unknown): number | null {
@@ -237,54 +237,41 @@ async function fetchMassiveBatchQuotes(
   }
 }
 
-async function fetchYahooQuote(
-  ticker: string,
-  symbol: string
-): Promise<BatchQuoteItem | null> {
+async function fetchYahooChartQuote(ticker: string): Promise<BatchQuoteItem | null> {
   try {
-    const encodedSymbol = encodeURIComponent(symbol);
+    const encodedSymbol = encodeURIComponent(ticker);
     const res = await fetch(
-      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodedSymbol}`,
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodedSymbol}?interval=1d&range=5d`,
       { cache: "no-store" }
     );
 
     if (!res.ok) return null;
 
     const json = (await res.json()) as {
-      quoteResponse?: {
+      chart?: {
         result?: Array<{
-          regularMarketPrice?: unknown;
-          regularMarketChange?: unknown;
-          regularMarketChangePercent?: unknown;
-          regularMarketPreviousClose?: unknown;
+          meta?: {
+            regularMarketPrice?: unknown;
+            regularMarketPreviousClose?: unknown;
+            chartPreviousClose?: unknown;
+          };
         }>;
       };
     };
 
-    const quote = json.quoteResponse?.result?.[0];
+    const meta = json.chart?.result?.[0]?.meta;
+    if (!meta) return null;
 
-    if (ticker === "^VIX" && !quote) {
-      return {
-        ticker,
-        price: 0,
-        currentPrice: 0,
-        change: 0,
-        changePercent: 0,
-        previousClose: 0,
-        volume: null,
-        avgVolume: null,
-        rvol: null,
-      };
-    }
-
-    if (!quote) return null;
-
-    const price = toNumber(quote.regularMarketPrice);
-    const change = toNumber(quote.regularMarketChange);
-    const changePercent = normalizeChangePercent(quote.regularMarketChangePercent);
+    const price = toNumber(meta.regularMarketPrice);
     const previousClose =
-      toNumber(quote.regularMarketPreviousClose) ??
-      (price != null && change != null ? price - change : null);
+      toNumber(meta.regularMarketPreviousClose) ??
+      toNumber(meta.chartPreviousClose);
+    const change =
+      price != null && previousClose != null ? price - previousClose : null;
+    const changePercent =
+      change != null && previousClose != null && previousClose !== 0
+        ? (change / previousClose) * 100
+        : null;
 
     return {
       ticker,
@@ -305,8 +292,8 @@ async function fetchYahooQuote(
 async function fetchIndexAwareQuote(ticker: string): Promise<BatchQuoteItem> {
   const normalized = normalizeTicker(ticker);
 
-  if (normalized === "^VIX") {
-    const yahooQuote = await fetchYahooQuote(normalized, "^VIX");
+  if (normalized === "^VIX" || normalized === "^TNX") {
+    const yahooQuote = await fetchYahooChartQuote(normalized);
 
     if (yahooQuote) {
       return yahooQuote;

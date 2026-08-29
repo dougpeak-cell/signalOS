@@ -9,6 +9,11 @@ import type {
   AMSAFutureMapHorizon,
   AMSALiveFutureMapResult,
 } from "@/lib/amsa";
+import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
+import {
+  formatMarketTimestamp,
+  formatVerifiedPulseTimestamp,
+} from "@/lib/market/formatMarketTimestamp";
 
 import FutureMapTradePlan from "./FutureMapTradePlan";
 
@@ -26,6 +31,9 @@ export default function LiveFutureMap({
   initialHorizon = "swing",
   showDiagnostics = false,
 }: Props) {
+  const liveMarket = useOptionalLiveMarket();
+  const ensureQuotes = liveMarket?.ensureQuotes;
+  const refreshQuotesNow = liveMarket?.refreshQuotesNow;
   const [
     horizon,
     setHorizon,
@@ -118,6 +126,15 @@ export default function LiveFutureMap({
     horizon,
   ]);
 
+  useEffect(() => {
+    if (!ensureQuotes || !refreshQuotesNow) return;
+
+    ensureQuotes([symbol]);
+    void refreshQuotesNow([symbol]);
+  }, [ensureQuotes, refreshQuotesNow, symbol]);
+
+  const liveQuote = liveMarket?.quoteMap[symbol.toUpperCase()];
+
   return (
     <div className="grid gap-5">
       <section className="rounded-3xl border border-cyan-400/15 bg-slate-950 p-4">
@@ -188,6 +205,9 @@ export default function LiveFutureMap({
         <>
           <FutureMapOverview
             data={data}
+            livePrice={liveQuote?.price ?? null}
+            livePriceAsOf={liveQuote?.updatedAt ?? null}
+            livePriceSource={liveQuote?.source ?? null}
           />
 
           <FutureMapTradePlan
@@ -209,11 +229,21 @@ export default function LiveFutureMap({
 
 function FutureMapOverview({
   data,
+  livePrice,
+  livePriceAsOf,
+  livePriceSource,
 }: {
   data: AMSALiveFutureMapResult;
+  livePrice: number | null;
+  livePriceAsOf: number | null;
+  livePriceSource: string | null;
 }) {
   const map =
     data.futureMap!;
+  const showLivePrice =
+    livePrice !== null &&
+    map.currentPrice !== null &&
+    Math.abs(livePrice - map.currentPrice) >= 0.01;
 
   return (
     <section className="rounded-3xl border border-cyan-400/20 bg-[linear-gradient(145deg,rgba(3,13,27,0.99),rgba(2,6,18,0.98))] p-5 sm:p-6">
@@ -285,20 +315,29 @@ function FutureMapOverview({
         />
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-4">
+      <div className={`mt-5 grid gap-3 sm:grid-cols-2 ${showLivePrice ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>
         <SmallCard
-          label="Live Price"
+          label="Reference Price"
           value={
-            data.quote?.price ===
+            map.currentPrice ===
             null ||
-            data.quote?.price ===
+            map.currentPrice ===
             undefined
               ? "-"
               : `$${formatPrice(
-                  data.quote.price,
+                  map.currentPrice,
                 )}`
           }
+          detail={`Scenario as of ${formatMarketTimestamp(map.calculatedAt) ?? "-"}`}
         />
+
+        {showLivePrice ? (
+          <SmallCard
+            label="Live Price"
+            value={`$${formatPrice(livePrice)}`}
+            detail={`${livePriceSource ? `Massive (${livePriceSource}) · ` : ""}${formatMarketTimestamp(livePriceAsOf) ?? "Quote time unavailable"}`}
+          />
+        ) : null}
 
         <SmallCard
           label="Stock Pulse"
@@ -306,6 +345,7 @@ function FutureMapOverview({
             data.stock?.score ??
             "-"
           }
+          detail={formatVerifiedPulseTimestamp(data.stock?.updatedAt)}
         />
 
         <SmallCard
@@ -362,11 +402,13 @@ function ProbabilityCard({
 function SmallCard({
   label,
   value,
+  detail,
 }: {
   label: string;
   value:
     | string
     | number;
+  detail?: string | null;
 }) {
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
@@ -377,6 +419,12 @@ function SmallCard({
       <p className="mt-1 text-[9px] uppercase tracking-[0.16em] text-slate-500">
         {label}
       </p>
+
+      {detail ? (
+        <p className="mt-2 text-[9px] leading-4 text-slate-600">
+          {detail}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -391,7 +439,7 @@ function FutureMapLoading({
       <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-cyan-300/20 border-t-cyan-300" />
 
       <p className="mt-4 font-semibold text-cyan-200">
-        Reading {symbol}'s market state...
+        Reading {symbol}&apos;s market state...
       </p>
 
       <p className="mt-2 text-sm text-slate-500">

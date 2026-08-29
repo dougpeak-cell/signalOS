@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { calculateDNAAlignment } from "@/lib/vision/dnaAlignment";
 
 /* =========================================================
    SIGI STOCK PULSE EXPERIENCE
@@ -391,20 +392,7 @@ function getPulseChange(stock: StockPulseExperienceItem) {
 }
 
 function getDNAAlignment(components?: PulseDNAComponent[]) {
-  const valid = (components ?? [])
-    .map((component) => safeScore(component.score))
-    .filter((score): score is number => score !== null);
-
-  if (!valid.length) return null;
-
-  const average =
-    valid.reduce((total, score) => total + score, 0) /
-    valid.length;
-
-  const spread = Math.max(...valid) - Math.min(...valid);
-  const consistencyPenalty = Math.min(25, spread * 0.35);
-
-  return safeScore(average - consistencyPenalty);
+  return calculateDNAAlignment(components);
 }
 
 function getHeartbeatStatus(stock: StockPulseExperienceItem) {

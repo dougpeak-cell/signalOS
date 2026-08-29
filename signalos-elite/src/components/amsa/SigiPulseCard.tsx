@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import type { AMSAStockPulse } from "@/lib/amsa";
 import { VisionPulseHero } from "@/components/vision/VisionPulseHero";
-import { formatMarketTimestamp } from "@/lib/market/formatMarketTimestamp";
+import { formatVerifiedPulseTimestamp } from "@/lib/market/formatMarketTimestamp";
 
 type SigiPulseCardProps = {
   symbol: string;
@@ -13,6 +13,7 @@ type SigiPulseCardProps = {
 
 type PulseApiResponse = {
   success: boolean;
+  asOf?: string | null;
   pulse?: AMSAStockPulse;
   error?: string;
 };
@@ -42,6 +43,7 @@ export default function SigiPulseCard({
   aside,
 }: SigiPulseCardProps) {
   const [pulse, setPulse] = useState<AMSAStockPulse | null>(null);
+  const [pulseAsOf, setPulseAsOf] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,6 +73,7 @@ export default function SigiPulseCard({
 
         if (!cancelled) {
           setPulse(payload.pulse);
+          setPulseAsOf(payload.asOf ?? null);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -118,13 +121,14 @@ export default function SigiPulseCard({
   }
 
   const pulseUpdatedAt =
+    pulseAsOf ??
     pulse.updatedAt ??
     pulse.calculatedAt ??
     pulse.recordedAt ??
     null;
 
   const formattedPulseUpdatedAt =
-    formatMarketTimestamp(pulseUpdatedAt);
+    formatVerifiedPulseTimestamp(pulseUpdatedAt);
 
   return (
     <section className="space-y-5">

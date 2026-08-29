@@ -20,6 +20,7 @@ const baseNavItems = [
   { href: "/today", label: "Today" },
   { href: "/stocks", label: "Stocks" },
   { href: "/screener", label: "Screener" },
+  { href: "/workspace", label: "Workspace" },
   { href: "/watchlist", label: "Watchlist" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/news", label: "News" },

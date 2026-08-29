@@ -96,6 +96,16 @@
   }
 }
 
+@keyframes workspaceLoad {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(420%);
+  }
+}
+
 .global-pulse-marquee {
   animation: globalPulseScroll 34s linear infinite;
 }

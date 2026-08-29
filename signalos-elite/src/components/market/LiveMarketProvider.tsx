@@ -14,12 +14,14 @@ type BatchQuoteResponse = {
   quotes?: Array<{
     ticker: string;
     name?: string;
+    source?: string;
     price: number | null;
     change: number | null;
     changePercent: number | null;
     volume?: number | null;
     avgVolume?: number | null;
     updatedMs?: number | null;
+    isMarketOpen?: boolean | null;
   }>;
 };
 
@@ -33,12 +35,14 @@ type BatchHistoryResponse = {
 export type LiveQuote = {
   ticker: string;
   name: string;
+  source: string | null;
   price: number;
   change: number | null;
   changePct: number | null;
   volume: number | null;
   avgVolume: number | null;
   updatedAt: number;
+  isMarketOpen: boolean | null;
 };
 
 type LiveMarketContextValue = {
@@ -116,7 +120,7 @@ function dedupeAndTrimSeries(values: number[], maxPoints = 48) {
   return deduped.length >= 2 ? deduped : trimmed;
 }
 
-function extractNumericSeriesFromPayload(payload: any): number[] {
+function extractNumericSeriesFromPayload(payload: unknown): number[] {
   if (!payload) return [];
 
   if (Array.isArray(payload)) {
@@ -127,13 +131,14 @@ function extractNumericSeriesFromPayload(payload: any): number[] {
     const fromObjects = payload
       .map((item) => {
         if (!item || typeof item !== "object") return null;
+        const record = item as Record<string, unknown>;
         return (
-          item.close ??
-          item.c ??
-          item.price ??
-          item.value ??
-          item.last ??
-          item.adjClose ??
+          record.close ??
+          record.c ??
+          record.price ??
+          record.value ??
+          record.last ??
+          record.adjClose ??
           null
         );
       })
@@ -143,15 +148,23 @@ function extractNumericSeriesFromPayload(payload: any): number[] {
     return dedupeAndTrimSeries(fromObjects);
   }
 
+  if (typeof payload !== "object") return [];
+  const record = payload as Record<string, unknown>;
+  const chart = record.chart as Record<string, unknown> | undefined;
+  const result = (chart?.result as Array<Record<string, unknown>> | undefined)?.[0];
+  const indicators = result?.indicators as Record<string, unknown> | undefined;
+  const quote = (indicators?.quote as Array<Record<string, unknown>> | undefined)?.[0];
+  const meta = result?.meta as Record<string, unknown> | undefined;
+
   const candidateArrays = [
-    payload.prices,
-    payload.series,
-    payload.history,
-    payload.points,
-    payload.data,
-    payload.chart?.result?.[0]?.indicators?.quote?.[0]?.close,
-    payload.chart?.result?.[0]?.meta?.regularMarketPrice
-      ? payload.chart?.result?.[0]?.indicators?.quote?.[0]?.close
+    record.prices,
+    record.series,
+    record.history,
+    record.points,
+    record.data,
+    quote?.close,
+    meta?.regularMarketPrice
+      ? quote?.close
       : undefined,
   ];
 
@@ -160,11 +173,9 @@ function extractNumericSeriesFromPayload(payload: any): number[] {
     if (series.length >= 2) return series;
   }
 
-  if (typeof payload === "object") {
-    for (const value of Object.values(payload)) {
-      const series = extractNumericSeriesFromPayload(value);
-      if (series.length >= 2) return series;
-    }
+  for (const value of Object.values(record)) {
+    const series = extractNumericSeriesFromPayload(value);
+    if (series.length >= 2) return series;
   }
 
   return [];
@@ -194,12 +205,14 @@ async function fetchLiveQuotesBatch(
   Array<{
     ticker: string;
     name?: string;
+    source?: string;
     price: number | null;
     change: number | null;
     changePct: number | null;
     volume: number | null;
     avgVolume: number | null;
     updatedMs: number | null;
+    isMarketOpen: boolean | null;
   }>
 > {
   if (!tickers.length) return [];
@@ -223,6 +236,7 @@ async function fetchLiveQuotesBatch(
     return quotes.map((item) => ({
       ticker: normalizeTicker(item.ticker),
       name: item.name?.trim() || undefined,
+      source: item.source?.trim() || undefined,
       price:
         typeof item.price === "number" && Number.isFinite(item.price) && item.price > 0
           ? item.price
@@ -244,6 +258,7 @@ async function fetchLiveQuotesBatch(
           ? item.avgVolume
           : null,
       updatedMs: normalizeUpdatedAt(item.updatedMs, now),
+      isMarketOpen: item.isMarketOpen ?? null,
     }));
   } catch {
     return [];
@@ -371,6 +386,7 @@ export function LiveMarketProvider({
           const nextQuote: LiveQuote = {
             ticker: item.ticker,
             name: item.name || existing?.name || item.ticker,
+            source: item.source || existing?.source || null,
             price: Number(resolvedPrice.toFixed(2)),
             change:
               item.change != null
@@ -383,16 +399,20 @@ export function LiveMarketProvider({
             volume: item.volume ?? existing?.volume ?? null,
             avgVolume: item.avgVolume ?? existing?.avgVolume ?? null,
             updatedAt: item.updatedMs ?? now,
+            isMarketOpen: item.isMarketOpen,
           };
 
           const changed =
             !existing ||
             existing.name !== nextQuote.name ||
+            existing.source !== nextQuote.source ||
             existing.price !== nextQuote.price ||
             existing.change !== nextQuote.change ||
             existing.changePct !== nextQuote.changePct ||
             existing.volume !== nextQuote.volume ||
-            existing.avgVolume !== nextQuote.avgVolume;
+            existing.avgVolume !== nextQuote.avgVolume ||
+            existing.updatedAt !== nextQuote.updatedAt ||
+            existing.isMarketOpen !== nextQuote.isMarketOpen;
 
           if (changed) {
             next[item.ticker] = nextQuote;

@@ -45,6 +45,9 @@ type QuotePayload = {
   ask?: number | string;
 
   timestamp?: string | number;
+  updatedMs?: number;
+
+  source?: string;
 
   marketStatus?: string;
 
@@ -220,6 +223,7 @@ function normalizeQuote(
 
   const timestampValue =
     combined.timestamp ??
+    combined.updatedMs ??
     combined.updatedAt ??
     combined.time ??
     combined.t ??
@@ -313,7 +317,9 @@ function normalizeQuote(
       ),
 
     source:
-      "Massive",
+      typeof combined.source === "string" && combined.source.trim()
+        ? `Massive (${combined.source.trim()})`
+        : "Massive",
   };
 }
 
