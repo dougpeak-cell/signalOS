@@ -98,18 +98,46 @@ export async function GET(request: NextRequest) {
   );
 
   const origin = request.nextUrl.origin;
+  const storedMarketContextPromise = getStoredMarketContext();
+  const liveContextPromise = storedMarketContextPromise.then(async (storedMarketContext) => {
+    const watchSymbols = Array.from(
+      new Set(
+        storedMarketContext.watchlist
+          .map((item) =>
+            resolveStockTickerAlias(
+              typeof item === "string" ? item : item.ticker ?? item.symbol
+            )
+          )
+          .filter(Boolean)
+      )
+    );
+    const quoteSymbols = Array.from(new Set([symbol, ...watchSymbols]));
+    const [liveQuoteRaw, watchPulseRows] = await Promise.all([
+      safeJson(
+        `${origin}/api/massive/quotes?tickers=${encodeURIComponent(quoteSymbols.join(","))}`
+      ),
+      Promise.all(watchSymbols.map(async (watchSymbol) => {
+        const raw = await safeJson(
+          `${origin}/api/amsa/${encodeURIComponent(watchSymbol)}`
+        );
+
+        return { watchSymbol, raw, watchPulse: raw?.pulse };
+      })),
+    ]);
+
+    return { liveQuoteRaw, watchPulseRows };
+  });
 
   const [
     amsaRaw,
     futureResponse,
-    storedMarketContext,
     marketRaw,
     cryptoRaw,
     radarRaw,
+    liveContext,
   ] = await Promise.all([
     safeJson(`${origin}/api/amsa/${encodeURIComponent(symbol)}`),
     safeJson(`${origin}/api/amsa/future/${encodeURIComponent(symbol)}`),
-    getStoredMarketContext(),
     safeJson(
       `${origin}/api/quotes?tickers=${encodeURIComponent(
         MARKET_ITEMS.map((item) => item.ticker).join(",")
@@ -117,6 +145,7 @@ export async function GET(request: NextRequest) {
     ),
     safeJson(`${origin}/api/crypto/snapshot?tickers=BTC`),
     safeJson(`${origin}/api/amsa/pulse-radar`),
+    liveContextPromise,
   ]);
 
   if (!amsaRaw) {
@@ -302,32 +331,7 @@ export async function GET(request: NextRequest) {
       }
     : null;
 
-  const watchSymbols = Array.from(
-    new Set(
-      storedMarketContext.watchlist
-        .map((item) =>
-          resolveStockTickerAlias(
-            typeof item === "string" ? item : item.ticker ?? item.symbol
-          )
-        )
-        .filter(Boolean)
-    )
-  );
-
-  const quoteSymbols = Array.from(new Set([symbol, ...watchSymbols]));
-  const [liveQuoteRaw, watchPulseRows] = await Promise.all([
-    safeJson(
-      `${origin}/api/massive/quotes?tickers=${encodeURIComponent(quoteSymbols.join(","))}`
-    ),
-    Promise.all(watchSymbols.map(async (watchSymbol) => {
-      const raw = await safeJson(
-        `${origin}/api/amsa/${encodeURIComponent(watchSymbol)}`
-      );
-      const watchPulse = raw?.pulse;
-
-      return { watchSymbol, raw, watchPulse };
-    })),
-  ]);
+  const { liveQuoteRaw, watchPulseRows } = liveContext;
 
   const liveQuoteMap = new Map<string, WorkspaceLiveQuote>(
     (Array.isArray(liveQuoteRaw?.quotes) ? liveQuoteRaw.quotes : []).map(

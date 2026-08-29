@@ -34,7 +34,7 @@ export default function AppQuoteBootstrap() {
     [watchlistTickers]
   );
 
-  useMassiveQuoteProvider(quoteSymbols);
+  useMassiveQuoteProvider(quoteSymbols, { refreshImmediately: false });
 
   return null;
 }

@@ -20,17 +20,21 @@ function massiveLiveQuoteProvider(ticker: string): number | null {
   return window.__massiveQuoteCache?.[key] ?? null;
 }
 
-export function useMassiveQuoteProvider(tickers: string[]) {
+export function useMassiveQuoteProvider(
+  tickers: string[],
+  options: { refreshImmediately?: boolean } = {}
+) {
   const liveMarket = useOptionalLiveMarket();
-  const normalizedTickers = useMemo(() => {
-    return Array.from(
-      new Set(
-        tickers
-          .map(normalizeTicker)
-          .filter(Boolean)
-      )
-    );
-  }, [tickers]);
+  const ensureQuotes = liveMarket?.ensureQuotes;
+  const refreshQuotesNow = liveMarket?.refreshQuotesNow;
+  const refreshImmediately = options.refreshImmediately ?? true;
+  const normalizedTickerKey = Array.from(
+    new Set(tickers.map(normalizeTicker).filter(Boolean))
+  ).join("|");
+  const normalizedTickers = useMemo(
+    () => normalizedTickerKey ? normalizedTickerKey.split("|") : [],
+    [normalizedTickerKey]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -61,11 +65,13 @@ export function useMassiveQuoteProvider(tickers: string[]) {
   }, [liveMarket?.quoteMap]);
 
   useEffect(() => {
-    if (!liveMarket || !normalizedTickers.length) return;
+    if (!ensureQuotes || !refreshQuotesNow || !normalizedTickers.length) return;
 
-    liveMarket.ensureQuotes(normalizedTickers);
-    void liveMarket.refreshQuotesNow(normalizedTickers);
-  }, [liveMarket, normalizedTickers]);
+    ensureQuotes(normalizedTickers);
+    if (refreshImmediately) {
+      void refreshQuotesNow(normalizedTickers);
+    }
+  }, [ensureQuotes, normalizedTickers, refreshImmediately, refreshQuotesNow]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !liveMarket) return;

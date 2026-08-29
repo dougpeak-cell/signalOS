@@ -344,6 +344,7 @@ export function LiveMarketProvider({
   const historyUpdatedAtRef = useRef<Record<string, number>>({});
   const isPageVisibleRef = useRef(true);
   const quoteRefreshInFlightRef = useRef(false);
+  const activeQuoteTickersRef = useRef<Set<string>>(new Set());
   const quoteRefreshPendingRef = useRef(false);
   const pendingQuoteTickersRef = useRef<Set<string>>(new Set());
   const historyRefreshInFlightRef = useRef(false);
@@ -438,12 +439,13 @@ export function LiveMarketProvider({
   }, []);
 
   const refreshQuotesNow = useCallback(async (tickers?: string[]) => {
-    const requestedTargets = (tickers?.length
-      ? tickers
-      : Array.from(quoteTickersRef.current)
-    )
-      .map(normalizeTicker)
-      .filter(Boolean);
+    const requestedTargets = Array.from(
+      new Set(
+        (tickers?.length ? tickers : Array.from(quoteTickersRef.current))
+          .map(normalizeTicker)
+          .filter(Boolean)
+      )
+    );
 
     if (requestedTargets.length) {
       for (const ticker of requestedTargets) {
@@ -452,11 +454,13 @@ export function LiveMarketProvider({
     }
 
     if (quoteRefreshInFlightRef.current) {
-      quoteRefreshPendingRef.current = true;
-
       for (const ticker of requestedTargets) {
-        pendingQuoteTickersRef.current.add(ticker);
+        if (!activeQuoteTickersRef.current.has(ticker)) {
+          pendingQuoteTickersRef.current.add(ticker);
+        }
       }
+
+      quoteRefreshPendingRef.current = pendingQuoteTickersRef.current.size > 0;
 
       return;
     }
@@ -472,9 +476,11 @@ export function LiveMarketProvider({
 
       if (!targets.length) return;
 
+      activeQuoteTickersRef.current = new Set(targets);
       await loadQuotesForTickers(targets);
     } finally {
       quoteRefreshInFlightRef.current = false;
+      activeQuoteTickersRef.current.clear();
 
       if (quoteRefreshPendingRef.current) {
         quoteRefreshPendingRef.current = false;
