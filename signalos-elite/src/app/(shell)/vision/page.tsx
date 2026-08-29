@@ -1,9 +1,9 @@
 "use client";
 
-import FutureMapTradePlan from "@/components/amsa/FutureMapTradePlan";
 import SigiPulseCard from "@/components/amsa/SigiPulseCard";
-import { FutureScenarioCard } from "@/components/vision/FutureScenarioCard";
-import { OpportunityMeter } from "@/components/vision/OpportunityMeter";
+import FutureMapOpportunities, {
+  type FutureMapOpportunity,
+} from "@/components/vision/FutureMapOpportunities";
 import { PersonalIntelligenceHoldings } from "@/components/vision/PersonalIntelligenceHoldings";
 import { PortfolioClassificationProgress } from "@/components/vision/PortfolioClassificationProgress";
 import PreviousPulseLeaders from "@/components/vision/PreviousPulseLeaders";
@@ -11,12 +11,8 @@ import StockPulseExperience from "@/components/vision/StockPulseExperience";
 import { TodaysVision } from "@/components/vision/TodaysVision";
 import { FeaturedPulseCard } from "@/components/vision/featured-pulse-card";
 import { FeaturedPulseRanking } from "@/components/vision/featured-pulse-ranking";
-import type {
-  AMSAFutureMap,
-  AMSAFutureMapHorizon,
-} from "@/lib/amsa";
+import type { AMSAFutureMap } from "@/lib/amsa";
 import { formatMarketTimestamp } from "@/lib/market/formatMarketTimestamp";
-import { calculateOpportunityScore } from "@/lib/vision/opportunityScore";
 import {
   getFeaturedPulseFingerprint,
   getFeaturedPulseRefreshMessage,
@@ -57,7 +53,6 @@ type PulseState =
   | "Weak"
   | "Critical";
 type RiskLevel = "Low" | "Moderate" | "Elevated" | "High";
-type Horizon = AMSAFutureMapHorizon;
 type ChangeImportance = "low" | "medium" | "high";
 
 type PulseComponent = {
@@ -299,16 +294,7 @@ const EMPTY_OVERVIEW: VisionOverviewResponse = {
   featuredPulseMeta: null,
 };
 
-const FUTURE_MAP_SYMBOL_FALLBACKS = ["NVDA", "AAPL", "MSFT", "TSLA"];
-
-const FUTURE_MAP_HORIZONS: Array<{
-  value: Horizon;
-  label: string;
-}> = [
-  { value: "intraday", label: "Trader" },
-  { value: "swing", label: "Swing" },
-  { value: "position", label: "Investor" },
-];
+const FUTURE_MAP_CANDIDATE_LIMIT = 6;
 
 function clamp(value: number, minimum = 0, maximum = 100) {
   return Math.min(maximum, Math.max(minimum, value));
@@ -367,10 +353,6 @@ function directionSymbol(direction: Direction | null | undefined) {
   if (direction === "rising") return "▲";
   if (direction === "falling") return "▼";
   return "•";
-}
-
-function formatFutureMapHorizon(horizon: Horizon) {
-  return FUTURE_MAP_HORIZONS.find((option) => option.value === horizon)?.label ?? horizon;
 }
 
 function directionLabel(direction: Direction | null | undefined) {
@@ -957,96 +939,6 @@ function PendingCard({
 }
 
 /* =========================================================
-   FutureMap
-========================================================= */
-
-function FutureMapPanel({
-  futureMap,
-  horizon,
-}: {
-  futureMap: AMSAFutureMap | null;
-  horizon: Horizon;
-}) {
-  if (!futureMap) {
-    return (
-      <UnavailableState
-        title="FutureMap unavailable"
-        description="Select a stock to load evidence-based bull, base, and bear scenarios from the live FutureMap engine."
-      />
-    );
-  }
-
-  const primaryScenario = futureMap[futureMap.primaryScenario];
-  const scenarios = [
-    { name: "Bull" as const, scenario: futureMap.bull },
-    { name: "Base" as const, scenario: futureMap.base },
-    { name: "Bear" as const, scenario: futureMap.bear },
-  ];
-
-  const invalidationMessage =
-    primaryScenario.invalidationPrice !== null
-      ? `A move through ${Number(primaryScenario.invalidationPrice).toFixed(2)} would invalidate the current ${futureMap.primaryScenario} case.`
-      : futureMap.riskFactors[0] ?? null;
-
-  return (
-    <div>
-      <div className="flex flex-col gap-4 rounded-2xl border border-cyan-400/15 bg-cyan-500/[0.035] p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[9px] uppercase tracking-[0.2em] text-cyan-300">
-            {futureMap.symbol} · {formatFutureMapHorizon(futureMap.horizon)} horizon
-          </p>
-
-          <p className="mt-2 text-xl font-semibold text-white">
-            {futureMap.bias}
-          </p>
-
-          <p className="mt-1 text-sm text-slate-400">
-            {formatFutureMapHorizon(horizon)} horizon · confidence {safeScore(futureMap.confidence) ?? "—"}%
-          </p>
-        </div>
-
-        <div className="sm:text-right">
-          <p className="text-[9px] uppercase tracking-[0.2em] text-slate-500">
-            Primary scenario
-          </p>
-          <p className="mt-1 font-semibold text-cyan-200">
-            {primaryScenario.label}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-3 lg:grid-cols-3">
-        {scenarios.map(({ name, scenario }) => (
-          <FutureScenarioCard
-            key={name}
-            type={name.toLowerCase() as "bull" | "base" | "bear"}
-            probability={scenario.probability}
-            title={scenario.label}
-            zone={
-              Number.isFinite(scenario.expectedLow) && Number.isFinite(scenario.expectedHigh)
-                ? `$${Number(scenario.expectedLow).toFixed(2)}–$${Number(scenario.expectedHigh).toFixed(2)}`
-                : null
-            }
-            conditions={scenario.requirements}
-          />
-        ))}
-      </div>
-
-      {invalidationMessage ? (
-        <div className="mt-4 rounded-2xl border border-rose-400/15 bg-rose-500/[0.035] p-4">
-          <p className="text-[9px] uppercase tracking-[0.2em] text-rose-300">
-            What changes Sigi’s current read
-          </p>
-          <p className="mt-2 text-sm leading-6 text-slate-300">
-            {invalidationMessage}
-          </p>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-/* =========================================================
    Main Page
 ========================================================= */
 
@@ -1059,18 +951,14 @@ export default function VisionPage() {
   const featuredPulse = overview.featuredPulse ?? null;
   const [viewedSymbol, setViewedSymbol] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [liveFutureMap, setLiveFutureMap] = useState<AMSAFutureMap | null>(null);
+  const [futureMapOpportunities, setFutureMapOpportunities] = useState<FutureMapOpportunity[]>([]);
   const [futureMapLoading, setFutureMapLoading] = useState(false);
-  const [futureMapError, setFutureMapError] = useState<string | null>(null);
-  const [selectedFutureMapSymbol, setSelectedFutureMapSymbol] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [featuredRefreshMessage, setFeaturedRefreshMessage] = useState<string | null>(null);
 
   const [selectedSectorWindow, setSelectedSectorWindow] = useState<
     "Today" | "Week" | "Month" | "Year"
   >("Today");
-
-  const [horizon, setHorizon] = useState<Horizon>("swing");
 
   const [question, setQuestion] = useState("");
   const [asking, setAsking] = useState(false);
@@ -1202,86 +1090,87 @@ export default function VisionPage() {
   }, [overview.sectors, selectedSectorWindow]);
 
   const futureMapSymbols = useMemo(() => {
-    const nextSymbols = [
-      ...overview.stocks.map((stock) => stock.symbol),
-      ...FUTURE_MAP_SYMBOL_FALLBACKS,
-    ]
+    const nextSymbols = overview.stocks
+      .map((stock) => stock.symbol)
       .map((symbol) => String(symbol ?? "").trim().toUpperCase())
       .filter(Boolean);
 
-    return Array.from(new Set(nextSymbols)).slice(0, 6);
+    return Array.from(new Set(nextSymbols)).slice(0, FUTURE_MAP_CANDIDATE_LIMIT);
   }, [overview.stocks]);
 
   useEffect(() => {
     if (!futureMapSymbols.length) {
-      setSelectedFutureMapSymbol(null);
-      return;
-    }
-
-    setSelectedFutureMapSymbol((currentSymbol) => {
-      if (currentSymbol && futureMapSymbols.includes(currentSymbol)) {
-        return currentSymbol;
-      }
-
-      return futureMapSymbols[0];
-    });
-  }, [futureMapSymbols]);
-
-  useEffect(() => {
-    if (!selectedFutureMapSymbol) {
-      setLiveFutureMap(null);
-      setFutureMapError(null);
+      setFutureMapOpportunities([]);
       setFutureMapLoading(false);
       return;
     }
 
     const controller = new AbortController();
-    const requestedSymbol = selectedFutureMapSymbol;
 
     setFutureMapLoading(true);
-    setFutureMapError(null);
-    setLiveFutureMap(null);
+    setFutureMapOpportunities([]);
 
-    async function loadFutureMap() {
+    async function loadFutureMapOpportunities() {
       try {
-        const response = await fetch(
-          `/api/amsa/future/${encodeURIComponent(requestedSymbol)}?horizon=${horizon}&record=false`,
-          {
-            cache: "no-store",
-            signal: controller.signal,
-          },
+        const results = await Promise.all(
+          futureMapSymbols.map(async (symbol): Promise<FutureMapOpportunity | null> => {
+            try {
+              const response = await fetch(
+                `/api/amsa/future/${encodeURIComponent(symbol)}?horizon=swing&record=false`,
+                { cache: "no-store", signal: controller.signal },
+              );
+              const payload = (await response.json()) as LiveFutureMapResponse;
+              const futureMap = payload.futureMap ?? null;
+              const probabilities = futureMap
+                ? [futureMap.bullProbability, futureMap.baseProbability, futureMap.bearProbability]
+                : [];
+
+              if (
+                !response.ok ||
+                !futureMap ||
+                futureMap.symbol !== symbol ||
+                futureMap.horizon !== "swing" ||
+                !["bull", "base", "bear"].includes(futureMap.primaryScenario) ||
+                probabilities.some((probability) => !Number.isFinite(probability))
+              ) {
+                return null;
+              }
+
+              const stock = overview.stocks.find((item) => item.symbol === symbol);
+              const primaryScenario = `${futureMap.primaryScenario[0].toUpperCase()}${futureMap.primaryScenario.slice(1)}` as FutureMapOpportunity["primaryScenario"];
+              const primaryProbability = futureMap[`${futureMap.primaryScenario}Probability`];
+
+              return {
+                symbol,
+                pulse: stock?.score ?? null,
+                primaryScenario,
+                primaryProbability,
+                bullProbability: futureMap.bullProbability,
+                baseProbability: futureMap.baseProbability,
+                bearProbability: futureMap.bearProbability,
+                riskLabel: futureMap.riskLevel === "Unavailable" ? null : futureMap.riskLevel,
+                confidence: futureMap.confidence,
+                asOf: stock?.updatedAt ?? stock?.calculatedAt ?? null,
+              };
+            } catch (error) {
+              if (!controller.signal.aborted) {
+                console.error("Vision FutureMap opportunity unavailable:", { symbol, error });
+              }
+              return null;
+            }
+          }),
         );
 
-        const payload = (await response.json()) as LiveFutureMapResponse;
-
-        if (!response.ok) {
-          throw new Error(payload.error ?? `FutureMap request failed: ${response.status}`);
+        if (!controller.signal.aborted) {
+          setFutureMapOpportunities(
+            results.filter((result): result is FutureMapOpportunity => result !== null).slice(0, 3),
+          );
         }
-
-        const nextFutureMap = payload.futureMap ?? null;
-
-        if (!nextFutureMap) {
-          setFutureMapError("FutureMap is unavailable for the selected symbol right now.");
-          return;
-        }
-
-        if (nextFutureMap.symbol !== requestedSymbol || nextFutureMap.horizon !== horizon) {
-          setFutureMapError("FutureMap returned data for an older selection. Please retry.");
-          return;
-        }
-
-        setLiveFutureMap(nextFutureMap);
       } catch (error) {
-        if (controller.signal.aborted) {
-          return;
+        if (!controller.signal.aborted) {
+          console.error("Vision FutureMap opportunities load error:", error);
+          setFutureMapOpportunities([]);
         }
-
-        console.error("Vision FutureMap load error:", error);
-        setFutureMapError(
-          error instanceof Error
-            ? error.message
-            : "FutureMap could not retrieve the current scenario set.",
-        );
       } finally {
         if (!controller.signal.aborted) {
           setFutureMapLoading(false);
@@ -1289,12 +1178,12 @@ export default function VisionPage() {
       }
     }
 
-    void loadFutureMap();
+    void loadFutureMapOpportunities();
 
     return () => {
       controller.abort();
     };
-  }, [horizon, selectedFutureMapSymbol]);
+  }, [futureMapSymbols, overview.stocks]);
 
   const marketPulseChange = useMemo(() => {
     const current = overview.marketPulse?.score;
@@ -1306,42 +1195,6 @@ export default function VisionPage() {
 
     return Number(current) - Number(previous);
   }, [overview.marketPulse]);
-
-  const selectedVisionStock = useMemo(
-    () =>
-      selectedFutureMapSymbol
-        ? overview.stocks.find((stock) => stock.symbol === selectedFutureMapSymbol) ?? null
-        : null,
-    [overview.stocks, selectedFutureMapSymbol],
-  );
-
-  const opportunityMeter = useMemo(() => {
-    if (!selectedFutureMapSymbol || !liveFutureMap || liveFutureMap.symbol !== selectedFutureMapSymbol) {
-      return null;
-    }
-
-    const primaryScenario = liveFutureMap[liveFutureMap.primaryScenario];
-    const score = calculateOpportunityScore({
-      stockPulse: selectedVisionStock?.score ?? null,
-      alignment:
-        primaryScenario.quality?.alignmentScore ??
-        overview.marketPulse?.alignment ??
-        null,
-      bullProbability: liveFutureMap.bullProbability,
-      confidence: liveFutureMap.confidence,
-      riskControl: primaryScenario.quality?.riskControlScore ?? null,
-      rewardRisk:
-        primaryScenario.riskReward?.rewardToRisk ??
-        liveFutureMap.tradePlan?.rewardToRisk ??
-        null,
-    });
-
-    return {
-      symbol: selectedFutureMapSymbol,
-      score,
-      explanation: `${selectedFutureMapSymbol} combines Stock Pulse, alignment, bull probability, confidence, risk control, and reward-to-risk from the current live FutureMap.`,
-    };
-  }, [liveFutureMap, overview.marketPulse?.alignment, selectedFutureMapSymbol, selectedVisionStock]);
 
   async function submitQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1611,15 +1464,7 @@ export default function VisionPage() {
 
         <div className="mt-5">
           <SigiPulseCard
-            symbol={selectedFutureMapSymbol ?? "NVDA"}
-            aside={
-              opportunityMeter ? (
-                <OpportunityMeter
-                  score={opportunityMeter.score}
-                  explanation={opportunityMeter.explanation}
-                />
-              ) : null
-            }
+            symbol={activeSymbol ?? "NVDA"}
           />
         </div>
 
@@ -1977,70 +1822,12 @@ export default function VisionPage() {
         </GlassPanel>
         ) : null}
 
-        <GlassPanel className="mt-5 p-5 sm:p-6">
-          <SectionHeading
-            eyebrow="Probability landscape"
-            title="Sigi FutureMap"
-            description="Possible bull, base, and bear paths-each with conditions and an invalidation point."
+        <div className="mt-5">
+          <FutureMapOpportunities
+            opportunities={futureMapOpportunities}
+            loading={futureMapLoading}
           />
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {futureMapSymbols.map((symbol) => (
-              <button
-                key={symbol}
-                type="button"
-                onClick={() => setSelectedFutureMapSymbol(symbol)}
-                className={[
-                  "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
-                  selectedFutureMapSymbol === symbol
-                    ? "border-cyan-400/20 bg-cyan-500/6 text-cyan-200"
-                    : "border-white/10 bg-white/2.5 text-slate-400 hover:border-cyan-400/20 hover:text-cyan-200",
-                ].join(" ")}
-              >
-                {symbol}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-4 grid grid-cols-3 rounded-xl border border-white/10 bg-black/20 p-1">
-            {FUTURE_MAP_HORIZONS.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => setHorizon(item.value)}
-                className={[
-                  "rounded-lg px-2 py-2.5 text-xs font-semibold capitalize transition",
-                  horizon === item.value
-                    ? "bg-cyan-400/15 text-cyan-200"
-                    : "text-slate-500 hover:text-white",
-                ].join(" ")}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-5">
-            {futureMapLoading ? (
-              <div className="rounded-2xl border border-white/10 bg-white/2.5 p-4 text-sm text-slate-400">
-                Loading live FutureMap for {selectedFutureMapSymbol ?? "selected symbol"}...
-              </div>
-            ) : futureMapError ? (
-              <UnavailableState
-                title="FutureMap unavailable"
-                description={futureMapError}
-              />
-            ) : (
-              <FutureMapPanel futureMap={liveFutureMap} horizon={horizon} />
-            )}
-          </div>
-
-          {liveFutureMap ? (
-            <div className="mt-5">
-              <FutureMapTradePlan futureMap={liveFutureMap} />
-            </div>
-          ) : null}
-        </GlassPanel>
+        </div>
 
         <GlassPanel className="mt-5 p-5 sm:p-6">
           <SectionHeading
