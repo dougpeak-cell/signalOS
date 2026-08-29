@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import { useShellMarketContext } from "@/components/shell/ShellMarketContext";
 import TickerActionButton from "@/components/sigi/TickerActionButton";
@@ -923,40 +924,57 @@ function EmptyWatchlistRowItem() {
   );
 }
 
-function QuickWatchlistRowItem({ row, stockHref }: { row: WatchlistRow; stockHref: string }) {
+function QuickWatchlistRowItem({
+  row,
+  stockHref,
+  onRemove,
+}: {
+  row: WatchlistRow;
+  stockHref: string;
+  onRemove: (ticker: string) => void;
+}) {
   const dayChangeAmount = getDailyDollarChange(row.price, row.changePct);
 
   return (
-    <Link
-      href={stockHref}
-      className="group flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/3 px-3 py-2.5 transition hover:border-cyan-400/20 hover:bg-cyan-400/5"
-    >
-      <div className="min-w-0 flex flex-1 items-center gap-2.5">
-        <TickerLogo ticker={row.ticker} size={30} />
+    <div className="group flex items-center gap-2 rounded-2xl border border-white/8 bg-white/3 p-1.5 transition hover:border-cyan-400/20 hover:bg-cyan-400/5">
+      <Link href={stockHref} className="flex min-w-0 flex-1 items-center justify-between gap-3 px-1.5 py-1">
+        <div className="min-w-0 flex flex-1 items-center gap-2.5">
+          <TickerLogo ticker={row.ticker} size={30} />
 
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <div className="text-base font-semibold tracking-tight text-white">{row.ticker}</div>
-            <span className="truncate text-[11px] text-white/42">{row.name}</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <div className="text-base font-semibold tracking-tight text-white">{row.ticker}</div>
+              <span className="truncate text-[11px] text-white/42">{row.name}</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex shrink-0 items-end justify-end gap-3 text-right">
-        <div className={`text-xs font-semibold ${dayChangeAmount == null ? "text-white/35" : changeClasses(dayChangeAmount)}`}>
-          {hasUsablePrice(row.price) ? formatSignedMoney(dayChangeAmount) : "—"}
-        </div>
+        <div className="flex shrink-0 items-end justify-end gap-3 text-right">
+          <div className={`text-xs font-semibold ${dayChangeAmount == null ? "text-white/35" : changeClasses(dayChangeAmount)}`}>
+            {hasUsablePrice(row.price) ? formatSignedMoney(dayChangeAmount) : "—"}
+          </div>
 
-        <div>
-          <div className="text-base font-semibold text-white">
-            {hasUsablePrice(row.price) ? formatPrice(row.price) : "Awaiting quote"}
-          </div>
-          <div className={`mt-0.5 text-xs font-semibold ${changeClasses(row.changePct)}`}>
-            {hasUsablePrice(row.price) ? formatPct(row.changePct) : "Live syncing..."}
+          <div>
+            <div className="text-base font-semibold text-white">
+              {hasUsablePrice(row.price) ? formatPrice(row.price) : "Awaiting quote"}
+            </div>
+            <div className={`mt-0.5 text-xs font-semibold ${changeClasses(row.changePct)}`}>
+              {hasUsablePrice(row.price) ? formatPct(row.changePct) : "Live syncing..."}
+            </div>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+
+      <button
+        type="button"
+        onClick={() => onRemove(row.ticker)}
+        aria-label={`Delete ${row.ticker} from watchlist`}
+        title={`Delete ${row.ticker} from watchlist`}
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/8 text-rose-300 transition hover:border-rose-400/40 hover:bg-rose-500/15 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
   );
 }
 
@@ -1593,6 +1611,7 @@ export default function WatchlistPage() {
                         isQuick ? (
                           <QuickWatchlistRowItem
                             key={symbol}
+                            onRemove={handleRemoveFromWatchlist}
                             stockHref={buildPreviewHref(`/stocks/${symbol}`)}
                             row={{
                               ...item,
