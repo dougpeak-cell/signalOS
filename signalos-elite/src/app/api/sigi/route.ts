@@ -9,6 +9,9 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const FUTURE_MAP_TIMEOUT_MS = 6_000;
+const OPENAI_REQUEST_TIMEOUT_MS = 20_000;
+
 type Plan = "free" | "smart" | "pro";
 type AnswerMode = "analyze" | "short";
 
@@ -215,13 +218,14 @@ Reward-to-risk: ${
 
     const model = getSigiModel(plan);
 
-    const response = await openai.responses.create({
-      model,
-      reasoning: {
-        effort: answerMode === "short" ? "low" : "medium",
-      },
-      max_output_tokens: answerMode === "short" ? 220 : undefined,
-      input: [
+    const response = await openai.responses.create(
+      {
+        model,
+        reasoning: {
+          effort: answerMode === "short" ? "low" : "medium",
+        },
+        max_output_tokens: answerMode === "short" ? 220 : undefined,
+        input: [
         {
           role: "system",
           content: `
@@ -269,8 +273,13 @@ ${JSON.stringify(watchlistContext ?? {}, null, 2)}
 ${futureMapContext}
           `,
         },
-      ],
-    });
+        ],
+      },
+      {
+        signal: req.signal,
+        timeout: OPENAI_REQUEST_TIMEOUT_MS,
+      }
+    );
 
     return NextResponse.json({
       text: response.output_text,
@@ -307,6 +316,7 @@ async function loadFutureMapPromptPayload(
       `${origin}/api/amsa/future/${encodeURIComponent(symbol)}?horizon=swing&record=false`,
       {
         cache: "no-store",
+        signal: AbortSignal.timeout(FUTURE_MAP_TIMEOUT_MS),
       },
     );
 

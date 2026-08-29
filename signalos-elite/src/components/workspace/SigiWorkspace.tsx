@@ -29,13 +29,14 @@ type Props = {
   initialSymbol?: string;
 };
 
+const SIGI_REQUEST_TIMEOUT_MS = 25_000;
+
 function formatNumber(value: number | null | undefined, digits = 0) {
   if (value === null || value === undefined) return "—";
   return value.toFixed(digits);
 }
 
 function formatPrice(value: number | null | undefined) {
-  if (value === null || value === undefined) return "—";
 
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -160,6 +161,11 @@ export default function SigiWorkspace({ initialSymbol = "NVDA" }: Props) {
     setSigiLoadingQuestion(question);
     setSigiAnswer(null);
     setSigiError(null);
+    let didTimeout = false;
+    const timeout = window.setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, SIGI_REQUEST_TIMEOUT_MS);
 
     try {
       const response = await fetch("/api/sigi", {
@@ -194,14 +200,20 @@ export default function SigiWorkspace({ initialSymbol = "NVDA" }: Props) {
 
       setSigiAnswer(answer);
     } catch (askError) {
-      if (controller.signal.aborted) return;
+      if (didTimeout) {
+        setSigiError("Sigi took too long to respond. Please try the question again.");
+      } else if (controller.signal.aborted) {
+        return;
+      } else {
+        setSigiError(
+          askError instanceof Error
+            ? askError.message
+            : "Sigi could not answer this question."
+        );
+      }
 
-      setSigiError(
-        askError instanceof Error
-          ? askError.message
-          : "Sigi could not answer this question."
-      );
     } finally {
+      window.clearTimeout(timeout);
       if (activeSigiRequest.current === controller) {
         activeSigiRequest.current = null;
         setSigiLoadingQuestion(null);
