@@ -152,12 +152,13 @@ function EmailAuthContent(props: EmailAuthEntryProps) {
     setMessage(null);
 
     try {
-      const redirectTarget = new URL(nextPath, window.location.origin);
+      const callbackUrl = new URL("/auth/callback", window.location.origin);
+      callbackUrl.searchParams.set("next", nextPath);
 
       const { error: signInError } = await supabase.auth.signInWithOtp({
         email: trimmedEmail,
         options: {
-          emailRedirectTo: redirectTarget.toString(),
+          emailRedirectTo: callbackUrl.toString(),
         },
       });
 
