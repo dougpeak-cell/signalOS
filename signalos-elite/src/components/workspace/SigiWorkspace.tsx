@@ -30,6 +30,7 @@ type Props = {
 };
 
 const SIGI_REQUEST_TIMEOUT_MS = 25_000;
+const WORKSPACE_REQUEST_TIMEOUT_MS = 20_000;
 
 function formatNumber(value: number | null | undefined, digits = 0) {
   if (value === null || value === undefined) return "—";
@@ -97,6 +98,11 @@ export default function SigiWorkspace({ initialSymbol = "NVDA" }: Props) {
 
     setLoading(true);
     setError(null);
+    let didTimeout = false;
+    const timeout = window.setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, WORKSPACE_REQUEST_TIMEOUT_MS);
 
     try {
       const response = await fetch(
@@ -113,14 +119,17 @@ export default function SigiWorkspace({ initialSymbol = "NVDA" }: Props) {
       setSymbol(normalized);
       setInput(normalized);
     } catch (loadError) {
-      if (controller.signal.aborted) return;
-
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Unable to load Sigi Workspace."
-      );
+      if (didTimeout) {
+        setError(`Sigi took too long to evaluate ${normalized}. Please try again.`);
+      } else if (!controller.signal.aborted) {
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Unable to load Sigi Workspace."
+        );
+      }
     } finally {
+      window.clearTimeout(timeout);
       if (activeRequest.current === controller) {
         activeRequest.current = null;
         setLoading(false);

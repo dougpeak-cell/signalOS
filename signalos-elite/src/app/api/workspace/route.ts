@@ -23,6 +23,8 @@ const MARKET_ITEMS = [
   { ticker: "X:BTCUSD", symbol: "BTC", label: "BTC" },
 ] as const;
 
+const WORKSPACE_UPSTREAM_TIMEOUT_MS = 10_000;
+
 type WorkspaceLiveQuote = {
   ticker?: unknown;
   source?: unknown;
@@ -73,6 +75,7 @@ async function safeJson(url: string) {
   try {
     const response = await fetch(url, {
       cache: "no-store",
+      signal: AbortSignal.timeout(WORKSPACE_UPSTREAM_TIMEOUT_MS),
       headers: {
         Accept: "application/json",
       },
