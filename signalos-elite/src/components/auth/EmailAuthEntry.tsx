@@ -18,6 +18,7 @@ type EmailAuthEntryProps = {
   backHref: string;
   backLabel: string;
   defaultNextPath: string;
+  skipSessionCheck?: boolean;
 };
 
 type EmailAuthShellProps = EmailAuthEntryProps & {
@@ -81,12 +82,16 @@ function EmailAuthContent(props: EmailAuthEntryProps) {
   );
 
   const [email, setEmail] = useState("");
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [isCheckingSession, setIsCheckingSession] = useState(!props.skipSessionCheck);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (props.skipSessionCheck) {
+      return;
+    }
+
     if (!supabase) {
       setIsCheckingSession(false);
       return;
@@ -131,7 +136,7 @@ function EmailAuthContent(props: EmailAuthEntryProps) {
       cancelled = true;
       window.clearTimeout(timeout);
     };
-  }, [nextPath, router, supabase]);
+  }, [nextPath, props.skipSessionCheck, router, supabase]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

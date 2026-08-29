@@ -10,7 +10,7 @@ import {
 } from "@/lib/supabase/browser";
 
 const AUTH_CONFIRM_TIMEOUT_MS = 15_000;
-const DEFAULT_AUTH_REDIRECT = "/settings/sigi#profile";
+const DEFAULT_AUTH_REDIRECT = "/today";
 
 function getSafeNextPath(value: string | null): string {
   return value?.startsWith("/") && !value.startsWith("//")

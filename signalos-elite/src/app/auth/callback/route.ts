@@ -1,7 +1,8 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const DEFAULT_AUTH_REDIRECT = "/settings/sigi#profile";
+const DEFAULT_AUTH_REDIRECT = "/today";
 
 type UpgradePlan = "smart" | "pro";
 
@@ -197,21 +198,31 @@ export async function GET(request: NextRequest) {
   const tokenHash = requestUrl.searchParams.get("token_hash");
   const otpType = getSafeOtpType(requestUrl.searchParams.get("type"));
 
+  if ((tokenHash && otpType) || code) {
+    try {
+      const supabase = await createSupabaseServerClient();
+      const result = tokenHash && otpType
+        ? await supabase.auth.verifyOtp({ token_hash: tokenHash, type: otpType })
+        : await supabase.auth.exchangeCodeForSession(code!);
+
+      if (result.error) {
+        return NextResponse.redirect(
+          buildRetryUrl(requestUrl, nextPath, plan, returnTo, result.error.message)
+        );
+      }
+
+      return NextResponse.redirect(new URL(nextPath, requestUrl.origin));
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Unable to verify sign-in.";
+      return NextResponse.redirect(
+        buildRetryUrl(requestUrl, nextPath, plan, returnTo, message)
+      );
+    }
+  }
+
   if ((!tokenHash || !otpType) && !code) {
     const confirmUrl = new URL("/auth/confirm", requestUrl.origin);
     confirmUrl.searchParams.set("next", nextPath);
     return NextResponse.redirect(confirmUrl);
   }
-
-  const confirmUrl = new URL("/auth/confirm", requestUrl.origin);
-  confirmUrl.searchParams.set("next", nextPath);
-
-  if (tokenHash && otpType) {
-    confirmUrl.searchParams.set("token_hash", tokenHash);
-    confirmUrl.searchParams.set("type", otpType);
-  } else if (code) {
-    confirmUrl.searchParams.set("code", code);
-  }
-
-  return NextResponse.redirect(confirmUrl);
 }
