@@ -18,7 +18,7 @@ export default async function AuthPage({ searchParams }: AuthPageProps) {
   } = await supabase.auth.getSession();
 
   if (session) {
-    redirect(nextPath);
+    redirect(`/auth/confirm?next=${encodeURIComponent(nextPath)}`);
   }
 
   return (

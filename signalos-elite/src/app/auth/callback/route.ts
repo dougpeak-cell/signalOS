@@ -211,7 +211,9 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      return NextResponse.redirect(new URL(nextPath, requestUrl.origin));
+      const confirmUrl = new URL("/auth/confirm", requestUrl.origin);
+      confirmUrl.searchParams.set("next", nextPath);
+      return NextResponse.redirect(confirmUrl);
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "Unable to verify sign-in.";
       return NextResponse.redirect(
