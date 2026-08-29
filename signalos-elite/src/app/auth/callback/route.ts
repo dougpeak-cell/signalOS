@@ -1,27 +1,9 @@
-import { createServerClient } from "@supabase/ssr";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 const DEFAULT_AUTH_REDIRECT = "/settings/sigi#profile";
-const AUTH_EXCHANGE_TIMEOUT_MS = 10_000;
 
 type UpgradePlan = "smart" | "pro";
-
-async function withAuthTimeout<T>(operation: Promise<T>): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(
-      () => reject(new Error("Sign-in verification timed out. Please request a new email and try again.")),
-      AUTH_EXCHANGE_TIMEOUT_MS
-    );
-  });
-
-  try {
-    return await Promise.race([operation, timeout]);
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
 
 function getSafePlan(value: string | null): UpgradePlan | null {
   return value === "smart" || value === "pro" ? value : null;
@@ -180,51 +162,21 @@ export async function GET(request: NextRequest) {
   const tokenHash = requestUrl.searchParams.get("token_hash");
   const otpType = getSafeOtpType(requestUrl.searchParams.get("type"));
 
-  const redirectUrl = new URL(nextPath, requestUrl.origin);
-  const response = NextResponse.redirect(redirectUrl);
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        },
-      },
-    }
-  );
-
-  let error: Error | null = null;
-
-  try {
-    if (tokenHash && otpType) {
-      const result = await withAuthTimeout(
-        supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: otpType,
-        })
-      );
-      error = result.error;
-    } else if (code) {
-      const result = await withAuthTimeout(supabase.auth.exchangeCodeForSession(code));
-      error = result.error;
-    } else {
-      return NextResponse.redirect(
-        buildRetryUrl(requestUrl, nextPath, plan, returnTo, "Missing sign-in token.")
-      );
-    }
-  } catch (cause) {
-    error = cause instanceof Error ? cause : new Error("Unable to verify sign-in.");
+  if ((!tokenHash || !otpType) && !code) {
+    return NextResponse.redirect(
+      buildRetryUrl(requestUrl, nextPath, plan, returnTo, "Missing sign-in token.")
+    );
   }
 
-  if (error) {
-    return NextResponse.redirect(buildRetryUrl(requestUrl, nextPath, plan, returnTo, error.message));
+  const confirmUrl = new URL("/auth/confirm", requestUrl.origin);
+  confirmUrl.searchParams.set("next", nextPath);
+
+  if (tokenHash && otpType) {
+    confirmUrl.searchParams.set("token_hash", tokenHash);
+    confirmUrl.searchParams.set("type", otpType);
+  } else if (code) {
+    confirmUrl.searchParams.set("code", code);
   }
 
-  return response;
+  return NextResponse.redirect(confirmUrl);
 }
