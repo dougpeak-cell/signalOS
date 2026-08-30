@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  getSmartPreviewStatus,
   isSmartPreviewActive,
   SMART_PREVIEW_STARTED_EVENT,
 } from "@/lib/premiumAccess";
@@ -83,6 +84,9 @@ export function useSigiTier() {
     };
 
     syncPreview();
+    void getSmartPreviewStatus()
+      .then((status) => setPreviewActive(status.active))
+      .catch(() => setPreviewActive(false));
 
     const intervalId = window.setInterval(syncPreview, 30000);
     window.addEventListener("focus", syncPreview);

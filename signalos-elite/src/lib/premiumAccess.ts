@@ -7,6 +7,16 @@ const SMART_PREVIEW_STORAGE_KEY = "sigi_smart_preview_started";
 const SMART_PREVIEW_WINDOW_MS = SMART_PREVIEW_WINDOW_MINUTES * 60 * 1000;
 const FEATURED_PREVIEW_TICKER = "MSFT";
 
+export type SmartPreviewClientStatus = {
+  active: boolean;
+  eligible: boolean;
+  isSignedIn: boolean;
+  startedAt: number | null;
+  expiresAt: number | null;
+  nextEligibleAt: number | null;
+  error?: string;
+};
+
 function syncSmartPreviewCookie(startedAt: number | null) {
   if (typeof document === "undefined") return;
 
@@ -57,13 +67,34 @@ export function isWeekendCryptoOpen() {
   return day === 5 || day === 6 || day === 0;
 }
 
-export function startSmartPreview() {
+function applySmartPreviewStatus(status: SmartPreviewClientStatus) {
   if (typeof window === "undefined") return;
 
-  const startedAt = Date.now();
-  localStorage.setItem(SMART_PREVIEW_STORAGE_KEY, startedAt.toString());
-  syncSmartPreviewCookie(startedAt);
+  if (status.active && status.startedAt !== null) {
+    localStorage.setItem(SMART_PREVIEW_STORAGE_KEY, status.startedAt.toString());
+    syncSmartPreviewCookie(status.startedAt);
+  } else {
+    localStorage.removeItem(SMART_PREVIEW_STORAGE_KEY);
+    syncSmartPreviewCookie(null);
+  }
+
   window.dispatchEvent(new Event(SMART_PREVIEW_STARTED_EVENT));
+}
+
+export async function getSmartPreviewStatus(): Promise<SmartPreviewClientStatus> {
+  const response = await fetch("/api/sigi/preview", { cache: "no-store" });
+  const status = (await response.json()) as SmartPreviewClientStatus;
+  if (!response.ok) throw new Error(status.error ?? "Unable to load Smart preview status.");
+  applySmartPreviewStatus(status);
+  return status;
+}
+
+export async function startSmartPreview(): Promise<SmartPreviewClientStatus> {
+  const response = await fetch("/api/sigi/preview", { method: "POST" });
+  const status = (await response.json()) as SmartPreviewClientStatus;
+  if (!response.ok) throw new Error(status.error ?? "Unable to start Smart preview.");
+  applySmartPreviewStatus(status);
+  return status;
 }
 
 export function isSmartPreviewActive() {

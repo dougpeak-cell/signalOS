@@ -3,6 +3,7 @@ import TopNav from "@/components/shell/TopNav";
 import SigiWorkspace from "@/components/workspace/SigiWorkspace";
 import { getStoredMarketContext } from "@/lib/intelligence/contextStore";
 import { getSigiSettingsViewForCurrentUser } from "@/lib/sigi/settings";
+import { hasActiveSmartPreviewForCurrentUser } from "@/lib/sigi/smartPreviewServer";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +16,12 @@ export default async function WorkspacePage({
   const requestedSymbol = (Array.isArray(querySymbol) ? querySymbol[0] : querySymbol)
     ?.trim()
     .toUpperCase() || "NVDA";
-  const [storedMarketContext, settings] = await Promise.all([
+  const [storedMarketContext, settings, previewActive] = await Promise.all([
     getStoredMarketContext(),
     getSigiSettingsViewForCurrentUser(),
+    hasActiveSmartPreviewForCurrentUser(),
   ]);
-  const canEvaluateStocks = settings.hasSmartFeatures || settings.hasProFeatures;
+  const canEvaluateStocks = settings.hasSmartFeatures || settings.hasProFeatures || previewActive;
   const initialSymbol = canEvaluateStocks || requestedSymbol === "MSFT" || requestedSymbol === "NVDA"
     ? requestedSymbol
     : "NVDA";

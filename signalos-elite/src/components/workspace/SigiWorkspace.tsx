@@ -15,6 +15,7 @@ import {
 import { SelectedSignalProvider } from "@/components/chart/SelectedSignalContext";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
+import { useSigiTier } from "@/hooks/useSigiTier";
 import {
   formatMarketTimestamp,
   formatVerifiedPulseTimestamp,
@@ -83,6 +84,12 @@ export default function SigiWorkspace({
   canEvaluateStocks,
 }: Props) {
   const { ensureQuotes, quoteMap, refreshQuotesNow } = useLiveMarket();
+  const { tier, previewActive, planSummary } = useSigiTier();
+  const hasWorkspaceAccess =
+    tier === "smart" ||
+    tier === "pro" ||
+    (tier === "free" && previewActive) ||
+    (planSummary === null && canEvaluateStocks);
   const [symbol, setSymbol] = useState(initialSymbol.toUpperCase());
   const [input, setInput] = useState(initialSymbol.toUpperCase());
   const [data, setData] = useState<WorkspacePayload | null>(null);
@@ -154,7 +161,7 @@ export default function SigiWorkspace({
     const normalized = nextSymbol.trim().toUpperCase();
     if (!normalized) return;
 
-    if (!canEvaluateStocks && !FREE_EXAMPLE_SYMBOLS.has(normalized)) {
+    if (!hasWorkspaceAccess && !FREE_EXAMPLE_SYMBOLS.has(normalized)) {
       setError("Unlock Sigi Smart or Pro to evaluate stocks beyond the NVDA and MSFT examples.");
       return;
     }
@@ -175,7 +182,7 @@ export default function SigiWorkspace({
   }
 
   async function askSigi(question: string) {
-    if (!data || !canEvaluateStocks) return;
+    if (!data || !hasWorkspaceAccess) return;
 
     activeSigiRequest.current?.abort();
     const controller = new AbortController();
@@ -327,13 +334,13 @@ export default function SigiWorkspace({
                 type="submit"
                 className="h-12 rounded-xl border border-cyan-400/40 bg-cyan-400/10 px-6 text-sm font-bold text-cyan-200 transition hover:bg-cyan-400/20"
               >
-                {canEvaluateStocks ? "Evaluate" : FREE_EXAMPLE_SYMBOLS.has(input.trim().toUpperCase()) ? "View example" : "Unlock analysis"}
+                {hasWorkspaceAccess ? "Evaluate" : FREE_EXAMPLE_SYMBOLS.has(input.trim().toUpperCase()) ? "View example" : "Unlock analysis"}
               </button>
             </form>
           </div>
         </section>
 
-        {!canEvaluateStocks ? (
+        {!hasWorkspaceAccess ? (
           <section className="mb-4 grid gap-4 rounded-[22px] border border-amber-300/25 bg-[#0d1115] px-5 py-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
             <div className="flex gap-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-300/25 bg-amber-300/10 text-amber-200">
@@ -694,10 +701,10 @@ export default function SigiWorkspace({
                         key={question}
                         type="button"
                         onClick={() => void askSigi(question)}
-                        disabled={!canEvaluateStocks || sigiLoadingQuestion !== null}
+                        disabled={!hasWorkspaceAccess || sigiLoadingQuestion !== null}
                         className="w-full rounded-xl border border-slate-800 bg-slate-900/20 px-3 py-3 text-left text-xs text-slate-300 transition enabled:hover:border-cyan-400/30 enabled:hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
                       >
-                        {!canEvaluateStocks ? "Smart or Pro required" : sigiLoadingQuestion === question ? "Sigi is thinking..." : question}
+                        {!hasWorkspaceAccess ? "Smart or Pro required" : sigiLoadingQuestion === question ? "Sigi is thinking..." : question}
                       </button>
                     ))}
                   </div>

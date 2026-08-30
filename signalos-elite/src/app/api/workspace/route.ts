@@ -4,6 +4,7 @@ import { calculateDNAAlignment } from "@/lib/vision/dnaAlignment";
 import { calculateOpportunityScore } from "@/lib/vision/opportunityScore";
 import { getCurrentMarketPhase } from "@/lib/today/marketPhase";
 import { getSigiPlanSummaryForCurrentUser } from "@/lib/sigi/settings";
+import { hasActiveSmartPreviewForCurrentUser } from "@/lib/sigi/smartPreviewServer";
 import { resolveStockTickerAlias } from "@/lib/stocks/symbolAliases";
 import {
   getWorkspacePulseMeaning,
@@ -114,9 +115,12 @@ export async function GET(request: NextRequest) {
   const symbol = resolveStockTickerAlias(
     request.nextUrl.searchParams.get("symbol") || "NVDA"
   );
-  const plan = await getSigiPlanSummaryForCurrentUser();
+  const [plan, previewActive] = await Promise.all([
+    getSigiPlanSummaryForCurrentUser(),
+    hasActiveSmartPreviewForCurrentUser(),
+  ]);
 
-  if (!plan.hasSmartFeatures && !FREE_WORKSPACE_EXAMPLES.has(symbol)) {
+  if (!plan.hasSmartFeatures && !previewActive && !FREE_WORKSPACE_EXAMPLES.has(symbol)) {
     return NextResponse.json(
       { error: "Stock evaluation is available with Sigi Smart or Pro." },
       { status: 403 }

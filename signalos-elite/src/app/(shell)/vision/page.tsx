@@ -945,8 +945,8 @@ function PendingCard({
 ========================================================= */
 
 export default function VisionPage() {
-  const { tier } = useSigiTier();
-  const hasVisionAccess = tier === "smart" || tier === "pro";
+  const { tier, previewActive } = useSigiTier();
+  const hasVisionAccess = tier === "smart" || tier === "pro" || (tier === "free" && previewActive);
   const [overview, setOverview] = useState<VisionOverviewResponse>(EMPTY_OVERVIEW);
   const visionRequestRef = useRef<Promise<void> | null>(null);
   const lastVisionRequestAtRef = useRef(0);

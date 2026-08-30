@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSigiPlanSummaryForCurrentUser } from "@/lib/sigi/settings";
+import { hasActiveSmartPreviewForCurrentUser } from "@/lib/sigi/smartPreviewServer";
 
 export const dynamic = "force-dynamic";
 
@@ -286,8 +287,11 @@ function buildAnswer(question: string, context: VisionAskRequest["marketContext"
 
 export async function POST(req: Request) {
   try {
-    const plan = await getSigiPlanSummaryForCurrentUser();
-    if (!plan.hasSmartFeatures) {
+    const [plan, previewActive] = await Promise.all([
+      getSigiPlanSummaryForCurrentUser(),
+      hasActiveSmartPreviewForCurrentUser(),
+    ]);
+    if (!plan.hasSmartFeatures && !previewActive) {
       return NextResponse.json(
         { error: "Market Intelligence is available with Sigi Smart or Pro." },
         { status: 403 },

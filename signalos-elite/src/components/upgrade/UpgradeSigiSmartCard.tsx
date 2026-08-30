@@ -12,11 +12,19 @@ import {
 export default function UpgradeSigiSmartCard() {
 	const router = useRouter();
 	const [isStartingPreview, setIsStartingPreview] = useState(false);
+	const [previewError, setPreviewError] = useState<string | null>(null);
 
-	function handleStartPreview() {
+	async function handleStartPreview() {
 		setIsStartingPreview(true);
-		startSmartPreview();
-		router.refresh();
+		setPreviewError(null);
+		try {
+			await startSmartPreview();
+			router.refresh();
+		} catch (error) {
+			setPreviewError(error instanceof Error ? error.message : "Unable to start Smart preview.");
+		} finally {
+			setIsStartingPreview(false);
+		}
 	}
 
 	return (
@@ -38,7 +46,7 @@ export default function UpgradeSigiSmartCard() {
 
 			<p className="mb-5 text-sm leading-6 text-slate-300">
 				You are seeing the market thesis preview. Start a free {SMART_PREVIEW_WINDOW_MINUTES}-minute Smart preview to
-				open ticker-by-ticker intelligence across the platform, or upgrade to
+				open ticker-by-ticker intelligence, Vision, and Workspace. Free accounts can start one preview every 7 days, or upgrade to
 				keep it unlocked full-time.
 			</p>
 
@@ -52,9 +60,12 @@ export default function UpgradeSigiSmartCard() {
 				type="button"
 				onClick={handleStartPreview}
 				className="block w-full rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-5 py-3 text-center text-sm font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-400/25"
+				disabled={isStartingPreview}
 			>
 				{isStartingPreview ? "Opening Smart Preview..." : `Start Free ${SMART_PREVIEW_WINDOW_MINUTES}-Minute Preview`}
 			</button>
+
+			{previewError ? <p className="mt-3 text-center text-xs text-rose-200">{previewError}</p> : null}
 
 			<Link
 				href="/auth/upgrade?plan=smart"

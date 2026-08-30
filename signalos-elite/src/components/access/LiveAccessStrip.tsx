@@ -25,6 +25,8 @@ export default function LiveAccessStrip({
 }) {
   const [previewActive, setPreviewActive] = useState(false);
   const [remainingMs, setRemainingMs] = useState(0);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewStarting, setPreviewStarting] = useState(false);
 
   const featuredTicker = getTodayFeaturedStock();
   const cryptoOpen = isWeekendCryptoOpen();
@@ -52,10 +54,18 @@ export default function LiveAccessStrip({
     };
   }, []);
 
-  function handleStartPreview() {
-    startSmartPreview();
-    setPreviewActive(true);
-    setRemainingMs(getSmartPreviewRemainingMs());
+  async function handleStartPreview() {
+    setPreviewStarting(true);
+    setPreviewError(null);
+    try {
+      await startSmartPreview();
+      setPreviewActive(true);
+      setRemainingMs(getSmartPreviewRemainingMs());
+    } catch (error) {
+      setPreviewError(error instanceof Error ? error.message : "Unable to start Smart preview.");
+    } finally {
+      setPreviewStarting(false);
+    }
   }
 
   if (tier === "pro") {
@@ -204,12 +214,14 @@ export default function LiveAccessStrip({
             <>
               <button
                 onClick={handleStartPreview}
-                className={`mt-2 rounded-xl bg-emerald-300 text-xs font-bold text-black transition hover:bg-emerald-200 ${compact ? "px-3.5 py-2" : "px-4 py-2"}`}
+                disabled={previewStarting}
+                className={`mt-2 rounded-xl bg-emerald-300 text-xs font-bold text-black transition hover:bg-emerald-200 disabled:cursor-wait disabled:opacity-60 ${compact ? "px-3.5 py-2" : "px-4 py-2"}`}
               >
-                Start {SMART_PREVIEW_WINDOW_MINUTES}-Minute Preview
+                {previewStarting ? "Starting Preview..." : `Start ${SMART_PREVIEW_WINDOW_MINUTES}-Minute Preview`}
               </button>
+              {previewError ? <div className="mt-2 text-xs text-rose-200">{previewError}</div> : null}
               <div className="mt-2 text-xs text-slate-400">
-                Demo $9/mo Sigi-Smart
+                Includes Vision + Workspace · Available once every 7 days
               </div>
             </>
           )}

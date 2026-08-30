@@ -10,6 +10,8 @@ import {
 
 export default function SmartPreviewStarter() {
   const [active, setActive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     const syncPreview = () => {
@@ -31,9 +33,17 @@ export default function SmartPreviewStarter() {
     };
   }, []);
 
-  function handleStartPreview() {
-    startSmartPreview();
-    setActive(true);
+  async function handleStartPreview() {
+    setStarting(true);
+    setError(null);
+    try {
+      await startSmartPreview();
+      setActive(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to start Smart preview.");
+    } finally {
+      setStarting(false);
+    }
   }
 
   if (active) {
@@ -45,11 +55,16 @@ export default function SmartPreviewStarter() {
   }
 
   return (
-    <button
-      onClick={handleStartPreview}
-      className="rounded-2xl bg-cyan-400 px-5 py-3 font-semibold text-black shadow-lg hover:bg-cyan-300"
-    >
-      Start {SMART_PREVIEW_WINDOW_MINUTES}-Minute Smart Preview
-    </button>
+    <div>
+      <button
+        onClick={handleStartPreview}
+        disabled={starting}
+        className="rounded-2xl bg-cyan-400 px-5 py-3 font-semibold text-black shadow-lg hover:bg-cyan-300 disabled:cursor-wait disabled:opacity-60"
+      >
+        {starting ? "Starting Smart Preview..." : `Start ${SMART_PREVIEW_WINDOW_MINUTES}-Minute Smart Preview`}
+      </button>
+      {error ? <p className="mt-2 text-sm text-rose-200">{error}</p> : null}
+      <p className="mt-2 text-xs text-slate-400">Includes Vision and Workspace. Available once every 7 days.</p>
+    </div>
   );
 }
