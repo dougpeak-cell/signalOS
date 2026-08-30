@@ -3,6 +3,7 @@ import { getStoredMarketContext } from "@/lib/intelligence/contextStore";
 import { calculateDNAAlignment } from "@/lib/vision/dnaAlignment";
 import { calculateOpportunityScore } from "@/lib/vision/opportunityScore";
 import { getCurrentMarketPhase } from "@/lib/today/marketPhase";
+import { getSigiPlanSummaryForCurrentUser } from "@/lib/sigi/settings";
 import { resolveStockTickerAlias } from "@/lib/stocks/symbolAliases";
 import {
   getWorkspacePulseMeaning,
@@ -25,6 +26,7 @@ const MARKET_ITEMS = [
 ] as const;
 
 const WORKSPACE_UPSTREAM_TIMEOUT_MS = 10_000;
+const FREE_WORKSPACE_EXAMPLES = new Set(["NVDA", "MSFT"]);
 
 type WorkspaceLiveQuote = {
   ticker?: unknown;
@@ -112,6 +114,14 @@ export async function GET(request: NextRequest) {
   const symbol = resolveStockTickerAlias(
     request.nextUrl.searchParams.get("symbol") || "NVDA"
   );
+  const plan = await getSigiPlanSummaryForCurrentUser();
+
+  if (!plan.hasSmartFeatures && !FREE_WORKSPACE_EXAMPLES.has(symbol)) {
+    return NextResponse.json(
+      { error: "Stock evaluation is available with Sigi Smart or Pro." },
+      { status: 403 }
+    );
+  }
 
   const origin = request.nextUrl.origin;
   const storedMarketContextPromise = getStoredMarketContext();

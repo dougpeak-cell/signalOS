@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { LockKeyhole, Sparkles } from "lucide-react";
 import {
   type FormEvent,
   type ReactNode,
@@ -27,10 +29,12 @@ import type {
 
 type Props = {
   initialSymbol?: string;
+  canEvaluateStocks: boolean;
 };
 
 const SIGI_REQUEST_TIMEOUT_MS = 25_000;
 const WORKSPACE_REQUEST_TIMEOUT_MS = 20_000;
+const FREE_EXAMPLE_SYMBOLS = new Set(["NVDA", "MSFT"]);
 
 function formatNumber(value: number | null | undefined, digits = 0) {
   if (value === null || value === undefined) return "—";
@@ -74,7 +78,10 @@ function strongestFactor(factors: Factor[]) {
   return valid.length ? [...valid].sort((a, b) => b.value - a.value)[0] : null;
 }
 
-export default function SigiWorkspace({ initialSymbol = "NVDA" }: Props) {
+export default function SigiWorkspace({
+  initialSymbol = "NVDA",
+  canEvaluateStocks,
+}: Props) {
   const { ensureQuotes, quoteMap, refreshQuotesNow } = useLiveMarket();
   const [symbol, setSymbol] = useState(initialSymbol.toUpperCase());
   const [input, setInput] = useState(initialSymbol.toUpperCase());
@@ -147,6 +154,11 @@ export default function SigiWorkspace({ initialSymbol = "NVDA" }: Props) {
     const normalized = nextSymbol.trim().toUpperCase();
     if (!normalized) return;
 
+    if (!canEvaluateStocks && !FREE_EXAMPLE_SYMBOLS.has(normalized)) {
+      setError("Unlock Sigi Smart or Pro to evaluate stocks beyond the NVDA and MSFT examples.");
+      return;
+    }
+
     setInput(normalized);
     setSymbol(normalized);
 
@@ -163,7 +175,7 @@ export default function SigiWorkspace({ initialSymbol = "NVDA" }: Props) {
   }
 
   async function askSigi(question: string) {
-    if (!data) return;
+    if (!data || !canEvaluateStocks) return;
 
     activeSigiRequest.current?.abort();
     const controller = new AbortController();
@@ -315,11 +327,43 @@ export default function SigiWorkspace({ initialSymbol = "NVDA" }: Props) {
                 type="submit"
                 className="h-12 rounded-xl border border-cyan-400/40 bg-cyan-400/10 px-6 text-sm font-bold text-cyan-200 transition hover:bg-cyan-400/20"
               >
-                Evaluate
+                {canEvaluateStocks ? "Evaluate" : FREE_EXAMPLE_SYMBOLS.has(input.trim().toUpperCase()) ? "View example" : "Unlock analysis"}
               </button>
             </form>
           </div>
         </section>
+
+        {!canEvaluateStocks ? (
+          <section className="mb-4 grid gap-4 rounded-[22px] border border-amber-300/25 bg-[#0d1115] px-5 py-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+            <div className="flex gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-300/25 bg-amber-300/10 text-amber-200">
+                <LockKeyhole className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200">Smart + Pro Access</div>
+                <h2 className="mt-1 text-lg font-semibold text-white">Turn the Workspace into your stock analysis desk.</h2>
+                <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+                  Explore NVDA and MSFT as examples. Start a Smart or Pro membership to evaluate any stock and use Sigi&apos;s analysis tools. First-time accounts get 7 days free. Cancel any time before the trial ends.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 md:justify-end">
+              <Link
+                href="/auth/upgrade?plan=smart&returnTo=/workspace"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-cyan-300/35 bg-cyan-300/10 px-4 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/20"
+              >
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+                Try Smart free
+              </Link>
+              <Link
+                href="/auth/upgrade?plan=pro&returnTo=/workspace"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-amber-300/35 bg-amber-300/10 px-4 text-sm font-bold text-amber-100 transition hover:bg-amber-300/20"
+              >
+                Try Pro free
+              </Link>
+            </div>
+          </section>
+        ) : null}
 
         {error ? (
           <div className="mb-4 rounded-xl border border-rose-400/30 bg-rose-400/5 p-4 text-sm text-rose-200">
@@ -650,10 +694,10 @@ export default function SigiWorkspace({ initialSymbol = "NVDA" }: Props) {
                         key={question}
                         type="button"
                         onClick={() => void askSigi(question)}
-                        disabled={sigiLoadingQuestion !== null}
-                        className="w-full rounded-xl border border-slate-800 bg-slate-900/20 px-3 py-3 text-left text-xs text-slate-300 transition hover:border-cyan-400/30 hover:text-white"
+                        disabled={!canEvaluateStocks || sigiLoadingQuestion !== null}
+                        className="w-full rounded-xl border border-slate-800 bg-slate-900/20 px-3 py-3 text-left text-xs text-slate-300 transition enabled:hover:border-cyan-400/30 enabled:hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
                       >
-                        {sigiLoadingQuestion === question ? "Sigi is thinking..." : question}
+                        {!canEvaluateStocks ? "Smart or Pro required" : sigiLoadingQuestion === question ? "Sigi is thinking..." : question}
                       </button>
                     ))}
                   </div>

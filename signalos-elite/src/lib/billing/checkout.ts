@@ -394,6 +394,17 @@ async function findExistingActiveSubscription(customerId: string): Promise<Strip
   return getHighestTierFromStripeSubscriptions(activeSubscriptions);
 }
 
+async function hasPreviousSubscription(customerId: string): Promise<boolean> {
+  const stripe = getStripeServer();
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "all",
+    limit: 1,
+  });
+
+  return subscriptions.data.length > 0;
+}
+
 export async function createCheckoutSessionForPlan(
   planValue: string | undefined,
   returnTo: string | null
@@ -537,6 +548,7 @@ export async function createCheckoutSessionForPlan(
     }
   }
 
+  const isFirstSubscription = !(await hasPreviousSubscription(customerId));
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
@@ -559,7 +571,7 @@ export async function createCheckoutSessionForPlan(
       plan: tier,
     },
     subscription_data: {
-      trial_period_days: 7,
+      ...(isFirstSubscription ? { trial_period_days: 7 } : {}),
       metadata: {
         supabase_user_id: user.id,
         sigi_plan: tier,
