@@ -122,6 +122,8 @@ export default async function ExpertsPage({
               "Sigi Personal Assistant",
               "SigiOS Watchlist intelligence",
               "Sigi Portfolio Read",
+              "SigiOS Vision and SigiOS Workspace",
+              "Sigi Pulse, powered by AMSA",
               "Live pricing and SigiOS scoring",
               "Momentum context and chart access",
             ]}
@@ -138,6 +140,8 @@ export default async function ExpertsPage({
             subtitle="Total access to Sigi Intelligence"
             features={[
               "Everything in Smart",
+              "SigiOS Vision and SigiOS Workspace",
+              "Sigi Pulse, powered by AMSA",
               "Sigi Experts",
               "Sigi Screener",
               "Full everyday Crypto access",
@@ -158,7 +162,9 @@ export default async function ExpertsPage({
 
           <p className={isMobilePreview ? "mt-4 max-w-none text-sm leading-6 text-slate-300" : "mt-4 max-w-4xl text-sm leading-7 text-slate-300 md:text-base"}>
             Smart users have access to Sigi Personal Assistant, SigiOS
-            Watchlist, and Sigi Portfolio Read.
+            Watchlist, Sigi Portfolio Read, SigiOS Vision, and SigiOS Workspace.
+            Smart also unlocks Sigi Pulse, powered by AMSA, the Adaptive Market
+            State Algorithm.
           </p>
 
           <div className={["mt-6 grid gap-4", isMobilePreview ? "" : "lg:grid-cols-3"].join(" ")}>
@@ -195,9 +201,10 @@ export default async function ExpertsPage({
           </h2>
 
           <p className={isMobilePreview ? "mt-4 max-w-none text-sm leading-6 text-slate-300" : "mt-4 max-w-4xl text-sm leading-7 text-slate-300 md:text-base"}>
-            Pro users unlock Sigi Experts and Sigi Screener, giving serious
-            investors deeper market discovery, analyst conviction, insider
-            signals, and institutional context.
+            Pro users receive SigiOS Vision, SigiOS Workspace, and Sigi Pulse,
+            powered by AMSA, the Adaptive Market State Algorithm. Pro also
+            unlocks Sigi Experts and Sigi Screener for deeper market discovery,
+            analyst conviction, insider signals, and institutional context.
           </p>
 
           <div className={["mt-6 grid gap-4", isMobilePreview ? "" : "lg:grid-cols-2"].join(" ")}>
