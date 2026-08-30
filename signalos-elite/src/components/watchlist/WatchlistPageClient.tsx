@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
 import MiniSparkline from "@/components/stocks/MiniSparkline";
@@ -251,6 +251,7 @@ function WatchlistStockCard({
   pulse?: TickerNewsPulse;
 }) {
   const rowRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
   const [quickViewOpen, setQuickViewOpen] = useState(forceQuickView);
   const { setActiveTicker } = useSelectedTicker();
   const liveMarket = useOptionalLiveMarket();
@@ -316,6 +317,11 @@ function WatchlistStockCard({
     <div
       ref={rowRef}
       onClick={() => {
+        if (window.matchMedia("(max-width: 767px)").matches) {
+          router.push(`/vision?symbol=${encodeURIComponent(normalizedTicker)}`);
+          return;
+        }
+
         setActiveTicker(stock.ticker);
         prefetchCompanyProfile(stock.ticker);
       }}
@@ -366,7 +372,10 @@ function WatchlistStockCard({
         <div className="flex flex-wrap items-center justify-end gap-2">
           <button
             type="button"
-            onClick={() => setQuickViewOpen((value) => !value)}
+            onClick={(event) => {
+              event.stopPropagation();
+              setQuickViewOpen((value) => !value);
+            }}
             aria-expanded={quickViewOpen}
             className="inline-flex items-center justify-center rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-200 transition hover:border-cyan-400/30 hover:bg-cyan-400/15"
           >
@@ -375,7 +384,10 @@ function WatchlistStockCard({
 
           <button
             type="button"
-            onClick={() => onRemove(stock.ticker)}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRemove(stock.ticker);
+            }}
             className="inline-flex items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-200 transition hover:border-rose-400/30 hover:bg-rose-500/15"
           >
             Remove
@@ -509,6 +521,7 @@ function WatchlistStockCard({
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <Link
               href={stock.href}
+              onClick={(event) => event.stopPropagation()}
               className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/85 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
             >
               View Stock
@@ -516,6 +529,7 @@ function WatchlistStockCard({
 
             <Link
               href={stock.liveHref}
+              onClick={(event) => event.stopPropagation()}
               className="inline-flex items-center justify-center rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-200 transition hover:border-cyan-400/30 hover:bg-cyan-400/15"
             >
               Open Chart

@@ -50,6 +50,22 @@ function text(value: unknown, fallback = ""): string {
     : fallback;
 }
 
+function textList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => {
+      if (typeof item === "string") return item.trim();
+      if (!item || typeof item !== "object") return "";
+
+      const record = item as Record<string, unknown>;
+      return text(
+        record.description ?? record.reason ?? record.label ?? record.message
+      );
+    })
+    .filter(Boolean);
+}
+
 function toIsoTimestamp(value: unknown): string | null {
   const timestamp = num(value);
   if (timestamp === null) return null;
@@ -130,6 +146,7 @@ export async function GET(request: NextRequest) {
 
   const [
     amsaRaw,
+    companyRaw,
     futureResponse,
     marketRaw,
     cryptoRaw,
@@ -137,6 +154,7 @@ export async function GET(request: NextRequest) {
     liveContext,
   ] = await Promise.all([
     safeJson(`${origin}/api/amsa/${encodeURIComponent(symbol)}`),
+    safeJson(`${origin}/api/company?ticker=${encodeURIComponent(symbol)}`),
     safeJson(`${origin}/api/amsa/future/${encodeURIComponent(symbol)}`),
     safeJson(
       `${origin}/api/quotes?tickers=${encodeURIComponent(
@@ -179,7 +197,7 @@ export async function GET(request: NextRequest) {
   const stock = {
     symbol,
     name: text(
-      amsaRaw.name ?? amsaRaw.companyName ?? amsaRaw.company,
+      companyRaw?.name ?? amsaRaw.name ?? amsaRaw.companyName ?? amsaRaw.company,
       symbol
     ),
     price: null as number | null,
@@ -188,6 +206,7 @@ export async function GET(request: NextRequest) {
     priceProvider: null as string | null,
     priceStatus: "unavailable" as WorkspacePriceStatus,
     pulse: displayPulse,
+    rawPulse,
     pulseLabel: text(
       amsaRaw.label,
       getWorkspacePulseMeaning(displayPulse).label
@@ -234,6 +253,11 @@ export async function GET(request: NextRequest) {
         amsaRaw.components?.riskControl ??
         components?.risk
     ),
+    supportingEvidence: textList(pulseRaw?.reasons),
+    riskEvidence: [
+      ...textList(pulseRaw?.warnings),
+      ...textList(pulseRaw?.invalidationConditions),
+    ],
     updatedAt: text(amsaRaw.asOf) || null,
   };
 
@@ -265,6 +289,12 @@ export async function GET(request: NextRequest) {
   const futureMap = futureRaw
     ? {
         symbol,
+        primaryScenario:
+          futureRaw.primaryScenario === "bull" ||
+          futureRaw.primaryScenario === "base" ||
+          futureRaw.primaryScenario === "bear"
+            ? futureRaw.primaryScenario
+            : null,
         bullProbability: num(
           futureRaw.bullProbability ?? futureRaw.bull ?? futureRaw.scenarios?.bull
         ),
@@ -328,6 +358,13 @@ export async function GET(request: NextRequest) {
         grade: futureRaw.grade ?? null,
         riskLabel:
           futureRaw.riskLabel ?? futureRaw.risk ?? futureRaw.riskLevel ?? null,
+        scenarioConditions: textList(
+          primaryScenario?.requirements ?? primaryScenario?.supportingEvidence
+        ),
+        changeConditions: textList(
+          primaryScenario?.conflictingEvidence ?? futureRaw?.missingInputs
+        ),
+        riskNotes: textList(futureRaw?.riskFactors),
       }
     : null;
 

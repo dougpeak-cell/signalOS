@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
@@ -933,11 +933,21 @@ function QuickWatchlistRowItem({
   stockHref: string;
   onRemove: (ticker: string) => void;
 }) {
+  const router = useRouter();
   const dayChangeAmount = getDailyDollarChange(row.price, row.changePct);
 
   return (
     <div className="group flex items-center gap-2 rounded-2xl border border-white/8 bg-white/3 p-1.5 transition hover:border-cyan-400/20 hover:bg-cyan-400/5">
-      <Link href={stockHref} className="flex min-w-0 flex-1 items-center justify-between gap-3 px-1.5 py-1">
+      <Link
+        href={stockHref}
+        onClick={(event) => {
+          if (!window.matchMedia("(max-width: 767px)").matches) return;
+
+          event.preventDefault();
+          router.push(`/vision?symbol=${encodeURIComponent(row.ticker)}`);
+        }}
+        className="flex min-w-0 flex-1 items-center justify-between gap-3 px-1.5 py-1"
+      >
         <div className="min-w-0 flex flex-1 items-center gap-2.5">
           <TickerLogo ticker={row.ticker} size={30} />
 

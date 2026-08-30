@@ -409,6 +409,7 @@ type Props = {
   focusMode?: boolean;
   showSignalRail?: boolean;
   hideStatsAndLegend?: boolean;
+  compactMobile?: boolean;
   floatingMode?: boolean;
   fromWatchlist?: boolean;
   onSignalRailData?: (data: {
@@ -1383,6 +1384,7 @@ export default function LiveStockChart({
   focusMode: focusModeProp,
   showSignalRail = true,
   hideStatsAndLegend = false,
+  compactMobile = false,
   floatingMode = false,
   fromWatchlist = false,
   onSignalRailData,
@@ -4180,7 +4182,7 @@ const gapFillLabel =
       Array.from({ length: 4 }, (_, index) => liveSignalDrivers[index] ?? null),
     [liveSignalDrivers]
   );
-  const showAuxPanels = !floatingMode && !focusMode && !expanded && !hideStatsAndLegend;
+  const showAuxPanels = !floatingMode && !focusMode && !expanded && !hideStatsAndLegend && !compactMobile;
   const visibleLineEntries = (Object.entries(CHART_LINE_META) as Array<
     [WorkspaceChartLineKey, (typeof CHART_LINE_META)[WorkspaceChartLineKey]]
   >).filter(([lineKey]) => lineVisibility[lineKey]);
@@ -4291,9 +4293,9 @@ const gapFillLabel =
 
       <div
         ref={liveChartCardRef}
-        className="overflow-hidden rounded-3xl border border-cyan-400/15 bg-black/70 shadow-[inset_0_0_25px_rgba(0,140,255,0.08)]"
+        className={`overflow-hidden border border-cyan-400/15 bg-black/70 shadow-[inset_0_0_25px_rgba(0,140,255,0.08)] ${compactMobile ? "rounded-lg" : "rounded-3xl"}`}
       >
-        <div className="p-4 md:p-5">
+        <div className={compactMobile ? "hidden" : "p-4 md:p-5"}>
           <div className="flex flex-col gap-4">
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
@@ -4580,6 +4582,38 @@ const gapFillLabel =
           </div>
           </div>
         </div>
+
+        {compactMobile ? (
+          <div className="grid grid-cols-5 gap-1 border-b border-white/8 p-2">
+            {([
+              { label: "1m", interval: "1m", range: "1D" },
+              { label: "5m", interval: "5m", range: "1D" },
+              { label: "15m", interval: "15m", range: "5D" },
+              { label: "1h", interval: "1h", range: "1M" },
+              { label: "Day", interval: "1d", range: "6M" },
+            ] satisfies Array<{
+              label: string;
+              interval: ChartInterval;
+              range: ChartRange;
+            }>).map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                onClick={() => handleCompactToolbarIntervalSelect(
+                  option.interval,
+                  option.range,
+                )}
+                className={`min-h-9 rounded-md text-xs font-semibold ${
+                  chartInterval === option.interval
+                    ? "bg-cyan-300/12 text-cyan-100"
+                    : "text-slate-500"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         <MobileSignalSheet
           open={isMobileControlSheetOpen}
@@ -4909,7 +4943,7 @@ const gapFillLabel =
           </div>
         ) : null}
 
-        {!floatingMode && bestSetup ? (
+        {!floatingMode && !compactMobile && bestSetup ? (
           <div className="mt-5 rounded-3xl border border-white/10 bg-neutral-950 px-4 py-4 text-white shadow-xl shadow-black/20">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
@@ -5021,7 +5055,7 @@ const gapFillLabel =
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="absolute left-4 top-4 z-20 rounded-lg border border-white/10 bg-black/40 px-3 py-1 text-xs text-white/70 hover:bg-black/60"
+              className={`absolute left-4 top-4 z-20 rounded-lg border border-white/10 bg-black/40 px-3 py-1 text-xs text-white/70 hover:bg-black/60 ${compactMobile ? "hidden" : ""}`}
             >
               {isChartFullscreen ? "Exit Fullscreen" : "Fullscreen"}
             </button>
@@ -5037,7 +5071,9 @@ const gapFillLabel =
               className={
                 isChartFullscreen
                   ? "relative h-screen w-screen overflow-hidden bg-black"
-                  : "relative min-h-130 overflow-hidden rounded-3xl border border-cyan-400/15 bg-black"
+                  : compactMobile
+                    ? "relative h-75 overflow-hidden bg-black"
+                    : "relative min-h-130 overflow-hidden rounded-3xl border border-cyan-400/15 bg-black"
               }
             >
               <div className="absolute inset-0">
@@ -5142,7 +5178,7 @@ const gapFillLabel =
           </div>
         </div>
 
-        {!isChartFullscreen ? (
+        {!isChartFullscreen && !compactMobile ? (
           <>
             <div className="mt-4 hidden gap-3 md:grid md:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-xl">

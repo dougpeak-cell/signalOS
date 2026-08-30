@@ -22,6 +22,7 @@ export type WorkspaceStock = {
   priceStatus: WorkspacePriceStatus;
 
   pulse: number | null;
+  rawPulse: number | null;
   pulseLabel: string;
   direction: WorkspaceDirection;
   pulseAsOf: string | null;
@@ -39,11 +40,15 @@ export type WorkspaceStock = {
   sectorAlignment: number | null;
   riskControl: number | null;
 
+  supportingEvidence: string[];
+  riskEvidence: string[];
+
   updatedAt: string | null;
 };
 
 export type WorkspaceFutureMap = {
   symbol: string;
+  primaryScenario: "bull" | "base" | "bear" | null;
 
   bullProbability: number | null;
   baseProbability: number | null;
@@ -71,6 +76,9 @@ export type WorkspaceFutureMap = {
   expectedValue: number | null;
   grade: string | null;
   riskLabel: string | null;
+  scenarioConditions: string[];
+  changeConditions: string[];
+  riskNotes: string[];
 };
 
 export type WorkspaceWatchlistItem = {

@@ -15,6 +15,7 @@ import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
 import TodayActionRowClient from "@/components/today/TodayActionRowClient";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
+import TodayStockPulseQuickAccess from "@/components/today/TodayStockPulseQuickAccess";
 import UpcomingEarningsPanel from "@/components/today/UpcomingEarningsPanel";
 import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import { useSigiTier } from "@/hooks/useSigiTier";
@@ -790,6 +791,7 @@ export default function MobileSigiHome({
 
   return (
     <section id="sigi-command-panel" className={forceVisible ? "space-y-4" : "space-y-4 md:hidden"}>
+      <TodayStockPulseQuickAccess />
       <MobileMarketThesisHero intelligence={mobileIntelligence} />
       <LiveAccessStrip compact hasPaidCryptoAccess={tier === "pro"} tier={tier} />
 

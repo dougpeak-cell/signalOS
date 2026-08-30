@@ -11,6 +11,7 @@ import StockPulseExperience from "@/components/vision/StockPulseExperience";
 import { TodaysVision } from "@/components/vision/TodaysVision";
 import { FeaturedPulseCard } from "@/components/vision/featured-pulse-card";
 import { FeaturedPulseRanking } from "@/components/vision/featured-pulse-ranking";
+import MobileVision from "@/components/vision/mobile/MobileVision";
 import type { AMSAFutureMap } from "@/lib/amsa";
 import { formatMarketTimestamp } from "@/lib/market/formatMarketTimestamp";
 import {
@@ -955,6 +956,7 @@ export default function VisionPage() {
   const [futureMapLoading, setFutureMapLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [featuredRefreshMessage, setFeaturedRefreshMessage] = useState<string | null>(null);
+  const [mobileVisionMode, setMobileVisionMode] = useState<"stock" | "market">("stock");
 
   const [selectedSectorWindow, setSelectedSectorWindow] = useState<
     "Today" | "Week" | "Month" | "Year"
@@ -1321,7 +1323,13 @@ export default function VisionPage() {
     <main className="min-h-screen bg-black pb-28 text-white lg:pb-12">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(14,165,233,0.12),transparent_34%),radial-gradient(circle_at_85%_18%,rgba(45,212,191,0.075),transparent_31%)]" />
 
-      <div className="relative mx-auto max-w-375 px-3 py-5 sm:px-5 lg:px-8 lg:py-8">
+      <MobileVision
+        defaultSymbol={activeSymbol}
+        mode={mobileVisionMode}
+        onModeChange={setMobileVisionMode}
+      />
+
+      <div className={`relative mx-auto max-w-375 px-3 py-5 sm:px-5 lg:px-8 lg:py-8 ${mobileVisionMode === "stock" ? "hidden md:block" : ""}`}>
         <GlassPanel className="relative overflow-hidden p-5 sm:p-7 lg:p-9">
           <div className="pointer-events-none absolute -right-16 -top-32 h-96 w-96 rounded-full border border-cyan-300/10 bg-cyan-400/4.5" />
           <div className="pointer-events-none absolute right-20 top-14 h-44 w-44 rounded-full border border-cyan-300/10" />
