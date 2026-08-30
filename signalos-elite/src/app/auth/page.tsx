@@ -23,11 +23,11 @@ export default async function AuthPage({ searchParams }: AuthPageProps) {
 
   return (
     <EmailAuthEntry
-      badgeLabel="Account Access"
-      title="Sign in to SigiOS"
-      description="Use the email connected to your membership to restore your Pro access, watchlist, portfolio, and settings."
-      successMessage="Check your inbox for a secure SigiOS sign-in email."
-      footerMessage="Use the email connected to your existing SigiOS membership."
+      badgeLabel="Free Account Access"
+      title="Sign in or create a free account"
+      description="Enter your email to continue. New users get a free SigiOS account, while returning members restore their access, watchlist, portfolio, and settings."
+      successMessage="Check your inbox for a secure SigiOS access email."
+      footerMessage="Create a free account. No card required."
       backHref="/"
       backLabel="Back to SigiOS"
       defaultNextPath="/today"
