@@ -12,6 +12,7 @@ import { TodaysVision } from "@/components/vision/TodaysVision";
 import { FeaturedPulseCard } from "@/components/vision/featured-pulse-card";
 import { FeaturedPulseRanking } from "@/components/vision/featured-pulse-ranking";
 import MobileVision from "@/components/vision/mobile/MobileVision";
+import { useSigiTier } from "@/hooks/useSigiTier";
 import type { AMSAFutureMap } from "@/lib/amsa";
 import { formatMarketTimestamp } from "@/lib/market/formatMarketTimestamp";
 import {
@@ -944,6 +945,8 @@ function PendingCard({
 ========================================================= */
 
 export default function VisionPage() {
+  const { tier } = useSigiTier();
+  const hasVisionAccess = tier === "smart" || tier === "pro";
   const [overview, setOverview] = useState<VisionOverviewResponse>(EMPTY_OVERVIEW);
   const visionRequestRef = useRef<Promise<void> | null>(null);
   const lastVisionRequestAtRef = useRef(0);
@@ -1201,6 +1204,8 @@ export default function VisionPage() {
   async function submitQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (!hasVisionAccess) return;
+
     const trimmed = question.trim();
 
     if (!trimmed || asking) return;
@@ -1325,11 +1330,37 @@ export default function VisionPage() {
 
       <MobileVision
         defaultSymbol={activeSymbol}
+        hasMarketIntelligenceAccess={hasVisionAccess}
         mode={mobileVisionMode}
         onModeChange={setMobileVisionMode}
       />
 
-      <div className={`relative mx-auto max-w-375 px-3 py-5 sm:px-5 lg:px-8 lg:py-8 ${mobileVisionMode === "stock" ? "hidden md:block" : ""}`}>
+      {!hasVisionAccess ? (
+        <section className="relative z-10 mx-auto hidden max-w-375 px-5 pt-6 md:block lg:px-8">
+          <div className="grid gap-4 rounded-2xl border border-amber-300/25 bg-[#0b1118]/95 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.45)] lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200">Vision Preview</p>
+              <h2 className="mt-2 text-xl font-semibold text-white">Smart and Pro memberships unlock Sigi Vision.</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Preview the Market Intelligence dashboard below. Upgrade to use live controls, portfolio analysis, sector rotation, FutureMap, and Ask Pulse. First-time accounts get 7 days free and can cancel before the trial ends.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Link href="/auth/upgrade?plan=smart&returnTo=/vision" className="inline-flex h-11 items-center justify-center rounded-xl border border-cyan-300/35 bg-cyan-300/10 px-4 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/20">
+                Try Smart free
+              </Link>
+              <Link href="/auth/upgrade?plan=pro&returnTo=/vision" className="inline-flex h-11 items-center justify-center rounded-xl border border-amber-300/35 bg-amber-300/10 px-4 text-sm font-bold text-amber-100 transition hover:bg-amber-300/20">
+                Try Pro free
+              </Link>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <div
+        aria-disabled={!hasVisionAccess}
+        className={`relative mx-auto max-w-375 px-3 py-5 sm:px-5 lg:px-8 lg:py-8 ${mobileVisionMode === "stock" || !hasVisionAccess ? "hidden md:block" : ""} ${!hasVisionAccess ? "md:pointer-events-none md:select-none md:opacity-45" : ""}`}
+      >
         <GlassPanel className="relative overflow-hidden p-5 sm:p-7 lg:p-9">
           <div className="pointer-events-none absolute -right-16 -top-32 h-96 w-96 rounded-full border border-cyan-300/10 bg-cyan-400/4.5" />
           <div className="pointer-events-none absolute right-20 top-14 h-44 w-44 rounded-full border border-cyan-300/10" />

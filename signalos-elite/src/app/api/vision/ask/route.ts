@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getSigiPlanSummaryForCurrentUser } from "@/lib/sigi/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -285,6 +286,14 @@ function buildAnswer(question: string, context: VisionAskRequest["marketContext"
 
 export async function POST(req: Request) {
   try {
+    const plan = await getSigiPlanSummaryForCurrentUser();
+    if (!plan.hasSmartFeatures) {
+      return NextResponse.json(
+        { error: "Market Intelligence is available with Sigi Smart or Pro." },
+        { status: 403 },
+      );
+    }
+
     const body = (await req.json()) as LegacyVisionAskRequest;
     const question = normalizeText(body.question);
     const marketContext = body.marketContext ?? body.context;

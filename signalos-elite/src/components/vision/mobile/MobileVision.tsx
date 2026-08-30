@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { SelectedSignalProvider } from "@/components/chart/SelectedSignalContext";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
@@ -17,7 +18,7 @@ import {
 } from "@/lib/workspace/layoutPresets";
 import { getWorkspacePulseMeaning } from "@/lib/workspacePulse";
 import type { WorkspacePayload, WorkspaceStock } from "@/types/workspace";
-import { ArrowRight, Check, ChevronDown, LoaderCircle, Plus, Search } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, LoaderCircle, LockKeyhole, Plus, Search, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   type FormEvent,
@@ -33,6 +34,7 @@ type VisionMode = "stock" | "market";
 
 type Props = {
   defaultSymbol: string | null;
+  hasMarketIntelligenceAccess: boolean;
   mode: VisionMode;
   onModeChange: (mode: VisionMode) => void;
 };
@@ -98,7 +100,12 @@ function weakestFactor(factors: Factor[]): Factor | null {
     .sort((first, second) => first.value - second.value)[0] ?? null;
 }
 
-export default function MobileVision({ defaultSymbol, mode, onModeChange }: Props) {
+export default function MobileVision({
+  defaultSymbol,
+  hasMarketIntelligenceAccess,
+  mode,
+  onModeChange,
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { ensureQuotes, quoteMap, refreshQuotesNow } = useLiveMarket();
@@ -342,6 +349,32 @@ export default function MobileVision({ defaultSymbol, mode, onModeChange }: Prop
           </>
         ) : null}
       </div>
+
+      {mode === "market" && !hasMarketIntelligenceAccess ? (
+        <div className="px-3 py-4">
+          <section className="rounded-lg border border-amber-300/25 bg-[#0b1118] p-5">
+            <div className="flex size-10 items-center justify-center rounded-lg border border-amber-300/25 bg-amber-300/10 text-amber-200">
+              <LockKeyhole className="size-5" aria-hidden="true" />
+            </div>
+            <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-200">Market Intelligence</p>
+            <h2 className="mt-2 text-xl font-semibold leading-7 text-white">
+              Smart and Pro memberships unlock Market Intelligence.
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Start with 7 days free for first-time accounts. Cancel any time before the trial ends.
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <Link href="/auth/upgrade?plan=smart&returnTo=/vision" className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 text-xs font-bold text-cyan-100">
+                <Sparkles className="size-4" aria-hidden="true" />
+                Try Smart
+              </Link>
+              <Link href="/auth/upgrade?plan=pro&returnTo=/vision" className="flex min-h-11 items-center justify-center rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 text-xs font-bold text-amber-100">
+                Try Pro
+              </Link>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {mode === "stock" ? (
         <div className="space-y-3 px-3 py-3">
