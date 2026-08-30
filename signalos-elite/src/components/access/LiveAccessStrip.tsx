@@ -113,7 +113,7 @@ export default function LiveAccessStrip({
       <section className={compact ? "w-full py-1" : "mx-auto w-full max-w-7xl px-4 py-3"}>
         <div className={`grid gap-3 rounded-3xl border border-cyan-400/20 bg-black/70 ${compact ? "p-2.5" : "p-3"} md:grid-cols-3`}>
           <Link
-            href={`/stocks/${featuredTicker}`}
+            href={`/stocks/${featuredTicker}/workspace`}
             className={`rounded-2xl border border-cyan-400/25 bg-cyan-400/10 transition hover:border-cyan-300/60 hover:bg-cyan-400/15 ${compact ? "px-3 py-2.5" : "px-4 py-3"}`}
           >
             <div className={`text-cyan-300 ${compact ? "text-[11px] tracking-[0.16em]" : "text-xs tracking-[0.22em]"} font-bold uppercase`}>
@@ -125,7 +125,7 @@ export default function LiveAccessStrip({
             </div>
 
             <div className="text-xs text-slate-400">
-              Open premium stock intelligence
+              Click to demo Pro Member Trading Workspace
             </div>
           </Link>
 
@@ -168,7 +168,7 @@ export default function LiveAccessStrip({
     <section className={compact ? "w-full py-1" : "mx-auto w-full max-w-7xl px-4 py-3"}>
       <div className={`grid border border-cyan-400/20 bg-black/70 shadow-[0_0_30px_rgba(34,211,238,0.12)] backdrop-blur ${showCryptoCard ? "md:grid-cols-3" : "md:grid-cols-2"} ${compact ? "gap-2 rounded-3xl p-2.5" : "gap-3 rounded-3xl p-3"}`}>
         <Link
-          href={`/stocks/${featuredTicker}`}
+          href={`/stocks/${featuredTicker}/workspace`}
           className={`group rounded-2xl border border-cyan-400/25 bg-cyan-400/10 transition hover:border-cyan-300/60 hover:bg-cyan-400/15 ${compact ? "px-3 py-2.5" : "px-4 py-3"}`}
         >
           <div className={`flex items-center gap-2 font-bold uppercase text-cyan-300 ${compact ? "text-[11px] tracking-[0.16em]" : "text-xs tracking-[0.22em]"}`}>
@@ -181,7 +181,7 @@ export default function LiveAccessStrip({
           </div>
 
           <div className="text-xs text-slate-400">
-            Open premium stock intelligence (Demo $24/mo Sigi-Pro)
+            Click to demo Pro Member Trading Workspace
           </div>
         </Link>
 
