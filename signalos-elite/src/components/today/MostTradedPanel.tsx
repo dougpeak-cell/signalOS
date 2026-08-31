@@ -92,17 +92,28 @@ export default function MostTradedPanel({
   );
   const searchParams = useSearchParams();
   const { setActiveTicker } = useSelectedTicker();
-  const { ensureQuotes, quoteMap } = useLiveMarket();
-  const regularMostTraded = regularRows.map((row) => ({
-    ...row,
-    changePct: row.changePct ?? row.changePercent ?? null,
-  }));
-  const preMarketMostTraded = preMarketRows.map((row) => ({
-    ...row,
-    changePct: row.changePct ?? row.changePercent ?? null,
-  }));
+  const { ensureQuotes, quoteMap, refreshQuotesNow } = useLiveMarket();
+  const regularMostTraded = useMemo(
+    () =>
+      regularRows.map((row) => ({
+        ...row,
+        changePct: row.changePct ?? row.changePercent ?? null,
+      })),
+    [regularRows]
+  );
+  const preMarketMostTraded = useMemo(
+    () =>
+      preMarketRows.map((row) => ({
+        ...row,
+        changePct: row.changePct ?? row.changePercent ?? null,
+      })),
+    [preMarketRows]
+  );
   const preMarketActive = isPreMarketNow();
-  const filteredPreMarketRows = preMarketActive && preMarketMostTraded.length ? preMarketMostTraded : [];
+  const filteredPreMarketRows = useMemo(
+    () => (preMarketActive && preMarketMostTraded.length ? preMarketMostTraded : []),
+    [preMarketActive, preMarketMostTraded]
+  );
   const preMarketMessage = preMarketActive
     ? "Pre-market is active. No qualified setups are passing filters yet."
     : "Pre-market opens at 4:00 AM ET.";
@@ -129,8 +140,10 @@ export default function MostTradedPanel({
   }, [sessionView, filteredPreMarketRows, regularMostTraded]);
 
   useEffect(() => {
-    ensureQuotes(activeMostTradedRows.map((row) => row.ticker));
-  }, [activeMostTradedRows, ensureQuotes]);
+    const tickers = activeMostTradedRows.map((row) => row.ticker);
+    ensureQuotes(tickers);
+    void refreshQuotesNow(tickers);
+  }, [activeMostTradedRows, ensureQuotes, refreshQuotesNow]);
 
   const displayedRows = useMemo(
     () =>
