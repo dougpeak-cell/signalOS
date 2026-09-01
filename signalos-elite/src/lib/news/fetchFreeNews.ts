@@ -644,6 +644,38 @@ export async function fetchTopFreeMarketNews(options?: {
   ).slice(0, limit);
 }
 
+export async function fetchTrumpMarketNews(options?: {
+  limit?: number;
+  lookbackHours?: number;
+}): Promise<NewsItem[]> {
+  const limit = options?.limit ?? 30;
+  const lookbackHours = options?.lookbackHours ?? 48;
+  const feeds = await Promise.all([
+    fetchRss(
+      googleNewsSearchUrl(
+        '(Trump OR "Donald Trump" OR "Trump administration") (stocks OR market OR economy OR tariffs OR trade OR business) when:2d'
+      ),
+      "Google News"
+    ),
+    fetchRss(
+      googleNewsSearchUrl(
+        '(Trump OR "Donald Trump") (Federal Reserve OR inflation OR jobs OR taxes OR regulation) when:2d'
+      ),
+      "Google News"
+    ),
+  ]);
+
+  return sortByPublishedDesc(
+    dedupeNewsItems(
+      feeds
+        .flat()
+        .filter((item) => isWithinLookbackHours(item.publishedAt, lookbackHours))
+        .filter((item) => /\b(?:donald\s+)?trump\b/i.test(`${item.title} ${item.summary ?? ""}`))
+        .map((item) => mapFreeRssItemToNewsItem(item))
+    )
+  ).slice(0, limit);
+}
+
 export async function fetchUnifiedFreeNews(options?: {
   watchlistTickers?: string[];
   limit?: number;

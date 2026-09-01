@@ -9,6 +9,7 @@ import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import React from "react";
 import { getSigiBackgroundStyle } from "@/lib/sigiBackgrounds";
 import {
+  fetchTrumpMarketNews,
   fetchUnifiedFreeNews,
 } from "@/lib/news/fetchFreeNews";
 import { rankNewsHeaderItems } from "@/lib/news/headerSelection";
@@ -465,20 +466,23 @@ function getLiveHeartbeatClasses(item: any): {
 export default async function NewsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ mobilePreview?: string }>;
+  searchParams?: Promise<{ mobilePreview?: string; topic?: string }>;
 }) {
   let unifiedNews: any[] = [];
   const params = (await searchParams) ?? {};
   const isMobilePreview = params.mobilePreview === "1";
+  const isTrumpTopic = params.topic?.toLowerCase() === "trump";
 
   try {
-    unifiedNews = await fetchUnifiedFreeNews({
-      watchlistTickers: WATCHLIST,
-      limit: 30,
-      marketLimit: 18,
-      watchlistLimit: 12,
-      lookbackHours: 24,
-    });
+    unifiedNews = isTrumpTopic
+      ? await fetchTrumpMarketNews({ limit: 30, lookbackHours: 48 })
+      : await fetchUnifiedFreeNews({
+          watchlistTickers: WATCHLIST,
+          limit: 30,
+          marketLimit: 18,
+          watchlistLimit: 12,
+          lookbackHours: 24,
+        });
   } catch (error) {
     console.error("News page data load failed:", error);
   }
@@ -631,6 +635,29 @@ export default async function NewsPage({
 
               <NewsAutoRefresh />
             </div>
+
+            <nav aria-label="News topics" className="mt-4 inline-flex rounded-lg border border-white/10 bg-black/35 p-1">
+              <Link
+                href={isMobilePreview ? "/news?mobilePreview=1" : "/news"}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                  !isTrumpTopic
+                    ? "bg-cyan-300 text-black"
+                    : "text-white/55 hover:bg-white/8 hover:text-white"
+                }`}
+              >
+                All News
+              </Link>
+              <Link
+                href={isMobilePreview ? "/news?topic=trump&mobilePreview=1" : "/news?topic=trump"}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                  isTrumpTopic
+                    ? "bg-cyan-300 text-black"
+                    : "text-white/55 hover:bg-white/8 hover:text-white"
+                }`}
+              >
+                Trump
+              </Link>
+            </nav>
 
             <div className="mt-4">
               <MarketStatusBar
@@ -1078,7 +1105,7 @@ export default async function NewsPage({
         {visibleNewsItems.length > 0 ? (
           <section className="space-y-4">
             <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">
-              MARKET HEADLINES
+              {isTrumpTopic ? "TRUMP MARKET HEADLINES" : "MARKET HEADLINES"}
             </div>
 
             <div className={["grid grid-cols-1 gap-4", isMobilePreview ? "" : "md:grid-cols-2 2xl:grid-cols-3"].join(" ")}>
@@ -1094,6 +1121,10 @@ export default async function NewsPage({
               ))}
             </div>
           </section>
+        ) : isTrumpTopic ? (
+          <div className="rounded-xl border border-white/10 bg-white/3 p-6 text-sm text-white/60">
+            No Trump market headlines were found in the last 48 hours.
+          </div>
         ) : null}
 
         {marketNewsCommandCenterSection}
