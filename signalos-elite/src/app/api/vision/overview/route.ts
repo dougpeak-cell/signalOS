@@ -421,6 +421,72 @@ function buildMarketPulse(
   };
 }
 
+function buildTodaysLesson(
+  marketPulse: ApiMarketPulse,
+  sectors: ApiSectorPulse[],
+): ApiLesson | null {
+  const marketScore = marketPulse.score;
+  const breadth = marketPulse.breadth;
+
+  if (!Number.isFinite(marketScore) || !Number.isFinite(breadth)) {
+    return null;
+  }
+
+  const score = Math.round(Number(marketScore));
+  const breadthScore = Math.round(Number(breadth));
+  const regime = marketPulse.regime ?? marketPulse.state ?? "current";
+  const leader = sectors[0]?.sector ?? null;
+  const direction = marketPulse.direction;
+
+  if (score - breadthScore >= 15) {
+    return {
+      title: "Strength Needs Broad Participation",
+      explanation: `Market health is ${score}, but breadth is only ${breadthScore}. In a ${regime} regime, headline strength is more durable when participation expands beyond a narrow group of leaders.`,
+      example: leader
+        ? `Watch whether participation broadens beyond ${leader} before treating the market's strength as fully confirmed.`
+        : "Wait for more sectors and stocks to confirm the move before increasing exposure.",
+    };
+  }
+
+  if (breadthScore - score >= 15) {
+    return {
+      title: "Breadth Can Lead the Indexes",
+      explanation: `Breadth is ${breadthScore} while market health is ${score}. Broad participation can improve before the major indexes fully reflect it, but price structure still needs to confirm the signal.`,
+      example: leader
+        ? `${leader} leads the current rotation; look for that participation to translate into stronger index structure.`
+        : "Look for improving participation to translate into stronger index structure.",
+    };
+  }
+
+  if (score >= 68) {
+    return {
+      title: "Strong Markets Still Need Risk Rules",
+      explanation: `Market health is ${score} with breadth at ${breadthScore}, placing the market in a ${regime} regime. Broad strength supports opportunity, but defined invalidation levels keep a healthy trend from becoming an excuse to chase.`,
+      example: leader
+        ? `Use ${leader}'s leadership as confirmation, while requiring each setup to hold its own support level.`
+        : "Favor confirmed setups, but require each one to hold its own support level.",
+    };
+  }
+
+  if (score < 48) {
+    return {
+      title: "Weak Markets Reward Selectivity",
+      explanation: `Market health is ${score} with breadth at ${breadthScore}. In a ${regime} regime, fewer setups receive broad-market support, so position size and confirmation matter more than prediction.`,
+      example: leader
+        ? `Treat strength in ${leader} as selective leadership, not proof that risk has cleared across the market.`
+        : "Treat isolated strength as selective leadership, not proof that broad market risk has cleared.",
+    };
+  }
+
+  return {
+    title: "Balanced Markets Favor Confirmation",
+    explanation: `Market health is ${score} with breadth at ${breadthScore}. A ${regime} regime offers opportunity, but ${direction === "rising" ? "improving conditions still need follow-through" : direction === "falling" ? "softening conditions call for tighter confirmation" : "stable conditions still require price confirmation"}.`,
+    example: leader
+      ? `Let ${leader}'s leadership guide the watchlist, then wait for individual setups to confirm.`
+      : "Let relative strength guide the watchlist, then wait for individual setups to confirm.",
+  };
+}
+
 function buildSectorPulses(snapshot: VisionOverview, previousSnapshot: VisionOverview | null, updatedAt: string) {
   const previousSectorRanks = previousSnapshot ? getSectorRankMap(previousSnapshot) : new Map();
 
@@ -898,7 +964,7 @@ function buildApiVisionOverview(
       risk: snapshot.summary.riskRead,
     },
     personalIntelligence,
-    lesson: null,
+    lesson: buildTodaysLesson(marketPulse, sectors),
     featuredPulse,
     featuredPulseRanking,
     featuredPulseMeta,

@@ -241,6 +241,12 @@ describe("GET /api/vision/overview", () => {
     expect(payload.personalIntelligence.holdings).toHaveLength(13);
     expect(payload.personalIntelligence.coverage.holdingCoveragePercent).toBe(38.5);
     expect(payload.personalIntelligence.coverage.valueCoveragePercent).toBe(67.2);
+    expect(payload.lesson).toMatchObject({
+      title: expect.any(String),
+      explanation: expect.any(String),
+      example: expect.any(String),
+    });
+    expect(payload.lesson.explanation.length).toBeGreaterThan(40);
     expect(payload.featuredPulse).toBeNull();
     expect(payload.featuredPulseRanking).toEqual([]);
     expect(payload.featuredPulseMeta).toMatchObject({
