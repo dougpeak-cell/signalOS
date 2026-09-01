@@ -33,10 +33,15 @@ type PortfolioItem = {
   entryPrice?: number | null;
   costBasis?: number | null;
   currentPrice?: number | null;
+  current_price?: number | null;
   price?: number | null;
   marketValue?: number | null;
   stop?: number | null;
+  stopPrice?: number | null;
+  stop_loss?: number | null;
   target?: number | null;
+  targetPrice?: number | null;
+  target_price?: number | null;
   signal?: string | null;
   conviction?: number | null;
   changePercent?: number | null;
@@ -167,7 +172,27 @@ function getWatchlistPrice(item: WatchlistItem): number | null {
 }
 
 function getPortfolioPrice(item: PortfolioItem): number | null {
-  return getNumber(item.currentPrice) ?? getNumber(item.price);
+  return (
+    getNumber(item.currentPrice) ??
+    getNumber(item.current_price) ??
+    getNumber(item.price)
+  );
+}
+
+function getPortfolioStop(item: PortfolioItem): number | null {
+  return (
+    getNumber(item.stopPrice) ??
+    getNumber(item.stop) ??
+    getNumber(item.stop_loss)
+  );
+}
+
+function getPortfolioTarget(item: PortfolioItem): number | null {
+  return (
+    getNumber(item.targetPrice) ??
+    getNumber(item.target) ??
+    getNumber(item.target_price)
+  );
 }
 
 function getPortfolioAvgCost(item: PortfolioItem): number | null {
@@ -306,22 +331,25 @@ function buildTodayModel(
   const riskItems = [...portfolio]
     .map((item) => ({
       ticker: getPortfolioTicker(item),
-      dist: getDistanceToStopPct(getPortfolioPrice(item), getNumber(item.stop)),
+      dist: getDistanceToStopPct(getPortfolioPrice(item), getPortfolioStop(item)),
     }))
     .filter((item) => Boolean(item.ticker))
     .sort((a, b) => (a.dist ?? Number.POSITIVE_INFINITY) - (b.dist ?? Number.POSITIVE_INFINITY))
     .slice(0, 3);
 
-  const oppItems = [...watchlist]
+  const oppItems = [...portfolio]
     .map((item) => ({
-      ticker: getWatchlistTicker(item),
-      signal: typeof item === "string" ? null : item.signal,
-      dist:
-        typeof item === "string"
-          ? null
-          : getDistanceToTargetPct(getWatchlistPrice(item), getNumber(item.target)),
+      ticker: getPortfolioTicker(item),
+      signal: item.signal,
+      dist: getDistanceToTargetPct(
+        getPortfolioPrice(item),
+        getPortfolioTarget(item)
+      ),
     }))
-    .filter((item) => Boolean(item.ticker))
+    .filter(
+      (item): item is typeof item & { dist: number } =>
+        Boolean(item.ticker) && item.dist != null
+    )
     .sort((a, b) => (a.dist ?? Number.POSITIVE_INFINITY) - (b.dist ?? Number.POSITIVE_INFINITY))
     .slice(0, 3);
 
@@ -375,16 +403,26 @@ function buildTodayModel(
       },
       {
         title: "Near Target",
-        items: oppItems.map((item) => ({
-          label: item.ticker,
-          ticker: item.ticker,
-          value: `Target ${formatPct(item.dist)}`,
-          tone: "success",
-          statusDot:
-            item.dist != null && item.dist <= 5 ? "success" : toneFromSignal(item.signal),
-          sparkline: buildPseudoSparkline(item.ticker, "up"),
-          href: `/stocks/${item.ticker}?source=%2Ftoday`,
-        })),
+        items: oppItems.length
+          ? oppItems.map((item) => ({
+              label: item.ticker,
+              ticker: item.ticker,
+              value: `Target ${formatPct(item.dist)}`,
+              tone: "success" as const,
+              statusDot:
+                item.dist <= 5 ? "success" as const : toneFromSignal(item.signal),
+              sparkline: buildPseudoSparkline(item.ticker, "up"),
+              href: `/stocks/${item.ticker}?source=%2Ftoday&focus=portfolio&view=target`,
+            }))
+          : [
+              {
+                label: "No targets set",
+                value: "Manage portfolio",
+                tone: "default" as const,
+                statusDot: "default" as const,
+                href: "/portfolio?source=%2Ftoday",
+              },
+            ],
       },
     ],
   };
@@ -492,7 +530,7 @@ function buildPortfolioModel(
   const riskNames = portfolio
     .map((item) => ({
       ticker: getPortfolioTicker(item),
-      dist: getDistanceToStopPct(getPortfolioPrice(item), getNumber(item.stop)),
+      dist: getDistanceToStopPct(getPortfolioPrice(item), getPortfolioStop(item)),
       pl: getPLPct(item),
       exposure: getPortfolioMarketValue(item),
     }))
