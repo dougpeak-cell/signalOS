@@ -1,6 +1,7 @@
 const STOCK_TICKER_ALIASES: Record<string, string> = {
   ARCH: "ACHR",
   LAMRESEARCH: "LRCX",
+  ORACLE: "ORCL",
 };
 
 function normalizeQueryValue(value: string): string {

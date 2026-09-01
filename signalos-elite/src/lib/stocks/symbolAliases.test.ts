@@ -6,4 +6,9 @@ describe("resolveStockTickerAlias", () => {
     expect(resolveStockTickerAlias("LAMRESEARCH")).toBe("LRCX");
     expect(resolveStockTickerAlias("Lam Research")).toBe("LRCX");
   });
+
+  it("maps the Oracle company alias to ORCL", () => {
+    expect(resolveStockTickerAlias("ORACLE")).toBe("ORCL");
+    expect(resolveStockTickerAlias("Oracle")).toBe("ORCL");
+  });
 });
