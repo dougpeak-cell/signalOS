@@ -673,11 +673,21 @@ export default function ExpertsPage({
     }));
   const shouldShowFallbackAnalystPicks =
     !isLoadingFmpRows && (Boolean(fmpLoadError) || liveAnalystTopPicks.length === 0);
-  const recentUpgradeRows = visibleFmpRows
+  const recentUpgradeRows = [...fmpRows]
     .filter((row) => row.ratingTransition === "upgrade")
+    .sort(
+      (left, right) =>
+        getPublishedDateValue(right.publishedDate) -
+        getPublishedDateValue(left.publishedDate)
+    )
     .slice(0, 4);
-  const recentDowngradeRows = visibleFmpRows
+  const recentDowngradeRows = [...fmpRows]
     .filter((row) => row.ratingTransition === "downgrade")
+    .sort(
+      (left, right) =>
+        getPublishedDateValue(right.publishedDate) -
+        getPublishedDateValue(left.publishedDate)
+    )
     .slice(0, 4);
 
   return (
@@ -761,7 +771,7 @@ export default function ExpertsPage({
             {recentUpgradeRows.length > 0 ? recentUpgradeRows.map((row) => (
               <Link
                 key={`upgrade-${row.symbol}`}
-                href={`/stocks/${row.symbol}`}
+                href={`/experts/stocks/${row.symbol}`}
                 className="rounded-[22px] border border-emerald-400/15 bg-emerald-400/8 p-4 transition hover:-translate-y-0.5 hover:border-emerald-300/30"
               >
                 <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-300/80">
@@ -797,7 +807,7 @@ export default function ExpertsPage({
             {recentDowngradeRows.length > 0 ? recentDowngradeRows.map((row) => (
               <Link
                 key={`downgrade-${row.symbol}`}
-                href={`/stocks/${row.symbol}`}
+                href={`/experts/stocks/${row.symbol}`}
                 className="rounded-[22px] border border-rose-400/15 bg-rose-400/8 p-4 transition hover:-translate-y-0.5 hover:border-rose-300/30"
               >
                 <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-300/80">
