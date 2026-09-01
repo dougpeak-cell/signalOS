@@ -563,7 +563,7 @@ html[data-hide-next-dev-indicator="true"] .nextjs-toast {
 }
 
 .featured-pulse-card--empty {
-  min-height: 300px;
+  min-height: 240px;
   display: flex;
   flex-direction: column;
   justify-content: center;

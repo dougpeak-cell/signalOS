@@ -118,6 +118,7 @@ export function FeaturedPulseCard({
     const emptyEyebrow = meta?.dataState === "live"
       ? "Today’s Featured Pulse"
       : "Latest Verified Pulse Leader";
+    const isDelayed = meta?.dataState === "delayed";
 
     return (
       <section className="featured-pulse-card featured-pulse-card--empty">
@@ -125,12 +126,35 @@ export function FeaturedPulseCard({
           {emptyEyebrow}
         </div>
 
-        <h2>No stock currently meets the verified Pulse thresholds.</h2>
+        <h2>No setup cleared today&apos;s full verification.</h2>
 
         <p>
-          Vision will feature a stock when opportunity, Pulse, confidence,
-          volume participation, and data freshness qualify together.
+          Vision scanned the market, but no stock currently combines the required
+          opportunity, Pulse, confidence, volume participation, risk, and freshness.
         </p>
+
+        {meta ? (
+          <div className="mt-5 grid max-w-2xl grid-cols-3 gap-2">
+            {[
+              ["Scanned", meta.candidateUniverseCount],
+              ["Setup gate", meta.rankedUniverseCount],
+              ["Qualified", meta.qualifiedCandidateCount],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl border border-cyan-300/12 bg-black/20 px-3 py-3">
+                <strong className="block text-xl text-white">{value}</strong>
+                <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {isDelayed ? (
+          <p className="mt-4 text-xs text-amber-200/70">
+            Verified market data is delayed. Vision will reassess as fresh readings arrive.
+          </p>
+        ) : null}
       </section>
     );
   }

@@ -1715,17 +1715,19 @@ export default function VisionPage() {
             STOCK PULSE · HEARTBEAT · DNA
         ================================================= */}
 
-        <GlassPanel className="mt-5 p-5 sm:p-6 lg:p-7">
-          <StockPulseExperience
-            stocks={overview.stocks}
-            viewedSymbol={activeSymbol}
-            featuredSymbol={featuredPulse?.symbol}
-            loading={loading}
-            title="Every stock has a price. Sigi reveals its Pulse, Heartbeat, and DNA."
-            description="Sigi continuously ranks verified market opportunities. The highest composite reading becomes today’s Featured Pulse."
-            onSelectSymbol={setViewedSymbol}
-          />
-        </GlassPanel>
+        {loading || overview.stocks.length > 0 ? (
+          <GlassPanel className="mt-5 p-5 sm:p-6 lg:p-7">
+            <StockPulseExperience
+              stocks={overview.stocks}
+              viewedSymbol={activeSymbol}
+              featuredSymbol={featuredPulse?.symbol}
+              loading={loading}
+              title="Every stock has a price. Sigi reveals its Pulse, Heartbeat, and DNA."
+              description="Compare the stocks that passed Vision’s full verification and see why the highest composite reading became today’s Featured Pulse."
+              onSelectSymbol={setViewedSymbol}
+            />
+          </GlassPanel>
+        ) : null}
 
         <GlassPanel className="mt-5 p-5 sm:p-6">
           {personalIntelligence ? (
