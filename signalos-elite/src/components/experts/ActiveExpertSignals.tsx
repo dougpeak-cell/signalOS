@@ -6,6 +6,7 @@ type Row = {
   ticker: string;
   name?: string;
   changePercent?: number | null;
+  metricLabel?: string;
 };
 
 type Tone = "bullish" | "bearish" | "neutral";
@@ -44,7 +45,7 @@ function signalRead(row: Row, t: Tone) {
   const name = row.name?.trim() || row.ticker;
 
   if (t === "bullish") {
-    return `${name} is seeing upside momentum and improving expert confirmation.`;
+    return `${name} has positive model alignment with supportive expert confirmation.`;
   }
 
   if (t === "bearish") {
@@ -92,10 +93,17 @@ export default function ActiveExpertSignals({
               <div className="mt-2 flex items-start justify-between gap-3">
                 <div className="text-lg font-semibold text-white">{row.ticker}</div>
 
-                <div className="text-xs font-semibold text-white/75">
-                  {row.changePercent !== null && row.changePercent !== undefined
-                    ? `${row.changePercent.toFixed(2)}%`
-                    : "-"}
+                <div className="text-right text-xs font-semibold text-white/75">
+                  <div>
+                    {row.changePercent !== null && row.changePercent !== undefined
+                      ? `${row.changePercent.toFixed(2)}%`
+                      : "-"}
+                  </div>
+                  {row.metricLabel ? (
+                    <div className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.08em] text-white/35">
+                      {row.metricLabel}
+                    </div>
+                  ) : null}
                 </div>
               </div>
 

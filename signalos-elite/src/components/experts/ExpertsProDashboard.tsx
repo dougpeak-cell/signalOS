@@ -640,11 +640,26 @@ export default function ExpertsPage({
     };
   }, []);
 
-  const activeSignals = convictionLeaders.slice(0, 4).map((r) => ({
-    ticker: r.ticker,
-    name: r.company,
-    changePercent: r.avgReturn30d,
-  }));
+  const liveActiveSignals = [...fmpRows]
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 4)
+    .map((row) => ({
+      ticker: row.symbol,
+      name: row.companyName ?? row.symbol,
+      changePercent: row.upsidePercent,
+      metricLabel: "Target upside",
+    }));
+  const activeSignals = liveActiveSignals.length > 0
+    ? liveActiveSignals
+    : [...convictionLeaders]
+        .sort((left, right) => right.score - left.score)
+        .slice(0, 4)
+        .map((row) => ({
+          ticker: row.ticker,
+          name: row.company,
+          changePercent: row.avgReturn30d,
+          metricLabel: "30D avg return",
+        }));
   const averageHit30 = Math.round(
     modelRows.reduce((sum, model) => sum + model.hit30, 0) / modelRows.length
   );
