@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export type AnalystTopPickRow = {
@@ -74,9 +76,14 @@ export default function AnalystTopPicks({
   loading?: boolean;
   fallback?: boolean;
 }) {
+  const router = useRouter();
   const [showAll, setShowAll] = useState(false);
   const picks = rows && rows.length > 0 ? rows : samplePicks;
   const visible = showAll ? picks.slice(0, 20) : picks.slice(0, 10);
+
+  function openPickHistory(ticker: string) {
+    router.push(`/experts/stocks/${encodeURIComponent(ticker)}`);
+  }
 
   const eyebrow = fallback ? "Sample Analyst Picks" : "Live Analyst Picks";
   const subtitle = fallback
@@ -120,9 +127,10 @@ export default function AnalystTopPicks({
                   : 0;
 
               return (
-                <article
+                <Link
                   key={`${pick.ticker}-${pick.analyst}`}
-                  className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4"
+                  href={`/experts/stocks/${encodeURIComponent(pick.ticker)}`}
+                  className="cursor-pointer rounded-2xl border border-slate-800 bg-slate-950/70 p-4 transition hover:border-cyan-400/30 hover:bg-cyan-400/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -187,7 +195,7 @@ export default function AnalystTopPicks({
                       </div>
                     </div>
                   </div>
-                </article>
+                </Link>
               );
             })}
           </div>
@@ -219,9 +227,18 @@ export default function AnalystTopPicks({
                   return (
                     <tr
                       key={`${pick.ticker}-${pick.analyst}`}
-                      className="bg-slate-950/70 hover:bg-cyan-400/5"
+                      onClick={() => openPickHistory(pick.ticker)}
+                      className="cursor-pointer bg-slate-950/70 transition hover:bg-cyan-400/5 focus-within:bg-cyan-400/5"
                     >
-                      <td className="px-4 py-4 font-bold text-cyan-300">{pick.ticker}</td>
+                      <td className="px-4 py-4 font-bold text-cyan-300">
+                        <Link
+                          href={`/experts/stocks/${encodeURIComponent(pick.ticker)}`}
+                          onClick={(event) => event.stopPropagation()}
+                          className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
+                        >
+                          {pick.ticker}
+                        </Link>
+                      </td>
                       <td className="px-4 py-4 text-white">{pick.company}</td>
                       <td className="px-4 py-4 text-slate-300">{pick.sector}</td>
                       <td className="px-4 py-4 text-slate-200">{pick.analyst}</td>

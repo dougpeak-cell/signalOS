@@ -69,6 +69,15 @@ export type FmpExpertsFeed = {
   sectorRows: Record<string, FmpExpertPickRow[]>;
 };
 
+export type FmpExpertHistoryRow = {
+  publishedDate: string;
+  firm: string | null;
+  action: string | null;
+  previousGrade: string | null;
+  currentGrade: string | null;
+  ratingTransition: "upgrade" | "downgrade" | "reiterate" | null;
+};
+
 function gradeScore(grade: string | null) {
   const g = (grade ?? "").toLowerCase();
 
@@ -180,9 +189,9 @@ function pickBestRecentGrade(grades: GradeRow[]) {
 
   if (recent.length > 0) {
     recent.sort((left, right) => {
-      if (right.sentiment !== left.sentiment) return right.sentiment - left.sentiment;
-      if (right.recency !== left.recency) return right.recency - left.recency;
-      return String(right.publishedDate ?? "").localeCompare(String(left.publishedDate ?? ""));
+      const dateDelta = getPublishedDateValue(right.publishedDate) - getPublishedDateValue(left.publishedDate);
+      if (dateDelta !== 0) return dateDelta;
+      return right.sentiment - left.sentiment;
     });
 
     return recent[0];
@@ -202,9 +211,9 @@ function pickBestRecentGrade(grades: GradeRow[]) {
     .filter((grade) => grade.publishedDate);
 
   fallback.sort((left, right) => {
-    if (right.sentiment !== left.sentiment) return right.sentiment - left.sentiment;
-    if (right.recency !== left.recency) return right.recency - left.recency;
-    return String(right.publishedDate ?? "").localeCompare(String(left.publishedDate ?? ""));
+    const dateDelta = getPublishedDateValue(right.publishedDate) - getPublishedDateValue(left.publishedDate);
+    if (dateDelta !== 0) return dateDelta;
+    return right.sentiment - left.sentiment;
   });
 
   return fallback[0] ?? null;
@@ -611,4 +620,54 @@ export async function loadFmpExpertsFeed(): Promise<FmpExpertsFeed> {
     rows,
     sectorRows,
   };
+}
+
+export async function loadFmpExpertHistory(
+  ticker: string
+): Promise<FmpExpertHistoryRow[]> {
+  if (!FMP_API_KEY) {
+    throw new Error("Missing FMP_API_KEY");
+  }
+
+  const symbol = ticker.trim().toUpperCase();
+  if (!isBroadMarketTicker(symbol)) return [];
+
+  const gradesJson = await fetchJson(
+    `https://financialmodelingprep.com/stable/grades?symbol=${encodeURIComponent(symbol)}&apikey=${FMP_API_KEY}`
+  );
+  const grades: GradeRow[] = Array.isArray(gradesJson)
+    ? gradesJson
+    : gradesJson
+      ? [gradesJson]
+      : [];
+
+  return grades
+    .map((grade) => {
+      const publishedDate = grade.publishedDate ?? grade.date ?? null;
+      if (!publishedDate) return null;
+
+      const previousGrade = normalizeGradeValue(grade.previousGrade);
+      const currentGrade = normalizeGradeValue(grade.newGrade ?? grade.grade);
+
+      return {
+        publishedDate,
+        firm: normalizeGradeValue(
+          grade.gradingCompany ?? grade.actionCompany ?? grade.firm
+        ),
+        action: normalizeGradeValue(grade.action),
+        previousGrade,
+        currentGrade,
+        ratingTransition: deriveRatingTransition(
+          grade.action,
+          previousGrade,
+          currentGrade
+        ),
+      } satisfies FmpExpertHistoryRow;
+    })
+    .filter((row): row is FmpExpertHistoryRow => row != null)
+    .sort(
+      (left, right) =>
+        getPublishedDateValue(right.publishedDate) -
+        getPublishedDateValue(left.publishedDate)
+    );
 }
