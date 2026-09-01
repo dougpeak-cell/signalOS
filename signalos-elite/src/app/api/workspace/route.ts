@@ -274,10 +274,7 @@ export async function GET(request: NextRequest) {
         components?.risk
     ),
     supportingEvidence: textList(pulseRaw?.reasons),
-    riskEvidence: [
-      ...textList(pulseRaw?.warnings),
-      ...textList(pulseRaw?.invalidationConditions),
-    ],
+    riskEvidence: textList(pulseRaw?.invalidationConditions),
     updatedAt: text(amsaRaw.asOf) || null,
   };
 
