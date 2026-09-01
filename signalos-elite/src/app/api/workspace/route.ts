@@ -23,7 +23,7 @@ const MARKET_ITEMS = [
   { ticker: "^VIX", symbol: "VIX", label: "VIX" },
   { ticker: "^TNX", symbol: "TNX", label: "10Y" },
   { ticker: "X:BTCUSD", symbol: "BTC", label: "BTC" },
-  { ticker: "GLD", symbol: "GLD", label: "Gold" },
+  { ticker: "GLD", symbol: "GLD", label: "GLD" },
 ] as const;
 
 const WORKSPACE_UPSTREAM_TIMEOUT_MS = 10_000;
@@ -171,8 +171,11 @@ export async function GET(request: NextRequest) {
     safeJson(`${origin}/api/company?ticker=${encodeURIComponent(symbol)}`),
     safeJson(`${origin}/api/amsa/future/${encodeURIComponent(symbol)}`),
     safeJson(
-      `${origin}/api/quotes?tickers=${encodeURIComponent(
-        MARKET_ITEMS.map((item) => item.ticker).join(",")
+      `${origin}/api/massive/quotes?tickers=${encodeURIComponent(
+        MARKET_ITEMS
+          .filter((item) => item.symbol !== "BTC")
+          .map((item) => item.ticker)
+          .join(",")
       )}`
     ),
     safeJson(`${origin}/api/crypto/snapshot?tickers=BTC`),

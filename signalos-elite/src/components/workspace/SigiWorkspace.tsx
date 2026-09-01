@@ -23,6 +23,7 @@ import {
 import { getVisibleSigiTextFromPayload } from "@/lib/sigi/responseVisibility";
 import { getWorkspacePulseMeaning } from "@/lib/workspacePulse";
 import type {
+  WorkspaceMarketItem,
   WorkspacePayload,
   WorkspacePulseRadarItem,
   WorkspaceWatchlistItem,
@@ -35,6 +36,7 @@ type Props = {
 
 const SIGI_REQUEST_TIMEOUT_MS = 25_000;
 const WORKSPACE_REQUEST_TIMEOUT_MS = 20_000;
+const MARKET_REFRESH_MS = 15_000;
 const FREE_EXAMPLE_SYMBOLS = new Set(["NVDA", "MSFT"]);
 
 function formatNumber(value: number | null | undefined, digits = 0) {
@@ -93,6 +95,7 @@ export default function SigiWorkspace({
   const [symbol, setSymbol] = useState(initialSymbol.toUpperCase());
   const [input, setInput] = useState(initialSymbol.toUpperCase());
   const [data, setData] = useState<WorkspacePayload | null>(null);
+  const [liveMarket, setLiveMarket] = useState<WorkspaceMarketItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sigiAnswer, setSigiAnswer] = useState<string | null>(null);
@@ -156,6 +159,39 @@ export default function SigiWorkspace({
 
     return () => activeRequest.current?.abort();
   }, [initialSymbol, loadWorkspace]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function refreshMarket() {
+      if (document.visibilityState === "hidden") return;
+
+      try {
+        const response = await fetch("/api/workspace/market", { cache: "no-store" });
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as { market?: WorkspaceMarketItem[] };
+        if (active && Array.isArray(payload.market)) {
+          setLiveMarket(payload.market);
+        }
+      } catch {
+        // Keep the last successful market snapshot during transient failures.
+      }
+    }
+
+    void refreshMarket();
+    const timer = window.setInterval(refreshMarket, MARKET_REFRESH_MS);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") void refreshMarket();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   async function evaluateSymbol(nextSymbol: string) {
     const normalized = nextSymbol.trim().toUpperCase();
@@ -383,8 +419,8 @@ export default function SigiWorkspace({
         ) : data ? (
           <>
             <section className="mb-4 flex min-h-[58px] items-center overflow-x-auto rounded-2xl border border-slate-800 bg-[#030b14] px-4">
-              {data.market.length ? (
-                data.market.map((item) => (
+              {(liveMarket ?? data.market).length ? (
+                (liveMarket ?? data.market).map((item) => (
                   <div
                     key={item.symbol}
                     className="min-w-[150px] border-r border-slate-800 px-4 last:border-r-0"

@@ -18,6 +18,7 @@ const INDEX_MAP: Record<string, string> = {
   "^DJI": "I:DJI",
   "^RUT": "I:RUT",
   "^VIX": "I:VIX",
+  "^TNX": "I:TNX",
 };
 
 const INDEX_PROXY_FALLBACK: Record<string, string> = {
@@ -216,10 +217,12 @@ async function fetchMassiveIndexQuote(indexTicker: string): Promise<{
       return null;
     }
 
+    const valueScale = indexTicker === "I:TNX" ? 0.1 : 1;
+
     return {
-      price,
-      prevClose,
-      change,
+      price: price * valueScale,
+      prevClose: prevClose != null ? prevClose * valueScale : null,
+      change: change != null ? change * valueScale : null,
       changePct,
       updatedMs,
       isMarketOpen,
@@ -595,6 +598,26 @@ export async function resolveMassiveQuote(
         points = includePoints
           ? await fetchMassiveIndexIntradaySeries(trueIndexTicker)
           : [];
+      }
+    }
+
+    if (
+      price != null &&
+      trueIndexTicker &&
+      proxyTicker &&
+      (changePct == null || changePct === 0)
+    ) {
+      const proxyQuote = await fetchLightweightStockQuote(proxyTicker);
+
+      if (proxyQuote?.price && proxyQuote.prevClose) {
+        const proxyChangePct =
+          ((proxyQuote.price - proxyQuote.prevClose) / proxyQuote.prevClose) * 100;
+
+        if (Number.isFinite(proxyChangePct) && proxyChangePct !== 0) {
+          changePct = proxyChangePct;
+          prevClose = price / (1 + proxyChangePct / 100);
+          change = price - prevClose;
+        }
       }
     }
 
