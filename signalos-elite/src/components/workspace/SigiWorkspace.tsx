@@ -14,6 +14,7 @@ import {
 
 import { SelectedSignalProvider } from "@/components/chart/SelectedSignalContext";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
+import StockNewsCatalystPanel from "@/components/news/StockNewsCatalystPanel";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import {
@@ -621,6 +622,31 @@ export default function SigiWorkspace({
                     </div>
                   </div>
 
+                  {(data.stock.description || data.stock.sector || data.stock.industry) ? (
+                    <div className="mt-5 border-t border-slate-800 pt-5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">
+                          Company Overview
+                        </div>
+                        {[data.stock.sector, data.stock.industry]
+                          .filter((value): value is string => Boolean(value))
+                          .map((value) => (
+                            <span
+                              key={value}
+                              className="rounded-full border border-white/10 bg-white/4 px-2.5 py-1 text-[10px] text-slate-400"
+                            >
+                              {value}
+                            </span>
+                          ))}
+                      </div>
+                      {data.stock.description ? (
+                        <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-300">
+                          {data.stock.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+
                   <div className="mt-5 min-h-[370px] overflow-hidden rounded-2xl border border-slate-800 bg-[#020812]">
                     <SelectedSignalProvider>
                       <LiveStockChart
@@ -634,6 +660,15 @@ export default function SigiWorkspace({
                     </SelectedSignalProvider>
                   </div>
                 </Panel>
+
+                <StockNewsCatalystPanel
+                  key={data.stock.symbol}
+                  ticker={data.stock.symbol}
+                  maxItems={3}
+                  positiveOnly
+                  lookbackHours={168}
+                  className="bg-[#030b14]"
+                />
 
                 <Panel title="Pulse Intelligence" eyebrow="Why Sigi Reads It This Way">
                   <div className="grid gap-3 md:grid-cols-5">

@@ -11,12 +11,16 @@ type RouteContext = {
 export async function GET(request: NextRequest, context: RouteContext) {
   const { ticker } = await context.params;
   const normalizedTicker = ticker.trim().toUpperCase();
+  const requestedLookback = Number(request.nextUrl.searchParams.get("lookbackHours"));
+  const lookbackHours = Number.isFinite(requestedLookback)
+    ? Math.min(168, Math.max(1, requestedLookback))
+    : 24;
 
   try {
     const items = toSignalNewsItems(
       await fetchNewsForWatchlist([normalizedTicker], {
         limit: 20,
-        lookbackHours: 24,
+        lookbackHours,
       })
     );
 

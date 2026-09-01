@@ -14,6 +14,8 @@ type StockNewsCatalystPanelProps = {
   maxItems?: number;
   refreshEveryMs?: number;
   className?: string;
+  positiveOnly?: boolean;
+  lookbackHours?: number;
 };
 
 type TickerNewsApiResponse = {
@@ -68,6 +70,8 @@ export default function StockNewsCatalystPanel({
   maxItems = 6,
   refreshEveryMs = 30000,
   className,
+  positiveOnly = false,
+  lookbackHours = 24,
 }: StockNewsCatalystPanelProps) {
   const normalizedTicker = ticker.trim().toUpperCase();
   const [items, setItems] = useState<SignalNewsItem[]>([]);
@@ -78,9 +82,10 @@ export default function StockNewsCatalystPanel({
   const query = useMemo(() => {
     const search = new URLSearchParams({
       ticker: normalizedTicker,
+      lookbackHours: String(lookbackHours),
     });
     return search.toString();
-  }, [normalizedTicker]);
+  }, [lookbackHours, normalizedTicker]);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,7 +110,12 @@ export default function StockNewsCatalystPanel({
         const data = (await response.json()) as TickerNewsApiResponse;
 
         if (!cancelled) {
-          setItems(sortTickerNews(data.items ?? [], normalizedTicker));
+          const sortedItems = sortTickerNews(data.items ?? [], normalizedTicker);
+          setItems(
+            positiveOnly
+              ? sortedItems.filter((item) => item.sentiment === "positive")
+              : sortedItems
+          );
           setIsLoading(false);
         }
       } catch (err) {
@@ -123,7 +133,7 @@ export default function StockNewsCatalystPanel({
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [normalizedTicker, query, refreshEveryMs]);
+  }, [normalizedTicker, positiveOnly, query, refreshEveryMs]);
 
   const displayedItems = isExpanded ? items : items.slice(0, maxItems);
   const leadItem = items[0] ?? null;
@@ -144,13 +154,15 @@ export default function StockNewsCatalystPanel({
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
-            News Catalyst
+            {positiveOnly ? "Current Positive Reports" : "News Catalyst"}
           </div>
           <h2 className="text-xl font-semibold tracking-tight text-white">
-            {normalizedTicker} News Catalyst
+            {positiveOnly ? `Positive ${normalizedTicker} Coverage` : `${normalizedTicker} News Catalyst`}
           </h2>
           <p className="mt-1 text-sm text-white/55">
-            Real-time narrative context tied to the current tape.
+            {positiveOnly
+              ? "Recent favorable coverage from the live ticker-news feed."
+              : "Real-time narrative context tied to the current tape."}
           </p>
         </div>
 
@@ -303,7 +315,9 @@ export default function StockNewsCatalystPanel({
 
       {!isLoading && !error && items.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-white/3 p-4 text-sm text-white/55">
-          No fresh catalyst headlines were returned for {normalizedTicker}.
+          {positiveOnly
+            ? `No positive ${normalizedTicker} reports were found in the last ${lookbackHours === 168 ? "7 days" : `${lookbackHours} hours`}.`
+            : `No fresh catalyst headlines were returned for ${normalizedTicker}.`}
         </div>
       ) : null}
     </section>

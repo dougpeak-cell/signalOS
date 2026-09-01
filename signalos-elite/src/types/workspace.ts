@@ -15,6 +15,9 @@ export type WorkspacePriceStatus =
 export type WorkspaceStock = {
   symbol: string;
   name: string;
+  description: string | null;
+  sector: string | null;
+  industry: string | null;
   price: number | null;
   changePercent: number | null;
   priceAsOf: string | null;

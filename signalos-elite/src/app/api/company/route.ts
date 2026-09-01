@@ -1,5 +1,15 @@
 import { NextResponse } from "next/server";
 import { COMPANY_PROFILES } from "@/lib/companyProfiles";
+import { getMassiveFundamentals } from "@/lib/market/massiveFundamentals";
+
+function buildFallbackDescription(name: string | null): string {
+  if (!name) return "";
+  if (/\bETF\b/i.test(name)) {
+    return `${name} is an exchange-traded fund. Its market price reflects the value and trading activity of its underlying portfolio.`;
+  }
+
+  return "";
+}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -16,11 +26,19 @@ export async function GET(req: Request) {
   const apiKey = process.env.FMP_API_KEY;
 
   if (!apiKey) {
+    const massiveProfile = await getMassiveFundamentals(ticker, {
+      profile: "discovery",
+    });
+
     return NextResponse.json(
       {
         ticker,
-        name: ticker,
-        description: "",
+        name: massiveProfile.name ?? ticker,
+        description:
+          massiveProfile.description ??
+          buildFallbackDescription(massiveProfile.name),
+        sector: massiveProfile.sector,
+        industry: massiveProfile.industry,
       }
     );
   }
@@ -40,11 +58,19 @@ export async function GET(req: Request) {
     const profile = data?.[0];
 
     if (!profile) {
+      const massiveProfile = await getMassiveFundamentals(ticker, {
+        profile: "discovery",
+      });
+
       return NextResponse.json(
         {
           ticker,
-          name: ticker,
-          description: "",
+          name: massiveProfile.name ?? ticker,
+          description:
+            massiveProfile.description ??
+            buildFallbackDescription(massiveProfile.name),
+          sector: massiveProfile.sector,
+          industry: massiveProfile.industry,
         }
       );
     }

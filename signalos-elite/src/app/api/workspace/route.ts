@@ -217,6 +217,9 @@ export async function GET(request: NextRequest) {
       companyRaw?.name ?? amsaRaw.name ?? amsaRaw.companyName ?? amsaRaw.company,
       symbol
     ),
+    description: text(companyRaw?.description) || null,
+    sector: text(companyRaw?.sector) || null,
+    industry: text(companyRaw?.industry) || null,
     price: null as number | null,
     changePercent: null as number | null,
     priceAsOf: null as string | null,
