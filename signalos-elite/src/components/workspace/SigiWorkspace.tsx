@@ -22,6 +22,7 @@ import {
   formatVerifiedPulseTimestamp,
 } from "@/lib/market/formatMarketTimestamp";
 import { getVisibleSigiTextFromPayload } from "@/lib/sigi/responseVisibility";
+import { resolveStockTickerAlias } from "@/lib/stocks/symbolAliases";
 import { getWorkspacePulseMeaning } from "@/lib/workspacePulse";
 import type {
   WorkspaceMarketItem,
@@ -86,15 +87,15 @@ export default function SigiWorkspace({
   initialSymbol = "NVDA",
   canEvaluateStocks,
 }: Props) {
-  const { ensureQuotes, quoteMap, refreshQuotesNow } = useLiveMarket();
+  const { ensureQuotes, quoteMap } = useLiveMarket();
   const { tier, previewActive, planSummary } = useSigiTier();
   const hasWorkspaceAccess =
     tier === "smart" ||
     tier === "pro" ||
     (tier === "free" && previewActive) ||
     (planSummary === null && canEvaluateStocks);
-  const [symbol, setSymbol] = useState(initialSymbol.toUpperCase());
-  const [input, setInput] = useState(initialSymbol.toUpperCase());
+  const [symbol, setSymbol] = useState(resolveStockTickerAlias(initialSymbol));
+  const [input, setInput] = useState(resolveStockTickerAlias(initialSymbol));
   const [data, setData] = useState<WorkspacePayload | null>(null);
   const [liveMarket, setLiveMarket] = useState<WorkspaceMarketItem[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -107,7 +108,7 @@ export default function SigiWorkspace({
   const activeSigiRequest = useRef<AbortController | null>(null);
 
   const loadWorkspace = useCallback(async (nextSymbol: string) => {
-    const normalized = nextSymbol.trim().toUpperCase();
+    const normalized = resolveStockTickerAlias(nextSymbol);
     if (!normalized) return;
 
     activeRequest.current?.abort();
@@ -134,8 +135,8 @@ export default function SigiWorkspace({
       }
 
       setData(payload);
-      setSymbol(normalized);
-      setInput(normalized);
+        setSymbol(payload.stock.symbol);
+        setInput(payload.stock.symbol);
     } catch (loadError) {
       if (didTimeout) {
         setError(`Sigi took too long to evaluate ${normalized}. Please try again.`);
@@ -195,7 +196,7 @@ export default function SigiWorkspace({
   }, []);
 
   async function evaluateSymbol(nextSymbol: string) {
-    const normalized = nextSymbol.trim().toUpperCase();
+    const normalized = resolveStockTickerAlias(nextSymbol);
     if (!normalized) return;
 
     if (!hasWorkspaceAccess && !FREE_EXAMPLE_SYMBOLS.has(normalized)) {
@@ -204,7 +205,6 @@ export default function SigiWorkspace({
     }
 
     setInput(normalized);
-    setSymbol(normalized);
 
     await loadWorkspace(normalized);
   }
@@ -329,8 +329,7 @@ export default function SigiWorkspace({
 
     const tickers = [data.stock.symbol, ...data.watchlist.map((item) => item.symbol)];
     ensureQuotes(tickers);
-    void refreshQuotesNow(tickers);
-  }, [data, ensureQuotes, refreshQuotesNow]);
+  }, [data, ensureQuotes]);
 
   return (
     <main className="min-h-screen bg-[#02070d] text-white">

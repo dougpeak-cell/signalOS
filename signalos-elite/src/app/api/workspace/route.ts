@@ -130,32 +130,26 @@ export async function GET(request: NextRequest) {
   const origin = request.nextUrl.origin;
   const storedMarketContextPromise = getStoredMarketContext();
   const liveContextPromise = storedMarketContextPromise.then(async (storedMarketContext) => {
-    const watchSymbols = Array.from(
-      new Set(
+    const watchRows = Array.from(
+      new Map(
         storedMarketContext.watchlist
-          .map((item) =>
-            resolveStockTickerAlias(
+          .map((item) => {
+            const watchSymbol = resolveStockTickerAlias(
               typeof item === "string" ? item : item.ticker ?? item.symbol
-            )
-          )
-          .filter(Boolean)
-      )
+            );
+
+            return [watchSymbol, { watchSymbol, item }] as const;
+          })
+          .filter(([watchSymbol]) => Boolean(watchSymbol))
+      ).values()
     );
+    const watchSymbols = watchRows.map(({ watchSymbol }) => watchSymbol);
     const quoteSymbols = Array.from(new Set([symbol, ...watchSymbols]));
-    const [liveQuoteRaw, watchPulseRows] = await Promise.all([
-      safeJson(
-        `${origin}/api/massive/quotes?tickers=${encodeURIComponent(quoteSymbols.join(","))}`
-      ),
-      Promise.all(watchSymbols.map(async (watchSymbol) => {
-        const raw = await safeJson(
-          `${origin}/api/amsa/${encodeURIComponent(watchSymbol)}`
-        );
+    const liveQuoteRaw = await safeJson(
+      `${origin}/api/massive/quotes?tickers=${encodeURIComponent(quoteSymbols.join(","))}`
+    );
 
-        return { watchSymbol, raw, watchPulse: raw?.pulse };
-      })),
-    ]);
-
-    return { liveQuoteRaw, watchPulseRows };
+    return { liveQuoteRaw, watchRows };
   });
 
   const [
@@ -385,7 +379,7 @@ export async function GET(request: NextRequest) {
       }
     : null;
 
-  const { liveQuoteRaw, watchPulseRows } = liveContext;
+  const { liveQuoteRaw, watchRows } = liveContext;
 
   const liveQuoteMap = new Map<string, WorkspaceLiveQuote>(
     (Array.isArray(liveQuoteRaw?.quotes) ? liveQuoteRaw.quotes : []).map(
@@ -411,27 +405,26 @@ export async function GET(request: NextRequest) {
     futureMap.livePriceProvider = stock.priceProvider;
   }
 
-  const watchlist = watchPulseRows.map(({ watchSymbol, raw, watchPulse }) => {
-      const quote = liveQuoteMap.get(watchSymbol);
+  const watchlist = watchRows.map(({ watchSymbol, item }) => {
+    const quote = liveQuoteMap.get(watchSymbol);
+    const storedItem = typeof item === "string" ? null : item;
 
-      return {
-        symbol: watchSymbol,
-        name: text(raw?.name ?? raw?.companyName, watchSymbol),
-        price: num(quote?.price),
-        changePercent: num(quote?.changePercent),
-        priceAsOf: toIsoTimestamp(quote?.updatedMs),
-        priceProvider: quote
-          ? `Massive (${text(quote.source, "stock")})`
-          : null,
-        priceStatus: getPriceStatus(quote?.updatedMs, quote?.source),
-        pulse: num(
-          raw?.rawPulse ?? raw?.score ?? raw?.amsaScore ?? watchPulse?.score
-        ),
-        direction: normalizeWorkspaceDirection(
-          raw?.direction ?? watchPulse?.direction
-        ),
-      };
-    });
+    return {
+      symbol: watchSymbol,
+      name: text(storedItem?.name, watchSymbol),
+      price: num(quote?.price),
+      changePercent: num(quote?.changePercent),
+      priceAsOf: toIsoTimestamp(quote?.updatedMs),
+      priceProvider: quote
+        ? `Massive (${text(quote.source, "stock")})`
+        : null,
+      priceStatus: getPriceStatus(quote?.updatedMs, quote?.source),
+      pulse: num(
+        storedItem?.score ?? storedItem?.masterScore ?? storedItem?.conviction
+      ),
+      direction: normalizeWorkspaceDirection(storedItem?.signal),
+    };
+  });
 
   const marketQuotes = Array.isArray(marketRaw?.quotes) ? marketRaw.quotes : [];
   const marketQuoteMap = new Map(
