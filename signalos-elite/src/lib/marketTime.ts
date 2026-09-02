@@ -43,13 +43,12 @@ export function formatMarketClockTimeMs(
 }
 
 export function formatMarketTime(unixSeconds: number) {
-  const formatted = new Date(unixSeconds * 1000).toLocaleString("en-US", {
+  return new Date(unixSeconds * 1000).toLocaleString("en-US", {
     timeZone: MARKET_TZ,
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    timeZoneName: "short",
   });
-
-  return `${formatted} ${MARKET_STANDARD_TIME_ABBR}`;
 }

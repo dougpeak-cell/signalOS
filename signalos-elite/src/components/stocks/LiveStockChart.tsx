@@ -20,7 +20,11 @@ import {
 
 import { useSignal } from "@/context/SignalContext";
 import { useSelectedSignal } from "@/components/chart/SelectedSignalContext";
-import { getSessionLevels } from "@/lib/stocks/sessionLevels";
+import {
+  getSessionLevels,
+  getStockSessionSummary,
+  isExtendedSessionTimestamp,
+} from "@/lib/stocks/sessionLevels";
 import { getQuotePrice } from "@/lib/market/quotes";
 import {
   buildOrderFlowZones,
@@ -2008,6 +2012,11 @@ export default function LiveStockChart({
     );
   }, [displayBars]);
 
+  const stockSessionSummary = useMemo(
+    () => getStockSessionSummary(displayBars),
+    [displayBars]
+  );
+
   useEffect(() => {
     setSessionLevels(sessionLevels);
     return () => setSessionLevels(null);
@@ -3694,6 +3703,8 @@ useEffect(() => {
       .map((bar) => {
         const normalizedTime = normalizeEpochSeconds(bar.time);
         if (!normalizedTime) return null;
+        const isExtended = isExtendedSessionTimestamp(normalizedTime);
+        const isUp = Number(bar.close) >= Number(bar.open);
 
         return {
           time: normalizedTime as UTCTimestamp,
@@ -3701,6 +3712,13 @@ useEffect(() => {
           high: Number(bar.high),
           low: Number(bar.low),
           close: Number(bar.close),
+          ...(isExtended
+            ? {
+                color: isUp ? "#0891b2" : "#f59e0b",
+                borderColor: isUp ? "#22d3ee" : "#fbbf24",
+                wickColor: isUp ? "#22d3ee" : "#fbbf24",
+              }
+            : {}),
         };
       })
       .filter(
@@ -4041,7 +4059,7 @@ useEffect(() => {
 
   const livePrice = snapshot?.lastPrice ?? currentPrice ?? null;
   const liveOpen = snapshot?.open ?? null;
-  const prevClose = snapshot?.prevClose ?? null;
+  const prevClose = snapshot?.prevClose ?? stockSessionSummary.previousClose ?? null;
   const quotePrice = getQuotePrice(symbol);
   const safePrice =
     typeof livePrice === "number" && Number.isFinite(livePrice) && livePrice > 0
@@ -4061,15 +4079,32 @@ useEffect(() => {
       : safeChange != null && typeof prevClose === "number" && Number.isFinite(prevClose) && prevClose > 0
         ? (safeChange / prevClose) * 100
         : null;
-  const hasChange =
-    safeChange != null &&
-    safeChangePct != null &&
-    Number.isFinite(safeChange) &&
-    Number.isFinite(safeChangePct);
-  const positiveTone =
-    hasChange && safeChange > 0
+  const regularClose = stockSessionSummary.regularClose ?? safePrice;
+  const regularChange =
+    regularClose != null && prevClose != null ? regularClose - prevClose : safeChange;
+  const regularChangePct =
+    regularChange != null && prevClose != null && prevClose !== 0
+      ? (regularChange / prevClose) * 100
+      : safeChangePct;
+  const afterHoursPrice = stockSessionSummary.afterHoursPrice;
+  const afterHoursChange =
+    afterHoursPrice != null && regularClose != null
+      ? afterHoursPrice - regularClose
+      : null;
+  const afterHoursChangePct =
+    afterHoursChange != null && regularClose != null && regularClose !== 0
+      ? (afterHoursChange / regularClose) * 100
+      : null;
+  const regularTone =
+    regularChange != null && regularChange > 0
       ? "text-emerald-300"
-      : hasChange && safeChange < 0
+      : regularChange != null && regularChange < 0
+        ? "text-rose-300"
+        : "text-white/45";
+  const afterHoursTone =
+    afterHoursChange != null && afterHoursChange > 0
+      ? "text-emerald-300"
+      : afterHoursChange != null && afterHoursChange < 0
         ? "text-rose-300"
         : "text-white/45";
 
@@ -4305,27 +4340,52 @@ const gapFillLabel =
               All chart times {MARKET_TIME_ABBR}
             </div>
 
-            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4">
+            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-5">
               <div className="flex flex-col gap-2 sm:min-w-40">
                 <h1 className="text-4xl font-semibold tracking-tight text-white">{symbol}</h1>
-                <div>
-                  <div className={`text-2xl font-semibold ${positiveTone}`}>
-                    {formatPrice(safePrice)}
+                <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
+                  <div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-semibold text-white">
+                        {formatPrice(regularClose)}
+                      </span>
+                      <span className={`text-sm font-bold ${regularTone}`}>
+                        {regularChange != null && regularChangePct != null
+                          ? `${regularChange > 0 ? "+" : ""}${regularChange.toFixed(2)} (${regularChangePct > 0 ? "+" : ""}${regularChangePct.toFixed(2)}%)`
+                          : "Syncing..."}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-[11px] font-medium text-white/45">
+                      At close: 4:00 PM {MARKET_TIME_ABBR}
+                    </div>
                   </div>
 
-                  {liveCandleEnabled ? (
-                    <div className="mt-1 flex items-center gap-2 text-xs text-emerald-300">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                      Live candle updating
+                  {afterHoursPrice != null ? (
+                    <div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-semibold text-white/90">
+                          {formatPrice(afterHoursPrice)}
+                        </span>
+                        <span className={`text-sm font-bold ${afterHoursTone}`}>
+                          {afterHoursChange != null && afterHoursChangePct != null
+                            ? `${afterHoursChange > 0 ? "+" : ""}${afterHoursChange.toFixed(2)} (${afterHoursChangePct > 0 ? "+" : ""}${afterHoursChangePct.toFixed(2)}%)`
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-cyan-200/70">
+                        <span className="h-1.5 w-1.5 rounded-full bg-cyan-300" />
+                        After hours: {formatTimeLabel(stockSessionSummary.afterHoursTime)}
+                      </div>
                     </div>
                   ) : null}
                 </div>
 
-                <div className={`text-sm font-bold ${positiveTone}`}>
-                  {hasChange
-                    ? `${safeChange > 0 ? "+" : ""}${safeChange.toFixed(2)} (${safeChangePct > 0 ? "+" : ""}${safeChangePct.toFixed(2)}%)`
-                    : "Live syncing..."}
-                </div>
+                {liveCandleEnabled ? (
+                  <div className="flex items-center gap-2 text-xs text-emerald-300">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                    Live candle updating
+                  </div>
+                ) : null}
               </div>
 
               <div className="flex flex-wrap items-start gap-2 sm:max-w-md sm:pb-1">

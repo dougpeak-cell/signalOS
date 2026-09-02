@@ -16,17 +16,89 @@ export type SessionLevels = {
   previousDayLow: number | null;
 };
 
+export type StockSessionSummary = {
+  regularClose: number | null;
+  regularCloseTime: number | null;
+  previousClose: number | null;
+  afterHoursPrice: number | null;
+  afterHoursTime: number | null;
+};
+
+const marketDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+function getMarketDateAndMinutes(ts: number) {
+  const parts = marketDateTimeFormatter.formatToParts(new Date(ts * 1000));
+  const values = new Map(parts.map((part) => [part.type, part.value]));
+
+  return {
+    dateKey: `${values.get("year")}-${values.get("month")}-${values.get("day")}`,
+    minutesOfDay:
+      Number(values.get("hour") ?? 0) * 60 + Number(values.get("minute") ?? 0),
+  };
+}
+
 function getDateKey(ts: number) {
-  const d = new Date(ts * 1000);
-  const y = d.getFullYear();
-  const m = `${d.getMonth() + 1}`.padStart(2, "0");
-  const day = `${d.getDate()}`.padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return getMarketDateAndMinutes(ts).dateKey;
 }
 
 function getMinutesOfDay(ts: number) {
-  const d = new Date(ts * 1000);
-  return d.getHours() * 60 + d.getMinutes();
+  return getMarketDateAndMinutes(ts).minutesOfDay;
+}
+
+export function isExtendedSessionTimestamp(ts: number): boolean {
+  const minutes = getMinutesOfDay(ts);
+  return minutes >= 4 * 60 && minutes < 9 * 60 + 30 ||
+    minutes >= 16 * 60 && minutes < 20 * 60;
+}
+
+export function getStockSessionSummary(bars: BaseBar[]): StockSessionSummary {
+  const sorted = [...bars].sort((left, right) => left.time - right.time);
+  if (!sorted.length) {
+    return {
+      regularClose: null,
+      regularCloseTime: null,
+      previousClose: null,
+      afterHoursPrice: null,
+      afterHoursTime: null,
+    };
+  }
+
+  const latestDateKey = getDateKey(sorted[sorted.length - 1].time);
+  const dateKeys = Array.from(new Set(sorted.map((bar) => getDateKey(bar.time))));
+  const previousDateKey = dateKeys.at(-2) ?? null;
+  const latestRegularBars = sorted.filter((bar) => {
+    const { dateKey, minutesOfDay } = getMarketDateAndMinutes(bar.time);
+    return dateKey === latestDateKey && minutesOfDay >= 9 * 60 + 30 && minutesOfDay < 16 * 60;
+  });
+  const previousRegularBars = previousDateKey
+    ? sorted.filter((bar) => {
+        const { dateKey, minutesOfDay } = getMarketDateAndMinutes(bar.time);
+        return dateKey === previousDateKey && minutesOfDay >= 9 * 60 + 30 && minutesOfDay < 16 * 60;
+      })
+    : [];
+  const afterHoursBars = sorted.filter((bar) => {
+    const { dateKey, minutesOfDay } = getMarketDateAndMinutes(bar.time);
+    return dateKey === latestDateKey && minutesOfDay >= 16 * 60 && minutesOfDay < 20 * 60;
+  });
+  const regularCloseBar = latestRegularBars.at(-1) ?? null;
+  const previousCloseBar = previousRegularBars.at(-1) ?? null;
+  const afterHoursBar = afterHoursBars.at(-1) ?? null;
+
+  return {
+    regularClose: regularCloseBar?.close ?? null,
+    regularCloseTime: regularCloseBar?.time ?? null,
+    previousClose: previousCloseBar?.close ?? null,
+    afterHoursPrice: afterHoursBar?.close ?? null,
+    afterHoursTime: afterHoursBar?.time ?? null,
+  };
 }
 
 function maxHigh(bars: BaseBar[]) {
