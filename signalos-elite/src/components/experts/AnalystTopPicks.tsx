@@ -130,7 +130,7 @@ export default function AnalystTopPicks({
                 <Link
                   key={`${pick.ticker}-${pick.analyst}`}
                   href={`/experts/stocks/${encodeURIComponent(pick.ticker)}`}
-                  className="cursor-pointer rounded-2xl border border-slate-800 bg-slate-950/70 p-4 transition hover:border-cyan-400/30 hover:bg-cyan-400/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
+                  className="block w-full cursor-pointer rounded-2xl border border-slate-800 bg-slate-950/70 p-4 transition hover:border-cyan-400/30 hover:bg-cyan-400/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
