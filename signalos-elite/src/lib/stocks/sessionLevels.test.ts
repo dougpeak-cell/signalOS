@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getStockSessionSummary,
   isExtendedSessionTimestamp,
+  isPremarketTimestamp,
   type BaseBar,
 } from "./sessionLevels";
 
@@ -34,6 +35,7 @@ describe("getStockSessionSummary", () => {
     const summary = getStockSessionSummary([
       bar("2026-09-01T19:59:00Z", 199.54),
       bar("2026-09-02T19:59:00Z", 204.09),
+      bar("2026-09-02T23:59:00Z", 203.18),
       bar("2026-09-03T08:00:00Z", 202.4),
       bar("2026-09-03T11:52:00Z", 201.86),
     ]);
@@ -42,7 +44,12 @@ describe("getStockSessionSummary", () => {
     expect(summary.regularClose).toBe(204.09);
     expect(summary.premarketPrice).toBe(201.86);
     expect(summary.premarketTime).toBe(Date.parse("2026-09-03T11:52:00Z") / 1000);
-    expect(summary.afterHoursPrice).toBeNull();
+    expect(summary.afterHoursPrice).toBe(203.18);
+  });
+
+  it("ends the pre-market window at 9:30 AM New York time", () => {
+    expect(isPremarketTimestamp(Date.parse("2026-09-03T13:29:00Z") / 1000)).toBe(true);
+    expect(isPremarketTimestamp(Date.parse("2026-09-03T13:30:00Z") / 1000)).toBe(false);
   });
 
   it("recognizes premarket and after-hours timestamps", () => {

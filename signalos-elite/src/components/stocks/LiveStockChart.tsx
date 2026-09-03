@@ -24,6 +24,7 @@ import {
   getSessionLevels,
   getStockSessionSummary,
   isExtendedSessionTimestamp,
+  isPremarketTimestamp,
 } from "@/lib/stocks/sessionLevels";
 import { getQuotePrice } from "@/lib/market/quotes";
 import {
@@ -1497,6 +1498,23 @@ export default function LiveStockChart({
 
   const [baseBars, setBaseBars] = useState<BaseBar[]>([]);
   const [sessionSummaryBars, setSessionSummaryBars] = useState<BaseBar[]>([]);
+  const [marketClockTime, setMarketClockTime] = useState(() => Math.floor(Date.now() / 1000));
+
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const timeoutId = setTimeout(() => {
+      setMarketClockTime(Math.floor(Date.now() / 1000));
+      intervalId = setInterval(
+        () => setMarketClockTime(Math.floor(Date.now() / 1000)),
+        60_000,
+      );
+    }, 60_000 - (Date.now() % 60_000));
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, []);
 
   useEffect(() => {
     candleDensityModeRef.current = candleDensityMode;
@@ -4107,15 +4125,23 @@ useEffect(() => {
       ? (regularChange / prevClose) * 100
       : safeChangePct;
   const premarketPrice = stockSessionSummary.premarketPrice;
+  const afterHoursPrice = stockSessionSummary.afterHoursPrice;
+  const showPremarket =
+    premarketPrice != null && isPremarketTimestamp(marketClockTime);
+  const showPostMarketClose =
+    afterHoursPrice != null &&
+    (showPremarket ||
+      (stockSessionSummary.afterHoursTime ?? 0) >
+        (stockSessionSummary.regularCloseTime ?? 0));
+  const premarketReferencePrice = afterHoursPrice ?? regularClose;
   const premarketChange =
-    premarketPrice != null && regularClose != null
-      ? premarketPrice - regularClose
+    premarketPrice != null && premarketReferencePrice != null
+      ? premarketPrice - premarketReferencePrice
       : null;
   const premarketChangePct =
-    premarketChange != null && regularClose != null && regularClose !== 0
-      ? (premarketChange / regularClose) * 100
+    premarketChange != null && premarketReferencePrice != null && premarketReferencePrice !== 0
+      ? (premarketChange / premarketReferencePrice) * 100
       : null;
-  const afterHoursPrice = stockSessionSummary.afterHoursPrice;
   const afterHoursChange =
     afterHoursPrice != null && regularClose != null
       ? afterHoursPrice - regularClose
@@ -4395,7 +4421,26 @@ const gapFillLabel =
                     </div>
                   </div>
 
-                  {premarketPrice != null ? (
+                  {showPostMarketClose ? (
+                    <div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-semibold text-white/90">
+                          {formatPrice(afterHoursPrice)}
+                        </span>
+                        <span className={`text-sm font-bold ${afterHoursTone}`}>
+                          {afterHoursChange != null && afterHoursChangePct != null
+                            ? `${afterHoursChange > 0 ? "+" : ""}${afterHoursChange.toFixed(2)} (${afterHoursChangePct > 0 ? "+" : ""}${afterHoursChangePct.toFixed(2)}%)`
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-cyan-200/70">
+                        <span className="h-1.5 w-1.5 rounded-full bg-cyan-300" />
+                        Post-market close: {formatTimeLabel(stockSessionSummary.afterHoursTime)}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {showPremarket ? (
                     <div>
                       <div className="flex items-baseline gap-2">
                         <span className="text-2xl font-semibold text-white/90">
@@ -4410,25 +4455,6 @@ const gapFillLabel =
                       <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-amber-200/80">
                         <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                         Pre-market: {formatTimeLabel(stockSessionSummary.premarketTime)}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {afterHoursPrice != null ? (
-                    <div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-semibold text-white/90">
-                          {formatPrice(afterHoursPrice)}
-                        </span>
-                        <span className={`text-sm font-bold ${afterHoursTone}`}>
-                          {afterHoursChange != null && afterHoursChangePct != null
-                            ? `${afterHoursChange > 0 ? "+" : ""}${afterHoursChange.toFixed(2)} (${afterHoursChangePct > 0 ? "+" : ""}${afterHoursChangePct.toFixed(2)}%)`
-                            : "—"}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-cyan-200/70">
-                        <span className="h-1.5 w-1.5 rounded-full bg-cyan-300" />
-                        After hours: {formatTimeLabel(stockSessionSummary.afterHoursTime)}
                       </div>
                     </div>
                   ) : null}

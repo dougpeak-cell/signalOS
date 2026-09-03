@@ -61,6 +61,11 @@ export function isExtendedSessionTimestamp(ts: number): boolean {
     minutes >= 16 * 60 && minutes < 20 * 60;
 }
 
+export function isPremarketTimestamp(ts: number): boolean {
+  const minutes = getMinutesOfDay(ts);
+  return minutes >= 4 * 60 && minutes < 9 * 60 + 30;
+}
+
 export function getStockSessionSummary(bars: BaseBar[]): StockSessionSummary {
   const sorted = [...bars].sort((left, right) => left.time - right.time);
   if (!sorted.length) {
@@ -104,8 +109,8 @@ export function getStockSessionSummary(bars: BaseBar[]): StockSessionSummary {
     return dateKey === latestDateKey && minutesOfDay >= 4 * 60 && minutesOfDay < 9 * 60 + 30;
   });
   const afterHoursBars = sorted.filter((bar) => {
-    const { dateKey, minutesOfDay } = getMarketDateAndMinutes(bar.time);
-    return dateKey === latestDateKey && minutesOfDay >= 16 * 60 && minutesOfDay < 20 * 60;
+    const { minutesOfDay } = getMarketDateAndMinutes(bar.time);
+    return minutesOfDay >= 16 * 60 && minutesOfDay < 20 * 60;
   });
   const regularCloseBar = latestRegularBars.at(-1) ?? null;
   const previousCloseBar = previousRegularBars.at(-1) ?? null;
