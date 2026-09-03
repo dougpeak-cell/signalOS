@@ -16,9 +16,11 @@ import { resolveShellViewMode } from "@/lib/shell/viewMode";
 import {
   clearPortfolioHoldings,
   getDefaultPortfolioHoldings,
+  hidePortfolioTicker,
   hasInitializedPortfolioHoldings,
   readPortfolioHoldings,
   replacePortfolioHoldings,
+  unhidePortfolioTicker,
   type LocalPortfolioHolding,
 } from "@/lib/portfolio/localPortfolio";
 
@@ -1363,6 +1365,7 @@ function PortfolioPageContent() {
       if (!Number.isFinite(entryPrice) || entryPrice <= 0) return;
       if (!Number.isFinite(requestedPrice) || requestedPrice <= 0) return;
 
+      unhidePortfolioTicker(nextTicker);
       setHoldings((prev) => {
         const existingIndex = prev.findIndex((holding) => holding.ticker === nextTicker);
         const nextHolding: Holding = {
@@ -1504,6 +1507,8 @@ function PortfolioPageContent() {
   function handleClosePosition(ticker: string) {
     const confirmed = window.confirm(`Close ${ticker} and remove it from active portfolio?`);
     if (!confirmed) return;
+
+    hidePortfolioTicker(ticker);
 
     setHoldings((prev) => {
       const next = prev.filter(

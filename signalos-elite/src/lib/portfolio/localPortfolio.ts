@@ -1,5 +1,6 @@
 const PORTFOLIO_STORAGE_KEY = "signalos.portfolio.holdings.v1";
 const PORTFOLIO_TICKERS_KEY = "signalos.portfolio.tickers.v1";
+const PORTFOLIO_HIDDEN_KEY = "signalos.portfolio.hidden.v1";
 const PORTFOLIO_STORAGE_INITIALIZED_KEY =
   "signalos.portfolio.holdings.initialized.v1";
 
@@ -140,6 +141,49 @@ export function hasInitializedPortfolioHoldings(): boolean {
   return window.localStorage.getItem(PORTFOLIO_STORAGE_INITIALIZED_KEY) === "1";
 }
 
+export function readHiddenPortfolioTickers(): string[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = window.localStorage.getItem(PORTFOLIO_HIDDEN_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+
+    return Array.from(
+      new Set(parsed.map((item) => normalizeTicker(String(item ?? ""))).filter(Boolean))
+    );
+  } catch {
+    return [];
+  }
+}
+
+function writeHiddenPortfolioTickers(tickers: string[]) {
+  if (typeof window === "undefined") return;
+
+  window.localStorage.setItem(
+    PORTFOLIO_HIDDEN_KEY,
+    JSON.stringify(
+      Array.from(new Set(tickers.map((item) => normalizeTicker(item)).filter(Boolean)))
+    )
+  );
+}
+
+export function hidePortfolioTicker(ticker: string) {
+  const normalized = normalizeTicker(ticker);
+  if (!normalized) return;
+
+  writeHiddenPortfolioTickers([...readHiddenPortfolioTickers(), normalized]);
+}
+
+export function unhidePortfolioTicker(ticker: string) {
+  const normalized = normalizeTicker(ticker);
+  if (!normalized) return;
+
+  writeHiddenPortfolioTickers(
+    readHiddenPortfolioTickers().filter((item) => item !== normalized)
+  );
+}
+
 function writePortfolioHoldings(
   holdings: LocalPortfolioHolding[],
   options?: { dispatchEvent?: boolean }
@@ -210,6 +254,7 @@ export function addPendingPortfolioHolding(
   };
 
   const next = [nextHolding, ...current];
+  unhidePortfolioTicker(ticker);
   writePortfolioHoldings(next);
 
   return { added: true, tickers: next.map((holding) => holding.ticker) };

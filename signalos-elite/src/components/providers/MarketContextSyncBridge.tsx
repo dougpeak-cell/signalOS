@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import type { PortfolioItem, WatchlistItem } from "@/lib/intelligence/buildMarketIntel";
 import {
+  readHiddenPortfolioTickers,
   readPortfolioHoldings,
   replacePortfolioHoldings,
   type LocalPortfolioHolding,
@@ -160,22 +161,27 @@ export default function MarketContextSyncBridge() {
       }
     }
 
-    function applySharedMarketContext(data: SharedMarketContextResponse) {
+    function applySharedMarketContext(data: SharedMarketContextResponse): boolean {
       const nextWatchlist = normalizeWatchlistPayload(
         Array.isArray(data.watchlist) ? data.watchlist : []
       );
-      const nextPortfolio = normalizePortfolioPayload(
+      const remotePortfolio = normalizePortfolioPayload(
         Array.isArray(data.portfolio) ? data.portfolio : []
       );
+      const hiddenPortfolioTickers = new Set(readHiddenPortfolioTickers());
+      const nextPortfolio = remotePortfolio.filter(
+        (holding) => !hiddenPortfolioTickers.has(normalizeTicker(holding.ticker))
+      );
+      const suppressedRemoteHolding = nextPortfolio.length !== remotePortfolio.length;
 
       applyingRemote = true;
       writeWatchlistEntries(nextWatchlist);
       replacePortfolioHoldings(nextPortfolio, { dispatchEvent: false });
       window.dispatchEvent(new Event("signalos:portfolio-updated"));
-      lastSyncedSignature = buildLocalSignature();
-      window.setTimeout(() => {
-        applyingRemote = false;
-      }, 0);
+      lastSyncedSignature = suppressedRemoteHolding ? null : buildLocalSignature();
+      applyingRemote = false;
+
+      return suppressedRemoteHolding;
     }
 
     async function syncLocalToSharedStore() {
@@ -230,7 +236,10 @@ export default function MarketContextSyncBridge() {
         buildWatchlistPayload().length > 0 || buildPortfolioPayload().length > 0;
 
       if (hasRemoteData) {
-        applySharedMarketContext(data);
+        const suppressedRemoteHolding = applySharedMarketContext(data);
+        if (suppressedRemoteHolding) {
+          await syncLocalToSharedStore();
+        }
         return;
       }
 
