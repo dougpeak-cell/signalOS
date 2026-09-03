@@ -30,6 +30,21 @@ describe("getStockSessionSummary", () => {
     expect(summary.afterHoursPrice).toBe(203.18);
   });
 
+  it("uses the prior regular session as the close during pre-market", () => {
+    const summary = getStockSessionSummary([
+      bar("2026-09-01T19:59:00Z", 199.54),
+      bar("2026-09-02T19:59:00Z", 204.09),
+      bar("2026-09-03T08:00:00Z", 202.4),
+      bar("2026-09-03T11:52:00Z", 201.86),
+    ]);
+
+    expect(summary.previousClose).toBe(199.54);
+    expect(summary.regularClose).toBe(204.09);
+    expect(summary.premarketPrice).toBe(201.86);
+    expect(summary.premarketTime).toBe(Date.parse("2026-09-03T11:52:00Z") / 1000);
+    expect(summary.afterHoursPrice).toBeNull();
+  });
+
   it("recognizes premarket and after-hours timestamps", () => {
     expect(isExtendedSessionTimestamp(Date.parse("2026-09-02T12:00:00Z") / 1000)).toBe(true);
     expect(isExtendedSessionTimestamp(Date.parse("2026-09-02T15:00:00Z") / 1000)).toBe(false);

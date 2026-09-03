@@ -20,6 +20,8 @@ export type StockSessionSummary = {
   regularClose: number | null;
   regularCloseTime: number | null;
   previousClose: number | null;
+  premarketPrice: number | null;
+  premarketTime: number | null;
   afterHoursPrice: number | null;
   afterHoursTime: number | null;
 };
@@ -66,6 +68,8 @@ export function getStockSessionSummary(bars: BaseBar[]): StockSessionSummary {
       regularClose: null,
       regularCloseTime: null,
       previousClose: null,
+      premarketPrice: null,
+      premarketTime: null,
       afterHoursPrice: null,
       afterHoursTime: null,
     };
@@ -73,29 +77,47 @@ export function getStockSessionSummary(bars: BaseBar[]): StockSessionSummary {
 
   const latestDateKey = getDateKey(sorted[sorted.length - 1].time);
   const dateKeys = Array.from(new Set(sorted.map((bar) => getDateKey(bar.time))));
-  const previousDateKey = dateKeys.at(-2) ?? null;
-  const latestRegularBars = sorted.filter((bar) => {
-    const { dateKey, minutesOfDay } = getMarketDateAndMinutes(bar.time);
-    return dateKey === latestDateKey && minutesOfDay >= 9 * 60 + 30 && minutesOfDay < 16 * 60;
-  });
-  const previousRegularBars = previousDateKey
+  const regularDateKeys = dateKeys.filter((dateKey) =>
+    sorted.some((bar) => {
+      const marketTime = getMarketDateAndMinutes(bar.time);
+      return marketTime.dateKey === dateKey &&
+        marketTime.minutesOfDay >= 9 * 60 + 30 &&
+        marketTime.minutesOfDay < 16 * 60;
+    }),
+  );
+  const latestRegularDateKey = regularDateKeys.at(-1) ?? null;
+  const previousRegularDateKey = regularDateKeys.at(-2) ?? null;
+  const latestRegularBars = latestRegularDateKey
     ? sorted.filter((bar) => {
         const { dateKey, minutesOfDay } = getMarketDateAndMinutes(bar.time);
-        return dateKey === previousDateKey && minutesOfDay >= 9 * 60 + 30 && minutesOfDay < 16 * 60;
+        return dateKey === latestRegularDateKey && minutesOfDay >= 9 * 60 + 30 && minutesOfDay < 16 * 60;
       })
     : [];
+  const previousRegularBars = previousRegularDateKey
+    ? sorted.filter((bar) => {
+        const { dateKey, minutesOfDay } = getMarketDateAndMinutes(bar.time);
+        return dateKey === previousRegularDateKey && minutesOfDay >= 9 * 60 + 30 && minutesOfDay < 16 * 60;
+      })
+    : [];
+  const premarketBars = sorted.filter((bar) => {
+    const { dateKey, minutesOfDay } = getMarketDateAndMinutes(bar.time);
+    return dateKey === latestDateKey && minutesOfDay >= 4 * 60 && minutesOfDay < 9 * 60 + 30;
+  });
   const afterHoursBars = sorted.filter((bar) => {
     const { dateKey, minutesOfDay } = getMarketDateAndMinutes(bar.time);
     return dateKey === latestDateKey && minutesOfDay >= 16 * 60 && minutesOfDay < 20 * 60;
   });
   const regularCloseBar = latestRegularBars.at(-1) ?? null;
   const previousCloseBar = previousRegularBars.at(-1) ?? null;
+  const premarketBar = premarketBars.at(-1) ?? null;
   const afterHoursBar = afterHoursBars.at(-1) ?? null;
 
   return {
     regularClose: regularCloseBar?.close ?? null,
     regularCloseTime: regularCloseBar?.time ?? null,
     previousClose: previousCloseBar?.close ?? null,
+    premarketPrice: premarketBar?.close ?? null,
+    premarketTime: premarketBar?.time ?? null,
     afterHoursPrice: afterHoursBar?.close ?? null,
     afterHoursTime: afterHoursBar?.time ?? null,
   };
