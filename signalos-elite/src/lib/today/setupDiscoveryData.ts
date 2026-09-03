@@ -221,8 +221,11 @@ export async function getSetupDiscoveryData(
       const fundamentals = fundamentalsMap.get(ticker);
       const quote = serverQuoteMap[ticker];
       const completedPrice = completedPriceStats[ticker];
-      const livePrice = completedPrice?.close ?? quote?.price ?? row.price ?? null;
-      const liveChangePercent = completedPrice?.changePercent ?? quote?.changePct ?? null;
+      const hasLiveQuote = quote?.source === "api";
+      const livePrice =
+        (hasLiveQuote ? quote.price : null) ?? completedPrice?.close ?? row.price ?? null;
+      const liveChangePercent =
+        (hasLiveQuote ? quote.changePct : null) ?? completedPrice?.changePercent ?? null;
       const explicitTone = signalToneFromRow(row, livePrice);
       const tone =
         explicitTone !== "neutral"
@@ -248,11 +251,11 @@ export async function getSetupDiscoveryData(
         ticker,
         mergeCandidate(mergedCandidates.get(ticker), {
           ticker,
-          marketDataAsOf: completedPrice?.date ?? null,
-          marketDataSource: completedPrice
-            ? "completed-session"
-            : quote?.source === "api"
-              ? "intraday"
+          marketDataAsOf: hasLiveQuote ? null : completedPrice?.date ?? null,
+          marketDataSource: hasLiveQuote
+            ? "intraday"
+            : completedPrice
+              ? "completed-session"
               : "fallback",
           name: row.company_name ?? fundamentals?.name ?? ticker,
           sector: resolveSector({ symbol: ticker, sector: row.sector }),
