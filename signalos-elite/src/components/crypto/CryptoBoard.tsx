@@ -4,7 +4,9 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import CryptoPageTabs from "@/components/crypto/CryptoPageTabs";
+import CryptoPageTabs, {
+  type CryptoPageTabKey,
+} from "@/components/crypto/CryptoPageTabs";
 import CryptoQuickViewRow from "@/components/crypto/CryptoQuickViewRow";
 import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
@@ -144,6 +146,10 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
   );
   const isCategoryBoard = config.variant === "meme" || config.variant === "defi" || config.variant === "rwa";
   const isGeneralBoard = config.variant === "general";
+  const activePageTab: CryptoPageTabKey =
+    config.variant === "meme" || config.variant === "defi" || config.variant === "rwa"
+      ? config.variant
+      : "market";
   const showPrimaryChips = isCategoryBoard || isGeneralBoard;
   const showGeneralFilters = isGeneralBoard;
 
@@ -464,24 +470,26 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
             isMobilePreview ? "mb-6 gap-4" : "md:flex-row md:items-end",
           ].join(" ")}
         >
-          <div className={isMobilePreview ? "pr-28" : ""}>
-            <div className={["inline-flex rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200", isMobilePreview ? "mb-2" : "mb-3"].join(" ")}>
-              {config.eyebrow}
+          <div>
+            <div className={isMobilePreview ? "pr-28" : ""}>
+              <div className={["inline-flex rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200", isMobilePreview ? "mb-2" : "mb-3"].join(" ")}>
+                {config.eyebrow}
+              </div>
+
+              <h1
+                className={[
+                  "font-semibold tracking-tight",
+                  isMobilePreview ? "text-3xl" : "text-4xl md:text-5xl",
+                ].join(" ")}
+              >
+                {config.title}
+              </h1>
+
+              <p className={["max-w-2xl text-sm leading-6 text-white/55", isMobilePreview ? "mt-2" : "mt-3"].join(" ")}>{config.description}</p>
             </div>
 
-            <h1
-              className={[
-                "font-semibold tracking-tight",
-                isMobilePreview ? "text-3xl" : "text-4xl md:text-5xl",
-              ].join(" ")}
-            >
-              {config.title}
-            </h1>
-
-            <p className={["max-w-2xl text-sm leading-6 text-white/55", isMobilePreview ? "mt-2" : "mt-3"].join(" ")}>{config.description}</p>
-
             <CryptoPageTabs
-              active="market"
+              active={activePageTab}
               isMobilePreview={isMobilePreview}
               className={isMobilePreview ? "mt-4" : "mt-5"}
             />
