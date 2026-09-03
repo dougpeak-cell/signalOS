@@ -93,5 +93,57 @@ describe(
         );
       },
     );
+
+    it(
+      "changes scenario probabilities when the selected horizon changes",
+      () => {
+        const input = {
+          symbol: "TEST",
+          currentPrice: 100,
+          stockPulse: 28,
+          stockConfidence: 88,
+          marketPulse: 72,
+          marketConfidence: 82,
+          sectorPulse: 76,
+          sectorConfidence: 80,
+          industryPulse: 74,
+          industryConfidence: 78,
+          alignmentScore: 70,
+          alignmentConfidence: 84,
+          components: {
+            trend: 24,
+            movingAverage: 27,
+            volume: 31,
+            range: 29,
+            riskControl: 38,
+            macro: 71,
+            breadth: 68,
+          },
+        };
+        const intraday = calculateFutureMap({ ...input, horizon: "intraday" });
+        const swing = calculateFutureMap({ ...input, horizon: "swing" });
+        const position = calculateFutureMap({ ...input, horizon: "position" });
+
+        expect([
+          intraday.bullProbability,
+          intraday.baseProbability,
+          intraday.bearProbability,
+        ]).not.toEqual([
+          swing.bullProbability,
+          swing.baseProbability,
+          swing.bearProbability,
+        ]);
+        expect([
+          position.bullProbability,
+          position.baseProbability,
+          position.bearProbability,
+        ]).not.toEqual([
+          swing.bullProbability,
+          swing.baseProbability,
+          swing.bearProbability,
+        ]);
+        expect(intraday.bearProbability).toBeGreaterThan(position.bearProbability);
+      },
+    );
   },
 );

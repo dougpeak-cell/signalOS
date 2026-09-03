@@ -98,6 +98,10 @@ export default function LiveFutureMap({
           );
         }
 
+        if (payload.futureMap.horizon !== horizon) {
+          throw new Error("FutureMap returned an outdated horizon.");
+        }
+
         if (!cancelled) {
           setData(payload);
         }
@@ -260,7 +264,10 @@ function FutureMapOverview({
           <p className="mt-2 text-sm text-slate-400">
             {map.bias} . Grade{" "}
             {map.grade} .{" "}
-            {map.riskLevel} Risk
+            {map.riskLevel} Risk .{" "}
+            <span className="capitalize text-cyan-200">
+              {map.horizon} horizon
+            </span>
           </p>
         </div>
 

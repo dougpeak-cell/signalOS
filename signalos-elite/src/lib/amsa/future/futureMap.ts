@@ -52,6 +52,7 @@ export function calculateFutureMap(
 	const probabilityBreakdown =
 		calculateFutureProbabilities(
 			evidence,
+			input.horizon,
 		);
 
 	const confidence =

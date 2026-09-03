@@ -5,6 +5,7 @@ import {
 
 import type {
 	AMSAFutureEvidence,
+	AMSAFutureMapHorizon,
 	AMSAFutureProbabilityBreakdown,
 } from "../types";
 
@@ -25,12 +26,21 @@ import type {
 
 export function calculateFutureProbabilities(
 	evidence: AMSAFutureEvidence[],
+	horizon: AMSAFutureMapHorizon = "swing",
 ): AMSAFutureProbabilityBreakdown {
 	const usableEvidence = evidence.filter(
 		(item) =>
 			Number.isFinite(item.impact) &&
 			Number.isFinite(item.confidence),
-	);
+	).map((item) => ({
+		...item,
+		impact:
+			item.impact *
+			getHorizonEvidenceWeight(
+				horizon,
+				item.category,
+			),
+	}));
 
 	if (!usableEvidence.length) {
 		return {
@@ -272,4 +282,24 @@ function normalizeProbabilities(
 			100,
 		),
 	};
+}
+
+function getHorizonEvidenceWeight(
+	horizon: AMSAFutureMapHorizon,
+	category: AMSAFutureEvidence["category"],
+): number {
+	if (horizon === "swing") return 1;
+
+	if (horizon === "intraday") {
+		if (["trend", "volume", "range", "volatility"].includes(category)) return 1.3;
+		if (["stock", "risk", "evolution", "catalyst"].includes(category)) return 1.15;
+		if (["market", "breadth"].includes(category)) return 0.9;
+		if (["sector", "alignment"].includes(category)) return 0.8;
+		return 0.65;
+	}
+
+	if (["market", "sector", "industry", "alignment", "macro"].includes(category)) return 1.25;
+	if (["risk", "breadth", "catalyst"].includes(category)) return 1.1;
+	if (["stock", "trend", "evolution"].includes(category)) return 0.85;
+	return 0.7;
 }
