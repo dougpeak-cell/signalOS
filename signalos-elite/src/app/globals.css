@@ -188,6 +188,14 @@ body {
   /* No forced height or overflow */
 }
 
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 [data-right-rail] {
   /* No forced overflow */
 }

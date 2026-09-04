@@ -169,7 +169,7 @@ export default function AddStockModal({
       seen.add(ticker);
       return true;
     });
-  }, [localFiltered, liveResults]);
+  }, [localFiltered, liveResults, query]);
 
   const exactTickerFallback = useMemo<DisplayStockOption | null>(() => {
     if (filtered.length > 0 || !isTickerLikeQuery(query) || !normalizedQuery) {
@@ -204,9 +204,9 @@ export default function AddStockModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/70 px-4">
-      <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-neutral-950 p-5 shadow-[0_0_60px_rgba(0,0,0,0.45)]">
-        <div className="flex items-start justify-between gap-4">
+    <div className="fixed inset-0 z-100 flex items-start justify-center overflow-y-auto bg-black/70 px-4 py-4 sm:items-center">
+      <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-neutral-950 p-4 shadow-[0_0_60px_rgba(0,0,0,0.45)] sm:p-5">
+        <div className="flex shrink-0 items-start justify-between gap-4">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-300/75">
               SigiOS
@@ -235,7 +235,7 @@ export default function AddStockModal({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search ticker or company..."
-            className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none transition focus:border-cyan-400/40"
+            className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-base text-white placeholder:text-white/35 outline-none transition focus:border-cyan-400/40 md:text-sm"
           />
         </div>
 
@@ -243,7 +243,7 @@ export default function AddStockModal({
           {isSearching ? "Searching live market data…" : null}
         </div>
 
-        <div className="mt-3 max-h-105 space-y-3 overflow-y-auto pr-1">
+        <div className="mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1">
           {visibleResults.length === 0 ? (
             <div className="space-y-3">
               <div className="rounded-2xl border border-dashed border-white/10 bg-white/3 px-4 py-6 text-center text-sm text-white/55">
@@ -256,7 +256,7 @@ export default function AddStockModal({
                   onClick={() => handleAdd(normalizedQuery)}
                   className="w-full rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-400/16 hover:text-cyan-100"
                 >
-                  Add "{normalizedQuery}" directly
+                  Add &quot;{normalizedQuery}&quot; directly
                 </button>
               ) : null}
             </div>
