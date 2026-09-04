@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import { useShellMarketContext } from "@/components/shell/ShellMarketContext";
 import TickerActionButton from "@/components/sigi/TickerActionButton";
 import TickerLogo from "@/components/stocks/TickerLogo";
 import SignalOSScoreV2 from "@/components/stocks/SignalOSScoreV2";
+import AddStockModal from "@/components/watchlist/AddStockModal";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { useSyncedWatchlist } from "@/hooks/useSyncedWatchlist";
 import { buildMasterScoreRow } from "@/lib/analysis/buildMasterScoreRow";
+import { COMPANY_PROFILES } from "@/lib/companyProfiles";
 import { buildSparklinePath, getSeriesTrend } from "@/lib/market/sparkline";
 import { resolveShellViewMode } from "@/lib/shell/viewMode";
 import {
@@ -1003,6 +1005,7 @@ export default function WatchlistPage() {
   } = useLiveMarket();
   const { tickers: syncedWatchlistTickers } = useSyncedWatchlist();
   const [watchlistRows, setWatchlistRows] = useState<WatchlistRow[]>([]);
+  const [addStockOpen, setAddStockOpen] = useState(false);
   const [hydratedQuoteMap, setHydratedQuoteMap] = useState<Record<string, HydratedWatchlistQuote>>(
     {}
   );
@@ -1389,13 +1392,49 @@ export default function WatchlistPage() {
     ).length;
   }, [scoredRows]);
 
+  const stockOptions = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          [
+            ...Object.values(COMPANY_PROFILES).map((profile) => ({
+              ticker: profile.ticker,
+              company: profile.name,
+              sector: profile.sector,
+            })),
+            ...WATCHLIST.map((row) => ({
+              ticker: row.ticker,
+              company: row.name,
+              sector: row.sector,
+            })),
+          ].map((stock) => [normalizeTicker(stock.ticker), stock])
+        ).values()
+      ),
+    []
+  );
+
   return (
     <main className="min-h-screen bg-black text-white">
+      <AddStockModal
+        open={addStockOpen}
+        onClose={() => setAddStockOpen(false)}
+        stocks={stockOptions}
+        onAdded={() => setAddStockOpen(false)}
+      />
       <div className="w-full pb-10 pt-4">
         <div className="min-w-0 space-y-6">
           <div className="overflow-hidden rounded-[28px] border border-cyan-400/14 bg-linear-to-b from-cyan-500/5 via-black to-black shadow-[0_0_0_1px_rgba(34,211,238,0.04)]">
             <div className="border-b border-white/6 px-4 py-4 md:px-5">
               <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setAddStockOpen(true)}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white transition hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+                >
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  Add Stock
+                </button>
+
                 {canUseDetail ? (
                   <Link
                     href={buildWatchlistModeHref("detail")}
