@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveCurrentStockPulse } from "@/lib/amsa";
 import { getStoredMarketContext } from "@/lib/intelligence/contextStore";
 import { calculateDNAAlignment } from "@/lib/vision/dnaAlignment";
 import { calculateOpportunityScore } from "@/lib/vision/opportunityScore";
@@ -405,9 +406,39 @@ export async function GET(request: NextRequest) {
     futureMap.livePriceProvider = stock.priceProvider;
   }
 
+  const watchPulseEntries = await Promise.all(
+    watchRows.map(async ({ watchSymbol }) => {
+      if (watchSymbol === symbol) {
+        return [
+          watchSymbol,
+          {
+            pulse: displayPulse,
+            direction: stock.direction,
+          },
+        ] as const;
+      }
+
+      try {
+        const { current } = await resolveCurrentStockPulse(watchSymbol);
+
+        return [
+          watchSymbol,
+          {
+            pulse: current.displayPulse,
+            direction: normalizeWorkspaceDirection(current.direction),
+          },
+        ] as const;
+      } catch {
+        return [watchSymbol, null] as const;
+      }
+    })
+  );
+  const watchPulseMap = new Map(watchPulseEntries);
+
   const watchlist = watchRows.map(({ watchSymbol, item }) => {
     const quote = liveQuoteMap.get(watchSymbol);
     const storedItem = typeof item === "string" ? null : item;
+    const currentPulse = watchPulseMap.get(watchSymbol);
 
     return {
       symbol: watchSymbol,
@@ -419,10 +450,11 @@ export async function GET(request: NextRequest) {
         ? `Massive (${text(quote.source, "stock")})`
         : null,
       priceStatus: getPriceStatus(quote?.updatedMs, quote?.source),
-      pulse: num(
-        storedItem?.score ?? storedItem?.masterScore ?? storedItem?.conviction
-      ),
-      direction: normalizeWorkspaceDirection(storedItem?.signal),
+      pulse:
+        currentPulse?.pulse ??
+        num(storedItem?.score ?? storedItem?.masterScore ?? storedItem?.conviction),
+      direction:
+        currentPulse?.direction ?? normalizeWorkspaceDirection(storedItem?.signal),
     };
   });
 
