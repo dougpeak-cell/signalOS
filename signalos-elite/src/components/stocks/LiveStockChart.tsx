@@ -1455,6 +1455,8 @@ export default function LiveStockChart({
   const liveRangeSpanRef = useRef<number | null>(null);
   const candleDensityModeRef = useRef<CandleDensityMode>("standard");
   const priceScaleModeRef = useRef<PriceScaleMode>("standard");
+  const fullscreenScrollPositionRef = useRef({ left: 0, top: 0 });
+  const fullscreenAnchorOffsetRef = useRef(0);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
@@ -1908,21 +1910,6 @@ export default function LiveStockChart({
 
       if (!next) {
         requestAnimationFrame(() => {
-          const pageScroller =
-            document.scrollingElement || document.documentElement || document.body;
-
-          if (pageScroller) {
-            pageScroller.scrollLeft = 0;
-          }
-
-          document.documentElement.scrollLeft = 0;
-          document.body.scrollLeft = 0;
-          window.scrollTo({
-           top: 0,
-           left: 0,
-           behavior: "smooth",
-          });
-
           window.setTimeout(() => {
             try {
               chartApiRef.current?.timeScale().scrollToRealTime();
@@ -1952,19 +1939,44 @@ export default function LiveStockChart({
     const prevHtmlWidth = html.style.width;
     const prevHtmlMargin = html.style.marginInline;
     const prevHtmlOverflow = html.style.overflow;
+    const prevHtmlOverflowAnchor = html.style.overflowAnchor;
+    const prevHtmlScrollBehavior = html.style.scrollBehavior;
     const prevBodyMaxWidth = body.style.maxWidth;
     const prevBodyWidth = body.style.width;
     const prevBodyMargin = body.style.marginInline;
     const prevBodyOverflow = body.style.overflow;
+    const prevBodyOverflowAnchor = body.style.overflowAnchor;
+    const prevBodyScrollBehavior = body.style.scrollBehavior;
+    const prevBodyPosition = body.style.position;
+    const prevBodyTop = body.style.top;
+    const prevBodyLeft = body.style.left;
+    const fullscreenAncestors: Array<{ element: HTMLElement; zIndex: string }> = [];
+    let ancestor = containerRef.current?.parentElement;
+
+    while (ancestor && ancestor !== body) {
+      if (window.getComputedStyle(ancestor).position !== "static") {
+        fullscreenAncestors.push({ element: ancestor, zIndex: ancestor.style.zIndex });
+        ancestor.style.zIndex = "2147483646";
+      }
+
+      ancestor = ancestor.parentElement;
+    }
 
     html.style.maxWidth = "none";
     html.style.width = "100%";
     html.style.marginInline = "0";
     html.style.overflow = "hidden";
+    html.style.overflowAnchor = "none";
+    html.style.scrollBehavior = "auto";
     body.style.maxWidth = "none";
     body.style.width = "100%";
     body.style.marginInline = "0";
     body.style.overflow = "hidden";
+    body.style.overflowAnchor = "none";
+    body.style.scrollBehavior = "auto";
+    body.style.position = "fixed";
+    body.style.top = `-${fullscreenScrollPositionRef.current.top}px`;
+    body.style.left = `-${fullscreenScrollPositionRef.current.left}px`;
 
     return () => {
       html.style.maxWidth = prevHtmlMaxWidth;
@@ -1975,6 +1987,37 @@ export default function LiveStockChart({
       body.style.width = prevBodyWidth;
       body.style.marginInline = prevBodyMargin;
       body.style.overflow = prevBodyOverflow;
+      body.style.position = prevBodyPosition;
+      body.style.top = prevBodyTop;
+      body.style.left = prevBodyLeft;
+
+      for (const { element, zIndex } of fullscreenAncestors) {
+        element.style.zIndex = zIndex;
+      }
+
+      const restoreScrollPosition = () => {
+        const anchorTop = containerRef.current?.getBoundingClientRect().top;
+        const top = typeof anchorTop === "number"
+          ? window.scrollY + anchorTop - fullscreenAnchorOffsetRef.current
+          : fullscreenScrollPositionRef.current.top;
+
+        window.scrollTo({
+          left: fullscreenScrollPositionRef.current.left,
+          top,
+          behavior: "auto",
+        });
+      };
+
+      restoreScrollPosition();
+      requestAnimationFrame(restoreScrollPosition);
+      window.setTimeout(restoreScrollPosition, 120);
+      window.setTimeout(() => {
+        restoreScrollPosition();
+        html.style.overflowAnchor = prevHtmlOverflowAnchor;
+        body.style.overflowAnchor = prevBodyOverflowAnchor;
+        html.style.scrollBehavior = prevHtmlScrollBehavior;
+        body.style.scrollBehavior = prevBodyScrollBehavior;
+      }, 180);
     };
   }, [isChartFullscreen]);
 
@@ -2730,8 +2773,10 @@ export default function LiveStockChart({
 
   async function handleExitFullscreen() {
     try {
+      const hadNativeFullscreen = Boolean(document.fullscreenElement);
       setIsPseudoFullscreen(false);
-      if (document.fullscreenElement) {
+
+      if (hadNativeFullscreen) {
         await document.exitFullscreen();
       }
     } catch {}
@@ -2740,6 +2785,21 @@ export default function LiveStockChart({
   const toggleFullscreen = useCallback(async () => {
     if (isChartFullscreen) {
       await handleExitFullscreen();
+      return;
+    }
+
+    fullscreenScrollPositionRef.current = {
+      left: window.scrollX,
+      top: window.scrollY,
+    };
+    fullscreenAnchorOffsetRef.current = containerRef.current?.getBoundingClientRect().top ?? 0;
+
+    const shouldUsePseudoFullscreen = window.matchMedia(
+      "(max-width: 767px), (hover: none) and (pointer: coarse)"
+    ).matches;
+
+    if (shouldUsePseudoFullscreen) {
+      setIsPseudoFullscreen(true);
       return;
     }
 
@@ -5190,7 +5250,7 @@ const gapFillLabel =
         >
           <div
             ref={containerRef}
-            className={isChartFullscreen ? "fixed inset-0 z-9999 h-screen w-screen bg-black" : "relative w-full"}
+            className={isChartFullscreen ? "fixed inset-0 z-9999 h-dvh w-screen bg-black" : "relative w-full"}
           >
             <button
               type="button"
@@ -5210,7 +5270,7 @@ const gapFillLabel =
               ref={chartWrapRef}
               className={
                 isChartFullscreen
-                  ? "relative h-screen w-screen overflow-hidden bg-black"
+                  ? "relative h-dvh w-screen overflow-hidden bg-black"
                   : compactMobile
                     ? "relative h-75 overflow-hidden bg-black"
                     : "relative min-h-130 overflow-hidden rounded-3xl border border-cyan-400/15 bg-black"
