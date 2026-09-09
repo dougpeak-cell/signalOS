@@ -14,6 +14,7 @@ import SigiOnboarding from "@/components/sigi/SigiOnboarding";
 import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
 import TodayActionRowClient from "@/components/today/TodayActionRowClient";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
+import EliteSignalScorecard from "@/components/today/EliteSignalScorecard";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
 import TodayStockPulseQuickAccess from "@/components/today/TodayStockPulseQuickAccess";
 import UpcomingEarningsPanel from "@/components/today/UpcomingEarningsPanel";
@@ -1232,6 +1233,10 @@ export default function MobileSigiHome({
         >
           View Full Screener →
         </Link>
+      </div>
+
+      <div className="mb-6">
+        <EliteSignalScorecard setups={bestStocks} hasSigiPro={tier === "pro"} />
       </div>
 
     </section>

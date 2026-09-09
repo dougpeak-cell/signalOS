@@ -5,6 +5,7 @@ import SectorComparisonPanel from "@/components/market/SectorComparisonPanel";
 import TodayActionRowClient from "@/components/today/TodayActionRowClient";
 import TodayBottomIntelRail from "@/components/today/TodayBottomIntelRail";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
+import EliteSignalScorecard from "@/components/today/EliteSignalScorecard";
 import TodayHeroRow from "@/components/today/TodayHeroRow";
 import TodayAutoRefresh from "@/components/today/TodayAutoRefresh";
 import TodayPageQueryTickerSync from "@/components/today/TodayPageQueryTickerSync";
@@ -137,6 +138,7 @@ export default async function TodayPageShell({
 						initialSetups={actionRowSetups}
 						initialUpdatedAt={actionRowUpdatedAt}
 					/>
+					<EliteSignalScorecard setups={actionRowSetups} hasSigiPro={hasSigiPro} />
 					<LiveAccessStrip hasPaidCryptoAccess={hasSigiPro} tier={hasSigiPro ? "pro" : hasSigiSmart ? "smart" : "free"} />
 
 					<TodaySecondaryIntelRow
