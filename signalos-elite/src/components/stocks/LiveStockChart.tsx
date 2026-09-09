@@ -2788,20 +2788,17 @@ export default function LiveStockChart({
       return;
     }
 
+    const isPhoneSurface = window.matchMedia(
+      "(max-width: 767px), (hover: none) and (pointer: coarse)"
+    ).matches;
+
+    if (isPhoneSurface) return;
+
     fullscreenScrollPositionRef.current = {
       left: window.scrollX,
       top: window.scrollY,
     };
     fullscreenAnchorOffsetRef.current = containerRef.current?.getBoundingClientRect().top ?? 0;
-
-    const shouldUsePseudoFullscreen = window.matchMedia(
-      "(max-width: 767px), (hover: none) and (pointer: coarse)"
-    ).matches;
-
-    if (shouldUsePseudoFullscreen) {
-      setIsPseudoFullscreen(true);
-      return;
-    }
 
     try {
       if (containerRef.current?.requestFullscreen) {
@@ -5255,7 +5252,7 @@ const gapFillLabel =
             <button
               type="button"
               onClick={toggleFullscreen}
-              className={`absolute left-4 top-4 z-20 rounded-lg border border-white/10 bg-black/40 px-3 py-1 text-xs text-white/70 hover:bg-black/60 ${compactMobile ? "hidden" : ""}`}
+              className={`absolute left-4 top-4 z-20 hidden rounded-lg border border-white/10 bg-black/40 px-3 py-1 text-xs text-white/70 hover:bg-black/60 md:inline-flex ${compactMobile ? "md:hidden" : ""}`}
             >
               {isChartFullscreen ? "Exit Fullscreen" : "Fullscreen"}
             </button>
