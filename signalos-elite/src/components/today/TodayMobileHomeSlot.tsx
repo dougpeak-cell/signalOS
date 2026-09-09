@@ -9,6 +9,7 @@ import type { RankedSetupItem } from "@/lib/today/setupDiscovery";
 import type {
   TodayCommandCenterEarningsRow,
   TodayCommandCenterNewsRow,
+  TodayEliteSearchItem,
   TodayMostTradedRow,
   TodayOpportunityItem,
   TodayRiskItem,
@@ -30,6 +31,7 @@ type TodayMobileHomeSlotProps = {
   leadershipWatch: TodaySetupItem[];
   highVolumeRows: TodayMostTradedRow[];
   watchlistRows: TodayWatchlistMoverRow[];
+  eliteSearch: TodayEliteSearchItem[];
   defaultSetupSession: TodaySetupSession;
   initialActionRowSetups: TodaySetupItem[];
   initialActionRowUpdatedAt: number;
@@ -51,6 +53,7 @@ export default function TodayMobileHomeSlot({
   leadershipWatch,
   highVolumeRows,
   watchlistRows,
+  eliteSearch,
   defaultSetupSession,
   initialActionRowSetups,
   initialActionRowUpdatedAt,
@@ -99,6 +102,7 @@ export default function TodayMobileHomeSlot({
         leadershipWatch={leadershipWatch}
         highVolumeRows={highVolumeRows}
         watchlistRows={watchlistRows}
+        eliteSearch={eliteSearch}
         defaultSetupSession={defaultSetupSession}
         initialActionRowSetups={initialActionRowSetups}
         initialActionRowUpdatedAt={initialActionRowUpdatedAt}

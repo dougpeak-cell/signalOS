@@ -6,6 +6,7 @@ import TodayActionRowClient from "@/components/today/TodayActionRowClient";
 import TodayBottomIntelRail from "@/components/today/TodayBottomIntelRail";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
 import EliteSignalScorecard from "@/components/today/EliteSignalScorecard";
+import EliteSearchPanel from "@/components/today/EliteSearchPanel";
 import TodayHeroRow from "@/components/today/TodayHeroRow";
 import TodayAutoRefresh from "@/components/today/TodayAutoRefresh";
 import TodayPageQueryTickerSync from "@/components/today/TodayPageQueryTickerSync";
@@ -44,6 +45,7 @@ type TodayPageShellProps = Pick<
 	| "watchlistMovers"
 	| "regularMostTradedRows"
 	| "preMarketRows"
+	| "eliteSearch"
 	| "sectorHeatmapItems"
 	| "sectorComparison"
 	| "opportunities"
@@ -76,6 +78,7 @@ export default async function TodayPageShell({
 	watchlistMovers,
 	regularMostTradedRows,
 	preMarketRows,
+	eliteSearch,
 	sectorHeatmapItems,
 	sectorComparison,
 	opportunities,
@@ -116,6 +119,7 @@ export default async function TodayPageShell({
 						leadershipWatch={leadershipWatch}
 						highVolumeRows={defaultSetupSession === "pre" ? preMarketRows : regularMostTradedRows}
 						watchlistRows={watchlistMovers}
+						eliteSearch={eliteSearch}
 						defaultSetupSession={defaultSetupSession}
 						initialActionRowSetups={actionRowSetups}
 						initialActionRowUpdatedAt={actionRowUpdatedAt}
@@ -139,6 +143,7 @@ export default async function TodayPageShell({
 						initialUpdatedAt={actionRowUpdatedAt}
 					/>
 					<EliteSignalScorecard setups={actionRowSetups} hasSigiPro={hasSigiPro} />
+					<EliteSearchPanel items={eliteSearch} />
 					<LiveAccessStrip hasPaidCryptoAccess={hasSigiPro} tier={hasSigiPro ? "pro" : hasSigiSmart ? "smart" : "free"} />
 
 					<TodaySecondaryIntelRow

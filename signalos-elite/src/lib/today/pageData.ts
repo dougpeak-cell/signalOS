@@ -30,6 +30,16 @@ export type TodayMostTradedRow = {
   pulse?: TickerNewsPulse | null;
 };
 
+export type TodayEliteSearchItem = {
+  ticker: string;
+  name: string;
+  price: number | null;
+  changePercent: number | null;
+  attentionScore: number;
+  reasonLabel: string;
+  pulse?: TickerNewsPulse | null;
+};
+
 export type TodaySetupItem = RankedSetupItem & {
   pulse?: TickerNewsPulse | null;
 };
@@ -125,6 +135,7 @@ export type TodayPageData = {
   watchlistMovers: TodayWatchlistMoverRow[];
   regularMostTradedRows: TodayMostTradedRow[];
   preMarketRows: TodayMostTradedRow[];
+  eliteSearch: TodayEliteSearchItem[];
   sectorHeatmapItems: TodaySectorHeatmapItem[];
   sectorComparison: SectorComparisonData;
   globalPulseItems: GlobalPulseTickerItem[];
@@ -516,6 +527,54 @@ function buildPreMarketRows(candidates: SetupDiscoveryCandidate[]): TodayMostTra
     })
     .slice(0, 10)
     .map(toMostTradedRow);
+}
+
+function buildEliteSearchItems(
+  candidates: SetupDiscoveryCandidate[],
+  pulseMap: Record<string, TickerNewsPulse>
+): TodayEliteSearchItem[] {
+  return candidates
+    .filter((candidate) => (toNumber(candidate.price) ?? 0) >= 2)
+    .map((candidate) => {
+      const ticker = candidate.ticker.trim().toUpperCase();
+      const changePercent = toNumber(candidate.changePercent);
+      const rvol = toNumber(candidate.rvol) ?? 0;
+      const volume = toNumber(candidate.volume) ?? 0;
+      const pulse = pulseMap[ticker] ?? null;
+      const hasCatalyst = Boolean(
+        pulse || candidate.hasNews || candidate.hasEarnings || candidate.hasAnalystAction
+      );
+      const attentionScore = Math.min(
+        100,
+        Math.round(
+          Math.abs(changePercent ?? 0) * 8 +
+            Math.min(rvol, 5) * 10 +
+            Math.min(20, Math.log10(Math.max(volume, 1)) * 3) +
+            (hasCatalyst ? 18 : 0)
+        )
+      );
+      const reasonLabel =
+        pulse?.topLabel ??
+        (candidate.hasEarnings
+          ? "Earnings interest"
+          : candidate.hasAnalystAction
+            ? "Analyst activity"
+            : rvol >= 1.5
+              ? `Relative volume ${rvol.toFixed(1)}x`
+              : "Price activity");
+
+      return {
+        ticker,
+        name: candidate.name?.trim() || ticker,
+        price: toNumber(candidate.price),
+        changePercent,
+        attentionScore,
+        reasonLabel,
+        pulse,
+      };
+    })
+    .sort((left, right) => right.attentionScore - left.attentionScore)
+    .slice(0, 10);
 }
 
 function isPreMarketSourceCandidate(candidate: SetupDiscoveryCandidate): boolean {
@@ -1423,6 +1482,8 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     ),
   ]);
 
+  const eliteSearch = buildEliteSearchItems(setupDiscovery.candidates, pulseMap);
+
   return {
     defaultSetupSession,
     topSetups,
@@ -1442,6 +1503,7 @@ export async function getTodayPageData(): Promise<TodayPageData> {
     watchlistMovers,
     regularMostTradedRows: regularMostTradedRowsWithPulse,
     preMarketRows: preMarketRowsWithPulse,
+    eliteSearch,
     sectorHeatmapItems,
     sectorComparison,
     globalPulseItems,

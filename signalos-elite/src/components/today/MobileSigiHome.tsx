@@ -15,6 +15,7 @@ import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
 import TodayActionRowClient from "@/components/today/TodayActionRowClient";
 import TodayEmergingSetupsPanel from "@/components/today/TodayEmergingSetupsPanel";
 import EliteSignalScorecard from "@/components/today/EliteSignalScorecard";
+import EliteSearchPanel from "@/components/today/EliteSearchPanel";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
 import TodayStockPulseQuickAccess from "@/components/today/TodayStockPulseQuickAccess";
 import UpcomingEarningsPanel from "@/components/today/UpcomingEarningsPanel";
@@ -41,6 +42,7 @@ import type { RankedSetupItem } from "@/lib/today/setupDiscovery";
 import type {
   TodayCommandCenterEarningsRow,
   TodayCommandCenterNewsRow,
+  TodayEliteSearchItem,
   TodayMostTradedRow,
   TodayOpportunityItem,
   TodayRiskItem,
@@ -63,6 +65,7 @@ type MobileSigiHomeProps = {
   leadershipWatch: TodaySetupItem[];
   highVolumeRows: TodayMostTradedRow[];
   watchlistRows: TodayWatchlistMoverRow[];
+  eliteSearch: TodayEliteSearchItem[];
   defaultSetupSession: TodaySetupSession;
   initialActionRowSetups: TodaySetupItem[];
   initialActionRowUpdatedAt: number;
@@ -156,6 +159,7 @@ export default function MobileSigiHome({
   leadershipWatch,
   highVolumeRows,
   watchlistRows,
+  eliteSearch,
   defaultSetupSession,
   initialActionRowSetups,
   initialActionRowUpdatedAt,
@@ -1237,6 +1241,10 @@ export default function MobileSigiHome({
 
       <div className="mb-6">
         <EliteSignalScorecard setups={bestStocks} hasSigiPro={tier === "pro"} />
+      </div>
+
+      <div className="mb-6">
+        <EliteSearchPanel items={eliteSearch} />
       </div>
 
     </section>

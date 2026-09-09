@@ -76,6 +76,7 @@ export default async function TodayPage({
         watchlistMovers={todayPageData.watchlistMovers}
         regularMostTradedRows={todayPageData.regularMostTradedRows}
         preMarketRows={todayPageData.preMarketRows}
+        eliteSearch={todayPageData.eliteSearch}
         sectorHeatmapItems={todayPageData.sectorHeatmapItems}
         sectorComparison={todayPageData.sectorComparison}
         opportunities={todayPageData.opportunities}
