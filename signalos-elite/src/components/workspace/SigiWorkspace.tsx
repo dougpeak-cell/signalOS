@@ -15,6 +15,7 @@ import {
 import { SelectedSignalProvider } from "@/components/chart/SelectedSignalContext";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import StockNewsCatalystPanel from "@/components/news/StockNewsCatalystPanel";
+import QuarterlyOutlookPanel from "@/components/workspace/QuarterlyOutlookPanel";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import {
@@ -667,6 +668,11 @@ export default function SigiWorkspace({
                   positiveOnly
                   lookbackHours={168}
                   className="bg-[#030b14]"
+                />
+
+                <QuarterlyOutlookPanel
+                  ticker={data.stock.symbol}
+                  hasPro={tier === "pro"}
                 />
 
                 <Panel title="Pulse Intelligence" eyebrow="Why Sigi Reads It This Way">
