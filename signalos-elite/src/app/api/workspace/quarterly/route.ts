@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { computePegFromGrowth } from "@/lib/analysis/computePeg";
 import { getMassiveFundamentals } from "@/lib/market/massiveFundamentals";
 import { getSigiPlanSummaryForCurrentUser } from "@/lib/sigi/settings";
 import { resolveStockTickerAlias } from "@/lib/stocks/symbolAliases";
@@ -92,6 +93,12 @@ export async function GET(request: NextRequest) {
   const netIncome = numberOrNull(latest?.netIncome);
   const priorNetIncome = numberOrNull(previous?.netIncome);
   const fundamentals = await getMassiveFundamentals(ticker);
+  const peg = fundamentals.peg ?? computePegFromGrowth({
+    pe: fundamentals.pe,
+    currentRevenue: fundamentals.revenue,
+    previousRevenue: fundamentals.previousRevenue,
+    twoYearsAgoRevenue: fundamentals.twoYearsAgoRevenue,
+  });
   const revenueChange = percentageChange(revenue, priorRevenue);
   const earningsChange = percentageChange(netIncome, priorNetIncome);
   const drivers = buildDrivers({
@@ -99,7 +106,7 @@ export async function GET(request: NextRequest) {
     earningsChange,
     cash: fundamentals.cash,
     debt: fundamentals.debt,
-    peg: fundamentals.peg,
+    peg,
   });
 
   return NextResponse.json({
@@ -120,7 +127,7 @@ export async function GET(request: NextRequest) {
     },
     fundamentals: {
       pe: fundamentals.pe,
-      peg: fundamentals.peg,
+      peg,
       cash: fundamentals.cash,
       debt: fundamentals.debt,
     },
