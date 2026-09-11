@@ -24,7 +24,7 @@ export default function EliteSearchPanel({ items }: { items: TodayEliteSearchIte
         <Link href="/stocks" className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-amber-200/20 bg-amber-200/8 px-3 text-xs font-semibold text-amber-100 hover:bg-amber-200/14"><Search className="size-3.5" />Search a stock</Link>
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
         {items.map((item, index) => (
           <div key={item.ticker} className="flex min-w-0 items-center gap-3 rounded-xl border border-white/8 bg-black/25 p-3">
             <div className="w-5 shrink-0 text-center text-xs font-bold tabular-nums text-amber-200/75">{index + 1}</div>
