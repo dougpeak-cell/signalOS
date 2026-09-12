@@ -12,7 +12,7 @@ type MarketVoice = {
 };
 
 const marketVoices: MarketVoice[] = [
-  { name: "Mark Tilbury", focus: "Wealth • Investing • Business", description: "Visual lessons on building wealth, investing principles, and business.", channelUrl: "https://www.youtube.com/@marktilbury", accent: "#34d399", pulse: [42, 68, 54, 88, 62, 76, 50] },
+  { name: "The Diary Of A CEO", focus: "Business • Leadership • Economy", description: "Long-form conversations on leadership, business, and the forces shaping the economy.", channelUrl: "https://www.youtube.com/@TheDiaryOfACEO", accent: "#34d399", pulse: [42, 68, 54, 88, 62, 76, 50] },
   { name: "BWB - Business With Brian", focus: "Business • Markets • Investing", description: "Business and market conversations with a practical investor perspective.", channelUrl: "https://www.youtube.com/@BusinessWithBrian", accent: "#60a5fa", pulse: [52, 76, 64, 45, 84, 69, 92] },
   { name: "Andrei Jikh", focus: "Markets • Investing • Financial Freedom", description: "Easy-to-follow investing and market education for long-term learners.", channelUrl: "https://www.youtube.com/@andreijikh", accent: "#a78bfa", pulse: [66, 44, 82, 58, 76, 90, 63] },
   { name: "ClearValue Tax", focus: "Economy • Policy • Markets", description: "Macro headlines and economic themes that can shape the market.", channelUrl: "https://www.youtube.com/@clearvaluetax9382", accent: "#f59e0b", pulse: [48, 82, 60, 90, 55, 72, 44] },
