@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
+import { MarketVoices } from "@/components/market/MarketVoices";
 
 const marketTools = [
   {
@@ -84,6 +85,10 @@ export default function MarketsPage() {
             </Link>
           ))}
         </section>
+
+        <div className="mt-6">
+          <MarketVoices />
+        </div>
 
         <section className="mt-6 sm:hidden">
           <Link
