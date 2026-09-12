@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { useSelectedSignal } from "@/components/chart/SelectedSignalContext";
+import StockAnalystNewsRailCard from "@/components/stocks/StockAnalystNewsRailCard";
 
 type Props = {
   stock: {
@@ -259,6 +260,8 @@ export default function RightRailLiveChart({
           </div>
         </div>
       </div>
+
+      <StockAnalystNewsRailCard ticker={activeTicker} />
 
       <div className="glow-card rounded-3xl p-4">
         <div>

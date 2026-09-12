@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
+import StockAnalystNewsRailCard from "@/components/stocks/StockAnalystNewsRailCard";
 import { useRouteContext } from "@/lib/routing/useRouteContext";
 import {
   buildRightRailContextModel,
@@ -189,6 +190,7 @@ function RailItemCard({
 
 export default function ContextAwareRightRail() {
   const route = useRouteContext();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { watchlistTickers } = useStoredWatchlistTickers();
   const [mounted, setMounted] = useState(false);
@@ -199,6 +201,10 @@ export default function ContextAwareRightRail() {
     tone: RightRailStatusTone;
   } | null>(null);
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
+  const shouldShowStockAnalystNews =
+    route.page === "stock" &&
+    !pathname.endsWith("/chart") &&
+    !pathname.endsWith("/workspace");
 
   const [model, setModel] = useState<RightRailContextModel>(() =>
     buildRightRailShellModel(route)
@@ -407,6 +413,10 @@ export default function ContextAwareRightRail() {
           {enhancedModel.title}
         </h3>
       </section>
+
+      {shouldShowStockAnalystNews ? (
+        <StockAnalystNewsRailCard ticker={route.ticker} />
+      ) : null}
 
       {enhancedModel.sections.map((section) => (
         <section

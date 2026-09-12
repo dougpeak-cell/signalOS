@@ -5,6 +5,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import FundamentalIntelligenceCard from "@/components/stocks/FundamentalIntelligenceCard";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
+import StockAnalystNewsRailCard from "@/components/stocks/StockAnalystNewsRailCard";
 import TechnicalIntelligenceCard from "@/components/stocks/TechnicalIntelligenceCard";
 import TickerLogo from "@/components/stocks/TickerLogo";
 import WorkspaceCatalystPanel from "@/components/workspace/WorkspaceCatalystPanel";
@@ -690,9 +691,11 @@ export default function StockTradingWorkspace({ data }: Props) {
     workspaceConfig.panels[panelKey] ? <div key={panelKey}>{panelMap[panelKey]}</div> : null
   );
 
+  const analystNewsCard = <StockAnalystNewsRailCard key="analyst-news" ticker={liveTicker} />;
+
   const rightRailCards = isMobilePreview
-    ? [executionLevelsCard, ...orderedPanels]
-    : [workspaceModeCard, layoutCard, customPresetCard, ...orderedPanels];
+    ? [executionLevelsCard, analystNewsCard, ...orderedPanels]
+    : [workspaceModeCard, layoutCard, customPresetCard, analystNewsCard, ...orderedPanels];
 
   const secondaryIntelligenceCards =
     workspaceMode === "analysis"

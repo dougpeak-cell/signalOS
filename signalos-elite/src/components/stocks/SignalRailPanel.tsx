@@ -4,6 +4,7 @@ import { formatMarketTime } from "@/lib/marketTime";
 
 
 import ConfidenceBar from "@/components/ui/ConfidenceBar";
+import StockAnalystNewsRailCard from "@/components/stocks/StockAnalystNewsRailCard";
 
 import { useState } from "react";
 import type { ChartSignal } from "@/lib/chartSignals";
@@ -150,6 +151,8 @@ function DesktopRail({
             </div>
 
             <div className="space-y-3 overflow-x-hidden px-3 py-3">
+              <StockAnalystNewsRailCard ticker={ticker} />
+
               {signals.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-white/10 bg-white/2 p-4 text-sm text-neutral-400">
                   Waiting for signal stream…
@@ -238,11 +241,12 @@ function DesktopRail({
 }
 
 function MobileSignalTray({
+  ticker,
   signals,
   selectedTime,
   onSignalClick,
   signalCount,
-}: Pick<Props, "signals" | "selectedTime" | "onSignalClick" | "signalCount">) {
+}: Pick<Props, "ticker" | "signals" | "selectedTime" | "onSignalClick" | "signalCount">) {
   const [selectedSignalKey, setSelectedSignalKey] = useState<string | null>(
     null
   );
@@ -263,6 +267,10 @@ function MobileSignalTray({
           <div className="rounded-full border border-white/10 bg-white/3 px-3 py-1 text-[11px] font-semibold text-neutral-300">
             {signalCount ?? signals.length} signals
           </div>
+        </div>
+
+        <div className="px-3 pt-3">
+          <StockAnalystNewsRailCard ticker={ticker} />
         </div>
 
         {signals.length === 0 ? (
@@ -375,6 +383,7 @@ export default function SignalRailPanel(props: Props) {
   return (
     <>
       <MobileSignalTray
+        ticker={props.ticker}
         signals={props.signals}
         selectedTime={props.selectedTime}
         onSignalClick={props.onSignalClick}
