@@ -29,7 +29,7 @@ export function MarketVoices() {
           <div className="max-w-2xl">
             <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-300"><Sparkles className="h-3.5 w-3.5" />Market Voices</div>
             <h2 id="market-voices-heading" className="text-2xl font-semibold text-white sm:text-3xl">Watch the market. Then check its Pulse.</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">A visual-learning library of market viewpoints, kept separate from Sigi's independent data, Pulse, and research experience.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">A visual-learning library of market viewpoints, kept separate from Sigi&apos;s independent data, Pulse, and research experience.</p>
           </div>
           <a href="/today" className="inline-flex w-fit items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-2.5 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/40 hover:bg-cyan-300/15">Bring a ticker to Sigi<ArrowUpRight className="h-4 w-4" /></a>
         </div>
@@ -55,7 +55,7 @@ export function MarketVoices() {
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-300/10 bg-amber-300/4.5 p-3 text-xs leading-5 text-slate-400"><Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" /><p><span className="font-semibold text-slate-200">Educational links, not investment advice.</span>{" "}SigiOS links to third-party YouTube channels for optional learning; it does not host, control, verify, or endorse their content.</p></div>
         <details className="mt-3 rounded-xl border border-white/8 bg-slate-950/35 px-4 py-3">
           <summary className="cursor-pointer list-none text-xs font-semibold text-slate-300 marker:hidden">Third-party content disclosure</summary>
-          <div className="mt-3 space-y-2 text-xs leading-5 text-slate-500"><p>Videos and channel links lead to YouTube, an independent third-party platform. SigiOS does not own, operate, or guarantee the accuracy, completeness, timeliness, or availability of this content.</p><p>A creator's inclusion does not mean SigiOS recommends that creator, their views, a security, or any transaction. Opinions, sponsorships, and disclosures belong to the respective creator.</p><p>Unless clearly labeled otherwise, creators listed here are not affiliated with or paid by SigiOS. Nothing in this section is personalized investment, legal, tax, or financial advice. Always conduct your own research and consider a qualified professional before making an investment decision.</p></div>
+          <div className="mt-3 space-y-2 text-xs leading-5 text-slate-500"><p>Videos and channel links lead to YouTube, an independent third-party platform. SigiOS does not own, operate, or guarantee the accuracy, completeness, timeliness, or availability of this content.</p><p>A creator&apos;s inclusion does not mean SigiOS recommends that creator, their views, a security, or any transaction. Opinions, sponsorships, and disclosures belong to the respective creator.</p><p>Unless clearly labeled otherwise, creators listed here are not affiliated with or paid by SigiOS. Nothing in this section is personalized investment, legal, tax, or financial advice. Always conduct your own research and consider a qualified professional before making an investment decision.</p></div>
         </details>
       </div>
     </section>

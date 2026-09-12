@@ -6,6 +6,7 @@ import NewsSourceMark from "@/components/news/NewsSourceMark";
 import NewsTickerChipLinks from "@/components/news/NewsTickerChipLinks";
 import TickerHover from "@/components/sigi/TickerHover";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
+import { MarketVoices } from "@/components/market/MarketVoices";
 import React from "react";
 import { getSigiBackgroundStyle } from "@/lib/sigiBackgrounds";
 import {
@@ -1128,6 +1129,8 @@ export default async function NewsPage({
         ) : null}
 
         {marketNewsCommandCenterSection}
+
+        <MarketVoices />
       </div>
     </main>
   );
