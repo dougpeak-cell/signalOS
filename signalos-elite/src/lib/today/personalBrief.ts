@@ -155,25 +155,28 @@ export function buildTodayPersonalBrief(options: {
   const setupsByTicker = new Map(
     options.setups.map((setup) => [normalizeTicker(setup.ticker), setup])
   );
-  const watchlistByTicker = new Map(
-    new Map(
-      options.watchlist
-        .map((item) => {
-          const ticker = normalizeTicker(item.ticker);
-          if (!ticker) return null;
+  const watchlistItemsByTicker = new Map<string, PersonalBriefWatchlistItem>();
 
-          return [
-            ticker,
-            buildPriority({
-              ...item,
-              ticker,
-              setup: setupsByTicker.get(ticker),
-            }),
-          ] as const;
-        })
-        .filter((entry): entry is readonly [string, PersonalBriefWatchlistItem] => entry != null)
-    )
-  );
+  for (const item of options.watchlist) {
+    const ticker = normalizeTicker(item.ticker);
+    if (ticker) {
+      watchlistItemsByTicker.set(ticker, { ...item, ticker });
+    }
+  }
+
+  const watchlistByTicker = new Map<string, PersonalBriefPriority>();
+
+  for (const [ticker, item] of watchlistItemsByTicker) {
+    watchlistByTicker.set(
+      ticker,
+      buildPriority({
+        ...item,
+        ticker,
+        source: "watchlist",
+        setup: setupsByTicker.get(ticker),
+      })
+    );
+  }
   const portfolioPriorities = Array.from(
     new Map(
       (options.portfolio ?? [])
@@ -181,7 +184,7 @@ export function buildTodayPersonalBrief(options: {
           const ticker = normalizeTicker(item.ticker);
           if (!ticker) return null;
 
-          const watchlistItem = watchlistByTicker.get(ticker);
+          const watchlistItem = watchlistItemsByTicker.get(ticker);
           return [
             ticker,
             buildPriority({
@@ -199,15 +202,7 @@ export function buildTodayPersonalBrief(options: {
     ).values()
   );
   const watchedPriorities = Array.from(watchlistByTicker.values())
-    .filter((item) => !portfolioPriorities.some((priority) => priority.ticker === normalizeTicker(item.ticker)))
-    .map((item) =>
-      buildPriority({
-        ...item,
-        ticker: normalizeTicker(item.ticker),
-        source: "watchlist",
-        setup: setupsByTicker.get(normalizeTicker(item.ticker)),
-      })
-    );
+    .filter((priority) => !portfolioPriorities.some((item) => item.ticker === priority.ticker));
   const personalPriorities = [...portfolioPriorities, ...watchedPriorities];
 
   const priorities = (personalPriorities.length
