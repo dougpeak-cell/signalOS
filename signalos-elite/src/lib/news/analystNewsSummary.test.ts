@@ -39,6 +39,7 @@ describe("buildAnalystNewsSummary", () => {
 
     expect(summary).toMatchObject({
       state: "supportive",
+      kind: "analyst",
       label: "Supportive analyst update",
       headline: "Analyst raises price target on NVDA",
       ageLabel: "30m ago",
@@ -56,12 +57,29 @@ describe("buildAnalystNewsSummary", () => {
 
     expect(summary).toMatchObject({
       state: "cautious",
+      kind: "analyst",
       label: "Cautious analyst update",
       summary: "This coverage is cautious, so watch whether price action confirms added pressure.",
     });
   });
 
-  it("fails closed when there is no fresh analyst coverage", () => {
+  it("uses fresh ticker-specific news when no analyst update is available", () => {
+    const summary = buildAnalystNewsSummary(
+      [news({ headline: "NVDA launches a new platform", sentiment: "neutral" })],
+      "NVDA",
+      NOW
+    );
+
+    expect(summary).toMatchObject({
+      state: "neutral",
+      kind: "news",
+      label: "Stock news context",
+      headline: "NVDA launches a new platform",
+      summary: "This fresh company coverage is contextual, so let price and volume decide its impact.",
+    });
+  });
+
+  it("fails closed when there is no fresh ticker-specific coverage", () => {
     const summary = buildAnalystNewsSummary(
       [news({ publishedAt: "2026-09-10T15:30:00.000Z" })],
       "NVDA",
@@ -70,6 +88,7 @@ describe("buildAnalystNewsSummary", () => {
 
     expect(summary).toMatchObject({
       state: "unavailable",
+      kind: "unavailable",
       headline: null,
       label: "No fresh analyst update",
     });

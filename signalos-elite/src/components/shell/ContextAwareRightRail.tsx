@@ -400,8 +400,7 @@ export default function ContextAwareRightRail() {
   return (
     <aside
       className={[
-        "space-y-2.5",
-        route.page === "crypto" ? "w-64 shrink-0" : "",
+        "w-64 shrink-0 space-y-2.5",
       ].join(" ")}
     >
       <section className="rounded-3xl border border-white/10 bg-white/3 p-3 shadow-[0_10px_36px_rgba(0,0,0,0.22)] backdrop-blur-xl">

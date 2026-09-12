@@ -100,7 +100,7 @@ export default function StockAnalystNewsRailCard({
     <section
       aria-label={`${normalizedTicker || "Stock"} analyst coverage`}
       className={[
-        "rounded-3xl border border-white/10 bg-white/3 p-4 shadow-[0_10px_36px_rgba(0,0,0,0.22)] backdrop-blur-xl",
+        "rounded-2xl border border-white/10 bg-white/3 p-3 shadow-[0_10px_30px_rgba(0,0,0,0.2)] backdrop-blur-xl",
         className ?? "",
       ]
         .join(" ")
@@ -109,7 +109,7 @@ export default function StockAnalystNewsRailCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-300/75">
-            Latest Analyst Read
+            Latest Analyst & News
           </div>
           <div className="mt-1 text-sm font-semibold text-white">
             {normalizedTicker || "Stock"} coverage
@@ -143,8 +143,12 @@ export default function StockAnalystNewsRailCard({
         </div>
       ) : summary ? (
         <div className="mt-4">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/45">
+            {summary.label}
+          </div>
+
           {summary.headline ? (
-            <div className="text-sm font-semibold leading-5 text-white">{summary.headline}</div>
+            <div className="mt-1.5 text-sm font-semibold leading-5 text-white">{summary.headline}</div>
           ) : null}
 
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] uppercase tracking-[0.13em] text-white/40">

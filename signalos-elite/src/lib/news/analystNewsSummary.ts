@@ -10,6 +10,7 @@ import type { SignalNewsItem } from "./scoreNewsHeaderItems";
 
 export type AnalystNewsSummary = {
   state: "supportive" | "cautious" | "neutral" | "unavailable";
+  kind: "analyst" | "news" | "unavailable";
   label: string;
   summary: string;
   headline: string | null;
@@ -38,17 +39,22 @@ export function buildAnalystNewsSummary(
   maxAgeHours = 24
 ): AnalystNewsSummary {
   const normalizedTicker = ticker.trim().toUpperCase();
-  const analystItems = sortTickerNews(
+  const tickerItems = sortTickerNews(
     filterFreshTickerNewsItems(items, maxAgeHours).filter((item) =>
-      isTickerMatched(item, normalizedTicker) && buildNewsCatalystLabel(item) === "Analyst"
+      isTickerMatched(item, normalizedTicker)
     ),
     normalizedTicker
   );
-  const lead = analystItems[0] ?? null;
+  const analystLead = tickerItems.find(
+    (item) => buildNewsCatalystLabel(item) === "Analyst"
+  );
+  const lead = analystLead ?? tickerItems[0] ?? null;
+  const kind = analystLead ? "analyst" : "news";
 
   if (!lead) {
     return {
       state: "unavailable",
+      kind: "unavailable",
       label: "No fresh analyst update",
       summary: `No current analyst, upgrade, downgrade, or price-target headline is tied to ${normalizedTicker}. Keep the chart and verified catalysts in focus.`,
       headline: null,
@@ -60,20 +66,33 @@ export function buildAnalystNewsSummary(
 
   const state = getState(lead.sentiment);
   const label =
-    state === "supportive"
-      ? "Supportive analyst update"
-      : state === "cautious"
-        ? "Cautious analyst update"
-        : "Analyst update";
+    kind === "analyst"
+      ? state === "supportive"
+        ? "Supportive analyst update"
+        : state === "cautious"
+          ? "Cautious analyst update"
+          : "Analyst update"
+      : state === "supportive"
+        ? "Supportive stock news"
+        : state === "cautious"
+          ? "Cautious stock news"
+          : "Stock news context";
   const summary =
-    state === "supportive"
-      ? "This coverage is supportive, but the chart still needs to confirm follow-through."
-      : state === "cautious"
-        ? "This coverage is cautious, so watch whether price action confirms added pressure."
-        : "This update is neutral on its own; use the current price response to judge its impact.";
+    kind === "analyst"
+      ? state === "supportive"
+        ? "This coverage is supportive, but the chart still needs to confirm follow-through."
+        : state === "cautious"
+          ? "This coverage is cautious, so watch whether price action confirms added pressure."
+          : "This update is neutral on its own; use the current price response to judge its impact."
+      : state === "supportive"
+        ? "This fresh company coverage supports the upside case, but price and volume still need to confirm."
+        : state === "cautious"
+          ? "This fresh company coverage adds downside risk; watch price action for confirmation."
+          : "This fresh company coverage is contextual, so let price and volume decide its impact.";
 
   return {
     state,
+    kind,
     label,
     summary,
     headline: lead.headline,
