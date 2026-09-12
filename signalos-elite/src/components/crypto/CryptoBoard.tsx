@@ -8,6 +8,7 @@ import CryptoPageTabs, {
   type CryptoPageTabKey,
 } from "@/components/crypto/CryptoPageTabs";
 import CryptoQuickViewRow from "@/components/crypto/CryptoQuickViewRow";
+import CryptoResearchVoices from "@/components/crypto/CryptoResearchVoices";
 import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
@@ -1048,6 +1049,8 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
             </div>
           ) : null}
         </section>
+
+        {isGeneralBoard ? <CryptoResearchVoices /> : null}
       </div>
     </main>
   );
