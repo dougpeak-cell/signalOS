@@ -141,6 +141,7 @@ export default async function TodayPageShell({
 					<TodayActionRowClient
 						initialSetups={actionRowSetups}
 						initialUpdatedAt={actionRowUpdatedAt}
+						watchlistMovers={watchlistMovers}
 					/>
 					<EliteSignalScorecard setups={actionRowSetups} hasSigiPro={hasSigiPro} />
 					<EliteSearchPanel items={eliteSearch} />

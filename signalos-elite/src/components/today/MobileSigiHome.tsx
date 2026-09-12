@@ -998,6 +998,7 @@ export default function MobileSigiHome({
       <TodayActionRowClient
         initialSetups={initialActionRowSetups}
         initialUpdatedAt={initialActionRowUpdatedAt}
+        watchlistMovers={watchlistRows}
       />
 
       <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,15,30,0.96),rgba(3,7,18,0.9))] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
