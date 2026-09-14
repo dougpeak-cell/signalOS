@@ -19,6 +19,7 @@ import {
   buildEliteTradePlan,
   type EliteTradePlanInput,
 } from "@/lib/engines/eliteTradePlan";
+import { resolveEliteTradePlanTone } from "@/lib/engines/eliteTradePlanTone";
 import { buildExecutionModel } from "@/lib/engines/executionModel";
 import { buildTargetEngine } from "@/lib/engines/targetEngine";
 import {
@@ -346,14 +347,11 @@ export default function StockTradingWorkspace({ data }: Props) {
   const target = targetModel.target ?? row.target_price ?? null;
   const stop = executionModel.stop ?? targetModel.stop ?? row.stop_loss ?? null;
   const upside = targetModel.upsidePct;
-  const eliteTone =
-    technicals.trend === "bullish" || technicals.trend === "bearish"
-      ? technicals.trend
-      : normalizedConviction >= 85
-        ? "bullish"
-        : normalizedConviction <= 50
-          ? "bearish"
-          : "neutral";
+  const eliteTone = resolveEliteTradePlanTone({
+    trend: technicals.trend,
+    structure: technicals.structure,
+    conviction: normalizedConviction,
+  });
   const eliteTradePlanInput: EliteTradePlanInput = {
     price: liveElitePrice,
     tone: eliteTone,

@@ -17,6 +17,7 @@ import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
 import { computeMasterSignalScore } from "@/lib/analysis/masterSignalScore";
 import { buildExecutionModel } from "@/lib/engines/executionModel";
 import { buildTargetEngine } from "@/lib/engines/targetEngine";
+import { resolveEliteTradePlanTone } from "@/lib/engines/eliteTradePlanTone";
 import type { ComputedTechnicals } from "@/lib/market/technicals";
 import { normalizeTicker } from "@/lib/tickerAliases";
 import { addStoredWatchlistTicker } from "@/lib/watchlistStore";
@@ -351,16 +352,11 @@ export default function StockDetailLivePanels({
   });
 
   const atrPct = technicals.atrPct != null ? technicals.atrPct / 100 : 0.025;
-  const momentumBias =
-    technicals.trend === "bullish"
-      ? "bullish"
-      : technicals.trend === "bearish"
-        ? "bearish"
-        : normalizedConviction != null && normalizedConviction >= 85
-          ? "bullish"
-          : normalizedConviction != null && normalizedConviction <= 50
-            ? "bearish"
-            : "neutral";
+  const momentumBias = resolveEliteTradePlanTone({
+    trend: technicals.trend,
+    structure: technicals.structure,
+    conviction: normalizedConviction,
+  });
 
   const targetModel = buildTargetEngine({
     livePrice: analysisPrice,
