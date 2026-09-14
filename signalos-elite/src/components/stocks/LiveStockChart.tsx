@@ -39,6 +39,7 @@ import { detectConfluence } from "@/lib/engines/confluenceEngine";
 import { detectMarketRegime } from "@/lib/engines/regimeEngine";
 import { detectLiquiditySweeps } from "@/lib/engines/liquiditySweepEngine";
 import { detectAbsorptionExhaustion } from "@/lib/engines/absorptionExhaustionEngine";
+import type { EliteTradePlan } from "@/lib/engines/eliteTradePlan";
 
 import TradeBriefPanel from "@/components/stocks/TradeBriefPanel";
 import LiveSetupFeed from "@/components/stocks/LiveSetupFeed";
@@ -438,6 +439,16 @@ type Props = {
       touches: number;
       kind: "supply" | "demand";
     }[];
+    livePrice: number | null;
+    liveVwap: number | null;
+    sessionLevels: {
+      premarketHigh: number | null;
+      premarketLow: number | null;
+      sessionHigh: number | null;
+      sessionLow: number | null;
+      previousDayHigh: number | null;
+      previousDayLow: number | null;
+    };
   }) => void;
   initialFocusedSignal?: InitialFocusedSignal;
   currentPrice?: number | null;
@@ -446,6 +457,7 @@ type Props = {
   workspaceChartState?: WorkspaceChartConfig;
   workspaceChartSyncKey?: number;
   onWorkspaceChartStateChange?: (state: WorkspaceChartConfig) => void;
+  eliteTradePlan?: EliteTradePlan | null;
 };
 
 const RANGE_OPTIONS: readonly ChartRange[] = ["1D", "5D", "1M", "6M", "1Y", "5Y"];
@@ -1400,6 +1412,7 @@ export default function LiveStockChart({
   workspaceChartState,
   workspaceChartSyncKey,
   onWorkspaceChartStateChange,
+  eliteTradePlan = null,
 }: Props) {
     const formatLevel = (value?: number | null) =>
     typeof value === "number" && Number.isFinite(value)
@@ -1440,6 +1453,7 @@ export default function LiveStockChart({
   const sessionPriceLinesRef = useRef<any[]>([]);
   const zonePriceLinesRef = useRef<any[]>([]);
   const heatPriceLinesRef = useRef<any[]>([]);
+  const elitePlanPriceLinesRef = useRef<any[]>([]);
   const selectedSignalPriceLineRef = useRef<any>(null);
 
   const previousTimeframeRef = useRef<Timeframe | null>(null);
@@ -2883,6 +2897,12 @@ export default function LiveStockChart({
         kind:
           String(zone.label).toLowerCase().includes("supply") ? "supply" : "demand",
       })),
+      livePrice: getLastPriceFromBars(liveChartBars) ?? currentPrice,
+      liveVwap:
+        vwap.length > 0 && Number.isFinite(Number(vwap[vwap.length - 1]?.value))
+          ? Number(vwap[vwap.length - 1]?.value)
+          : null,
+      sessionLevels,
     });
   }, [
     onSignalRailData,
@@ -2891,6 +2911,10 @@ export default function LiveStockChart({
     selectedSignalTime,
     selectedSignalKey,
     jumpToTime,
+    currentPrice,
+    liveChartBars,
+    sessionLevels,
+    vwap,
   ]);
 
   useEffect(() => {
@@ -3501,6 +3525,7 @@ useEffect(() => {
       sessionPriceLinesRef.current = [];
       zonePriceLinesRef.current = [];
       heatPriceLinesRef.current = [];
+      elitePlanPriceLinesRef.current = [];
       selectedSignalPriceLineRef.current = null;
     };
   }, []);
@@ -3885,6 +3910,83 @@ useEffect(() => {
     addSessionLine(sessionLevels.previousDayHigh, "PD High", "#a78bfa");
     addSessionLine(sessionLevels.previousDayLow, "PD Low", "#fb7185");
   }, [sessionLevels]);
+
+  useEffect(() => {
+    const candles = candleSeriesRef.current;
+    if (!candles) return;
+
+    for (const line of elitePlanPriceLinesRef.current) {
+      try {
+        candles.removePriceLine(line);
+      } catch {}
+    }
+    elitePlanPriceLinesRef.current = [];
+
+    if (
+      eliteTradePlan == null ||
+      eliteTradePlan.direction === "wait" ||
+      eliteTradePlan.entryLow == null ||
+      eliteTradePlan.entryHigh == null ||
+      eliteTradePlan.invalidation == null ||
+      eliteTradePlan.target == null
+    ) {
+      return;
+    }
+
+    const addEliteLine = (
+      price: number,
+      title: string,
+      color: string,
+      lineWidth: 1 | 2,
+      lineStyle: LineStyle
+    ) => {
+      if (!Number.isFinite(price)) return;
+
+      elitePlanPriceLinesRef.current.push(
+        candles.createPriceLine({
+          price,
+          title,
+          color,
+          lineWidth,
+          lineStyle,
+          axisLabelVisible: true,
+          lineVisible: true,
+        })
+      );
+    };
+
+    const entryColor =
+      eliteTradePlan.direction === "long" ? "#22d3ee" : "#fb7185";
+
+    addEliteLine(
+      eliteTradePlan.entryLow,
+      "ELITE ENTRY LOW",
+      entryColor,
+      1,
+      LineStyle.Dashed
+    );
+    addEliteLine(
+      eliteTradePlan.entryHigh,
+      "ELITE ENTRY HIGH",
+      entryColor,
+      1,
+      LineStyle.Dashed
+    );
+    addEliteLine(
+      eliteTradePlan.invalidation,
+      "ELITE RISK",
+      "#fb7185",
+      2,
+      LineStyle.Solid
+    );
+    addEliteLine(
+      eliteTradePlan.target,
+      "ELITE TARGET",
+      "#34d399",
+      2,
+      LineStyle.Solid
+    );
+  }, [eliteTradePlan]);
 
   useEffect(() => {
     const candles = candleSeriesRef.current;

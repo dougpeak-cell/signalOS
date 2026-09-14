@@ -5,6 +5,10 @@ import { useCallback, useEffect, useMemo, useState, type ComponentProps } from "
 import LiveStockChart from "@/components/stocks/LiveStockChart";
 import SignalRailPanel from "@/components/stocks/SignalRailPanel";
 import type { ChartSignal } from "@/lib/chartSignals";
+import {
+  buildEliteTradePlan,
+  type EliteTradePlanInput,
+} from "@/lib/engines/eliteTradePlan";
 
 type StockChartClientProps = {
   stock: {
@@ -56,6 +60,10 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
     () => {}
   );
   const [floatingMode, setFloatingMode] = useState(false);
+  const [elitePlanInput, setElitePlanInput] = useState<EliteTradePlanInput>({
+    price: null,
+    tone: "neutral",
+  });
 
   const [confluenceState, setConfluenceState] = useState<ConfluenceState>({
     buySideSweep: false,
@@ -88,6 +96,9 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
       selectedSignalKey,
       jumpToTime,
       confluenceState,
+      livePrice,
+      liveVwap,
+      sessionLevels,
     }: SignalRailPayload) => {
       setRailSignals(signals);
       setSelectedTime(selectedTime);
@@ -103,6 +114,26 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
           confluenceShort: false,
         }
       );
+      const primaryDirectionalSignal = signals.find(
+        (signal) => signal.tone === "bullish" || signal.tone === "bearish"
+      );
+      const tone =
+        primaryDirectionalSignal?.tone === "bullish" ||
+        primaryDirectionalSignal?.tone === "bearish"
+          ? primaryDirectionalSignal.tone
+          : confluenceState?.confluenceShort
+            ? "bearish"
+            : confluenceState?.bullishAbsorption
+              ? "bullish"
+              : "neutral";
+
+      setElitePlanInput({
+        price: livePrice,
+        tone,
+        vwap: liveVwap,
+        support: sessionLevels.sessionLow ?? sessionLevels.previousDayLow,
+        resistance: sessionLevels.sessionHigh ?? sessionLevels.previousDayHigh,
+      });
     },
     []
   );
@@ -115,6 +146,10 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
 
   const topSignals = railSignals.slice(0, 5);
   const primarySignal = railSignals[0];
+  const eliteTradePlan = useMemo(
+    () => buildEliteTradePlan(elitePlanInput),
+    [elitePlanInput]
+  );
 
   const confluenceBadges = useMemo(
     () => [
@@ -322,6 +357,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
                       onSignalRailData={handleSignalRailData}
                       enableLiveStream={false}
                       signals={[]}
+                      eliteTradePlan={eliteTradePlan}
                     />
                   </div>
                 </div>
@@ -369,6 +405,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
                 jumpToTime(time);
               }}
               signalCount={railSignals.length}
+              elitePlanInput={elitePlanInput}
             />
           </aside>
         </div>
@@ -448,6 +485,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
                           onSignalRailData={handleSignalRailData}
                           enableLiveStream={false}
                           signals={[]}
+                          eliteTradePlan={eliteTradePlan}
                         />
                       </div>
                     </div>
@@ -488,6 +526,7 @@ export default function StockChartClient({ stock }: StockChartClientProps) {
                         jumpToTime(time);
                       }}
                       signalCount={railSignals.length}
+                      elitePlanInput={elitePlanInput}
                     />
                   </div>
                 </aside>

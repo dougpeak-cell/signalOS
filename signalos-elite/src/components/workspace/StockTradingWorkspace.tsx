@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import FundamentalIntelligenceCard from "@/components/stocks/FundamentalIntelligenceCard";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
 import StockAnalystNewsRailCard from "@/components/stocks/StockAnalystNewsRailCard";
+import SigiEliteTradePlanCard from "@/components/stocks/SigiEliteTradePlanCard";
 import TechnicalIntelligenceCard from "@/components/stocks/TechnicalIntelligenceCard";
 import TickerLogo from "@/components/stocks/TickerLogo";
 import WorkspaceCatalystPanel from "@/components/workspace/WorkspaceCatalystPanel";
@@ -14,6 +15,10 @@ import WorkspaceRiskPanel from "@/components/workspace/WorkspaceRiskPanel";
 import WorkspaceSigiPanel from "@/components/workspace/WorkspaceSigiPanel";
 import WorkspaceTradePanel from "@/components/workspace/WorkspaceTradePanel";
 import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
+import {
+  buildEliteTradePlan,
+  type EliteTradePlanInput,
+} from "@/lib/engines/eliteTradePlan";
 import { buildExecutionModel } from "@/lib/engines/executionModel";
 import { buildTargetEngine } from "@/lib/engines/targetEngine";
 import {
@@ -252,6 +257,7 @@ export default function StockTradingWorkspace({ data }: Props) {
   const [customPresets, setCustomPresets] = useState<WorkspaceCustomPreset[]>([]);
   const [presetName, setPresetName] = useState("");
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const [liveElitePrice, setLiveElitePrice] = useState<number | null>(initialPrice);
 
   function buildPreviewHref(href: string) {
     if (!isMobilePreview) {
@@ -340,6 +346,25 @@ export default function StockTradingWorkspace({ data }: Props) {
   const target = targetModel.target ?? row.target_price ?? null;
   const stop = executionModel.stop ?? targetModel.stop ?? row.stop_loss ?? null;
   const upside = targetModel.upsidePct;
+  const eliteTone =
+    technicals.trend === "bullish" || technicals.trend === "bearish"
+      ? technicals.trend
+      : normalizedConviction >= 85
+        ? "bullish"
+        : normalizedConviction <= 50
+          ? "bearish"
+          : "neutral";
+  const eliteTradePlanInput: EliteTradePlanInput = {
+    price: liveElitePrice,
+    tone: eliteTone,
+    support: technicals.support20,
+    resistance: technicals.resistance20,
+    entryLow,
+    entryHigh,
+    stop,
+    target,
+  };
+  const eliteTradePlan = buildEliteTradePlan(eliteTradePlanInput);
   const heroBackgroundMode = deriveWorkspaceBackgroundMode({
     conviction: normalizedConviction,
     tier: row.tier,
@@ -692,10 +717,17 @@ export default function StockTradingWorkspace({ data }: Props) {
   );
 
   const analystNewsCard = <StockAnalystNewsRailCard key="analyst-news" ticker={liveTicker} />;
+  const eliteTradePlanCard = (
+    <SigiEliteTradePlanCard
+      key="elite-trade-plan"
+      ticker={liveTicker}
+      {...eliteTradePlanInput}
+    />
+  );
 
   const rightRailCards = isMobilePreview
-    ? [executionLevelsCard, analystNewsCard, ...orderedPanels]
-    : [workspaceModeCard, layoutCard, customPresetCard, analystNewsCard, ...orderedPanels];
+    ? [executionLevelsCard, eliteTradePlanCard, analystNewsCard, ...orderedPanels]
+    : [workspaceModeCard, layoutCard, customPresetCard, eliteTradePlanCard, analystNewsCard, ...orderedPanels];
 
   const secondaryIntelligenceCards =
     workspaceMode === "analysis"
@@ -914,8 +946,10 @@ export default function StockTradingWorkspace({ data }: Props) {
                   showSignalRail={false}
                   signals={[]}
                   currentPrice={initialPrice}
+                  onPriceUpdate={setLiveElitePrice}
                   workspaceChartState={workspaceConfig.chart}
                   workspaceChartSyncKey={workspaceChartSyncKey}
+                  eliteTradePlan={eliteTradePlan}
                   onWorkspaceChartStateChange={(chart) =>
                     setWorkspaceConfig((current) =>
                       workspaceChartConfigsEqual(current.chart, chart)

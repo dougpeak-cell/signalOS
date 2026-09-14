@@ -11,11 +11,16 @@ import LiveStockChart from "@/components/stocks/LiveStockChart";
 import StockChartHeader from "@/components/stocks/StockChartHeader";
 import LivePriceBeacon from "@/components/stocks/LivePriceBeacon";
 import RightRailLiveChart from "@/components/shell/RightRailLiveChart";
+import {
+  buildEliteTradePlan,
+  type EliteTradePlanInput,
+} from "@/lib/engines/eliteTradePlan";
 
 type RailSignal = {
   time: number;
   type: string;
   label?: string;
+  tone?: SignalSummaryTone;
 };
 
 type ConfluenceState = {
@@ -47,6 +52,16 @@ type SignalRailData = {
   jumpToTime: ((key: string | null, time: number | null) => void) | null;
   confluenceState: ConfluenceState;
   priorityZones?: PriorityZone[];
+  livePrice?: number | null;
+  liveVwap?: number | null;
+  sessionLevels?: {
+    premarketHigh: number | null;
+    premarketLow: number | null;
+    sessionHigh: number | null;
+    sessionLow: number | null;
+    previousDayHigh: number | null;
+    previousDayLow: number | null;
+  };
 };
 
 type Props = {
@@ -176,6 +191,35 @@ export default function StockLiveClient({
     };
   }, [signalRailData]);
 
+  const elitePlanInput = useMemo<EliteTradePlanInput>(
+    () => ({
+      price: signalRailData?.livePrice ?? livePrice,
+      tone: normalizedSignalSummary.tone ?? "neutral",
+      vwap: signalRailData?.liveVwap ?? nearestLiquidity.vwap,
+      support:
+        signalRailData?.sessionLevels?.sessionLow ??
+        normalizedSessionLevels.sessionLow,
+      resistance:
+        signalRailData?.sessionLevels?.sessionHigh ??
+        normalizedSessionLevels.sessionHigh,
+    }),
+    [
+      livePrice,
+      nearestLiquidity.vwap,
+      normalizedSessionLevels.sessionHigh,
+      normalizedSessionLevels.sessionLow,
+      normalizedSignalSummary.tone,
+      signalRailData?.livePrice,
+      signalRailData?.liveVwap,
+      signalRailData?.sessionLevels?.sessionHigh,
+      signalRailData?.sessionLevels?.sessionLow,
+    ]
+  );
+  const eliteTradePlan = useMemo(
+    () => buildEliteTradePlan(elitePlanInput),
+    [elitePlanInput]
+  );
+
   return (
     <>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,3.4fr)_260px] 2xl:grid-cols-[minmax(0,3.8fr)_280px]">
@@ -201,6 +245,7 @@ export default function StockLiveClient({
             currentPrice={livePrice}
             onPriceUpdate={handlePriceUpdate}
             onSignalRailData={handleSignalRailData}
+            eliteTradePlan={eliteTradePlan}
           />
 
           <SigiDesktopCTA compact />
@@ -215,6 +260,7 @@ export default function StockLiveClient({
             sessionLevels={normalizedSessionLevels}
             confluenceState={normalizedConfluenceState}
             priorityZones={signalRailData?.priorityZones ?? []}
+            elitePlanInput={elitePlanInput}
           />
           <StockAskSigiCard
             ticker={normalizedStock.ticker}
@@ -311,6 +357,7 @@ export default function StockLiveClient({
                   sessionLevels={normalizedSessionLevels}
                   confluenceState={normalizedConfluenceState}
                   priorityZones={signalRailData?.priorityZones ?? []}
+                  elitePlanInput={elitePlanInput}
                 />
               </div>
             </div>

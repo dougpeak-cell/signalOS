@@ -8,6 +8,7 @@ import LiveStockChart from "@/components/stocks/LiveStockChart";
 import LockedLiveChart from "@/components/upgrade/LockedLiveChart";
 import TickerLogo from "@/components/stocks/TickerLogo";
 import TechnicalIntelligenceCard from "@/components/stocks/TechnicalIntelligenceCard";
+import SigiEliteTradePlanCard from "@/components/stocks/SigiEliteTradePlanCard";
 import { useOptionalLiveMarket } from "@/components/market/LiveMarketProvider";
 import { useOptionalMarketData } from "@/components/providers/MarketDataProvider";
 import { useSigiTier } from "@/hooks/useSigiTier";
@@ -464,34 +465,6 @@ export default function StockDetailLivePanels({
     subtext: string;
   }>;
 
-  const executionCards = [
-    analysisPrice != null
-      ? {
-          key: "current-price",
-          label: "Current price",
-          value: money(analysisPrice),
-        }
-      : null,
-    entryLow != null || entryHigh != null
-      ? {
-          key: "accumulation-range",
-          label: "Accumulation range",
-          value: `${money(entryLow)} – ${money(entryHigh)}`,
-        }
-      : null,
-    target != null || stop != null
-      ? {
-          key: "target-stop",
-          label: "Target / stop",
-          value: `${money(target)} / ${money(stop)}`,
-        }
-      : null,
-  ].filter(Boolean) as Array<{
-    key: string;
-    label: string;
-    value: string;
-  }>;
-
   return (
     <>
       <section className="glow-panel overflow-hidden rounded-4xl p-0 shadow-[0_0_40px_rgba(16,185,129,0.18)]">
@@ -861,30 +834,17 @@ export default function StockDetailLivePanels({
         structure={technicals.structure}
       />
 
-      <div className="glow-card rounded-[28px] p-5">
-        <div className="text-lg font-semibold tracking-tight text-white">
-          Execution view
-        </div>
-
-        {executionCards.length > 0 ? (
-          <div className="mt-4 space-y-3">
-            {executionCards.map((card) => (
-              <div key={card.key} className="glow-card-soft rounded-2xl p-4">
-                <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                  {card.label}
-                </div>
-                <div className="mt-2 text-xl font-semibold text-white">
-                  {card.value}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : !hasLiveData && fallbackMessage ? (
-          <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/3 px-4 py-5 text-sm text-white/55">
-            {fallbackMessage}
-          </div>
-        ) : null}
-      </div>
+      <SigiEliteTradePlanCard
+        ticker={liveTicker}
+        price={analysisPrice}
+        tone={momentumBias}
+        support={technicals.support20}
+        resistance={technicals.resistance20}
+        entryLow={entryLow}
+        entryHigh={entryHigh}
+        stop={stop}
+        target={target}
+      />
     </>
   );
 }

@@ -5,9 +5,11 @@ import { formatMarketTime } from "@/lib/marketTime";
 
 import ConfidenceBar from "@/components/ui/ConfidenceBar";
 import StockAnalystNewsRailCard from "@/components/stocks/StockAnalystNewsRailCard";
+import SigiEliteTradePlanCard from "@/components/stocks/SigiEliteTradePlanCard";
 
 import { useState } from "react";
 import type { ChartSignal } from "@/lib/chartSignals";
+import type { EliteTradePlanInput } from "@/lib/engines/eliteTradePlan";
 
 function toneClasses(tone?: string) {
   if (tone === "bullish") {
@@ -58,6 +60,7 @@ type Props = {
   onToggleCollapse: () => void;
   signalCount?: number;
   floatingMode?: boolean;
+  elitePlanInput?: EliteTradePlanInput;
 };
 
 function DesktopRail({
@@ -69,6 +72,7 @@ function DesktopRail({
   onToggleCollapse,
   signalCount,
   floatingMode = false,
+  elitePlanInput,
 }: Props) {
   return (
     <div>
@@ -151,6 +155,11 @@ function DesktopRail({
             </div>
 
             <div className="space-y-3 overflow-x-hidden px-3 py-3">
+              <SigiEliteTradePlanCard
+                ticker={ticker}
+                {...(elitePlanInput ?? { price: null, tone: "neutral" })}
+              />
+
               <StockAnalystNewsRailCard ticker={ticker} />
 
               {signals.length === 0 ? (
@@ -246,7 +255,8 @@ function MobileSignalTray({
   selectedTime,
   onSignalClick,
   signalCount,
-}: Pick<Props, "ticker" | "signals" | "selectedTime" | "onSignalClick" | "signalCount">) {
+  elitePlanInput,
+}: Pick<Props, "ticker" | "signals" | "selectedTime" | "onSignalClick" | "signalCount" | "elitePlanInput">) {
   const [selectedSignalKey, setSelectedSignalKey] = useState<string | null>(
     null
   );
@@ -267,6 +277,13 @@ function MobileSignalTray({
           <div className="rounded-full border border-white/10 bg-white/3 px-3 py-1 text-[11px] font-semibold text-neutral-300">
             {signalCount ?? signals.length} signals
           </div>
+        </div>
+
+        <div className="px-3 pt-3">
+          <SigiEliteTradePlanCard
+            ticker={ticker}
+            {...(elitePlanInput ?? { price: null, tone: "neutral" })}
+          />
         </div>
 
         <div className="px-3 pt-3">
@@ -388,6 +405,7 @@ export default function SignalRailPanel(props: Props) {
         selectedTime={props.selectedTime}
         onSignalClick={props.onSignalClick}
         signalCount={props.signalCount}
+        elitePlanInput={props.elitePlanInput}
       />
 
       <div className="hidden xl:block">

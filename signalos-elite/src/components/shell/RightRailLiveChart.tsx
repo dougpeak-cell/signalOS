@@ -4,6 +4,8 @@ import Link from "next/link";
 
 import { useSelectedSignal } from "@/components/chart/SelectedSignalContext";
 import StockAnalystNewsRailCard from "@/components/stocks/StockAnalystNewsRailCard";
+import SigiEliteTradePlanCard from "@/components/stocks/SigiEliteTradePlanCard";
+import type { EliteTradePlanInput } from "@/lib/engines/eliteTradePlan";
 
 type Props = {
   stock: {
@@ -47,6 +49,7 @@ type Props = {
     bullishAbsorption?: boolean;
     confluenceShort?: boolean;
   };
+  elitePlanInput?: EliteTradePlanInput;
 };
 
 function statTone(label: string) {
@@ -69,6 +72,7 @@ export default function RightRailLiveChart({
   nearestLiquidity,
   sessionLevels,
   priorityZones = [],
+  elitePlanInput,
 }: Props) {
   const {
     sessionLevels: liveSessionLevels,
@@ -178,6 +182,13 @@ export default function RightRailLiveChart({
       : "neutral";
 
   const activeTicker = stock?.ticker ?? "NVDA";
+  const resolvedElitePlanInput: EliteTradePlanInput = elitePlanInput ?? {
+    price: referencePrice,
+    tone: setupTone,
+    vwap: displayVwap,
+    support: nearestDemandZone?.mid ?? fallbackNearestDownside,
+    resistance: nearestSupplyZone?.mid ?? fallbackNearestUpside,
+  };
 
   const confluenceStack = [
     { label: "Buy-Side Sweep", active: confluenceState?.buySideSweep ?? false },
@@ -260,6 +271,11 @@ export default function RightRailLiveChart({
           </div>
         </div>
       </div>
+
+      <SigiEliteTradePlanCard
+        ticker={activeTicker}
+        {...resolvedElitePlanInput}
+      />
 
       <StockAnalystNewsRailCard ticker={activeTicker} />
 
