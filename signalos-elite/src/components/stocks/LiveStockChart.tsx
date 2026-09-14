@@ -1428,6 +1428,7 @@ export default function LiveStockChart({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartWrapRef = useRef<HTMLDivElement | null>(null);
   const chartHostRef = useRef<HTMLDivElement | null>(null);
+  const elitePlanZoneOverlayRef = useRef<HTMLDivElement | null>(null);
   const tooltipBoxRef = useRef<HTMLDivElement | null>(null);
   const liveChartCardRef = useRef<HTMLDivElement | null>(null);
   const chartScrollShellRef = useRef<HTMLDivElement | null>(null);
@@ -3989,6 +3990,67 @@ useEffect(() => {
   }, [eliteTradePlan]);
 
   useEffect(() => {
+    const overlay = elitePlanZoneOverlayRef.current;
+    const chartHost = chartHostRef.current;
+    const candles = candleSeriesRef.current;
+
+    if (!overlay || !chartHost || !candles) return;
+
+    const hideOverlay = () => {
+      overlay.style.display = "none";
+    };
+
+    if (
+      eliteTradePlan?.direction !== "long" ||
+      eliteTradePlan.entryLow == null ||
+      eliteTradePlan.entryHigh == null ||
+      eliteTradePlan.target == null ||
+      eliteTradePlan.target <= eliteTradePlan.entryHigh
+    ) {
+      hideOverlay();
+      return;
+    }
+
+    const syncOverlay = () => {
+      const targetY = candles.priceToCoordinate(eliteTradePlan.target!);
+      const entryLowY = candles.priceToCoordinate(eliteTradePlan.entryLow!);
+      const entryHighY = candles.priceToCoordinate(eliteTradePlan.entryHigh!);
+
+      if (
+        targetY == null ||
+        entryLowY == null ||
+        entryHighY == null ||
+        entryLowY <= targetY
+      ) {
+        hideOverlay();
+        return;
+      }
+
+      const zoneHeight = entryLowY - targetY;
+      const entryZonePercent = Math.max(
+        6,
+        Math.min(38, ((entryLowY - entryHighY) / zoneHeight) * 100)
+      );
+      const transitionPercent = Math.min(78, entryZonePercent + 18);
+
+      overlay.style.display = "block";
+      overlay.style.top = `${targetY}px`;
+      overlay.style.height = `${zoneHeight}px`;
+      overlay.style.background = `linear-gradient(to top, rgba(56, 189, 248, 0.11) 0%, rgba(56, 189, 248, 0.08) ${entryZonePercent}%, rgba(16, 185, 129, 0.08) ${transitionPercent}%, rgba(52, 211, 153, 0.13) 100%)`;
+    };
+
+    const resizeObserver = new ResizeObserver(syncOverlay);
+    resizeObserver.observe(chartHost);
+    syncOverlay();
+    const syncInterval = window.setInterval(syncOverlay, 150);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.clearInterval(syncInterval);
+    };
+  }, [eliteTradePlan]);
+
+  useEffect(() => {
     const candles = candleSeriesRef.current;
     if (!candles) return;
 
@@ -5378,6 +5440,12 @@ const gapFillLabel =
               <div className="absolute inset-0">
                 <div ref={chartHostRef} className="h-full w-full bg-[#11161c]" />
               </div>
+
+              <div
+                ref={elitePlanZoneOverlayRef}
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 z-10 hidden"
+              />
 
               {showReturnToLive && isChartFullscreen ? (
                 <button
