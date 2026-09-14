@@ -374,6 +374,13 @@ export default function SigiWorkspace({
                 {hasWorkspaceAccess ? "Evaluate" : FREE_EXAMPLE_SYMBOLS.has(input.trim().toUpperCase()) ? "View example" : "Unlock analysis"}
               </button>
             </form>
+            <Link
+              href={`/stocks/${encodeURIComponent(symbol.toLowerCase())}/workspace`}
+              className="inline-flex h-12 shrink-0 self-start items-center justify-center gap-2 rounded-xl border border-emerald-400/35 bg-emerald-400/10 px-4 text-sm font-bold text-emerald-100 transition hover:border-emerald-300/50 hover:bg-emerald-400/18"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              Open Trading Workspace
+            </Link>
           </div>
         </section>
 
