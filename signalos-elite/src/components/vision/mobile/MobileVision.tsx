@@ -231,6 +231,7 @@ export default function MobileVision({
   const liveChange = liveQuote?.changePct ?? data?.stock.changePercent ?? null;
   const liveAsOf = liveQuote?.updatedAt ?? data?.stock.priceAsOf ?? null;
   const watched = data ? hasTicker(data.stock.symbol) : false;
+  const workspaceSymbol = data?.stock.symbol ?? requestedSymbol ?? initialSymbol;
 
   async function submitSymbol(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -313,6 +314,16 @@ export default function MobileVision({
         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-300">Sigi Vision</p>
         <h1 className="mt-1 text-2xl font-semibold text-white">Stock Intelligence</h1>
         <p className="mt-1 text-sm text-slate-400">Type any stock. See its Pulse. Understand why.</p>
+
+        {mode === "stock" && workspaceSymbol ? (
+          <Link
+            href={`/stocks/${encodeURIComponent(workspaceSymbol.toLowerCase())}/workspace`}
+            className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-emerald-400/35 bg-emerald-400/10 px-4 text-sm font-bold text-emerald-100 transition active:border-emerald-300/50 active:bg-emerald-400/18"
+          >
+            <Sparkles className="size-4" aria-hidden="true" />
+            Open Trading Workspace
+          </Link>
+        ) : null}
 
         <div className="mt-4 grid grid-cols-2 rounded-lg border border-white/10 bg-black/30 p-1" role="tablist" aria-label="Vision mode">
           <ModeButton active={mode === "stock"} onClick={() => onModeChange("stock")}>Stock Intelligence</ModeButton>
