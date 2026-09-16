@@ -22,7 +22,7 @@ const marketVoices: MarketVoice[] = [
 
 export function MarketVoices() {
   return (
-    <section aria-labelledby="market-voices-heading" className="relative overflow-hidden rounded-[28px] border border-cyan-300/15 bg-[#07111f] px-4 py-5 shadow-[0_0_80px_rgba(14,165,233,0.08)] sm:px-6 sm:py-7">
+    <section id="market-voices" aria-labelledby="market-voices-heading" className="relative scroll-mt-5 overflow-hidden rounded-[28px] border border-cyan-300/15 bg-[#07111f] px-4 py-5 shadow-[0_0_80px_rgba(14,165,233,0.08)] sm:px-6 sm:py-7">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(14,165,233,0.16),transparent_35%),radial-gradient(circle_at_94%_10%,rgba(139,92,246,0.13),transparent_30%)]" />
       <div className="relative">
         <div className="mb-5 flex flex-col gap-4 border-b border-white/8 pb-5 lg:flex-row lg:items-end lg:justify-between">

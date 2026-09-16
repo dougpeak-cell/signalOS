@@ -658,6 +658,12 @@ export default async function NewsPage({
               >
                 Trump
               </Link>
+              <a
+                href="#market-voices"
+                className="hidden rounded-md px-3 py-1.5 text-xs font-semibold text-white/55 transition hover:bg-white/8 hover:text-white md:inline-flex"
+              >
+                Sigi Market Voices
+              </a>
             </nav>
 
             <div className="mt-4">
