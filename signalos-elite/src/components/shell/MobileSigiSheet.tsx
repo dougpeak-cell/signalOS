@@ -376,6 +376,7 @@ export default function MobileSigiSheet({
           limit: 5,
           direction: intent.direction,
           isBest: intent.isBest,
+          preferPreferredTicker: intent.isBest,
           showWhyNotOthers: intent.showWhyNotOthers,
           marketCondition,
           preferredTicker: intent.isBest ? effectiveSheetContext?.intel?.bestSetup ?? null : null,

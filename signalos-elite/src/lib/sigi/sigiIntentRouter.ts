@@ -92,6 +92,7 @@ const WATCHLIST_PATTERNS = [
   /\bbest stock today\b/i,
   /\bbest setup today\b/i,
   /\bbest play today\b/i,
+  /\bbest opportunity\b/i,
   /\btop stock today\b/i,
   /\btop setup today\b/i,
   /\btop play today\b/i,
