@@ -47,6 +47,9 @@ export function normalizeSigiInput(input: string) {
 }
 
 export function extractTickerFromSigiInput(input: string) {
+  const resolvedTicker = resolveTicker(input);
+  if (resolvedTicker) return resolvedTicker;
+
   const cleaned = input.toUpperCase();
 
   const cashtag = cleaned.match(/\$([A-Z]{1,5})\b/);
@@ -62,7 +65,7 @@ export function extractTickerFromSigiInput(input: string) {
     return ticker;
   }
 
-  return resolveTicker(input);
+  return null;
 }
 
 export function detectSigiIntent(input: string): SigiIntent {

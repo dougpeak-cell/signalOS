@@ -111,6 +111,15 @@ function extractCompanyTicker(message: string) {
   return null;
 }
 
+function extractExplicitTargetTicker(message: string) {
+  const targetMatch = message.match(
+    /\b(?:for|on|about|in)\s+\$?([A-Z][A-Z.\-]{0,4})\b/i
+  );
+  const ticker = cleanTicker(targetMatch?.[1] ?? "");
+
+  return isTickerLikeValue(ticker) ? ticker : null;
+}
+
 function extractTickerFromCaps(message: string) {
   const matches = message.match(/\b[A-Z]{1,5}\b/g) ?? [];
 
@@ -129,6 +138,9 @@ export function resolveTicker(message: string): string | null {
 
   const companyTicker = extractCompanyTicker(message);
   if (companyTicker) return companyTicker;
+
+  const explicitTargetTicker = extractExplicitTargetTicker(message);
+  if (explicitTargetTicker) return explicitTargetTicker;
 
   return extractTickerFromCaps(message);
 }
