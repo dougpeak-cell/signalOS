@@ -58,6 +58,46 @@ function toNumber(value: unknown): number | null {
   return null;
 }
 
+function getFieldValue(source: any, paths: string[]): number | null {
+  for (const path of paths) {
+    const value = path.split(".").reduce<unknown>((current, segment) => (
+      current && typeof current === "object" ? (current as Record<string, unknown>)[segment] : null
+    ), source);
+    const parsed = toNumber(value);
+    if (parsed != null) return parsed;
+  }
+
+  return null;
+}
+
+function firstPositiveNumber(...values: unknown[]): number | null {
+  for (const value of values) {
+    const parsed = toNumber(value);
+    if (parsed != null && parsed > 0) return parsed;
+  }
+
+  return null;
+}
+
+async function fetchYahooPrice(ticker: string): Promise<number | null> {
+  try {
+    const response = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`,
+      { next: { revalidate: 300 } }
+    );
+    if (!response.ok) return null;
+
+    const payload = await response.json() as {
+      chart?: { result?: Array<{ meta?: { regularMarketPrice?: unknown; chartPreviousClose?: unknown } }> };
+    };
+    const meta = payload.chart?.result?.[0]?.meta;
+
+    return firstPositiveNumber(meta?.regularMarketPrice, meta?.chartPreviousClose);
+  } catch {
+    return null;
+  }
+}
+
 async function safeJson(url: string) {
   const res = await fetch(url, {
     headers: { accept: "application/json" },
@@ -133,9 +173,9 @@ export async function getMassiveFundamentals(
             : [
                 safeJson(overviewUrl),
                 safeJson(snapshotUrl),
-                safeJson(`https://api.massive.com/vX/reference/financial-ratios?ticker=${symbol}&limit=1&order=desc&sort=filing_date&apiKey=${apiKey}`),
-                safeJson(`https://api.massive.com/vX/reference/financials?ticker=${symbol}&statement_type=balance_sheet&timeframe=annual&limit=1&order=desc&sort=filing_date&apiKey=${apiKey}`),
-                safeJson(`https://api.massive.com/vX/reference/financials?ticker=${symbol}&statement_type=income_statement&timeframe=annual&limit=3&order=desc&sort=filing_date&apiKey=${apiKey}`),
+                safeJson(`https://api.massive.com/stocks/financials/v1/ratios?tickers=${symbol}&limit=1&sort=period_end.desc&apiKey=${apiKey}`),
+                safeJson(`https://api.massive.com/stocks/financials/v1/balance-sheets?tickers=${symbol}&timeframe=annual&limit=1&sort=period_end.desc&apiKey=${apiKey}`),
+                safeJson(`https://api.massive.com/stocks/financials/v1/income-statements?tickers=${symbol}&timeframe=annual&limit=3&sort=period_end.desc&apiKey=${apiKey}`),
               ]
         );
 
@@ -145,6 +185,7 @@ export async function getMassiveFundamentals(
       const balanceSheet = firstResult<any>(balanceSheetData);
       const incomeStatement = firstResult<any>(incomeStatementData);
       const incomeStatements = allResults<any>(incomeStatementData);
+      const yahooPrice = profile === "full" ? await fetchYahooPrice(ticker) : null;
 
       const marketCap =
         toNumber(overview?.results?.market_cap) ??
@@ -161,10 +202,31 @@ export async function getMassiveFundamentals(
         toNumber(snapshot?.prevDay?.v) ??
         null;
 
-      const pe =
+      const reportedPe =
         toNumber(ratios?.price_earnings_ratio) ??
         toNumber(ratios?.pe_ratio) ??
         null;
+
+      const price = firstPositiveNumber(
+        snapshot?.ticker?.lastTrade?.p,
+        snapshot?.lastTrade?.p,
+        snapshot?.ticker?.day?.c,
+        snapshot?.day?.c,
+        snapshot?.ticker?.prevDay?.c,
+        snapshot?.prevDay?.c,
+        yahooPrice
+      );
+
+      const dilutedEps = getFieldValue(incomeStatement, [
+        "diluted_earnings_per_share",
+        "basic_earnings_per_share",
+      ]);
+
+      const pe =
+        reportedPe ??
+        (price != null && dilutedEps != null && dilutedEps > 0
+          ? price / dilutedEps
+          : null);
 
       const peg =
         toNumber(ratios?.price_earnings_growth_ratio) ??
@@ -176,31 +238,45 @@ export async function getMassiveFundamentals(
         null;
 
       const cash =
+        toNumber(balanceSheet?.cash_and_equivalents) ??
+        toNumber(balanceSheet?.cash_and_cash_equivalents) ??
+        toNumber(balanceSheet?.cash) ??
         toNumber(balanceSheet?.financials?.cash_and_cash_equivalents?.value) ??
         toNumber(balanceSheet?.financials?.cash?.value) ??
         null;
 
       const debt =
+        toNumber(balanceSheet?.debt_current) ??
+        toNumber(balanceSheet?.long_term_debt_and_capital_lease_obligations) ??
         toNumber(balanceSheet?.financials?.long_term_debt?.value) ??
         toNumber(balanceSheet?.financials?.total_debt?.value) ??
         null;
 
       const revenue =
+        toNumber(incomeStatement?.revenue) ??
+        toNumber(incomeStatement?.revenues) ??
         toNumber(incomeStatement?.financials?.revenues?.value) ??
         toNumber(incomeStatement?.financials?.revenue?.value) ??
         null;
 
       const previousRevenue =
+        toNumber(incomeStatements?.[1]?.revenue) ??
+        toNumber(incomeStatements?.[1]?.revenues) ??
         toNumber(incomeStatements?.[1]?.financials?.revenues?.value) ??
         toNumber(incomeStatements?.[1]?.financials?.revenue?.value) ??
         null;
 
       const twoYearsAgoRevenue =
+        toNumber(incomeStatements?.[2]?.revenue) ??
+        toNumber(incomeStatements?.[2]?.revenues) ??
         toNumber(incomeStatements?.[2]?.financials?.revenues?.value) ??
         toNumber(incomeStatements?.[2]?.financials?.revenue?.value) ??
         null;
 
       const netIncome =
+        toNumber(incomeStatement?.net_income_loss_attributable_common_shareholders) ??
+        toNumber(incomeStatement?.consolidated_net_income_loss) ??
+        toNumber(incomeStatement?.net_income_loss) ??
         toNumber(incomeStatement?.financials?.net_income_loss?.value) ??
         toNumber(incomeStatement?.financials?.net_income?.value) ??
         null;
