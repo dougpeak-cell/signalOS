@@ -157,10 +157,14 @@ export default function LandingPage() {
       <section className="relative isolate overflow-hidden border-b border-cyan-300/15 bg-[#04141a]">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(2,7,13,0.99)_0%,rgba(2,7,13,0.98)_48%,rgba(2,7,13,0.72)_62%,rgba(2,7,13,0.22)_100%),linear-gradient(180deg,rgba(2,7,13,0.12),rgba(2,7,13,0.94)_100%)]" />
         <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:linear-gradient(rgba(45,212,191,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(45,212,191,0.06)_1px,transparent_1px)] [background-size:34px_34px]" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[62%] bg-[url('/landing/hero-today.png')] bg-cover bg-left-top bg-no-repeat opacity-90 lg:block" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[62%] bg-[linear-gradient(90deg,#02070d_0%,rgba(2,7,13,0.12)_58%,rgba(2,7,13,0.3)_100%)] lg:block" />
+        <div className="pointer-events-none absolute right-0 top-30 hidden w-[55%] max-w-260 border border-cyan-300/20 bg-[#06151c] p-1 shadow-[0_28px_80px_rgba(0,0,0,0.5)] lg:block">
+          <Image src="/landing/hero-today.png" alt="" width={1600} height={1000} className="h-auto w-full" priority />
+          <div className="absolute -bottom-7 left-0 border border-cyan-300/30 bg-[#04131a] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-100">
+            Live intelligence terminal
+          </div>
+        </div>
 
-        <div className="relative mx-auto max-w-368 px-5 pb-14 pt-5 sm:px-8 sm:pb-20 lg:px-12 lg:pb-24">
+        <div className="relative mx-auto max-w-368 px-5 pb-14 pt-5 sm:px-8 sm:pb-20 2xl:max-w-[1920px] lg:px-12 lg:pb-24">
           <nav className="flex items-center justify-between gap-3" aria-label="Landing navigation">
             <div className="flex items-center gap-3">
               <div className="flex size-9 items-center justify-center border border-cyan-300/40 bg-cyan-300/10 text-cyan-200 shadow-[0_0_22px_rgba(34,211,238,0.18)]">
@@ -179,7 +183,7 @@ export default function LandingPage() {
             </div>
           </nav>
 
-          <div className="relative mt-16 max-w-2xl lg:mt-28">
+          <div className="relative mt-16 max-w-2xl lg:mt-28 lg:max-w-xl">
             <div className="inline-flex items-center gap-2 border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100">
               <span className="size-1.5 animate-pulse bg-emerald-300" /> Intelligence online
             </div>
@@ -216,7 +220,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="features" className="mx-auto max-w-368 px-4 py-12 sm:px-6 lg:px-8">
+      <section id="features" className="mx-auto max-w-368 px-4 py-12 sm:px-6 2xl:max-w-[1920px] lg:px-8">
         <div
           className="overflow-hidden rounded-4xl border border-cyan-300/18 bg-[#03101a] shadow-[0_28px_80px_rgba(0,0,0,0.34)]"
           style={{
@@ -380,7 +384,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-368 px-4 py-12 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-368 px-4 py-12 sm:px-6 2xl:max-w-[1920px] lg:px-8">
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {screenshots.map((shot) => (
             <article
@@ -422,7 +426,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="pricing" className="mx-auto max-w-368 px-4 py-12 sm:px-6 lg:px-8">
+      <section id="pricing" className="mx-auto max-w-368 px-4 py-12 sm:px-6 2xl:max-w-[1920px] lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="rounded-4xl border border-white/10 bg-[#08151d]/90 p-8 text-white shadow-[0_24px_60px_rgba(0,0,0,0.28)]">
             <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-200/70">
@@ -483,7 +487,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-368 px-4 pb-20 pt-6 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-368 px-4 pb-20 pt-6 sm:px-6 2xl:max-w-[1920px] lg:px-8">
         <div className="rounded-4xl border border-teal-300/20 bg-[linear-gradient(135deg,rgba(20,184,166,0.14),rgba(242,232,201,0.14))] p-8 text-slate-950 shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>

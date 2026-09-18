@@ -507,6 +507,7 @@ export default function MobileSigiSheet({
 
       try {
         const stock = await fetchStockContext(ticker);
+        const educationEntry = findEducationEntry(question);
         const tickerOnlyInput = normalizeTickerInput(question) === ticker;
         const requestQuestion = tickerOnlyInput
           ? `Analyze ${ticker}`
@@ -516,20 +517,39 @@ export default function MobileSigiSheet({
             );
         const answerMode = shouldShowTodayShortRead ? "short" : "analyze";
 
-        const response = await fetch("/api/sigi", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: withTickerFocus(requestQuestion, ticker),
-            ticker,
-            answerMode,
-            profilePrompt: buildSigiProfilePrompt(sigiProfile),
-            stock,
-            source: "mobile_today",
-            profile: sigiProfile ?? null,
-            context: effectiveSheetContext,
+        const [response, fetchedCard] = await Promise.all([
+          fetch("/api/sigi", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message: withTickerFocus(requestQuestion, ticker),
+              ticker,
+              answerMode,
+              profilePrompt: buildSigiProfilePrompt(sigiProfile),
+              stock,
+              source: "mobile_today",
+              profile: sigiProfile ?? null,
+              context: effectiveSheetContext,
+            }),
           }),
-        });
+          fetchSigiIntelligenceCard({
+            question: requestQuestion,
+            ticker,
+            marketData: {
+              price: stock?.price ?? null,
+              changePercent: stock?.changePercent ?? null,
+              volume: stock?.volume ?? null,
+              sector: stock?.sector ?? null,
+              relativeVolume: stock?.relativeVolume ?? null,
+              marketCap: stock?.marketCap ?? null,
+              support: stock?.support ?? null,
+              resistance: stock?.resistance ?? null,
+              trend: stock?.trend ?? null,
+              setup: stock?.setup ?? null,
+              catalyst: stock?.catalyst ?? null,
+            },
+          }),
+        ]);
 
         const data = (await response.json()) as MobileSigiApiResponse;
 
@@ -539,7 +559,7 @@ export default function MobileSigiSheet({
 
         const answer = data.answer?.trim() || `I'm reading ${ticker} now.`;
         const thesis = data.thesis ?? null;
-  const title = thesis?.title?.trim() || (answerMode === "short" ? `${ticker} Quick Sigi Read` : `${ticker} Sigi Read`);
+      const title = thesis?.title?.trim() || (answerMode === "short" ? `${ticker} Quick Sigi Read` : `${ticker} Sigi Read`);
         const thesisSummary = thesis?.summary?.trim() || null;
         const analysis = thesisSummary && thesisSummary !== answer ? thesisSummary : null;
 
@@ -555,8 +575,17 @@ export default function MobileSigiSheet({
           risk: thesis?.risk ?? data.intelligence?.risk ?? data.risk ?? null,
           catalyst: thesis?.catalyst ?? data.intelligence?.catalyst ?? data.catalyst ?? null,
           nextStep: data.intelligence?.nextStep ?? data.nextStep ?? null,
-          intelligenceCard: data.intelligenceCard ?? null,
+          intelligenceCard: data.intelligenceCard ?? fetchedCard ?? null,
         });
+        setFollowUps(
+          educationEntry
+            ? [
+                `Explain ${educationEntry.term} simply`,
+                `Is ${ticker} strong fundamentally?`,
+                `Show trade setup for ${ticker}`,
+              ]
+            : []
+        );
 
         setMobileSigiInput("");
       } catch (nextError) {
