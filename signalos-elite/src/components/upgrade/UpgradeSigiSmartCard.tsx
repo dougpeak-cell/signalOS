@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Brain, Lock, Sparkles, Zap } from "lucide-react";
 import {
+	formatNextEligibleIn,
+	getSmartPreviewStatus,
 	SMART_PREVIEW_WINDOW_MINUTES,
 	startSmartPreview,
 } from "@/lib/premiumAccess";
@@ -13,6 +15,13 @@ export default function UpgradeSigiSmartCard() {
 	const router = useRouter();
 	const [isStartingPreview, setIsStartingPreview] = useState(false);
 	const [previewError, setPreviewError] = useState<string | null>(null);
+	const [nextEligibleAt, setNextEligibleAt] = useState<number | null>(null);
+
+	useEffect(() => {
+		getSmartPreviewStatus()
+			.then((status) => setNextEligibleAt(status.eligible ? null : status.nextEligibleAt))
+			.catch(() => setNextEligibleAt(null));
+	}, []);
 
 	async function handleStartPreview() {
 		setIsStartingPreview(true);
@@ -56,14 +65,20 @@ export default function UpgradeSigiSmartCard() {
 				<Feature icon={<Sparkles />} text="Today’s best setups and risks" />
 			</div>
 
-			<button
-				type="button"
-				onClick={handleStartPreview}
-				className="block w-full rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-5 py-3 text-center text-sm font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-400/25"
-				disabled={isStartingPreview}
-			>
-				{isStartingPreview ? "Opening Smart Preview..." : `Start Free ${SMART_PREVIEW_WINDOW_MINUTES}-Minute Preview`}
-			</button>
+			{nextEligibleAt ? (
+				<div className="rounded-2xl border border-cyan-300/25 bg-cyan-400/5 px-5 py-3 text-center">
+					<p className="text-sm font-semibold text-cyan-100">{formatNextEligibleIn(nextEligibleAt - Date.now())}</p>
+				</div>
+			) : (
+				<button
+					type="button"
+					onClick={handleStartPreview}
+					className="block w-full rounded-2xl border border-cyan-300/40 bg-cyan-400/15 px-5 py-3 text-center text-sm font-black uppercase tracking-[0.18em] text-cyan-100 transition hover:bg-cyan-400/25"
+					disabled={isStartingPreview}
+				>
+					{isStartingPreview ? "Opening Smart Preview..." : `Start Free ${SMART_PREVIEW_WINDOW_MINUTES}-Minute Preview`}
+				</button>
+			)}
 
 			{previewError ? <p className="mt-3 text-center text-xs text-rose-200">{previewError}</p> : null}
 

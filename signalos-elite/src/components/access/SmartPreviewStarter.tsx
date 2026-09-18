@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import {
+  formatNextEligibleIn,
+  getSmartPreviewStatus,
   isSmartPreviewActive,
   SMART_PREVIEW_WINDOW_MINUTES,
   SMART_PREVIEW_STARTED_EVENT,
@@ -12,6 +14,7 @@ export default function SmartPreviewStarter() {
   const [active, setActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [nextEligibleAt, setNextEligibleAt] = useState<number | null>(null);
 
   useEffect(() => {
     const syncPreview = () => {
@@ -19,6 +22,10 @@ export default function SmartPreviewStarter() {
     };
 
     syncPreview();
+
+    getSmartPreviewStatus()
+      .then((status) => setNextEligibleAt(status.eligible ? null : status.nextEligibleAt))
+      .catch(() => setNextEligibleAt(null));
 
     const intervalId = window.setInterval(syncPreview, 30000);
     window.addEventListener("focus", syncPreview);
@@ -39,6 +46,7 @@ export default function SmartPreviewStarter() {
     try {
       await startSmartPreview();
       setActive(true);
+      setNextEligibleAt(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to start Smart preview.");
     } finally {
@@ -50,6 +58,20 @@ export default function SmartPreviewStarter() {
     return (
       <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4 text-sm text-emerald-200">
         Smart Preview Active — full Smart access is open during this session.
+      </div>
+    );
+  }
+
+  if (nextEligibleAt) {
+    return (
+      <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+        <p className="text-sm font-semibold text-white">{formatNextEligibleIn(nextEligibleAt - Date.now())}</p>
+        <a
+          href="/auth/upgrade?plan=smart"
+          className="mt-3 inline-block rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-black shadow-lg hover:bg-cyan-300"
+        >
+          Skip the wait — upgrade to Sigi Smart
+        </a>
       </div>
     );
   }

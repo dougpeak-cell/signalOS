@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
+  formatNextEligibleIn,
   formatRemainingTime,
   getSmartPreviewRemainingMs,
+  getSmartPreviewStatus,
   SMART_PREVIEW_WINDOW_MINUTES,
   getTodayFeaturedStock,
   isSmartPreviewActive,
@@ -27,6 +29,7 @@ export default function LiveAccessStrip({
   const [remainingMs, setRemainingMs] = useState(0);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewStarting, setPreviewStarting] = useState(false);
+  const [nextEligibleAt, setNextEligibleAt] = useState<number | null>(null);
 
   const featuredTicker = getTodayFeaturedStock();
   const cryptoOpen = isWeekendCryptoOpen();
@@ -40,6 +43,10 @@ export default function LiveAccessStrip({
     }
 
     refresh();
+
+    getSmartPreviewStatus()
+      .then((status) => setNextEligibleAt(status.eligible ? null : status.nextEligibleAt))
+      .catch(() => setNextEligibleAt(null));
 
     const timer = setInterval(refresh, 30000);
     window.addEventListener("focus", refresh);
@@ -60,6 +67,7 @@ export default function LiveAccessStrip({
     try {
       await startSmartPreview();
       setPreviewActive(true);
+      setNextEligibleAt(null);
       setRemainingMs(getSmartPreviewRemainingMs());
     } catch (error) {
       setPreviewError(error instanceof Error ? error.message : "Unable to start Smart preview.");
@@ -208,6 +216,21 @@ export default function LiveAccessStrip({
               </div>
               <div className="text-xs text-slate-400">
                 {formatRemainingTime(remainingMs)} • Full Smart access
+              </div>
+            </>
+          ) : nextEligibleAt ? (
+            <>
+              <div className={`mt-1 font-semibold text-white ${compact ? "text-[13px]" : "text-sm"}`}>
+                {formatNextEligibleIn(nextEligibleAt - Date.now())}
+              </div>
+              <Link
+                href="/auth/upgrade?plan=smart"
+                className={`mt-2 inline-block rounded-xl bg-emerald-300 text-xs font-bold text-black transition hover:bg-emerald-200 ${compact ? "px-3.5 py-2" : "px-4 py-2"}`}
+              >
+                Skip the wait — upgrade now
+              </Link>
+              <div className="mt-2 text-xs text-slate-400">
+                Includes Vision + Workspace · Available once every 7 days
               </div>
             </>
           ) : (

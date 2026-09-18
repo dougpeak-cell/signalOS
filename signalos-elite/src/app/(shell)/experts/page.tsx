@@ -16,10 +16,10 @@ import { FinancialDisclaimer } from "@/components/FinancialDisclaimer";
 import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
 import tradingWorkspaceScreenshot from "../../../public/Images/Chart/Screenshot 2026-05-20 175534.png";
 import ExpertsProDashboard from "@/components/experts/ExpertsProDashboard";
+import ExpertsPlanCards from "./ExpertsPlanCards";
 import { getSigiSettingsViewForCurrentUser } from "@/lib/sigi/settings";
 
 const PRO_DASHBOARD_HREF = "/experts/pro";
-const SMART_PREVIEW_HREF = "/experts/smart";
 
 export default async function ExpertsPage({
   searchParams,
@@ -95,63 +95,7 @@ export default async function ExpertsPage({
           </div>
         </section>
 
-        <section className={["grid gap-6", isMobilePreview ? "" : "lg:grid-cols-3"].join(" ")}>
-          <PlanCard
-            compact={isMobilePreview}
-            badge="Current Access"
-            title="Sigi"
-            price="$0"
-            subtitle="Quick View market access"
-            features={[
-              "Quick View Watchlist",
-              "Quick View Portfolio",
-              "Basic market navigation",
-            ]}
-            cta="Current Plan"
-            href="/today"
-          />
-
-          <PlanCard
-            compact={isMobilePreview}
-            highlighted
-            badge="Smart Users"
-            title="Sigi Smart"
-            price="$9.00"
-            subtitle="Personal assistant + portfolio intelligence"
-            features={[
-              "Sigi Personal Assistant",
-              "SigiOS Watchlist intelligence",
-              "Sigi Portfolio Read",
-              "SigiOS Vision and SigiOS Workspace",
-              "Sigi Pulse, powered by AMSA",
-              "Live pricing and SigiOS scoring",
-              "Momentum context and chart access",
-            ]}
-            cta="Upgrade to Smart"
-            href={SMART_PREVIEW_HREF}
-          />
-
-          <PlanCard
-            compact={isMobilePreview}
-            premium
-            badge="Pro Users"
-            title="Sigi Pro"
-            price="$24.00"
-            subtitle="Total access to Sigi Intelligence"
-            features={[
-              "Everything in Smart",
-              "SigiOS Vision and SigiOS Workspace",
-              "Sigi Pulse, powered by AMSA",
-              "Sigi Experts",
-              "Sigi Screener",
-              "Full everyday Crypto access",
-              "Analyst Top Picks Across the Market",
-              "Institutional ownership trends",
-            ]}
-            cta="Reserve Pro Access"
-            href={PRO_DASHBOARD_HREF}
-          />
-        </section>
+        <ExpertsPlanCards compact={isMobilePreview} />
 
         <section className={isMobilePreview ? "rounded-3xl border border-cyan-400/20 bg-slate-950/80 p-4" : "rounded-3xl border border-cyan-400/20 bg-slate-950/80 p-6 md:p-8"}>
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
@@ -820,74 +764,3 @@ function PreviewMetricCard({
   );
 }
 
-function PlanCard({
-  badge,
-  title,
-  price,
-  subtitle,
-  features,
-  cta,
-  href,
-  highlighted = false,
-  premium = false,
-  compact = false,
-}: {
-  badge: string;
-  title: string;
-  price: string;
-  subtitle: string;
-  features: string[];
-  cta: string;
-  href: string;
-  highlighted?: boolean;
-  premium?: boolean;
-  compact?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-3xl border ${compact ? "p-4" : "p-6"} ${
-        premium
-          ? "border-amber-400/30 bg-amber-950/20"
-          : highlighted
-            ? "border-cyan-400/40 bg-cyan-950/30"
-            : "border-slate-700 bg-slate-950/70"
-      }`}
-    >
-      <div
-        className={`text-xs font-bold uppercase tracking-[0.3em] ${
-          premium ? "text-amber-300" : "text-cyan-300"
-        }`}
-      >
-        {badge}
-      </div>
-
-      <h3 className={compact ? "mt-3 text-xl font-bold" : "mt-4 text-2xl font-bold"}>{title}</h3>
-
-      <div className="mt-3 flex items-end gap-1">
-        <span className={compact ? "text-3xl font-black" : "text-4xl font-black"}>{price}</span>
-        {price !== "$0" ? <span className="mb-1 text-sm text-slate-400">/mo</span> : null}
-      </div>
-
-      <p className="mt-3 text-sm text-slate-300">{subtitle}</p>
-
-      <div className="mt-6 space-y-3">
-        {features.map((feature) => (
-          <div key={feature} className="rounded-xl border border-white/10 bg-white/3 px-3 py-2 text-sm text-slate-200">
-            {feature}
-          </div>
-        ))}
-      </div>
-
-      <Link
-        href={href}
-        className={`mt-6 inline-flex w-full justify-center rounded-2xl px-4 py-3 text-sm font-bold transition ${
-          premium
-            ? "border border-amber-300/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20"
-            : "border border-cyan-300/30 bg-cyan-400/10 text-cyan-200 hover:bg-cyan-400/20"
-        }`}
-      >
-        {cta}
-      </Link>
-    </div>
-  );
-}

@@ -191,3 +191,15 @@ export function formatRemainingTime(ms: number) {
 
   return `${minutes}m left`;
 }
+
+export function formatNextEligibleIn(ms: number) {
+  if (ms <= 0) return "Available now";
+
+  const totalHours = Math.ceil(ms / (60 * 60 * 1000));
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+
+  if (days > 0) return `Next preview in ${days}d ${hours}h`;
+
+  return `Next preview in ${hours}h`;
+}
