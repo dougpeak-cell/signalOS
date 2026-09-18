@@ -157,12 +157,6 @@ export default function LandingPage() {
       <section className="relative isolate overflow-hidden border-b border-cyan-300/15 bg-[#04141a]">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(2,7,13,0.99)_0%,rgba(2,7,13,0.98)_48%,rgba(2,7,13,0.72)_62%,rgba(2,7,13,0.22)_100%),linear-gradient(180deg,rgba(2,7,13,0.12),rgba(2,7,13,0.94)_100%)]" />
         <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:linear-gradient(rgba(45,212,191,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(45,212,191,0.06)_1px,transparent_1px)] [background-size:34px_34px]" />
-        <div className="pointer-events-none absolute right-0 top-30 hidden w-[55%] max-w-260 border border-cyan-300/20 bg-[#06151c] p-1 shadow-[0_28px_80px_rgba(0,0,0,0.5)] lg:block">
-          <Image src="/landing/hero-today.png" alt="" width={1600} height={1000} className="h-auto w-full" priority />
-          <div className="absolute -bottom-7 left-0 border border-cyan-300/30 bg-[#04131a] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-100">
-            Live intelligence terminal
-          </div>
-        </div>
 
         <div className="relative mx-auto max-w-368 px-5 pb-14 pt-5 sm:px-8 sm:pb-20 2xl:max-w-[1920px] lg:px-12 lg:pb-24">
           <nav className="flex items-center justify-between gap-3" aria-label="Landing navigation">
@@ -183,35 +177,44 @@ export default function LandingPage() {
             </div>
           </nav>
 
-          <div className="relative mt-16 max-w-2xl lg:mt-28 lg:max-w-xl">
-            <div className="inline-flex items-center gap-2 border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100">
-              <span className="size-1.5 animate-pulse bg-emerald-300" /> Intelligence online
-            </div>
-            <h1 className="mt-5 max-w-3xl text-5xl font-black leading-[0.9] tracking-normal text-white sm:text-6xl lg:text-8xl">
-              SigiOS<br />Elite
-            </h1>
-            <p className="mt-5 max-w-xl text-lg font-medium leading-7 text-cyan-50/90 sm:text-xl sm:leading-8">
-              The AI command center for investors who want clarity before conviction.
-            </p>
-            <p className="mt-4 max-w-lg text-sm leading-6 text-white/58 sm:text-base sm:leading-7">
-              Read the tape, surface the strongest setups, and ask Sigi what matters before you make the next move.
-            </p>
+          <div className="mt-14 grid items-center gap-10 lg:mt-16 lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)] lg:gap-12 xl:gap-18">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100">
+                <span className="size-1.5 animate-pulse bg-emerald-300" /> Intelligence online
+              </div>
+              <h1 className="mt-5 max-w-3xl text-5xl font-black leading-[0.9] tracking-normal text-white sm:text-6xl lg:text-7xl xl:text-8xl">
+                SigiOS<br />Elite
+              </h1>
+              <p className="mt-5 max-w-xl text-lg font-medium leading-7 text-cyan-50/90 sm:text-xl sm:leading-8">
+                AI-native market intelligence for investors who want clarity before conviction.
+              </p>
+              <p className="mt-4 max-w-lg text-sm leading-6 text-white/58 sm:text-base sm:leading-7">
+                Read the tape, surface the strongest setups, and ask Sigi what matters before you make the next move.
+              </p>
 
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link href={LANDING_FREE_ACCOUNT_HREF} className="inline-flex min-h-12 items-center justify-center gap-2 bg-cyan-300 px-5 text-sm font-bold text-[#031117] shadow-[0_0_28px_rgba(34,211,238,0.28)] transition hover:bg-cyan-200">
-                Create Free Account <ArrowUpRight className="size-4" />
-              </Link>
-              <Link href="/today" className="inline-flex min-h-12 items-center justify-center gap-2 border border-white/20 bg-black/20 px-5 text-sm font-semibold text-white transition hover:border-cyan-200/50 hover:bg-cyan-300/10">
-                Explore Today <ChartNoAxesCombined className="size-4" />
-              </Link>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link href={LANDING_FREE_ACCOUNT_HREF} className="inline-flex min-h-12 items-center justify-center gap-2 bg-cyan-300 px-5 text-sm font-bold text-[#031117] shadow-[0_0_28px_rgba(34,211,238,0.28)] transition hover:bg-cyan-200">
+                  Create Free Account <ArrowUpRight className="size-4" />
+                </Link>
+                <Link href="/today" className="inline-flex min-h-12 items-center justify-center gap-2 border border-white/20 bg-black/20 px-5 text-sm font-semibold text-white transition hover:border-cyan-200/50 hover:bg-cyan-300/10">
+                  Explore Today <ChartNoAxesCombined className="size-4" />
+                </Link>
+              </div>
+
+              <div className="mt-8 grid max-w-xl grid-cols-3 gap-px border border-white/10 bg-white/10">
+                <div className="min-w-0 bg-[#061117]/88 px-3 py-3"><Bot className="size-4 text-cyan-300" /><div className="mt-2 truncate text-[9px] font-bold uppercase tracking-[0.14em] text-white/42">Ask SIGI</div><div className="mt-1 text-xs font-semibold leading-4 text-white/78">AI trade reads</div></div>
+                <div className="min-w-0 bg-[#061117]/88 px-3 py-3"><ChartNoAxesCombined className="size-4 text-cyan-300" /><div className="mt-2 truncate text-[9px] font-bold uppercase tracking-[0.14em] text-white/42">Live tape</div><div className="mt-1 text-xs font-semibold leading-4 text-white/78">Setups ranked</div></div>
+                <div className="min-w-0 bg-[#061117]/88 px-3 py-3"><ShieldCheck className="size-4 text-cyan-300" /><div className="mt-2 truncate text-[9px] font-bold uppercase tracking-[0.14em] text-white/42">Stay grounded</div><div className="mt-1 text-xs font-semibold leading-4 text-white/78">Risk included</div></div>
+              </div>
+              <p className="mt-4 text-xs text-white/38">Educational and informational content only. Not investment advice.</p>
             </div>
 
-            <div className="mt-8 grid max-w-xl grid-cols-3 gap-px border border-white/10 bg-white/10">
-              <div className="min-w-0 bg-[#061117]/88 px-3 py-3"><Bot className="size-4 text-cyan-300" /><div className="mt-2 truncate text-[9px] font-bold uppercase tracking-[0.14em] text-white/42">Ask SIGI</div><div className="mt-1 text-xs font-semibold leading-4 text-white/78">AI trade reads</div></div>
-              <div className="min-w-0 bg-[#061117]/88 px-3 py-3"><ChartNoAxesCombined className="size-4 text-cyan-300" /><div className="mt-2 truncate text-[9px] font-bold uppercase tracking-[0.14em] text-white/42">Live tape</div><div className="mt-1 text-xs font-semibold leading-4 text-white/78">Setups ranked</div></div>
-              <div className="min-w-0 bg-[#061117]/88 px-3 py-3"><ShieldCheck className="size-4 text-cyan-300" /><div className="mt-2 truncate text-[9px] font-bold uppercase tracking-[0.14em] text-white/42">Stay grounded</div><div className="mt-1 text-xs font-semibold leading-4 text-white/78">Risk included</div></div>
+            <div className="relative hidden border border-cyan-300/20 bg-[#06151c] p-1 shadow-[0_28px_80px_rgba(0,0,0,0.5)] lg:block">
+              <Image src="/landing/hero-today.png" alt="SigiOS Elite live intelligence terminal" width={1600} height={1000} className="h-auto w-full" priority />
+              <div className="absolute -bottom-7 left-0 border border-cyan-300/30 bg-[#04131a] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-100">
+                Live intelligence terminal
+              </div>
             </div>
-            <p className="mt-4 text-xs text-white/38">Educational and informational content only. Not investment advice.</p>
           </div>
 
           <div className="relative mt-10 border border-cyan-300/20 bg-[#06151c]/70 p-1 shadow-[0_24px_60px_rgba(0,0,0,0.38)] lg:hidden">
