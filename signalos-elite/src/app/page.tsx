@@ -1,5 +1,6 @@
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
+import { ArrowUpRight, Bot, ChartNoAxesCombined, ShieldCheck, Sparkles } from "lucide-react";
 import bestStocksScreenshot from "../public/Images/Chart/best-stocks2.png";
 
 type LandingScreenshot = {
@@ -152,108 +153,65 @@ const LANDING_PRO_TRIAL_HREF = "/auth/upgrade?plan=pro&returnTo=%2Ftoday";
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.18),transparent_36%),linear-gradient(180deg,#041017_0%,#071722_45%,#f4efe4_100%)] text-white">
-      <section className="mx-auto max-w-368 px-3 pb-20 pt-6 sm:px-6 lg:px-8">
-        <div className="rounded-4xl border border-white/12 bg-black/24 px-4 py-5 backdrop-blur-xl sm:px-8 sm:py-7">
-          <div className="flex flex-col gap-10">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <main className="min-h-screen overflow-hidden bg-[#02070d] text-white">
+      <section className="relative isolate overflow-hidden border-b border-cyan-300/15 bg-[#04141a]">
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(2,7,13,0.99)_0%,rgba(2,7,13,0.98)_48%,rgba(2,7,13,0.72)_62%,rgba(2,7,13,0.22)_100%),linear-gradient(180deg,rgba(2,7,13,0.12),rgba(2,7,13,0.94)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:linear-gradient(rgba(45,212,191,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(45,212,191,0.06)_1px,transparent_1px)] [background-size:34px_34px]" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[62%] bg-[url('/landing/hero-today.png')] bg-cover bg-left-top bg-no-repeat opacity-90 lg:block" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[62%] bg-[linear-gradient(90deg,#02070d_0%,rgba(2,7,13,0.12)_58%,rgba(2,7,13,0.3)_100%)] lg:block" />
+
+        <div className="relative mx-auto max-w-368 px-5 pb-14 pt-5 sm:px-8 sm:pb-20 lg:px-12 lg:pb-24">
+          <nav className="flex items-center justify-between gap-3" aria-label="Landing navigation">
+            <div className="flex items-center gap-3">
+              <div className="flex size-9 items-center justify-center border border-cyan-300/40 bg-cyan-300/10 text-cyan-200 shadow-[0_0_22px_rgba(34,211,238,0.18)]">
+                <Sparkles className="size-4" />
+              </div>
               <div>
-                <div className="text-sm font-semibold tracking-[0.28em] text-teal-200/80">
-                  SigiOS
-                </div>
-                <div className="mt-1 text-base text-white/60">Powered by Sigi</div>
-                <div className="mt-1 text-xs tracking-[0.18em] text-white/42">SIGIOS LLC</div>
-              </div>
-
-              <div className="flex max-w-xl flex-col items-start gap-2 sm:items-end">
-                <div className="flex flex-wrap gap-3 sm:justify-end">
-                  <Link
-                    href="/auth?next=%2Ftoday"
-                    className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/15 px-5 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/8"
-                  >
-                    Sign In
-                  </Link>
-
-                  <Link
-                    href={LANDING_FREE_ACCOUNT_HREF}
-                    className="inline-flex min-h-11 items-center justify-center rounded-full bg-teal-300 px-5 text-sm font-bold text-slate-950 transition hover:bg-teal-200"
-                  >
-                    Create Free Account
-                  </Link>
-                </div>
-
-                <p className="max-w-md text-sm leading-6 text-white/62 sm:text-right">
-                  Create your free SigiOS account. Upgrade to Smart or Pro anytime with a 7-day free trial.
-                </p>
+                <div className="font-mono text-sm font-bold tracking-[0.16em] text-cyan-100">SIGIOS ELITE</div>
+                <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">AI market intelligence</div>
               </div>
             </div>
-
-            <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-              <div className="min-w-0">
-                <div className="inline-flex rounded-full border border-teal-300/25 bg-teal-300/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-teal-100">
-                  AI Market Intelligence
-                </div>
-
-                <h1 className="mt-6 max-w-[10ch] text-4xl font-black leading-[0.92] tracking-tight text-white sm:max-w-[11ch] sm:text-5xl lg:max-w-4xl lg:text-7xl">
-                  Invest Smarter.
-                  <br />
-                  Think Clearly.
-                  <br />
-                  Build Responsibly.
-                </h1>
-
-                <p className="mt-6 max-w-2xl text-base leading-8 text-white/72 sm:text-lg">
-                  SigiOS is an AI-powered market intelligence system built to help
-                  investors understand what matters, identify opportunity, and make
-                  better decisions.
-                </p>
-
-                <div className="mt-6 flex justify-center sm:justify-start">
-                  <div className="w-full max-w-44 sm:max-w-52">
-                    <Image
-                      src="/images/sigi logo 2.png"
-                      alt="SigiOS logo"
-                      width={560}
-                      height={280}
-                      className="h-auto w-full object-contain"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <Link
-                    href={LANDING_FREE_ACCOUNT_HREF}
-                    className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#f2e8c9] px-6 text-sm font-bold text-slate-950 transition hover:bg-[#f7efd7]"
-                  >
-                    Create Free Account
-                  </Link>
-
-                  <Link
-                    href="/today"
-                    className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 px-6 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/8"
-                  >
-                    Preview Today
-                  </Link>
-                </div>
-
-                <p className="mt-5 text-sm text-white/45">
-                  Educational and informational content only. Not investment advice.
-                </p>
-              </div>
-
-              <div className="min-w-0 rounded-4xl border border-white/12 bg-[linear-gradient(180deg,rgba(7,19,29,0.96),rgba(9,24,35,0.96))] p-2.5 shadow-[0_30px_100px_rgba(0,0,0,0.45)] sm:p-4">
-                <div className="overflow-hidden rounded-[1.6rem] border border-white/8 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.10),transparent_48%),#07131d]">
-                  <Image
-                    src="/landing/hero-today.png"
-                    alt="SigiOS market thesis preview"
-                    width={1600}
-                    height={1000}
-                    className="h-auto w-full max-w-full object-contain object-center"
-                    priority
-                  />
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <Link href="/auth?next=%2Ftoday" className="inline-flex min-h-10 items-center justify-center px-3 text-xs font-semibold text-white/75 transition hover:text-cyan-100 sm:px-4 sm:text-sm">Sign In</Link>
+              <Link href={LANDING_FREE_ACCOUNT_HREF} className="inline-flex min-h-10 items-center justify-center gap-1.5 bg-cyan-300 px-3 text-xs font-bold text-[#031117] transition hover:bg-cyan-200 sm:px-4 sm:text-sm">
+                Start Free <ArrowUpRight className="size-3.5" />
+              </Link>
             </div>
+          </nav>
+
+          <div className="relative mt-16 max-w-2xl lg:mt-28">
+            <div className="inline-flex items-center gap-2 border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-100">
+              <span className="size-1.5 animate-pulse bg-emerald-300" /> Intelligence online
+            </div>
+            <h1 className="mt-5 max-w-3xl text-5xl font-black leading-[0.9] tracking-normal text-white sm:text-6xl lg:text-8xl">
+              SigiOS<br />Elite
+            </h1>
+            <p className="mt-5 max-w-xl text-lg font-medium leading-7 text-cyan-50/90 sm:text-xl sm:leading-8">
+              The AI command center for investors who want clarity before conviction.
+            </p>
+            <p className="mt-4 max-w-lg text-sm leading-6 text-white/58 sm:text-base sm:leading-7">
+              Read the tape, surface the strongest setups, and ask Sigi what matters before you make the next move.
+            </p>
+
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link href={LANDING_FREE_ACCOUNT_HREF} className="inline-flex min-h-12 items-center justify-center gap-2 bg-cyan-300 px-5 text-sm font-bold text-[#031117] shadow-[0_0_28px_rgba(34,211,238,0.28)] transition hover:bg-cyan-200">
+                Create Free Account <ArrowUpRight className="size-4" />
+              </Link>
+              <Link href="/today" className="inline-flex min-h-12 items-center justify-center gap-2 border border-white/20 bg-black/20 px-5 text-sm font-semibold text-white transition hover:border-cyan-200/50 hover:bg-cyan-300/10">
+                Explore Today <ChartNoAxesCombined className="size-4" />
+              </Link>
+            </div>
+
+            <div className="mt-8 grid max-w-xl grid-cols-3 gap-px border border-white/10 bg-white/10">
+              <div className="min-w-0 bg-[#061117]/88 px-3 py-3"><Bot className="size-4 text-cyan-300" /><div className="mt-2 truncate text-[9px] font-bold uppercase tracking-[0.14em] text-white/42">Ask SIGI</div><div className="mt-1 text-xs font-semibold leading-4 text-white/78">AI trade reads</div></div>
+              <div className="min-w-0 bg-[#061117]/88 px-3 py-3"><ChartNoAxesCombined className="size-4 text-cyan-300" /><div className="mt-2 truncate text-[9px] font-bold uppercase tracking-[0.14em] text-white/42">Live tape</div><div className="mt-1 text-xs font-semibold leading-4 text-white/78">Setups ranked</div></div>
+              <div className="min-w-0 bg-[#061117]/88 px-3 py-3"><ShieldCheck className="size-4 text-cyan-300" /><div className="mt-2 truncate text-[9px] font-bold uppercase tracking-[0.14em] text-white/42">Stay grounded</div><div className="mt-1 text-xs font-semibold leading-4 text-white/78">Risk included</div></div>
+            </div>
+            <p className="mt-4 text-xs text-white/38">Educational and informational content only. Not investment advice.</p>
+          </div>
+
+          <div className="relative mt-10 border border-cyan-300/20 bg-[#06151c]/70 p-1 shadow-[0_24px_60px_rgba(0,0,0,0.38)] lg:hidden">
+            <Image src="/landing/hero-today.png" alt="SigiOS Elite market intelligence terminal" width={1600} height={1000} className="h-auto w-full" priority />
           </div>
         </div>
       </section>
