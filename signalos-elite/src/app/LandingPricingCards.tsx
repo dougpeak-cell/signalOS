@@ -15,6 +15,16 @@ export default function LandingPricingCards() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+      <div className="sm:col-span-2 lg:col-span-1">
+        <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-200/70">
+          Choose Your Access
+        </div>
+        <div className="mt-2 text-2xl font-black text-white">Start free. Upgrade when you're ready.</div>
+        <p className="mt-2 text-sm leading-6 text-white/60">
+          Every account starts free with Quick View Watchlist and Portfolio, no card required. Compare Smart and Pro below to unlock Sigi's full intelligence.
+        </p>
+      </div>
+
       <div className="flex items-center justify-center sm:col-span-2 lg:col-span-1">
         <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/25 p-1">
           <button
@@ -144,6 +154,7 @@ function Pricing({
       >
         Choose {name}
       </Link>
+      <p className="mt-3 text-center text-xs text-white/48">7-day free trial · No charge until trial ends · Cancel anytime</p>
     </div>
   );
 }

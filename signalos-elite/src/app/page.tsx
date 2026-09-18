@@ -201,6 +201,9 @@ export default function LandingPage() {
                   Explore Today <ChartNoAxesCombined className="size-4" />
                 </Link>
               </div>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-100/60">
+                No credit card required · 7-day free trial on Smart and Pro · Cancel anytime
+              </p>
 
               <div className="mt-8 grid max-w-xl grid-cols-3 gap-px border border-white/10 bg-white/10">
                 <div className="min-w-0 bg-[#061117]/88 px-3 py-3"><Bot className="size-4 text-cyan-300" /><div className="mt-2 truncate text-[9px] font-bold uppercase tracking-[0.14em] text-white/42">Ask SIGI</div><div className="mt-1 text-xs font-semibold leading-4 text-white/78">AI trade reads</div></div>
@@ -464,7 +467,7 @@ export default function LandingPage() {
               </h2>
 
               <p className="mt-4 max-w-2xl text-base leading-8 text-slate-900/76">
-                Explore SigiOS free for 7 days. Cancel anytime before your trial ends.
+                Get full Smart or Pro access today. No charge until your trial ends, and you can cancel anytime before then.
               </p>
             </div>
 
@@ -476,7 +479,7 @@ export default function LandingPage() {
                 Start My 7-Day Free Trial
               </Link>
               <p className="mt-3 text-xs leading-5 text-slate-900/68">
-                Free for 7 days, then $9/month for Smart or $24/month for Pro. Cancel anytime.
+                Free for 7 days, then $9/month for Smart or $24/month for Pro — or save with annual billing. Cancel anytime.
               </p>
             </div>
           </div>
