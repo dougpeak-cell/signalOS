@@ -8,6 +8,7 @@ import {
 import { getSigiSettingsViewForCurrentUser } from "@/lib/sigi/settings";
 import SigiBillingStateCard from "./SigiBillingStateCard";
 import SigiPlanCards from "./SigiPlanCards";
+import SigiComparisonTable from "./SigiComparisonTable";
 
 export default async function SigiSettingsPage() {
   const settings = await getSigiSettingsViewForCurrentUser();
@@ -41,6 +42,8 @@ export default async function SigiSettingsPage() {
         pendingTier={settings.pendingTier}
         pendingTierEffectiveLabel={settings.pendingTierEffectiveLabel}
       />
+
+      <SigiComparisonTable currentTier={settings.currentTier} />
 
       <DiscordCommunityCard />
 

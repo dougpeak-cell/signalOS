@@ -3,12 +3,14 @@ import { createCheckoutSessionForPlan } from "@/lib/billing/checkout";
 import { coercePaidSigiTier } from "@/lib/billing/tiers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { type SigiTier } from "@/lib/sigi/gates";
+import { isBillingInterval } from "@/lib/billing/pricing";
 
 type UpgradeTier = Exclude<SigiTier, "free">;
 
 type UpgradeRequestBody = {
   tier?: string;
   complete?: boolean;
+  interval?: string;
 };
 
 function parseUpgradeTier(value: string | null | undefined): UpgradeTier | null {
@@ -36,7 +38,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Stripe webhooks now complete Sigi upgrades." }, { status: 409 });
     }
 
-    const session = await createCheckoutSessionForPlan(tier, null);
+    const interval = isBillingInterval(body.interval) ? body.interval : "monthly";
+    const session = await createCheckoutSessionForPlan(tier, null, interval);
     return NextResponse.json({ mode: "redirect", url: session.url, tier: session.plan });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to start Sigi upgrade.";

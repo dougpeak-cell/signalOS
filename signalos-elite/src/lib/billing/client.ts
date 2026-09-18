@@ -1,4 +1,4 @@
-import type { PlanKey } from "@/lib/billing/pricing";
+import type { PlanKey, BillingInterval } from "@/lib/billing/pricing";
 
 type CheckoutResponse = {
   error?: string;
@@ -10,10 +10,13 @@ type SubscriptionActionResponse = {
   success?: boolean;
 };
 
-export async function startStripeUpgradeCheckout(plan: PlanKey): Promise<void> {
+export async function startStripeUpgradeCheckout(
+  plan: PlanKey,
+  interval: BillingInterval = "monthly"
+): Promise<void> {
   const res = await fetch("/api/stripe/checkout", {
     method: "POST",
-    body: JSON.stringify({ plan }),
+    body: JSON.stringify({ plan, interval }),
   });
 
   const data = (await res.json()) as CheckoutResponse;

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { startStripeUpgradeCheckout } from "@/lib/billing/client";
-import { SIGI_PRICING } from "@/lib/billing/pricing";
+import { SIGI_PRICING, getSigiPriceAmount, getSigiAnnualSavingsPercent, type BillingInterval } from "@/lib/billing/pricing";
 import type { SigiTier } from "@/lib/sigi/gates";
 import type { SigiTierCard } from "@/lib/sigi/plans";
 import { UpgradeAgreement } from "./UpgradeAgreement";
@@ -18,13 +18,14 @@ type Props = {
 export default function SigiPlanCards({ cards, currentTier, pendingTier, pendingTierEffectiveLabel }: Props) {
   const [pendingPlan, setPendingPlan] = useState<"smart" | "pro" | "downgrade-smart" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
 
   async function startUpgrade(plan: "smart" | "pro") {
     setPendingPlan(plan);
     setError(null);
 
     try {
-      await startStripeUpgradeCheckout(plan);
+      await startStripeUpgradeCheckout(plan, billingInterval);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to start checkout");
       setPendingPlan(null);
@@ -39,6 +40,38 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
         </div>
       ) : null}
 
+      <div className="flex items-center justify-center">
+        <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/25 p-1">
+          <button
+            type="button"
+            onClick={() => setBillingInterval("monthly")}
+            className={[
+              "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition",
+              billingInterval === "monthly"
+                ? "bg-cyan-400/14 text-cyan-100"
+                : "text-white/56 hover:text-white/78",
+            ].join(" ")}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            onClick={() => setBillingInterval("annual")}
+            className={[
+              "flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition",
+              billingInterval === "annual"
+                ? "bg-cyan-400/14 text-cyan-100"
+                : "text-white/56 hover:text-white/78",
+            ].join(" ")}
+          >
+            Annual
+            <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold normal-case tracking-normal text-emerald-200">
+              Save {getSigiAnnualSavingsPercent("smart")}%
+            </span>
+          </button>
+        </div>
+      </div>
+
       <section id="plans" className="grid gap-4 lg:grid-cols-3">
         {cards.map((card) => {
           const isCurrent = currentTier === card.tier;
@@ -47,6 +80,8 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
           const paidTier: "smart" | "pro" | null =
             card.tier === "smart" ? "smart" : card.tier === "pro" ? "pro" : null;
           const pricing = paidTier ? SIGI_PRICING[paidTier] : null;
+          const displayPrice = paidTier ? getSigiPriceAmount(paidTier, billingInterval) : null;
+          const savingsPercent = paidTier ? getSigiAnnualSavingsPercent(paidTier) : null;
           const microCopy =
             card.tier === "smart"
               ? "Most users start here"
@@ -107,18 +142,26 @@ export default function SigiPlanCards({ cards, currentTier, pendingTier, pending
               </div>
 
               <div className="mt-4 text-3xl font-semibold tracking-tight text-white">{card.name}</div>
-              {pricing && isTrialEligible ? (
+              {pricing && displayPrice != null && isTrialEligible ? (
                 <div className="mt-2 grid gap-1">
                   <div className="text-sm font-bold text-cyan-200">7-Day Free Trial</div>
                   <div className="text-sm font-medium text-white/78">
-                    Then only ${pricing.priceMonthly}/month
+                    Then only ${displayPrice}/{billingInterval === "annual" ? "year" : "month"}
                   </div>
+                  {billingInterval === "annual" && savingsPercent ? (
+                    <div className="text-xs font-semibold text-emerald-300">Save {savingsPercent}% vs. monthly</div>
+                  ) : null}
                   <div className="text-xs text-white/58">Cancel anytime.</div>
                 </div>
-              ) : pricing ? (
+              ) : pricing && displayPrice != null ? (
                 <div className="mt-2 text-2xl font-bold text-white">
-                  ${pricing.priceMonthly}
-                  <span className="ml-1 text-sm font-medium text-white/60">/mo</span>
+                  ${displayPrice}
+                  <span className="ml-1 text-sm font-medium text-white/60">
+                    /{billingInterval === "annual" ? "yr" : "mo"}
+                  </span>
+                  {billingInterval === "annual" && savingsPercent ? (
+                    <span className="ml-2 text-xs font-semibold text-emerald-300">Save {savingsPercent}%</span>
+                  ) : null}
                 </div>
               ) : null}
               {urgencyCopy ? <div className="mt-2 text-xs font-medium text-cyan-100/78">{urgencyCopy}</div> : null}

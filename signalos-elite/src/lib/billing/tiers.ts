@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { SIGI_PRICING } from "@/lib/billing/pricing";
+import { SIGI_PRICING, type BillingInterval } from "@/lib/billing/pricing";
 import { normalizeSigiTier, type SigiTier as AppSigiTier } from "@/lib/sigi/gates";
 
 export type SigiTier = AppSigiTier;
@@ -18,14 +18,19 @@ export function coercePaidSigiTier(value: string | null | undefined): PaidSigiTi
   return null;
 }
 
-export function getStripePriceIdForTier(tier: PaidSigiTier): string {
-  const priceId = SIGI_PRICING[tier].priceId;
+export function getStripePriceIdForTier(tier: PaidSigiTier, interval: BillingInterval = "monthly"): string {
+  const plan = SIGI_PRICING[tier];
+  const priceId = interval === "annual" ? plan.priceIdAnnual : plan.priceId;
 
   if (!priceId?.trim()) {
     throw new Error(
       tier === "pro"
-        ? "STRIPE_PRO_PRICE_ID or NEXT_PUBLIC_STRIPE_PRO_PRICE_ID is not configured."
-        : "STRIPE_SMART_PRICE_ID or NEXT_PUBLIC_STRIPE_SMART_PRICE_ID is not configured."
+        ? interval === "annual"
+          ? "STRIPE_PRO_PRICE_ID_ANNUAL or NEXT_PUBLIC_STRIPE_PRO_PRICE_ID_ANNUAL is not configured."
+          : "STRIPE_PRO_PRICE_ID or NEXT_PUBLIC_STRIPE_PRO_PRICE_ID is not configured."
+        : interval === "annual"
+          ? "STRIPE_SMART_PRICE_ID_ANNUAL or NEXT_PUBLIC_STRIPE_SMART_PRICE_ID_ANNUAL is not configured."
+          : "STRIPE_SMART_PRICE_ID or NEXT_PUBLIC_STRIPE_SMART_PRICE_ID is not configured."
     );
   }
 
@@ -35,9 +40,19 @@ export function getStripePriceIdForTier(tier: PaidSigiTier): string {
 export function priceIdToTier(priceId: string | null | undefined): SigiTier {
   if (!priceId) return "free";
 
-  if (priceId === SIGI_PRICING.pro.priceId) return "pro";
-  if (priceId === SIGI_PRICING.smart.priceId) return "smart";
+  if (priceId === SIGI_PRICING.pro.priceId || priceId === SIGI_PRICING.pro.priceIdAnnual) return "pro";
+  if (priceId === SIGI_PRICING.smart.priceId || priceId === SIGI_PRICING.smart.priceIdAnnual) return "smart";
   return "free";
+}
+
+export function getBillingIntervalFromPriceId(priceId: string | null | undefined): BillingInterval {
+  if (!priceId) return "monthly";
+
+  if (priceId === SIGI_PRICING.smart.priceIdAnnual || priceId === SIGI_PRICING.pro.priceIdAnnual) {
+    return "annual";
+  }
+
+  return "monthly";
 }
 
 export function getTierFromStripePriceId(priceId: string | null | undefined): SigiTier {

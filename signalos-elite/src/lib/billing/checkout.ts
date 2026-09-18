@@ -1,8 +1,9 @@
 import type Stripe from "stripe";
-import { SIGI_PRICING, type PlanKey } from "@/lib/billing/pricing";
+import { type PlanKey, type BillingInterval } from "@/lib/billing/pricing";
 import {
   coercePaidSigiTier,
   getStripePriceIdForTier,
+  getBillingIntervalFromPriceId,
   getHighestTierFromStripeSubscriptions,
   getTierFromStripeSubscription,
   isStripeSubscriptionActive,
@@ -277,7 +278,8 @@ export async function scheduleSubscriptionDowngrade(args: {
   }
 
   const stripe = getStripeServer();
-  const nextPriceId = getStripePriceIdForTier(tier);
+  const currentInterval = getBillingIntervalFromPriceId(currentItem.price.id);
+  const nextPriceId = getStripePriceIdForTier(tier, currentInterval);
   let schedule =
     typeof subscription.schedule === "string"
       ? await stripe.subscriptionSchedules.retrieve(subscription.schedule)
@@ -407,7 +409,8 @@ async function hasPreviousSubscription(customerId: string): Promise<boolean> {
 
 export async function createCheckoutSessionForPlan(
   planValue: string | undefined,
-  returnTo: string | null
+  returnTo: string | null,
+  billingInterval: BillingInterval = "monthly"
 ): Promise<CheckoutSessionResult> {
   const stripe = getStripeServer();
   const tier = coercePaidSigiTier(planValue);
@@ -415,7 +418,7 @@ export async function createCheckoutSessionForPlan(
     throw new Error("Invalid plan");
   }
 
-  const priceId = SIGI_PRICING[tier].priceId?.trim();
+  const priceId = getStripePriceIdForTier(tier, billingInterval);
   if (!priceId) {
     throw new Error("Stripe price is not configured for this plan.");
   }
@@ -482,6 +485,30 @@ export async function createCheckoutSessionForPlan(
       const currentTier = getTierFromStripeSubscription(existingSubscription);
 
       if (currentTier === tier) {
+        const currentItem = getPrimarySubscriptionItem(existingSubscription);
+        const currentInterval = getBillingIntervalFromPriceId(currentItem?.price?.id);
+
+        if (currentItem?.id && currentInterval !== billingInterval) {
+          const updatedSubscription = await stripe.subscriptions.update(existingSubscription.id, {
+            proration_behavior: "always_invoice",
+            items: [{ id: currentItem.id, price: priceId }],
+            metadata: {
+              ...existingSubscription.metadata,
+              supabase_user_id: user.id,
+              sigi_plan: tier,
+            },
+          });
+
+          await persistStripeSubscriptionState({
+            userId: user.id,
+            customerId,
+            subscription: updatedSubscription,
+            tier,
+            clearPending: true,
+            scheduleId: null,
+          });
+        }
+
         return {
           url: getStripeCheckoutSuccessUrl({ returnTo: getSafeReturnTo(returnTo), plan: tier }),
           plan: tier,
@@ -496,6 +523,7 @@ export async function createCheckoutSessionForPlan(
         }
 
         await releaseSubscriptionScheduleIfPresent(existingSubscription);
+
 
         const updatedSubscription = await stripe.subscriptions.update(existingSubscription.id, {
           cancel_at_period_end: false,

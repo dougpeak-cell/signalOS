@@ -2,12 +2,18 @@ import { NextResponse } from "next/server";
 import { createCheckoutSessionForPlan, getSafeReturnTo } from "@/lib/billing/checkout";
 import { coercePaidSigiTier } from "@/lib/billing/tiers";
 import { PENDING_CHECKOUT_PLAN_COOKIE } from "@/lib/billing/pendingCheckout";
+import { isBillingInterval, type BillingInterval } from "@/lib/billing/pricing";
 
 type CheckoutRequestBody = {
   plan?: "smart" | "pro";
   tier?: string;
   returnTo?: string;
+  interval?: string;
 };
+
+function parseBillingInterval(value: string | null | undefined): BillingInterval {
+  return isBillingInterval(value) ? value : "monthly";
+}
 
 function buildUpgradeAuthRedirect(
   request: Request,
@@ -42,9 +48,10 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const plan = searchParams.get("plan") ?? searchParams.get("tier") ?? undefined;
   const returnTo = getSafeReturnTo(searchParams.get("returnTo"));
+  const interval = parseBillingInterval(searchParams.get("interval"));
 
   try {
-    const session = await createCheckoutSessionForPlan(plan, returnTo);
+    const session = await createCheckoutSessionForPlan(plan, returnTo, interval);
     const response = NextResponse.redirect(session.url);
     response.cookies.set(PENDING_CHECKOUT_PLAN_COOKIE, session.plan, {
       path: "/",
@@ -76,7 +83,8 @@ export async function POST(request: Request) {
     const body = (await request.json()) as CheckoutRequestBody;
     const session = await createCheckoutSessionForPlan(
       body.plan ?? body.tier,
-      getSafeReturnTo(body.returnTo)
+      getSafeReturnTo(body.returnTo),
+      parseBillingInterval(body.interval)
     );
     const response = NextResponse.json(session);
     response.cookies.set(PENDING_CHECKOUT_PLAN_COOKIE, session.plan, {

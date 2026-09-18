@@ -135,6 +135,24 @@ export function getSigiComparisonRows() {
       smart: "Smarter prompts",
       pro: "Live nudges and action tools",
     },
+    {
+      label: "Vision & Workspace",
+      free: "Not included",
+      smart: "Included",
+      pro: "Included",
+    },
+    {
+      label: "Screener & Experts",
+      free: "Not included",
+      smart: "Not included",
+      pro: "Included",
+    },
+    {
+      label: "Crypto access",
+      free: "Not included",
+      smart: "Not included",
+      pro: "Full everyday access",
+    },
   ];
 }
 
