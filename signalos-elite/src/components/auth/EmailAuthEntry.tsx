@@ -33,11 +33,16 @@ type EmailAuthShellProps = EmailAuthEntryProps & {
 };
 
 type UpgradePlan = "smart" | "pro";
+type BillingInterval = "monthly" | "annual";
 
 const SESSION_CHECK_TIMEOUT_MS = 8_000;
 
 function getSafePlan(value: string | null): UpgradePlan | null {
   return value === "smart" || value === "pro" ? value : null;
+}
+
+function getSafeInterval(value: string | null): BillingInterval | null {
+  return value === "monthly" || value === "annual" ? value : null;
 }
 
 function getSafeReturnTo(value: string | null): string | null {
@@ -48,11 +53,15 @@ function getSafeReturnTo(value: string | null): string | null {
   return value;
 }
 
-function getCheckoutPathForPlan(plan: UpgradePlan, returnTo: string | null): string {
+function getCheckoutPathForPlan(plan: UpgradePlan, returnTo: string | null, interval: BillingInterval | null): string {
   const checkoutParams = new URLSearchParams({ plan });
 
   if (returnTo) {
     checkoutParams.set("returnTo", returnTo);
+  }
+
+  if (interval) {
+    checkoutParams.set("interval", interval);
   }
 
   return `/api/stripe/checkout?${checkoutParams.toString()}`;
@@ -75,10 +84,11 @@ function EmailAuthContent(props: EmailAuthEntryProps) {
   );
   const plan = getSafePlan(searchParams.get("plan"));
   const returnTo = getSafeReturnTo(searchParams.get("returnTo"));
+  const interval = getSafeInterval(searchParams.get("interval"));
   const callbackError = searchParams.get("error_description") ?? searchParams.get("error");
   const nextPath = getSafeNextPath(
     searchParams.get("next"),
-    plan ? getCheckoutPathForPlan(plan, returnTo) : props.defaultNextPath
+    plan ? getCheckoutPathForPlan(plan, returnTo, interval) : props.defaultNextPath
   );
 
   const [email, setEmail] = useState("");
