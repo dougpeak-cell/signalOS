@@ -857,10 +857,9 @@ export default function MobileSigiHome({
             const sparklinePath = buildSparklinePath(sparkline);
 
             return (
-              <button
+              <Link
                 key={row.ticker}
-                type="button"
-                onClick={() => router.push(buildPreviewHref(`/stocks/${row.ticker}/live?source=%2Ftoday&session=${defaultSetupSession}`))}
+                href={buildPreviewHref(`/stocks/${row.ticker}/live?source=%2Ftoday&session=${defaultSetupSession}`)}
                 className="flex w-full items-center gap-3 py-3 text-left"
               >
                 <div className="min-w-0 flex-1">
@@ -895,7 +894,7 @@ export default function MobileSigiHome({
                   </div>
                 </div>
                 <ChevronRight className="size-4 shrink-0 text-white/35" />
-              </button>
+              </Link>
             );
           })}
         </div>
