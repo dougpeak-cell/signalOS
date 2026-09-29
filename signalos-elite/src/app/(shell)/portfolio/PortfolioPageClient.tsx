@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Trash2 } from "lucide-react";
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import SigiDesktopCTA from "@/components/mobile/SigiDesktopCTA";
 import PortfolioSigiStrip from "@/components/portfolio/PortfolioSigiStrip";
@@ -649,6 +650,7 @@ function QuickPortfolioRowItem({
   dayChangePct,
   dayChangeAmount,
   href,
+  onRemove,
 }: {
   ticker: string;
   name: string;
@@ -656,6 +658,7 @@ function QuickPortfolioRowItem({
   dayChangePct: number | null;
   dayChangeAmount: number | null;
   href: string;
+  onRemove: (ticker: string) => void;
 }) {
   const changeTone =
     typeof dayChangePct === "number" && dayChangePct > 0
@@ -665,34 +668,46 @@ function QuickPortfolioRowItem({
         : "text-white/55";
 
   return (
-    <Link
-      href={href}
-      className="group flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/3 px-4 py-3 transition hover:border-cyan-400/20 hover:bg-cyan-400/5"
-    >
-      <div className="flex min-w-0 items-center gap-3">
-        <TickerLogo ticker={ticker} size={40} />
+    <div className="group flex items-center gap-2 rounded-2xl border border-white/8 bg-white/3 p-1.5 transition hover:border-cyan-400/20 hover:bg-cyan-400/5">
+      <Link
+        href={href}
+        className="flex min-w-0 flex-1 items-center justify-between gap-3 px-2.5 py-1.5"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <TickerLogo ticker={ticker} size={40} />
 
-        <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <div className="text-lg font-semibold tracking-tight text-white">{ticker}</div>
-          <span className="truncate text-xs text-white/42">{name}</span>
-        </div>
-      </div>
-      </div>
-
-      <div className="flex items-end justify-end gap-3 text-right">
-        <div className={`text-sm font-semibold ${dayChangeAmount == null ? "text-white/35" : changeTone}`}>
-          {formatSignedMoney(dayChangeAmount)}
-        </div>
-
-        <div>
-          <div className="text-lg font-semibold text-white">{formatMoney(livePrice)}</div>
-          <div className={`mt-0.5 text-sm font-semibold ${changeTone}`}>
-            {typeof dayChangePct === "number" ? formatPct(dayChangePct) : "—"}
+          <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <div className="text-lg font-semibold tracking-tight text-white">{ticker}</div>
+            <span className="truncate text-xs text-white/42">{name}</span>
           </div>
         </div>
-      </div>
-    </Link>
+        </div>
+
+        <div className="flex items-end justify-end gap-3 text-right">
+          <div className={`text-sm font-semibold ${dayChangeAmount == null ? "text-white/35" : changeTone}`}>
+            {formatSignedMoney(dayChangeAmount)}
+          </div>
+
+          <div>
+            <div className="text-lg font-semibold text-white">{formatMoney(livePrice)}</div>
+            <div className={`mt-0.5 text-sm font-semibold ${changeTone}`}>
+              {typeof dayChangePct === "number" ? formatPct(dayChangePct) : "—"}
+            </div>
+          </div>
+        </div>
+      </Link>
+
+      <button
+        type="button"
+        onClick={() => onRemove(ticker)}
+        aria-label={`Close ${ticker} position`}
+        title={`Close ${ticker} position`}
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/8 text-rose-300 transition hover:border-rose-400/40 hover:bg-rose-500/15 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
   );
 }
 
@@ -852,6 +867,7 @@ function PortfolioPageContent() {
   const [showAddStock, setShowAddStock] = useState(false);
   const [showGettingStarted, setShowGettingStarted] = useState(true);
   const [showAddPositionHelp, setShowAddPositionHelp] = useState(false);
+  const [pendingCloseTicker, setPendingCloseTicker] = useState<string | null>(null);
   const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -1505,21 +1521,29 @@ function PortfolioPageContent() {
   }
 
   function handleClosePosition(ticker: string) {
-    const confirmed = window.confirm(`Close ${ticker} and remove it from active portfolio?`);
-    if (!confirmed) return;
+    // window.confirm silently no-ops in installed/standalone PWA mode, so use an in-app dialog instead.
+    setPendingCloseTicker(ticker);
+  }
+
+  function confirmClosePosition() {
+    const ticker = pendingCloseTicker;
+    if (!ticker) return;
 
     hidePortfolioTicker(ticker);
 
-    setHoldings((prev) => {
-      const next = prev.filter(
-        (holding) => normalizeTicker(holding.ticker) !== normalizeTicker(ticker)
-      );
-      return next;
-    });
+    setHoldings((prev) =>
+      prev.filter((holding) => normalizeTicker(holding.ticker) !== normalizeTicker(ticker))
+    );
 
     if (actionTicker === ticker) {
       closeActionPanel();
     }
+
+    setPendingCloseTicker(null);
+  }
+
+  function cancelClosePosition() {
+    setPendingCloseTicker(null);
   }
 
   return (
@@ -2036,6 +2060,7 @@ function PortfolioPageContent() {
                           dayChangePct={holding.dayChangePct}
                           dayChangeAmount={holding.dayChangeAmount}
                           href={buildPortfolioHref(`/stocks/${holding.ticker}`)}
+                          onRemove={() => handleClosePosition(holding.ticker)}
                         />
                       );
                     }
@@ -2561,6 +2586,35 @@ function PortfolioPageContent() {
               </div>
         </div>
       </div>
+
+      {pendingCloseTicker ? (
+        <div className="fixed inset-0 z-100 flex items-end justify-center bg-black/70 px-4 py-4 sm:items-center">
+          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-neutral-950 p-5 shadow-[0_0_60px_rgba(0,0,0,0.45)]">
+            <div className="text-lg font-semibold text-white">
+              Close {pendingCloseTicker}?
+            </div>
+            <p className="mt-2 text-sm text-white/60">
+              This removes {pendingCloseTicker} from your active portfolio.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={confirmClosePosition}
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/15 text-sm font-semibold text-rose-200 transition hover:border-rose-400/45 hover:bg-rose-500/22"
+              >
+                Close Position
+              </button>
+              <button
+                type="button"
+                onClick={cancelClosePosition}
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-sm font-medium text-white/85 transition hover:bg-white/10"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
