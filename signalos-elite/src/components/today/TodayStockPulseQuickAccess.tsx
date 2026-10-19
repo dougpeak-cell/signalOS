@@ -15,9 +15,9 @@ export default function TodayStockPulseQuickAccess() {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalized = normalizeSymbol(symbol);
-    if (!/^[A-Z.\-]{1,5}$/.test(normalized)) return;
+    if (!/^[A-Z0-9.\^-]{1,12}$/.test(normalized)) return;
 
-    router.push(`/vision?symbol=${encodeURIComponent(normalized)}`);
+    router.push(`/pulse?symbol=${encodeURIComponent(normalized)}`);
   }
 
   return (

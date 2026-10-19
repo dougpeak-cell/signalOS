@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowUpRight, Bot, ChartNoAxesCombined, ShieldCheck, Sparkles } from "lucide-react";
 import bestStocksScreenshot from "../public/Images/Chart/best-stocks2.png";
 import LandingPricingCards from "./LandingPricingCards";
+import MobilePulseExperience from "@/components/mobile/MobilePulseExperience";
 
 type LandingScreenshot = {
   title: string;
@@ -154,7 +155,9 @@ const LANDING_PRO_TRIAL_HREF = "/auth/upgrade?plan=pro&returnTo=%2Ftoday";
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen overflow-hidden bg-[#02070d] text-white">
+    <>
+    <div className="lg:hidden"><MobilePulseExperience /></div>
+    <main className="hidden min-h-screen overflow-hidden bg-[#02070d] text-white lg:block">
       <section className="relative isolate overflow-hidden border-b border-cyan-300/15 bg-[#04141a]">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(2,7,13,0.99)_0%,rgba(2,7,13,0.98)_48%,rgba(2,7,13,0.72)_62%,rgba(2,7,13,0.22)_100%),linear-gradient(180deg,rgba(2,7,13,0.12),rgba(2,7,13,0.94)_100%)]" />
         <div className="pointer-events-none absolute inset-0 opacity-70 [background-image:linear-gradient(rgba(45,212,191,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(45,212,191,0.06)_1px,transparent_1px)] [background-size:34px_34px]" />
@@ -486,6 +489,7 @@ export default function LandingPage() {
         </div>
       </section>
     </main>
+    </>
   );
 }
 

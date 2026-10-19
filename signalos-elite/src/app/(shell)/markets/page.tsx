@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { MarketVoices } from "@/components/market/MarketVoices";
+import MobileMarketsBriefing from "@/components/mobile/MobileMarketsBriefing";
 
 const marketTools = [
   {
@@ -45,27 +46,29 @@ export default function MarketsPage() {
   return (
     <main className="min-h-screen bg-black px-2 pb-28 pt-4 text-white lg:px-8 lg:pb-0 lg:pt-6">
       <div className="mx-auto w-full max-w-none lg:max-w-7xl">
-        <section className="rounded-[26px] border border-cyan-400/15 bg-[#020817] p-6 sm:p-8">
+        <section className="border-b border-white/10 px-3 py-5 lg:rounded-[26px] lg:border lg:border-cyan-400/15 lg:bg-[#020817] lg:p-8">
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-cyan-300">
             SigiOS Markets
           </p>
 
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            Explore the market.
+          <h1 className="mt-3 text-2xl font-bold tracking-normal sm:text-4xl">
+            Discover what&apos;s moving.
           </h1>
 
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">
+          <p className="mt-3 hidden max-w-2xl text-sm leading-7 text-slate-400 lg:block">
             Open market research, screening, sector intelligence, news, crypto,
             and analyst tools from one place.
           </p>
         </section>
+
+        <div className="px-3 lg:px-0"><MobileMarketsBriefing /></div>
 
         <section className="mt-4 grid gap-3 sm:grid-cols-2 lg:mt-5 lg:grid-cols-3">
           {marketTools.map((tool) => (
             <Link
               key={tool.title}
               href={tool.href}
-              className="group rounded-[22px] border border-white/10 bg-[#030817] p-5 transition hover:-translate-y-0.5 hover:border-cyan-400/30 hover:bg-cyan-400/[0.035]"
+              className="group border-b border-white/10 p-4 transition hover:border-cyan-400/30 hover:bg-cyan-400/[0.035] lg:rounded-[22px] lg:border lg:bg-[#030817] lg:p-5"
             >
               <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300">
                 {tool.label}

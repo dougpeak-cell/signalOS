@@ -7,6 +7,7 @@ import AppQuoteBootstrap from "@/components/providers/AppQuoteBootstrap";
 import AuthSplashReset from "@/components/providers/AuthSplashReset";
 import { MarketDataProvider } from "@/components/providers/MarketDataProvider";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
+import PulseChangeAlerts from "@/components/mobile/PulseChangeAlerts";
 import { GlobalTickerProvider } from "@/components/sigi/GlobalTickerContext";
 import { SelectedTickerProvider } from "@/components/sigi/SelectedTickerContext";
 import { SignalProvider } from "@/context/SignalContext";
@@ -47,6 +48,7 @@ export default function RootLayout({
                   <AppQuoteBootstrap />
                   <AuthSplashReset />
                   {children}
+                  <PulseChangeAlerts />
                   <Suspense fallback={null}>
                     <MobileBottomNav />
                   </Suspense>

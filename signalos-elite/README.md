@@ -30,6 +30,15 @@ Create `.env.local` from that file and fill in only the values you need for your
 
 The shell Sigi assistant always works with the built-in today-context engine.
 
+## Mobile Pulse
+
+- Phone visitors start with public Pulse search at `/`; `/pulse?symbol=NVDA` opens a specific stock without signup. Desktop landing content stays separate.
+- Current Pulse uses completed-session AMSA data. Heartbeat, movement, and DNA comparisons require source-distinct verified daily snapshots. Missing history never produces example scores or a synthetic waveform.
+- Save and install actions appear after a successful reading. The web manifest starts installed apps at `/pulse` and provides 192px and 512px PNG icons. Installation depends on browser support; this is not an offline mode.
+- Pulse Change Alerts are opt-in, on-device in-app alerts while SigiOS is visible, not background push notifications. Watched stocks are checked every five minutes for verified changes of at least five points, with a 24-hour per-stock cooldown and no alert on the initial baseline.
+- Today, Markets, Pulse, Watchlist, and Portfolio are the five mobile tabs. Ask Sigi and deeper analysis retain existing access gates; real holdings remain separate from simulated Talents.
+- Validate the Pulse guards with `npm run test:amsa`.
+
 ## Sigi Mascot Asset
 
 The Sigi mascot asset at `public/sigi-mascot.svg` is an original SVG created specifically for SignalOS during the April 2026 Sigi assistant redesign.

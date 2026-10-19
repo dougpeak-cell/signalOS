@@ -10,6 +10,7 @@ import TickerActionButton from "@/components/sigi/TickerActionButton";
 import TickerLogo from "@/components/stocks/TickerLogo";
 import SignalOSScoreV2 from "@/components/stocks/SignalOSScoreV2";
 import AddStockModal from "@/components/watchlist/AddStockModal";
+import WatchlistPulseMovers from "@/components/amsa/WatchlistPulseMovers";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { useSyncedWatchlist } from "@/hooks/useSyncedWatchlist";
 import { buildMasterScoreRow } from "@/lib/analysis/buildMasterScoreRow";
@@ -1501,7 +1502,7 @@ export default function WatchlistPage() {
                         Condensed Watchlist
                       </h1>
                       <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
-                        A narrow watchlist mode that keeps only ticker, live price, and daily percent change visible.
+                        Your saved companies, prices, and verified Pulse changes.
                       </p>
 
                       {!canUseDetail ? (
@@ -1597,6 +1598,7 @@ export default function WatchlistPage() {
                 </div>
                 </section>
               )}
+              {isQuick ? <WatchlistPulseMovers symbols={scoredRows.map((row) => row.ticker)} /> : null}
               {isDetail ? (
               <div className="mt-5 grid gap-3 md:grid-cols-3">
                 <div className="rounded-2xl border border-cyan-400/14 bg-cyan-400/5 px-4 py-3">

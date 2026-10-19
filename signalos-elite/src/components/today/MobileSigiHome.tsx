@@ -625,9 +625,9 @@ export default function MobileSigiHome({
         <div className="relative flex items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-200">
-              <Radar className="size-3.5" /> SignalOS / Live
+              <Radar className="size-3.5" /> Your Sigi Briefing
             </div>
-            <p className="mt-1 text-xs text-white/52">{defaultSetupSession === "pre" ? "Pre-market scanner is active" : "Market intelligence is streaming"}</p>
+            <p className="mt-1 text-xs text-white/52">{defaultSetupSession === "pre" ? "Before the opening bell" : "Market thesis, catalysts, and your daily focus"}</p>
           </div>
           <span className="shrink-0 font-mono text-[10px] text-cyan-200/76">{lastUpdatedLabel}</span>
         </div>
@@ -656,6 +656,18 @@ export default function MobileSigiHome({
 
       <MobileMarketThesisHero intelligence={mobileIntelligence} />
 
+      {news.length > 0 && <section aria-label="Important catalysts" className="border-y border-white/10 py-4">
+        <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-semibold text-white">Key catalysts</h2><Link href={buildPreviewHref("/news")} className="inline-flex min-h-11 items-center gap-1 text-xs text-cyan-200">News<ChevronRight className="size-4" /></Link></div>
+        <div className="divide-y divide-white/10">{news.slice(0, 3).map((item, index) => <Link key={`${index}:${item.headline}`} href={buildPreviewHref("/news")} className="block py-3"><p className="text-sm leading-5 text-white/80">{item.headline}</p><p className="mt-1 text-[10px] text-white/40">{item.source}</p></Link>)}</div>
+      </section>}
+
+      {effectiveWatchlistTickers.length > 0 && <section aria-label="Your watched companies" className="border-b border-white/10 pb-4">
+        <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-semibold text-white">On your radar</h2><Link href={buildPreviewHref("/watchlist?quickView=1")} className="inline-flex min-h-11 items-center gap-1 text-xs text-cyan-200">Watchlist<ChevronRight className="size-4" /></Link></div>
+        <div className="divide-y divide-white/10">{effectiveWatchlistTickers.slice(0, 3).map((symbol) => <Link key={symbol} href={buildPreviewHref(`/pulse?symbol=${encodeURIComponent(symbol)}`)} className="flex min-h-12 items-center justify-between gap-3 py-2"><span className="font-mono text-sm font-semibold text-white">{symbol}</span><span className="flex items-center gap-3"><span className={`text-xs ${changeClass(quoteMap[symbol]?.changePct)}`}>{formatChange(quoteMap[symbol]?.changePct)}</span><ChevronRight className="size-4 text-cyan-200" /></span></Link>)}</div>
+      </section>}
+
+      <details className="border-y border-white/10">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-cyan-100"><span className="flex items-center gap-2"><BrainCircuit className="size-4" />Ask Sigi</span><ChevronRight className="size-4" /></summary>
       <div className="relative overflow-hidden rounded-lg border border-cyan-400/24 bg-[#06111f] p-4 shadow-[0_0_30px_rgba(34,211,238,0.1)]">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
         <div className="relative flex items-start gap-3">
@@ -840,6 +852,8 @@ export default function MobileSigiHome({
 
         </div>
       </div>
+
+      </details>
 
       <div id="top-setups" className="rounded-lg border border-white/10 bg-[#070d18] p-3 shadow-[0_12px_30px_rgba(0,0,0,0.2)]">
         <div className="flex items-center justify-between gap-3">
