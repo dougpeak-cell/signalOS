@@ -748,7 +748,7 @@ export default function ExpertsPage({
 
               <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300">
                 <span className="text-emerald-300/70">Insider Buys</span>
-                <span className="text-white">4</span>
+                <span className="text-white">FMP Form 4</span>
               </div>
 
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-300">

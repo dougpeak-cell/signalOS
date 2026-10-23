@@ -39,6 +39,32 @@ The shell Sigi assistant always works with the built-in today-context engine.
 - Today, Markets, Pulse, Watchlist, and Portfolio are the five mobile tabs. Ask Sigi and deeper analysis retain existing access gates; real holdings remain separate from simulated Talents.
 - Validate the Pulse guards with `npm run test:amsa`.
 
+## Insider Purchases (FMP)
+
+The shared desktop/mobile Experts dashboard uses `/api/experts/insiders` and the
+server-only `FMP_API_KEY` for FMP's `insider-trading/latest` and `profile` endpoints.
+It scans up to three pages of 100 filing rows, removes duplicate transaction rows,
+and shows up to 20 matching purchases by trade date. Analyst-basket matches are
+prioritized when a leader is selected. This is a bounded sample, not a complete
+market-wide insider feed; the panel reports scanned and matched counts.
+
+Only transaction code P (open-market or private purchases) with positive shares
+is included. Sales, grants, gifts, and option exercises are not treated as buys.
+Cards include reported purchase value (shares times reported transaction price, rounded to cents),
+price per share, shares owned after the transaction, ownership type, security,
+buyer/title, trade date, filing date, and an SEC source link when available.
+Missing or zero prices show unavailable dollar amounts, never inferred prices.
+Company-profile failures produce visible coverage warnings; sector filtering
+excludes rows with no sector. Provider/auth/subscription errors are displayed
+explicitly, without synthetic transactions or AI-generated amounts.
+
+Filing dates can be much newer than the underlying trades. FMP responses cache
+for 15 minutes; the panel refreshes every 15 minutes and has a manual Refresh
+button. A refresh does not bypass the server cache. The Sigi summary is derived
+from disclosed data; purchase size does not imply trading confidence.
+
+Run focused checks with `npx tsx --test tests/smoke/fmpInsiders.test.ts`.
+
 ## Hedge-Fund Investment Estimates
 
 Sigi Pro's Experts dashboard includes a top-20 stock and sector panel backed by

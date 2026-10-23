@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { loadFmpInsiderTradesFeed } from "@/lib/experts/fmpInsiders";
+import { InsiderDataError, loadFmpInsiderTradesFeed } from "@/lib/experts/fmpInsiders";
 
 export const dynamic = "force-dynamic";
 
@@ -15,18 +15,18 @@ export async function GET(request: Request) {
       ...feed,
     });
   } catch (error) {
-    console.error("FMP insider trades error:", error);
+    console.error("FMP insider trades error:", error instanceof InsiderDataError ? error.message : "Unexpected server error");
 
     return NextResponse.json(
       {
         ok: false,
         error:
-          error instanceof Error && error.message === "Missing FMP_API_KEY"
-            ? "Missing FMP_API_KEY"
-            : "Failed to load insider trades",
+          error instanceof InsiderDataError
+            ? error.message
+            : "Failed to load insider trades. Please retry.",
         rows: [],
       },
-      { status: 500 }
+      { status: error instanceof InsiderDataError ? error.status : 500 }
     );
   }
 }

@@ -4,21 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import type { SigiAnalystLeader } from "@/components/experts/SigiTopAnalystPick";
-
-type InsiderTradeRow = {
-  symbol: string;
-  companyName: string;
-  sector: string | null;
-  amountPurchased: number | null;
-  sharesPurchased: number | null;
-  transactionDate: string | null;
-  filingDate: string | null;
-  purchaserName: string;
-  purchaserTitle: string;
-  transactionType: string;
-  securityName: string | null;
-  filingUrl: string | null;
-};
+import type { InsiderTradeFeedRow as InsiderTradeRow, InsiderTradesFeed } from "@/lib/experts/fmpInsiders";
 
 type SigiFlag = {
   label: string;
@@ -34,14 +20,18 @@ function buildSigiSummary(rows: InsiderTradeRow[]) {
   const highestConvictionRow = [...rows].sort(
     (left, right) => (right.amountPurchased ?? -1) - (left.amountPurchased ?? -1)
   )[0];
-  const mostRecentDate = rows[0]?.transactionDate ?? rows[0]?.filingDate ?? null;
+  const mostRecentDate = rows.map((row) => row.transactionDate ?? row.filingDate)
+    .filter((date): date is string => date != null).sort().at(-1) ?? null;
   const uniqueSymbols = [...new Set(rows.map((row) => row.symbol).filter(Boolean))];
 
   const leadingBuyer = `${highestConvictionRow.purchaserName} (${highestConvictionRow.purchaserTitle})`;
   const leadingAmount = formatCurrency(highestConvictionRow.amountPurchased);
   const leadingDate = formatDate(highestConvictionRow.transactionDate ?? highestConvictionRow.filingDate);
 
-  return `Sigi is showing the 5 most recent insider purchases first. The most meaningful disclosed buy in this recent window is ${highestConvictionRow.companyName} (${highestConvictionRow.symbol}) by ${leadingBuyer} on ${leadingDate} because it carries the largest visible dollar commitment at ${leadingAmount}. Across this window, insider buying touched ${uniqueSymbols.length} company${uniqueSymbols.length === 1 ? "" : "ies"} starting ${formatDate(mostRecentDate)}.`;
+  const largestPurchase = highestConvictionRow.amountPurchased != null
+    ? `The largest disclosed dollar purchase shown is ${highestConvictionRow.companyName} (${highestConvictionRow.symbol}) by ${leadingBuyer} on ${leadingDate} at approximately ${leadingAmount}.`
+    : "Purchase dollar amounts are unavailable in these filings.";
+  return `Sigi is showing ${rows.length} reported purchases from the scanned FMP filing sample. ${largestPurchase} These rows cover ${uniqueSymbols.length} company${uniqueSymbols.length === 1 ? "" : "ies"}, with the latest reported trade dated ${formatDate(mostRecentDate)}. Dollar size alone is not a confidence rating or a buy recommendation.`;
 }
 
 function buildSigiFlags(rows: InsiderTradeRow[]) {
@@ -206,6 +196,13 @@ function formatShares(value: number | null) {
   }).format(value);
 }
 
+function formatPrice(value: number | null): string {
+  if (value == null || !Number.isFinite(value)) return "Unavailable";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4,
+  }).format(value);
+}
+
 function formatDate(value: string | null) {
   if (!value) return "—";
 
@@ -216,6 +213,7 @@ function formatDate(value: string | null) {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   }).format(new Date(parsed));
 }
 
@@ -229,9 +227,12 @@ export default function InsiderTradesPanel({
   const [rows, setRows] = useState<InsiderTradeRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [coverage, setCoverage] = useState<Omit<InsiderTradesFeed, "rows"> | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let alive = true;
+    const controller = new AbortController();
 
     async function loadRows() {
       try {
@@ -245,9 +246,9 @@ export default function InsiderTradesPanel({
 
         const response = await fetch(
           `/api/experts/insiders${params.toString() ? `?${params.toString()}` : ""}`,
-          { cache: "no-store" }
+          { cache: "no-store", signal: controller.signal }
         );
-        const data = (await response.json()) as {
+        const data = (await response.json()) as Partial<InsiderTradesFeed> & {
           ok?: boolean;
           error?: string;
           rows?: InsiderTradeRow[];
@@ -256,12 +257,22 @@ export default function InsiderTradesPanel({
         if (!response.ok || data.ok === false) {
           throw new Error(data.error || "Failed to load insider trades");
         }
+        if (!Array.isArray(data.rows) || !Array.isArray(data.warnings) ||
+            typeof data.scannedFilings !== "number" || typeof data.matchedPurchases !== "number" ||
+            typeof data.source !== "string" || typeof data.updatedAt !== "string") {
+          throw new Error("FMP insider feed returned an unexpected format.");
+        }
 
         if (!alive) return;
         setRows(Array.isArray(data.rows) ? data.rows : []);
+        setCoverage({
+          source: data.source, updatedAt: data.updatedAt, scannedFilings: data.scannedFilings,
+          matchedPurchases: data.matchedPurchases, warnings: data.warnings,
+        });
       } catch (nextError) {
         if (!alive) return;
         setRows([]);
+        setCoverage(null);
         setError(nextError instanceof Error ? nextError.message : "Failed to load insider trades");
       } finally {
         if (alive) setLoading(false);
@@ -273,9 +284,10 @@ export default function InsiderTradesPanel({
 
     return () => {
       alive = false;
+      controller.abort();
       window.clearInterval(timer);
     };
-  }, [selectedSector]);
+  }, [selectedSector, attempt]);
 
   const orderedRows = useMemo(
     () => [...rows].sort((left, right) => compareRowsByLeaderCorrelation(left, right, analystLeader ?? null)),
@@ -308,29 +320,60 @@ export default function InsiderTradesPanel({
           </div>
           <p className="mt-1 max-w-2xl text-[14px] leading-6 text-white/48">
             {selectedSector === "All"
-              ? "The 5 most recent reported insider stock purchases, with SIGI highlighting the strongest disclosed buy in the current window."
-              : `The 5 most recent reported insider stock purchases aligned to ${selectedSector}, with SIGI highlighting the strongest disclosed buy in the current window.`}
+              ? "Up to 20 recent reported insider purchases from FMP Form 4 filings, including transaction prices, dollar values, and ownership details."
+              : `Up to 20 recent reported insider purchases aligned to ${selectedSector}, from FMP Form 4 filings.`}
           </p>
         </div>
 
-        <div className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-100">
-          Live filings
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-100">
+            FMP · Form 4
+          </span>
+          <button type="button" disabled={loading} onClick={() => setAttempt((value) => value + 1)}
+            className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/70 hover:bg-white/5 disabled:opacity-50">
+            Refresh
+          </button>
         </div>
       </div>
 
+      <p className="mt-3 text-xs leading-5 text-white/45">
+        Purchases only (code P: open-market or private purchases), not sales, grants, gifts, or option exercises.
+        Dollar amounts are reported shares × transaction price, not current market value.
+        Filings can report older trades; neither filing date nor trade date implies real-time activity.
+        {analystLeader ? " Analyst-basket matches appear first; remaining rows are ordered by trade date." : " Rows are ordered by trade date."}
+      </p>
+      {coverage && !loading && !error && (
+        <div className="mt-3 space-y-2 text-xs leading-5 text-white/50">
+          <p>
+            Scanned {coverage.scannedFilings} latest filing rows; {coverage.matchedPurchases} matching purchases before the 20-row cap.
+            {" "}Feed retrieved {new Date(coverage.updatedAt).toLocaleString()}.
+            {" "}FMP responses cache for 15 minutes; refresh does not bypass the provider cache.
+            {" "}Coverage is limited to this filing sample, not all insider activity.
+          </p>
+          {coverage.warnings.length > 0 && (
+            <details className="text-amber-200">
+              <summary className="cursor-pointer">Company data coverage warnings ({coverage.warnings.length})</summary>
+              <ul className="mt-1 list-inside list-disc">
+                {coverage.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+              </ul>
+              {selectedSector !== "All" && <p>Rows without a sector cannot be included in the sector-filtered results.</p>}
+            </details>
+          )}
+        </div>
+      )}
       {loading ? (
         <div className="mt-4 rounded-2xl border border-white/8 bg-white/4 px-4 py-6 text-sm text-white/55">
           Loading latest insider purchases...
         </div>
       ) : error ? (
-        <div className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-400/8 px-4 py-6 text-sm text-rose-100/80">
+        <div role="alert" className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-400/8 px-4 py-6 text-sm text-rose-100/80">
           {error}
         </div>
       ) : rows.length === 0 ? (
         <div className="mt-4 rounded-2xl border border-white/8 bg-white/4 px-4 py-6 text-sm text-white/55">
           {selectedSector === "All"
-            ? "No recent insider purchase filings were available."
-            : `No recent insider purchase filings were available for ${selectedSector}.`}
+            ? "No insider purchases were found in the scanned filing sample."
+            : `No insider purchases matching ${selectedSector} were found in the scanned filing sample.`}
         </div>
       ) : (
         <div className="mt-4 space-y-3">
@@ -357,12 +400,12 @@ export default function InsiderTradesPanel({
             </div>
           ) : null}
 
-          {orderedRows.map((row) => {
+          {orderedRows.map((row, index) => {
             const leaderMatchLabel = getAnalystLeaderMatchLabel(row, analystLeader ?? null);
 
             return (
             <article
-              key={`${row.symbol}-${row.purchaserName}-${row.transactionDate}`}
+              key={`${row.symbol}-${row.purchaserName}-${row.transactionDate}-${row.filingUrl}-${index}`}
               className="rounded-2xl border border-white/10 bg-white/3 p-4"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -404,14 +447,18 @@ export default function InsiderTradesPanel({
               </div>
 
               <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <MetaStat label="Purchased" value={formatCurrency(row.amountPurchased)} />
+                <MetaStat label="Reported purchase value" value={formatCurrency(row.amountPurchased)} />
                 <MetaStat label="Shares" value={formatShares(row.sharesPurchased)} />
                 <MetaStat label="Trade Date" value={formatDate(row.transactionDate)} />
                 <MetaStat label="Buyer" value={`${row.purchaserName} · ${row.purchaserTitle}`} />
+                <MetaStat label="Price per share" value={formatPrice(row.pricePerShare)} />
+                <MetaStat label="Reported shares owned after" value={formatShares(row.sharesOwnedAfter)} />
+                <MetaStat label="Ownership" value={row.ownershipType ?? "Not disclosed"} />
+                <MetaStat label="Security" value={row.securityName ?? "Not disclosed"} />
               </div>
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-white/45">
-                <span>{row.transactionType}</span>
+                <span>{row.transactionType}{row.formType ? ` · Form ${row.formType}` : ""}</span>
                 <div className="flex flex-wrap items-center gap-3">
                   <span>Filed {formatDate(row.filingDate)}</span>
                   <Link

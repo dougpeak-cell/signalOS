@@ -1,7 +1,6 @@
-const FMP_API_KEY = process.env.FMP_API_KEY;
-
 const PURCHASE_PAGE_LIMIT = 100;
-const MAX_VISIBLE_ROWS = 5;
+const PURCHASE_PAGES = 3;
+const MAX_VISIBLE_ROWS = 20;
 
 const GENERIC_SECTOR_TOKENS = new Set(["and", "consumer", "services", "sector", "cap"]);
 
@@ -26,10 +25,14 @@ type FmpInsiderTradeRow = {
   reportingName?: string | null;
   typeOfOwner?: string | null;
   transactionType?: string | null;
-  securitiesTransacted?: number | null;
-  price?: number | null;
+  securitiesTransacted?: number | string | null;
+  price?: number | string | null;
   securityName?: string | null;
   url?: string | null;
+  securitiesOwned?: number | string | null;
+  acquisitionOrDisposition?: string | null;
+  directOrIndirect?: string | null;
+  formType?: string | null;
 };
 
 type FmpProfileRow = {
@@ -51,12 +54,27 @@ export type InsiderTradeFeedRow = {
   transactionType: string;
   securityName: string | null;
   filingUrl: string | null;
+  pricePerShare: number | null;
+  sharesOwnedAfter: number | null;
+  ownershipType: string | null;
+  formType: string | null;
 };
 
 export type InsiderTradesFeed = {
   source: string;
   rows: InsiderTradeFeedRow[];
+  updatedAt: string;
+  scannedFilings: number;
+  matchedPurchases: number;
+  warnings: string[];
 };
+
+export class InsiderDataError extends Error {
+  constructor(message: string, public readonly status: number = 502) {
+    super(message);
+    this.name = "InsiderDataError";
+  }
+}
 
 function normalizeSector(value: string | null | undefined) {
   return (value ?? "").trim().toLowerCase();
@@ -77,9 +95,7 @@ function expandSectorTerms(value: string) {
 
   for (const [canonical, aliases] of Object.entries(SECTOR_ALIASES)) {
     const allTerms = [canonical, ...aliases].map(normalizeSector);
-    const matchesAlias = allTerms.some(
-      (term) => term === normalized || term.includes(normalized) || normalized.includes(term)
-    );
+    const matchesAlias = allTerms.includes(normalized);
 
     if (!matchesAlias) continue;
 
@@ -107,11 +123,7 @@ function matchesRequestedSector(requestedSector: string, rowSector: string | nul
 
   for (const requestedTerm of requestedTerms) {
     for (const rowTerm of rowTerms) {
-      if (
-        requestedTerm === rowTerm ||
-        requestedTerm.includes(rowTerm) ||
-        rowTerm.includes(requestedTerm)
-      ) {
+      if (requestedTerm === rowTerm) {
         return true;
       }
     }
@@ -132,32 +144,57 @@ function compareRecentTrades(left: FmpInsiderTradeRow, right: FmpInsiderTradeRow
   return (getAmountPurchased(right) ?? -1) - (getAmountPurchased(left) ?? -1);
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, {
-    next: { revalidate: 900 },
-  });
+async function fetchRows<T extends object>(path: string, params: Record<string, string>): Promise<T[]> {
+  const apiKey = process.env.FMP_API_KEY;
+  if (!apiKey) throw new InsiderDataError("FMP_API_KEY is not configured on the server.", 503);
+  const url = new URL(`https://financialmodelingprep.com/stable/${path}`);
+  for (const [name, value] of Object.entries(params)) url.searchParams.set(name, value);
+  url.searchParams.set("apikey", apiKey);
 
-  if (!response.ok) {
-    throw new Error(`FMP request failed: ${response.status}`);
+  let response: Response;
+  try {
+    response = await fetch(url, { next: { revalidate: 900 }, signal: AbortSignal.timeout(20_000) });
+  } catch {
+    throw new InsiderDataError("FMP insider data could not be reached. Please retry.");
   }
-
-  return (await response.json()) as T;
+  if ([401, 403].includes(response.status)) {
+    throw new InsiderDataError("FMP rejected access to insider data. Check the server API key and endpoint permissions.", 503);
+  }
+  if (response.status === 402) {
+    throw new InsiderDataError("Your FMP subscription does not include this insider-data endpoint. Enable insider trading access, then retry.", 503);
+  }
+  if (!response.ok) {
+    throw new InsiderDataError(`FMP insider data request failed (HTTP ${response.status}). Please retry.`);
+  }
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new InsiderDataError("FMP returned unreadable insider data.");
+  }
+  if (!Array.isArray(payload) || payload.some((row) => !row || typeof row !== "object" || Array.isArray(row))) {
+    throw new InsiderDataError("FMP returned an unexpected insider data format.");
+  }
+  return payload as T[];
 }
 
 function isPurchase(row: FmpInsiderTradeRow) {
   const transactionType = (row.transactionType ?? "").trim().toUpperCase();
-  return transactionType.startsWith("P-");
+  return (transactionType === "P" || transactionType.startsWith("P-")) &&
+    (row.acquisitionOrDisposition == null || row.acquisitionOrDisposition.trim().toUpperCase() !== "D");
 }
 
-function getAmountPurchased(row: FmpInsiderTradeRow) {
-  const shares = typeof row.securitiesTransacted === "number" ? row.securitiesTransacted : null;
-  const price = typeof row.price === "number" ? row.price : null;
+function nonNegativeNumber(value: unknown): number | null {
+  const number = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN;
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
 
-  if (shares == null || price == null || !Number.isFinite(shares) || !Number.isFinite(price)) {
-    return null;
-  }
-
-  return shares * price;
+function getAmountPurchased(row: FmpInsiderTradeRow): number | null {
+  const shares = nonNegativeNumber(row.securitiesTransacted);
+  const price = nonNegativeNumber(row.price);
+  if (!shares || !price) return null;
+  const amount = shares * price;
+  return Number.isFinite(amount) ? Number(amount.toFixed(2)) : null;
 }
 
 function getDateValue(value: string | null | undefined) {
@@ -176,47 +213,74 @@ function normalizePurchaserName(value: string | null | undefined) {
   return normalized || "Name unavailable";
 }
 
-async function loadCompanyProfiles(symbols: string[]) {
+function secFilingUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && ["www.sec.gov", "sec.gov"].includes(url.hostname) ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+async function loadCompanyProfiles(symbols: string[], warnings: string[]) {
   const uniqueSymbols = [...new Set(symbols.filter(Boolean))];
-
-  const profileEntries = await Promise.all(
-    uniqueSymbols.map(async (symbol) => {
+  const profiles = new Map<string, { companyName: string; sector: string | null }>();
+  for (let index = 0; index < uniqueSymbols.length; index += 6) {
+    await Promise.all(uniqueSymbols.slice(index, index + 6).map(async (symbol) => {
       try {
-        const rows = await fetchJson<FmpProfileRow[]>(
-          `https://financialmodelingprep.com/stable/profile?symbol=${encodeURIComponent(symbol)}&apikey=${FMP_API_KEY}`
-        );
-        return [
-          symbol,
-          {
-            companyName: rows[0]?.companyName?.trim() || symbol,
-            sector: rows[0]?.sector?.trim() || null,
-          },
-        ] as const;
-      } catch {
-        return [symbol, { companyName: symbol, sector: null }] as const;
+        const rows = await fetchRows<FmpProfileRow>("profile", { symbol });
+        const profile = rows.find((row) => row.symbol === symbol);
+        if (!profile) {
+          warnings.push(`${symbol}: company profile unavailable; company name and sector may be missing.`);
+        }
+        profiles.set(symbol, {
+          companyName: profile?.companyName?.trim() || symbol,
+          sector: profile?.sector?.trim() || null,
+        });
+      } catch (error) {
+        const message = error instanceof InsiderDataError ? error.message : "Unexpected profile error.";
+        console.warn(`FMP insider profile unavailable for ${symbol}: ${message}`);
+        warnings.push(`${symbol}: company profile unavailable; company name and sector may be missing.`);
+        profiles.set(symbol, { companyName: symbol, sector: null });
       }
-    })
-  );
-
-  return new Map<string, { companyName: string; sector: string | null }>(profileEntries);
+    }));
+  }
+  return profiles;
 }
 
 export async function loadFmpInsiderTradesFeed(requestedSector?: string | null): Promise<InsiderTradesFeed> {
-  if (!FMP_API_KEY) {
-    throw new Error("Missing FMP_API_KEY");
+  const latestRows: FmpInsiderTradeRow[] = [];
+  for (let page = 0; page < PURCHASE_PAGES; page++) {
+    const rows = await fetchRows<FmpInsiderTradeRow>("insider-trading/latest", {
+      page: String(page), limit: String(PURCHASE_PAGE_LIMIT),
+    });
+    latestRows.push(...rows);
+    if (rows.length < PURCHASE_PAGE_LIMIT) break;
   }
-
-  const latestRows = await fetchJson<FmpInsiderTradeRow[]>(
-    `https://financialmodelingprep.com/stable/insider-trading/latest?page=0&limit=${PURCHASE_PAGE_LIMIT}&apikey=${FMP_API_KEY}`
-  );
-
+  const seen = new Set<string>();
   const recentPurchaseRows = latestRows
     .filter((row) => isPurchase(row))
-    .filter((row) => typeof row.securitiesTransacted === "number" && row.securitiesTransacted > 0)
+    .filter((row) => (nonNegativeNumber(row.securitiesTransacted) ?? 0) > 0)
+    .filter((row) => {
+      const symbol = row.symbol?.trim().toUpperCase();
+      if (!symbol || !/^[A-Z0-9][A-Z0-9.-]{0,14}$/.test(symbol)) return false;
+      row.symbol = symbol;
+      const key = JSON.stringify([
+        symbol, row.reportingName, row.transactionDate, row.filingDate,
+        row.transactionType, row.securitiesTransacted, row.price, row.securitiesOwned,
+        row.securityName, row.directOrIndirect, row.url,
+      ]);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
     .sort(compareRecentTrades);
 
+  const warnings: string[] = [];
   const companyProfiles = await loadCompanyProfiles(
-    recentPurchaseRows.map((row) => (row.symbol ?? "").trim()).filter(Boolean)
+    recentPurchaseRows.map((row) => row.symbol ?? ""),
+    warnings
   );
 
   const filteredRows = recentPurchaseRows
@@ -229,24 +293,31 @@ export async function loadFmpInsiderTradesFeed(requestedSector?: string | null):
         companyName: profile?.companyName ?? symbol,
         sector: profile?.sector ?? null,
         amountPurchased: getAmountPurchased(row),
-        sharesPurchased: typeof row.securitiesTransacted === "number" ? row.securitiesTransacted : null,
+        sharesPurchased: nonNegativeNumber(row.securitiesTransacted),
         transactionDate: row.transactionDate ?? null,
         filingDate: row.filingDate ?? null,
         purchaserName: normalizePurchaserName(row.reportingName),
         purchaserTitle: normalizeOwnerTitle(row.typeOfOwner),
         transactionType: (row.transactionType ?? "Purchase").trim() || "Purchase",
         securityName: row.securityName ?? null,
-        filingUrl: row.url ?? null,
+        filingUrl: secFilingUrl(row.url),
+        pricePerShare: (nonNegativeNumber(row.price) ?? 0) > 0 ? nonNegativeNumber(row.price) : null,
+        sharesOwnedAfter: nonNegativeNumber(row.securitiesOwned),
+        ownershipType: row.directOrIndirect === "D" ? "Direct" : row.directOrIndirect === "I" ? "Indirect" : null,
+        formType: row.formType?.trim() || null,
       } satisfies InsiderTradeFeedRow;
     })
-    .filter((row) => matchesRequestedSector(requestedSector ?? "All", row.sector))
-    .slice(0, MAX_VISIBLE_ROWS);
+    .filter((row) => matchesRequestedSector(requestedSector ?? "All", row.sector));
 
   return {
     source:
       requestedSector && requestedSector !== "All"
         ? "fmp_recent_insider_purchases_by_sector"
         : "fmp_recent_insider_purchases",
-    rows: filteredRows,
+    rows: filteredRows.slice(0, MAX_VISIBLE_ROWS),
+    updatedAt: new Date().toISOString(),
+    scannedFilings: latestRows.length,
+    matchedPurchases: filteredRows.length,
+    warnings: warnings.sort(),
   };
 }
