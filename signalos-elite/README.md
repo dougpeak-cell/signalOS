@@ -39,6 +39,36 @@ The shell Sigi assistant always works with the built-in today-context engine.
 - Today, Markets, Pulse, Watchlist, and Portfolio are the five mobile tabs. Ask Sigi and deeper analysis retain existing access gates; real holdings remain separate from simulated Talents.
 - Validate the Pulse guards with `npm run test:amsa`.
 
+## Hedge-Fund Investment Estimates
+
+Sigi Pro's Experts dashboard includes a top-20 stock and sector panel backed by
+`GET /api/experts/hedge-funds` (Pro access required). Configure the server-only
+`FMP_API_KEY` with access to FMP's institutional ownership/Form 13F endpoints.
+An unconfigured key, restricted subscription, or provider failure produces an
+explicit unavailable message, never sample holdings or AI-generated dollar amounts.
+
+Coverage is a named sample of Pershing Square Capital Management, Third Point,
+and Greenlight Capital, not an industry-wide ranking. The latest available
+reporting date is selected independently for each fund. Long, USD stock positions
+are valued using split-adjusted reported share counts and completed-session prices.
+Options, ETFs, funds, and non-USD securities are excluded. Missing company profiles
+or current-session prices produce visible coverage warnings; sectors without a
+complete, aligned comparison history show Unavailable.
+
+Daily, weekly, and monthly controls change the estimated dollar change, not the
+ranking (which is by estimated current exposure). Daily uses the prior trading
+close, weekly uses the close on or before seven calendar days earlier, and monthly
+uses the close on or before the same day of the prior month, clamped at month-end.
+Comparisons do not use prices more than seven days before the requested baseline.
+Sector rankings aggregate every priced stock, not only the top 20. Share counts
+are held constant: changes are hypothetical price effects, **not actual trades,
+fund flows, or verified present-day holdings**. Dividends, shorts, and cash are not
+included. Prices are eligible after 4:15 p.m. New York time; prior sessions are used
+earlier in the day. Holdings cache for six hours, profiles/splits for one day, and
+prices for 15 minutes. Retry reloads the panel; provider cache TTLs still apply.
+
+Run focused checks with `npx tsx --test tests/smoke/hedgeFundInvestments.test.ts`.
+
 ## Sigi Mascot Asset
 
 The Sigi mascot asset at `public/sigi-mascot.svg` is an original SVG created specifically for SignalOS during the April 2026 Sigi assistant redesign.

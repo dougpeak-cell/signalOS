@@ -6,6 +6,8 @@ import ActiveExpertSignals from "@/components/experts/ActiveExpertSignals";
 import AnalystTopPicks, { type AnalystTopPickRow } from "@/components/experts/AnalystTopPicks";
 import InsiderTradesPanel from "@/components/experts/InsiderTradesPanel";
 import SigiTopAnalystPick, { type SigiAnalystLeader } from "@/components/experts/SigiTopAnalystPick";
+import HedgeFundInvestmentsPanel from "@/components/experts/HedgeFundInvestmentsPanel";
+import { useHedgeFundInvestments } from "@/hooks/useHedgeFundInvestments";
 
 type ExpertConviction = {
   ticker: string;
@@ -539,6 +541,7 @@ export default function ExpertsPage({
 }: {
   isMobilePreview?: boolean;
 }) {
+  const hedgeFunds = useHedgeFundInvestments();
   const [fmpRows, setFmpRows] = useState<FmpExpertRow[]>([]);
   const [fmpSectorRows, setFmpSectorRows] = useState<Record<string, FmpExpertRow[]>>({});
   const [isLoadingFmpRows, setIsLoadingFmpRows] = useState(true);
@@ -767,6 +770,15 @@ export default function ExpertsPage({
           rows={liveAnalystTopPicks}
           loading={isLoadingFmpRows}
           fallback={shouldShowFallbackAnalystPicks}
+        />
+
+        <HedgeFundInvestmentsPanel
+          feed={hedgeFunds.feed}
+          loading={hedgeFunds.loading}
+          error={hedgeFunds.error}
+          period={hedgeFunds.period}
+          onPeriodChange={hedgeFunds.setPeriod}
+          onRetry={hedgeFunds.retry}
         />
 
         <div id="sigi-top-analyst-pick" className="scroll-mt-28">
@@ -1235,4 +1247,3 @@ export default function ExpertsPage({
     </main>
   );
 }
-
