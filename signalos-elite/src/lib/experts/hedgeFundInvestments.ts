@@ -12,6 +12,9 @@ export type ReportedHolding = {
   shares: number;
   reportDate: string;
   fund: string;
+  reportedValue?: number | null;
+  filingDate?: string | null;
+  filingUrl?: string | null;
 };
 export type InvestmentChange = { dollars: number; from: string } | null;
 export type InvestmentRow = {

@@ -5,6 +5,7 @@ import { SelectedSignalProvider } from "@/components/chart/SelectedSignalContext
 import { useLiveMarket } from "@/components/market/LiveMarketProvider";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
 import { useSyncedWatchlist } from "@/hooks/useSyncedWatchlist";
+import ResearchAlignment from "@/components/experts/ResearchAlignment";
 import {
   formatMarketTimestamp,
   formatVerifiedPulseTimestamp,
@@ -419,6 +420,8 @@ export default function MobileVision({
                 expanded={futureMapOpen}
                 onToggle={() => setFutureMapOpen((open) => !open)}
               />
+
+              <ResearchAlignment symbol={data.stock.symbol} />
 
               <MobilePanel eyebrow="Live Chart" title={data.stock.symbol} aside={formatPrice(livePrice)}>
                 <div className="mb-3 flex items-center justify-between">

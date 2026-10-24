@@ -10,6 +10,7 @@ import {
   type ReportedHolding,
   type StockSplit,
 } from "@/lib/experts/hedgeFundInvestments";
+import { fetchFmpRows, FmpDataError } from "@/lib/experts/fmpClient";
 
 type ProviderRow = Record<string, unknown>;
 
@@ -30,35 +31,14 @@ async function fetchRows(
   params: Record<string, string>,
   revalidate: number
 ): Promise<ProviderRow[]> {
-  const apiKey = process.env.FMP_API_KEY;
-  if (!apiKey) throw new HedgeFundDataError("FMP_API_KEY is not configured on the server.", 503);
-  const url = new URL(`https://financialmodelingprep.com/stable/${path}`);
-  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
-  url.searchParams.set("apikey", apiKey);
-
-  let response: Response;
   try {
-    response = await fetch(url, { next: { revalidate }, signal: AbortSignal.timeout(20_000) });
-  } catch {
-    throw new HedgeFundDataError("FMP could not be reached. Please retry.");
+    return await fetchFmpRows(path, params, revalidate);
+  } catch (error) {
+    if (error instanceof FmpDataError) {
+      throw new HedgeFundDataError(`Hedge-fund data unavailable: ${error.message}`, error.status);
+    }
+    throw error;
   }
-  if ([401, 402, 403].includes(response.status)) {
-    throw new HedgeFundDataError(
-      "Hedge-fund holdings are unavailable: your FMP subscription must include institutional ownership / Form 13F data. Enable access, then retry. No estimated holdings have been substituted.",
-      503
-    );
-  }
-  if (!response.ok) throw new HedgeFundDataError(`FMP data request failed (HTTP ${response.status}). Please retry.`);
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch {
-    throw new HedgeFundDataError("FMP returned an unreadable data response.");
-  }
-  if (!Array.isArray(payload) || payload.some((row) => !row || typeof row !== "object" || Array.isArray(row))) {
-    throw new HedgeFundDataError("FMP returned an unexpected data format. No rankings were generated.");
-  }
-  return payload as ProviderRow[];
 }
 
 async function mapLimited<T, R>(items: T[], work: (item: T) => Promise<R>): Promise<R[]> {
@@ -86,7 +66,11 @@ function readPrices(rows: ProviderRow[]): PricePoint[] {
   });
 }
 
-export async function loadFmpHedgeFundInvestments(): Promise<HedgeFundInvestmentsFeed> {
+export async function loadFmpHedgeFundReports(): Promise<{
+  fundReports: Array<{ name: string; reportDate: string }>;
+  holdings: ReportedHolding[];
+  excludedRows: number;
+}> {
   const today = new Date().toISOString().slice(0, 10);
   const fundReports: Array<{ name: string; reportDate: string }> = [];
   const holdings: ReportedHolding[] = [];
@@ -120,11 +104,32 @@ export async function loadFmpHedgeFundInvestments(): Promise<HedgeFundInvestment
       if (row.date != null && row.date !== reportDate) {
         throw new HedgeFundDataError(`FMP returned mismatched reporting dates for ${fund.name}.`);
       }
-      holdings.push({ symbol, shares, reportDate, fund: fund.name });
+      let filingUrl: string | null = null;
+      if (typeof row.link === "string") {
+        try {
+          const url = new URL(row.link);
+          if (url.protocol === "https:" && ["sec.gov", "www.sec.gov"].includes(url.hostname)) filingUrl = url.href;
+        } catch {
+          throw new HedgeFundDataError(`FMP returned an invalid filing link for ${fund.name}.`);
+        }
+      }
+      holdings.push({
+        symbol, shares, reportDate, fund: fund.name,
+        reportedValue: positive(row.value),
+        filingDate: isDate(row.filingDate) ? row.filingDate : null,
+        filingUrl,
+      });
     }
   }
   if (!holdings.length) throw new HedgeFundDataError("No usable long-equity holdings were returned by FMP.");
+  return { fundReports, holdings, excludedRows };
+}
 
+export async function loadFmpHedgeFundInvestments(): Promise<HedgeFundInvestmentsFeed> {
+  const today = new Date().toISOString().slice(0, 10);
+  const reports = await loadFmpHedgeFundReports();
+  const { fundReports, holdings } = reports;
+  let { excludedRows } = reports;
   const from = new Date(Date.now() - 70 * 86_400_000).toISOString().slice(0, 10);
   const cutoff = completedPriceCutoff(new Date());
   const benchmark = readPrices(await fetchRows("historical-price-eod/full", { symbol: "SPY", from, to: cutoff }, 900));

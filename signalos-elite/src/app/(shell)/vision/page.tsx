@@ -13,6 +13,7 @@ import { FeaturedPulseCard } from "@/components/vision/featured-pulse-card";
 import { FeaturedPulseRanking } from "@/components/vision/featured-pulse-ranking";
 import MobileVision from "@/components/vision/mobile/MobileVision";
 import { useSigiTier } from "@/hooks/useSigiTier";
+import ResearchAlignment from "@/components/experts/ResearchAlignment";
 import type { AMSAFutureMap } from "@/lib/amsa";
 import { formatMarketTimestamp } from "@/lib/market/formatMarketTimestamp";
 import {
@@ -1616,6 +1617,12 @@ export default function VisionPage() {
             </div>
           </GlassPanel>
         </div>
+
+        {hasVisionAccess && (
+          <div className="mt-5">
+            <ResearchAlignment symbol={activeSymbol} searchable desktopOnly />
+          </div>
+        )}
 
         <GlassPanel className="mt-5 p-5 sm:p-6">
           <SectionHeading

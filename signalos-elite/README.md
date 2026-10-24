@@ -39,6 +39,49 @@ The shell Sigi assistant always works with the built-in today-context engine.
 - Today, Markets, Pulse, Watchlist, and Portfolio are the five mobile tabs. Ask Sigi and deeper analysis retain existing access gates; real holdings remain separate from simulated Talents.
 - Validate the Pulse guards with `npm run test:amsa`.
 
+## Sigi Research Alignment
+
+Experts, Vision, and Stock Detail share a responsive **Research Alignment** panel.
+The Experts and desktop Vision panels accept a ticker; phone Vision follows the
+stock being evaluated, and Stock Detail follows its route ticker. Cards stack on
+phones and use three columns on wide screens. The phone Vision tree does not
+activate the hidden desktop research fetch.
+
+Research remains a Sigi Pro feature: `/api/experts/research?symbol=AAPL` checks Pro
+access on the server before loading providers. Smart/free users retain existing
+Vision and Stock Detail access and see a Pro research upgrade prompt rather than
+premium evidence. Each source can fail independently without masking the others;
+if all sources fail the API returns HTTP 503 and explicit unavailable reasons.
+
+- **Analysts:** FMP `grades-consensus`, `price-target-consensus`, and the latest
+  dated `grades` action. Buy/sell totals include strong ratings. FMP does not date
+  its consensus/target snapshots; retrieval time is not represented as publication
+  time. Missing targets or action history produce source notes, not invented data.
+- **Institutions:** The same named fund reports as the existing investment panel
+  (Pershing Square, Third Point, Greenlight). Show quarter-end shares, reported USD
+  value, reporting/filing dates, and SEC links. Reports older than 135 calendar days
+  are flagged. These are a sample, not industry-wide coverage; absence is not a
+  sell signal. Holdings are not recast as trades, flows, or current holdings.
+- **AMSA:** Reuse `resolveCurrentStockPulse`, requiring ready/partial engine status,
+  a verified completed-session reading, a finite score, and an as-of timestamp no
+  older than seven days. This is standalone stock AMSA with no external market or
+  sector context injected; source notes disclose that limitation.
+
+There is **no new numerical research score**. A recognized Buy/Strong Buy or
+Sell/Strong Sell consensus is compared with existing AMSA states:
+Elite/Strong/Constructive are positive, Weak/Critical negative, Balanced neutral.
+Matching directional evidence supports the analyst view; opposite directions
+contradict it. Neutral evidence is Mixed / neutral; missing/unrecognized evidence
+is Insufficient evidence. Institutional disclosures are historical context and
+never votes in this comparison. Alignment is not an investment recommendation.
+
+Analyst snapshots cache for 15 minutes and fund reports for six hours. Manual
+refresh respects provider caches. No AI-generated facts fill missing sources.
+
+Run the research smoke tests with
+`npx tsx --test tests/smoke/researchAlignment.test.ts` and API access tests with
+`npx vitest run src/app/api/experts/research/route.test.ts`.
+
 ## Insider Purchases (FMP)
 
 The shared desktop/mobile Experts dashboard uses `/api/experts/insiders` and the

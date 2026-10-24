@@ -8,6 +8,7 @@ import InsiderTradesPanel from "@/components/experts/InsiderTradesPanel";
 import SigiTopAnalystPick, { type SigiAnalystLeader } from "@/components/experts/SigiTopAnalystPick";
 import HedgeFundInvestmentsPanel from "@/components/experts/HedgeFundInvestmentsPanel";
 import { useHedgeFundInvestments } from "@/hooks/useHedgeFundInvestments";
+import ResearchAlignment from "@/components/experts/ResearchAlignment";
 
 type ExpertConviction = {
   ticker: string;
@@ -771,6 +772,8 @@ export default function ExpertsPage({
           loading={isLoadingFmpRows}
           fallback={shouldShowFallbackAnalystPicks}
         />
+
+        <ResearchAlignment symbol={fmpRows[0]?.symbol ?? null} searchable />
 
         <HedgeFundInvestmentsPanel
           feed={hedgeFunds.feed}
