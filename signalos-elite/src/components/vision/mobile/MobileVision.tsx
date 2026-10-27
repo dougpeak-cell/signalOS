@@ -421,7 +421,7 @@ export default function MobileVision({
                 onToggle={() => setFutureMapOpen((open) => !open)}
               />
 
-              <ResearchAlignment symbol={data.stock.symbol} />
+              <ResearchAlignment symbol={data.stock.symbol} title="Expert Snapshot" compact />
 
               <MobilePanel eyebrow="Live Chart" title={data.stock.symbol} aside={formatPrice(livePrice)}>
                 <div className="mb-3 flex items-center justify-between">

@@ -773,7 +773,7 @@ export default function ExpertsPage({
           fallback={shouldShowFallbackAnalystPicks}
         />
 
-        <ResearchAlignment symbol={fmpRows[0]?.symbol ?? null} searchable />
+        <ResearchAlignment symbol={fmpRows[0]?.symbol ?? null} searchable title="Institutional Desk" />
 
         <HedgeFundInvestmentsPanel
           feed={hedgeFunds.feed}

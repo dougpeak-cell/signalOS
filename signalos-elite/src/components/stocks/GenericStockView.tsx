@@ -659,7 +659,7 @@ export default async function GenericStockView({
         </section>
 
         <section className="px-4 sm:px-6 xl:px-0">
-          <ResearchAlignment symbol={liveTicker} />
+          <ResearchAlignment symbol={liveTicker} title="Smart Money" />
         </section>
 
         <section className="px-4 sm:px-6 xl:px-0">

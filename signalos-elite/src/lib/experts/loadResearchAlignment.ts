@@ -1,8 +1,9 @@
 import { resolveCurrentStockPulse } from "@/lib/amsa/get-current-stock-pulse";
 import { fetchFmpRows, FmpDataError } from "@/lib/experts/fmpClient";
 import { HedgeFundDataError, loadFmpHedgeFundReports } from "@/lib/experts/fmpHedgeFunds";
-import { isDate } from "@/lib/experts/hedgeFundInvestments";
+import { HEDGE_FUND_SAMPLE, isDate } from "@/lib/experts/hedgeFundInvestments";
 import {
+  classifyHoldingChange,
   summarizeResearchAlignment,
   type AnalystResearch,
   type AmsaResearch,
@@ -21,6 +22,23 @@ function number(value: unknown): number | null {
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function reportedShares(rows: Record<string, unknown>[], symbol: string, reportDate: string): number {
+  if (!rows.length) throw new Error("Empty report");
+  let shares = 0;
+  for (const row of rows) {
+    if (row.date != null && row.date !== reportDate) throw new Error("Mismatched report");
+    const putCall = String(row.putCall ?? row.putCallShare ?? "").trim().toLowerCase();
+    const sharesType = String(row.sharesType ?? row.securityType ?? "").trim().toUpperCase();
+    if (!["", "share", "shares"].includes(putCall) || !["", "SH"].includes(sharesType)) continue;
+    if (typeof row.symbol !== "string" || !row.symbol.trim()) throw new Error("Unidentified holding");
+    if (row.symbol.trim().toUpperCase() !== symbol) continue;
+    const count = number(row.shares ?? row.sharesNumber);
+    if (count == null) throw new Error("Invalid reported shares");
+    shares += count;
+  }
+  return shares;
 }
 
 async function source<T>(name: string, load: () => Promise<{ data: T; warnings: string[] }>): Promise<ResearchEvidence<T>> {
@@ -52,8 +70,12 @@ async function loadAnalysts(symbol: string, today: string): Promise<{ data: Anal
   if (!target) warnings.push("Price targets unavailable; the analyst consensus is still shown.");
   if (targets.status === "rejected") console.warn("Research analyst targets unavailable; no target was inferred.");
   const latest = actions.status === "fulfilled" ? actions.value
-    .filter((row) => isDate(row.date) && row.date <= today)
+    .filter((row) => row.symbol === symbol && isDate(row.date) && row.date <= today)
     .sort((a, b) => String(b.date).localeCompare(String(a.date)))[0] : null;
+  const from = new Date(Date.parse(today) - 90 * DAY_MS).toISOString().slice(0, 10);
+  const recent = actions.status === "fulfilled" ? [...new Map(actions.value
+    .filter((row) => row.symbol === symbol && isDate(row.date) && row.date >= from && row.date <= today)
+    .map((row) => [JSON.stringify([row.date, row.gradingCompany, row.action, row.newGrade, row.previousGrade]), row])).values()] : null;
   if (!latest) warnings.push("No verified dated analyst action is available.");
   if (actions.status === "rejected") console.warn("Research analyst actions unavailable; no action was inferred.");
   return {
@@ -68,6 +90,11 @@ async function loadAnalysts(symbol: string, today: string): Promise<{ data: Anal
       latestAction: latest ? {
         date: String(latest.date), firm: text(latest.gradingCompany),
         grade: text(latest.newGrade), action: text(latest.action),
+      } : null,
+      ratingActivity: recent ? {
+        from, through: today,
+        upgrades: recent.filter((row) => ["up", "upgrade"].includes(String(row.action).toLowerCase())).length,
+        downgrades: recent.filter((row) => ["down", "downgrade"].includes(String(row.action).toLowerCase())).length,
       } : null,
     },
     warnings,
@@ -95,11 +122,45 @@ async function loadInstitutions(symbol: string, now: Date): Promise<{ data: Inst
       });
     }
   }
-  return {
-    data: { funds, positions: [...grouped.values()] },
-    warnings: funds.filter((fund) => fund.olderReport)
-      .map((fund) => `${fund.name}: latest available report is older than ${OLDER_REPORT_DAYS} days (${fund.reportDate}).`),
-  };
+  const warnings = funds.filter((fund) => fund.olderReport)
+    .map((fund) => `${fund.name}: latest available report is older than ${OLDER_REPORT_DAYS} days (${fund.reportDate}).`);
+  const splits = await Promise.allSettled([fetchFmpRows("splits", { symbol }, 86_400)]);
+  const splitRows = splits[0].status === "fulfilled" ? splits[0].value : null;
+  const validSplits = splitRows?.every((row) => isDate(row.date) &&
+    (number(row.numerator) ?? 0) > 0 && (number(row.denominator) ?? 0) > 0);
+  const changes = await Promise.all(funds.map(async (fund) => {
+    const shares = grouped.get(fund.name)?.shares ?? 0;
+    const unavailable = {
+      fund: fund.name, reportDate: fund.reportDate, previousReportDate: null,
+      shares, previousShares: null, splitFactor: null, change: "Unavailable" as const,
+    };
+    try {
+      const cik = HEDGE_FUND_SAMPLE.find((sample) => sample.name === fund.name)!.cik;
+      const quarter = Math.ceil(Number(fund.reportDate.slice(5, 7)) / 3);
+      const previousReportDate = new Date(Date.UTC(Number(fund.reportDate.slice(0, 4)), (quarter - 1) * 3, 0)).toISOString().slice(0, 10);
+      const dates = await fetchFmpRows("institutional-ownership/dates", { cik }, 21_600);
+      if (!dates.some((row) => row.date === previousReportDate)) throw new Error("Missing consecutive quarter");
+      const [previousRows, currentRows] = await Promise.all([previousReportDate, fund.reportDate].map((date) =>
+        fetchFmpRows("institutional-ownership/extract", {
+          cik, year: date.slice(0, 4), quarter: String(Math.ceil(Number(date.slice(5, 7)) / 3)),
+        }, 21_600)));
+      const previousShares = reportedShares(previousRows, symbol, previousReportDate);
+      if (reportedShares(currentRows, symbol, fund.reportDate) !== shares) throw new Error("Inconsistent current report");
+      const splitFactor = validSplits && splitRows ? splitRows
+        .filter((row) => String(row.date) > previousReportDate && String(row.date) <= fund.reportDate)
+        .reduce((factor, row) => factor * Number(row.numerator) / Number(row.denominator), 1) : null;
+      return {
+        fund: fund.name, reportDate: fund.reportDate, previousReportDate,
+        shares, previousShares, splitFactor,
+        change: classifyHoldingChange(shares, previousShares, splitFactor),
+      };
+    } catch {
+      warnings.push(`${fund.name}: consecutive-quarter comparison unavailable; no accumulation or exit inferred.`);
+      return unavailable;
+    }
+  }));
+  if (!validSplits) warnings.push("Split history unavailable; holding changes are not classified.");
+  return { data: { funds, positions: [...grouped.values()], changes }, warnings };
 }
 
 export async function loadResearchAlignment(

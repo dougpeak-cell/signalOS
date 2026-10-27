@@ -76,9 +76,10 @@ async function withProvider(
       symbol: "AMZN", targetConsensus: 123, targetHigh: 150, targetLow: 90,
     }]);
     if (url.pathname.endsWith("/grades")) return Response.json([
-      { date: "2025-12-01", gradingCompany: "Old Firm", newGrade: "Hold" },
-      { date: "2026-10-22", gradingCompany: "New Firm", newGrade: "Buy", action: "upgrade" },
+      { symbol: "AMZN", date: "2025-12-01", gradingCompany: "Old Firm", newGrade: "Hold" },
+      { symbol: "AMZN", date: "2026-10-22", gradingCompany: "New Firm", newGrade: "Buy", action: "upgrade" },
     ]);
+    if (url.pathname.endsWith("/splits")) return Response.json([]);
     const old = url.searchParams.get("cik") === "0001079114";
     if (url.pathname.endsWith("/dates")) return Response.json([{ date: old ? "2023-12-31" : "2026-06-30" }]);
     if (url.pathname.endsWith("/extract")) return Response.json([
@@ -132,6 +133,82 @@ test("a holdings entitlement failure does not erase analyst or AMSA evidence", a
       assert.match(feed.institutions.error, /subscription/);
       assert.doesNotMatch(feed.institutions.error, /research-test-key/);
     }
+  });
+});
+
+test("manager history compares consecutive quarters and adjusts stock splits", async () => {
+  await withProvider((url) => {
+    if (url.pathname.endsWith("/dates")) return Response.json([{ date: "2026-03-31" }, { date: "2026-06-30" }]);
+    if (url.pathname.endsWith("/splits")) return Response.json([{ date: "2026-05-01", numerator: 2, denominator: 1 }]);
+    if (url.pathname.endsWith("/extract")) {
+      const prior = url.searchParams.get("quarter") === "1";
+      const cik = url.searchParams.get("cik");
+      const shares = prior ? 10 : cik === "0001336528" ? 20 : cik === "0001040273" ? 25 : 15;
+      return Response.json([{ symbol: "AMZN", shares, sharesType: "SH", date: prior ? "2026-03-31" : "2026-06-30" }]);
+    }
+    return null;
+  }, async () => {
+    const feed = await loadResearchAlignment("AMZN", { now, loadPulse: mockPulse });
+    assert.equal(feed.institutions.status, "available");
+    if (feed.institutions.status === "available") {
+      assert.deepEqual(feed.institutions.data.changes?.map((change) => change.change), ["Unchanged", "Increased", "Reduced"]);
+      assert.ok(feed.institutions.data.changes?.every((change) => change.previousReportDate === "2026-03-31" && change.splitFactor === 2));
+    }
+    assert.equal(feed.amsa.status, "available");
+    if (feed.amsa.status === "available") assert.equal(feed.amsa.data.score, 75);
+  });
+});
+
+test("new and closed positions require verified reports, not missing holdings history", async () => {
+  for (const mode of ["new", "closed", "missing", "invalid-current", "no-splits"] as const) {
+    await withProvider((url) => {
+      if (url.pathname.endsWith("/dates")) return Response.json(mode === "missing" ? [{ date: "2026-06-30" }] : [{ date: "2026-03-31" }, { date: "2026-06-30" }]);
+      if (url.pathname.endsWith("/splits")) return mode === "no-splits" ? new Response("Restricted", { status: 402 }) : Response.json([]);
+      if (url.pathname.endsWith("/extract")) {
+        const prior = url.searchParams.get("quarter") === "1";
+        const absent = mode === "new" ? prior : mode === "closed" ? !prior : false;
+        return Response.json([
+          { symbol: "OTHER", shares: 1, sharesType: "SH" },
+          ...absent ? [] : [{ symbol: "AMZN", shares: mode === "invalid-current" && !prior ? "bad" : 10, sharesType: "SH" }],
+        ]);
+      }
+      return null;
+    }, async () => {
+      const feed = await loadResearchAlignment("AMZN", { now, loadPulse: mockPulse });
+      assert.equal(feed.institutions.status, "available", mode);
+      if (feed.institutions.status === "available") {
+        const expected = mode === "new" ? "New position" : mode === "closed" ? "Closed position" : "Unavailable";
+        assert.ok(feed.institutions.data.changes?.every((change) => change.change === expected), mode);
+      }
+    });
+  }
+});
+
+test("recent analyst activity excludes stale, future, unrelated and duplicated ratings", async () => {
+  await withProvider((url) => url.pathname.endsWith("/grades") ? Response.json([
+    { symbol: "AMZN", date: "2026-10-22", gradingCompany: "Firm", action: "up", newGrade: "Buy" },
+    { symbol: "AMZN", date: "2026-10-22", gradingCompany: "Firm", action: "up", newGrade: "Buy" },
+    { symbol: "AMZN", date: "2026-10-21", gradingCompany: "Other", action: "down", newGrade: "Hold" },
+    { symbol: "AMZN", date: "2025-01-01", action: "up" },
+    { symbol: "AMZN", date: "2026-12-01", action: "up" },
+    { symbol: "OTHER", date: "2026-10-23", action: "up" },
+  ]) : null, async () => {
+    const feed = await loadResearchAlignment("AMZN", { now, loadPulse: mockPulse });
+    assert.equal(feed.analysts.status, "available");
+    if (feed.analysts.status === "available") {
+      assert.equal(feed.analysts.data.ratingActivity?.upgrades, 1);
+      assert.equal(feed.analysts.data.ratingActivity?.downgrades, 1);
+      assert.equal(feed.analysts.data.latestAction?.date, "2026-10-22");
+    }
+    const html = renderToStaticMarkup(createElement(ResearchAlignmentPanel, {
+      symbol: "AMZN", feed, compact: true, title: "Expert Snapshot", hasAccess: true,
+      loading: false, error: null, searchable: false, input: "AMZN", inputError: null,
+      onInput: () => {}, onSubmit: () => {}, onRetry: () => {},
+    }));
+    assert.match(html, /Expert Snapshot/);
+    assert.match(html, /<details/);
+    assert.match(html, /Report dates:/);
+    assert.match(html, /Estimate and price-target revisions: unavailable/);
   });
 });
 

@@ -1,6 +1,19 @@
 import type { AMSAState } from "@/lib/amsa/types";
 
 export type ResearchDirection = "positive" | "neutral" | "negative" | "unavailable";
+export type HoldingChange = "New position" | "Increased" | "Reduced" | "Unchanged" | "Closed position" | "Unavailable";
+
+export function classifyHoldingChange(current: number, previous: number | null, splitFactor: number | null): HoldingChange {
+  if (previous == null || splitFactor == null || !Number.isFinite(current) || !Number.isFinite(previous) ||
+      !Number.isFinite(splitFactor) || current < 0 || previous < 0 || splitFactor <= 0) return "Unavailable";
+  if (previous === 0) return current > 0 ? "New position" : "Unchanged";
+  if (current === 0) return "Closed position";
+  const adjusted = previous * splitFactor;
+  const difference = current - adjusted;
+  if (Math.abs(difference) < 0.5) return "Unchanged";
+  return difference > 0 ? "Increased" : "Reduced";
+}
+
 export type ResearchEvidence<T> =
   | { status: "available"; data: T; warnings: string[] }
   | { status: "unavailable"; error: string };
@@ -13,8 +26,18 @@ export type AnalystResearch = {
   targetHigh: number | null;
   targetLow: number | null;
   latestAction: { date: string; firm: string | null; grade: string | null; action: string | null } | null;
+  ratingActivity?: { from: string; through: string; upgrades: number; downgrades: number } | null;
 };
 export type InstitutionalResearch = {
+  changes?: Array<{
+    fund: string;
+    reportDate: string;
+    previousReportDate: string | null;
+    shares: number;
+    previousShares: number | null;
+    splitFactor: number | null;
+    change: HoldingChange;
+  }>;
   funds: Array<{ name: string; reportDate: string; olderReport: boolean }>;
   positions: Array<{
     fund: string;

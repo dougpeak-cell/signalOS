@@ -41,7 +41,9 @@ The shell Sigi assistant always works with the built-in today-context engine.
 
 ## Sigi Research Alignment
 
-Experts, Vision, and Stock Detail share a responsive **Research Alignment** panel.
+Experts, Vision, and Stock Detail share a responsive research panel, labeled
+**Institutional Desk**, **Sigi Conviction**, and **Smart Money**, respectively.
+Phone Vision uses a compact **Expert Snapshot** with expandable source evidence.
 The Experts and desktop Vision panels accept a ticker; phone Vision follows the
 stock being evaluated, and Stock Detail follows its route ticker. Cards stack on
 phones and use three columns on wide screens. The phone Vision tree does not
@@ -56,12 +58,20 @@ if all sources fail the API returns HTTP 503 and explicit unavailable reasons.
 - **Analysts:** FMP `grades-consensus`, `price-target-consensus`, and the latest
   dated `grades` action. Buy/sell totals include strong ratings. FMP does not date
   its consensus/target snapshots; retrieval time is not represented as publication
-  time. Missing targets or action history produce source notes, not invented data.
+  time. Deduplicated upgrades/downgrades in returned actions are counted over the
+  last 90 days; this does not imply a consensus change or complete market coverage.
+  Estimate and price-target revision histories are not connected and are explicitly
+  unavailable. Missing targets or action history produce notes, not invented data.
 - **Institutions:** The same named fund reports as the existing investment panel
   (Pershing Square, Third Point, Greenlight). Show quarter-end shares, reported USD
   value, reporting/filing dates, and SEC links. Reports older than 135 calendar days
   are flagged. These are a sample, not industry-wide coverage; absence is not a
   sell signal. Holdings are not recast as trades, flows, or current holdings.
+  Manager history compares the latest report with the immediately preceding
+  quarter only when both reports can be verified. Split-adjusted share comparisons
+  identify new, increased, reduced, unchanged, and closed positions. Missing split
+  history, missing consecutive reports, or invalid shares leave changes unavailable.
+  Split history caches for 24 hours. Historical changes never modify AMSA scores.
 - **AMSA:** Reuse `resolveCurrentStockPulse`, requiring ready/partial engine status,
   a verified completed-session reading, a finite score, and an as-of timestamp no
   older than seven days. This is standalone stock AMSA with no external market or
@@ -80,7 +90,7 @@ refresh respects provider caches. No AI-generated facts fill missing sources.
 
 Run the research smoke tests with
 `npx tsx --test tests/smoke/researchAlignment.test.ts` and API access tests with
-`npx vitest run src/app/api/experts/research/route.test.ts`.
+`npx vitest run src/app/api/experts/research/route.test.ts src/lib/experts/researchAlignment.test.ts`.
 
 ## Insider Purchases (FMP)
 
