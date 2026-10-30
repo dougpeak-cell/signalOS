@@ -11,6 +11,7 @@ import PulseChangeAlerts from "@/components/mobile/PulseChangeAlerts";
 import { GlobalTickerProvider } from "@/components/sigi/GlobalTickerContext";
 import { SelectedTickerProvider } from "@/components/sigi/SelectedTickerContext";
 import { SignalProvider } from "@/context/SignalContext";
+import MembershipPauseNotice from "@/components/shared/MembershipPauseNotice";
 
 export const metadata: Metadata = {
   title: "SigiOS Elite",
@@ -39,6 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-black">
       <body className="bg-black text-white antialiased">
+        <MembershipPauseNotice />
         <SignalProvider>
           <MarketDataProvider>
             <LiveMarketProvider>

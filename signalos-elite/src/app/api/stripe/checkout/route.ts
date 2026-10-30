@@ -3,6 +3,7 @@ import { createCheckoutSessionForPlan, getSafeReturnTo } from "@/lib/billing/che
 import { coercePaidSigiTier } from "@/lib/billing/tiers";
 import { PENDING_CHECKOUT_PLAN_COOKIE } from "@/lib/billing/pendingCheckout";
 import { isBillingInterval, type BillingInterval } from "@/lib/billing/pricing";
+import { MEMBERSHIP_PAUSE_MESSAGE, MEMBERSHIP_SIGNUPS_PAUSED } from "@/lib/billing/membershipAvailability";
 
 type CheckoutRequestBody = {
   plan?: "smart" | "pro";
@@ -45,6 +46,9 @@ function buildUpgradeAuthRedirect(
 }
 
 export async function GET(request: Request) {
+  if (MEMBERSHIP_SIGNUPS_PAUSED) {
+    return NextResponse.redirect(new URL("/auth/upgrade", request.url));
+  }
   const { searchParams } = new URL(request.url);
   const plan = searchParams.get("plan") ?? searchParams.get("tier") ?? undefined;
   const returnTo = getSafeReturnTo(searchParams.get("returnTo"));
@@ -79,6 +83,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (MEMBERSHIP_SIGNUPS_PAUSED) {
+    return NextResponse.json({ error: MEMBERSHIP_PAUSE_MESSAGE, code: "MEMBERSHIP_SIGNUPS_PAUSED" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
   try {
     const body = (await request.json()) as CheckoutRequestBody;
     const session = await createCheckoutSessionForPlan(

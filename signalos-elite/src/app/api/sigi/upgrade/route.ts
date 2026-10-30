@@ -4,6 +4,7 @@ import { coercePaidSigiTier } from "@/lib/billing/tiers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { type SigiTier } from "@/lib/sigi/gates";
 import { isBillingInterval } from "@/lib/billing/pricing";
+import { MEMBERSHIP_PAUSE_MESSAGE, MEMBERSHIP_SIGNUPS_PAUSED } from "@/lib/billing/membershipAvailability";
 
 type UpgradeTier = Exclude<SigiTier, "free">;
 
@@ -18,6 +19,9 @@ function parseUpgradeTier(value: string | null | undefined): UpgradeTier | null 
 }
 
 export async function POST(request: Request) {
+  if (MEMBERSHIP_SIGNUPS_PAUSED) {
+    return NextResponse.json({ error: MEMBERSHIP_PAUSE_MESSAGE, code: "MEMBERSHIP_SIGNUPS_PAUSED" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
   try {
     const body = (await request.json()) as UpgradeRequestBody;
     const tier = parseUpgradeTier(body.tier);

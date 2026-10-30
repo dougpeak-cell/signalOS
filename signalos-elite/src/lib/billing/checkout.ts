@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { assertMembershipSignupsOpen } from "@/lib/billing/membershipAvailability";
 import { type PlanKey, type BillingInterval } from "@/lib/billing/pricing";
 import {
   coercePaidSigiTier,
@@ -412,6 +413,7 @@ export async function createCheckoutSessionForPlan(
   returnTo: string | null,
   billingInterval: BillingInterval = "monthly"
 ): Promise<CheckoutSessionResult> {
+  assertMembershipSignupsOpen();
   const stripe = getStripeServer();
   const tier = coercePaidSigiTier(planValue);
   if (!tier) {

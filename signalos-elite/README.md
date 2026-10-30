@@ -26,6 +26,26 @@ The repo-level environment contract lives in `.env.local.example`.
 
 Create `.env.local` from that file and fill in only the values you need for your local workflow. This keeps Supabase, Sigi provider, Stripe billing, market data, and ingest settings in one place.
 
+## Membership Signup Pause
+
+New paid memberships and trials are temporarily paused while the site is under
+construction. `MEMBERSHIP_SIGNUPS_PAUSED` in
+`src/lib/billing/membershipAvailability.ts` controls the site-wide notice,
+disabled landing purchase buttons, upgrade maintenance page, and server guards.
+Checkout creation is blocked before accessing Stripe or customer records;
+both current and legacy checkout POST endpoints return HTTP 503. Direct checkout
+links redirect to the construction page.
+
+Free account access, existing memberships, renewals, webhooks, billing-portal
+access and cancellation remain unchanged. This is not a pause on existing
+subscription charges. Deploy this change for the live-site guard to take effect.
+Previously issued Stripe-hosted Checkout sessions and standalone Payment Links
+are outside this app guard; expire/deactivate those separately in Stripe if used.
+To reopen sign-ups, set the shared flag to `false` and deploy again.
+
+Run the pause regression checks with
+`npx vitest run src/lib/billing/checkout.test.ts`.
+
 ## Sigi AI Provider
 
 The shell Sigi assistant always works with the built-in today-context engine.

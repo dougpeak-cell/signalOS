@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { getSigiAnnualSavingsPercent, getSigiPriceAmount, type BillingInterval } from "@/lib/billing/pricing";
+import { MEMBERSHIP_SIGNUPS_PAUSED } from "@/lib/billing/membershipAvailability";
 
 export default function LandingPricingCards() {
   const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
@@ -19,9 +20,9 @@ export default function LandingPricingCards() {
         <div className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-200/70">
           Choose Your Access
         </div>
-        <div className="mt-2 text-2xl font-black text-white">Start free. Upgrade when you're ready.</div>
+        <div className="mt-2 text-2xl font-black text-white">{MEMBERSHIP_SIGNUPS_PAUSED ? "Membership sign-ups paused" : "Start free. Upgrade when you're ready."}</div>
         <p className="mt-2 text-sm leading-6 text-white/60">
-          Every account starts free with Quick View Watchlist and Portfolio, no card required. Compare Smart and Pro below to unlock Sigi's full intelligence.
+          {MEMBERSHIP_SIGNUPS_PAUSED ? "Under construction. You can still explore free features. New paid memberships are temporarily unavailable." : "Every account starts free with Quick View Watchlist and Portfolio, no card required. Compare Smart and Pro below to unlock Sigi's full intelligence."}
         </p>
       </div>
 
@@ -148,13 +149,13 @@ function Pricing({
         ))}
       </div>
 
-      <Link
+      {MEMBERSHIP_SIGNUPS_PAUSED ? <button type="button" disabled className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/12 px-4 text-base font-semibold text-white/48">Sign-ups paused</button> : <Link
         href={href}
         className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/12 px-4 text-base font-semibold text-white/92 transition hover:border-teal-300/35 hover:bg-teal-300/10 hover:text-white"
       >
         Choose {name}
-      </Link>
-      <p className="mt-3 text-center text-xs text-white/48">7-day free trial · No charge until trial ends · Cancel anytime</p>
+      </Link>}
+      <p className="mt-3 text-center text-xs text-white/48">{MEMBERSHIP_SIGNUPS_PAUSED ? "New subscriptions and trials are temporarily unavailable." : "7-day free trial · No charge until trial ends · Cancel anytime"}</p>
     </div>
   );
 }
