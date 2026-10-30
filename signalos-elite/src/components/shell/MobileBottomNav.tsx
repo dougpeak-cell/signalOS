@@ -24,7 +24,7 @@ const baseNavItems: NavItem[] = [
   {
     label: "Markets",
     href: "/markets",
-    activePaths: ["/markets", "/stocks", "/screener", "/news", "/crypto"],
+    activePaths: ["/markets", "/stocks", "/screener", "/news", "/crypto", "/options"],
     icon: <ChartNoAxesCombined className="size-5" />,
   },
   {

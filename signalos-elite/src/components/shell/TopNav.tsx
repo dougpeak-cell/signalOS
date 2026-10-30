@@ -70,13 +70,14 @@ export default function TopNav({
   const router = useRouter();
   const searchParams = useSearchParams();
   const isCryptoMode = pathname.startsWith("/crypto");
+  const isOptionsMode = pathname === "/options" || pathname.startsWith("/options/");
   const showMobileHealthyWealth = !forceMobilePreview && pathname === "/today";
   const showDevToggle = process.env.NODE_ENV !== "production" && !isCryptoMode;
   const isMobilePreviewEnabled = searchParams.get("mobilePreview") === "1";
   const mobileAuthCtaLabel = getMobileAuthCtaLabel(pathname);
   const activeLabel =
     navItems.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
-      ?.label ?? (isCryptoMode ? "Crypto" : "Today");
+      ?.label ?? (isCryptoMode ? "Crypto" : isOptionsMode ? "Options" : "Today");
 
   const navDefault =
     "rounded-full px-3 py-2 text-sm font-semibold text-white/65 transition hover:bg-white/10 hover:text-white";
@@ -252,7 +253,7 @@ export default function TopNav({
             </span>
           </Link>
 
-          <nav className={forceMobilePreview ? "hidden" : "hidden items-center gap-5 xl:flex"}>
+          <nav className={forceMobilePreview ? "hidden" : "hidden items-center gap-3 xl:flex 2xl:gap-4"}>
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -273,6 +274,15 @@ export default function TopNav({
               className={isCryptoMode ? cryptoActive : navDefault}
             >
               Crypto
+            </Link>
+
+            <Link
+              href={buildNavHref("/options")}
+              onClick={(event) => handlePrimaryNavClick(event, buildNavHref("/options"))}
+              aria-current={isOptionsMode ? "page" : undefined}
+              className={isOptionsMode ? navActive : navDefault}
+            >
+              Options
             </Link>
 
             <Link

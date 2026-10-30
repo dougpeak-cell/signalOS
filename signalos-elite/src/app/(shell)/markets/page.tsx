@@ -35,6 +35,12 @@ const marketTools = [
     label: "Digital assets",
   },
   {
+    title: "Options",
+    description: "Compare contracts, defined-risk payoffs, and reported positioning.",
+    href: "/options",
+    label: "Derivatives",
+  },
+  {
     title: "Experts",
     description: "Track analyst rankings, targets, and highest-conviction picks.",
     href: "/experts",

@@ -59,6 +59,44 @@ streaming chart price. Existing Crypto membership gates remain unchanged.
 
 Run focused quote tests with `npx vitest run src/lib/crypto/fmpQuote.test.ts`.
 
+## Options Workspace
+
+Open `/options?symbol=AAPL` from the desktop Options tab beside Crypto or the
+phone Markets tab. FMP supplies underlying-stock quotes, upcoming reported
+earnings dates, analyst consensus and price targets using `FMP_API_KEY`.
+Contract data uses the server-only `MASSIVE_API_KEY` and requires an options
+subscription with access to contract snapshots. FMP Ultimate alone does not
+enable the options chain. Missing entitlements preserve stock research and show
+an explicit unavailable state, never sample contracts or simulated quotes.
+
+The current 15-minute-delayed subscription enables snapshots with aggregate
+session closes, volume, daily open interest, Greeks and IV. Massive returns
+last-trade and bid/ask fields only on plans that include trades and quotes,
+respectively. Session closes are displayed as separate price references, never
+substituted for missing bid/ask quotes or used as executable payoff premiums.
+
+The chain covers available expirations within 180 days, with calls/puts,
+near-spot/all-loaded strike browsing, bid/ask, volume, open interest, IV and
+provider Greeks. Reference coverage is capped at five 1,000-contract pages and
+each selected-expiry snapshot at eight 250-contract pages. Provider responses
+cache for 30 seconds; manual refresh respects those caches. Partial coverage is
+disclosed and suppresses positioning aggregates.
+
+The strategy analyzer supports long calls/puts and debit spreads on standard
+100-share contracts. Expiration payoffs use ask-to-buy and bid-to-sell, showing
+cost, break-even, maximum loss and maximum profit. Missing, crossed, stale
+(over 20 minutes) or unsupported quotes prevent payoff estimates. No orders are
+placed; estimates exclude fees, taxes and early-assignment effects.
+
+Positioning reports selected-expiry volume and prior-trading-day open interest,
+not signed money flow or institutional trading intent. A fresh same-strike ATM
+call/put IV pair supplies a symmetric reference range using
+`spot * annualized IV * sqrt(calendar days / 365)`; same-day expiries are excluded.
+This is not a directional forecast or guaranteed probability interval. Analyst
+targets remain separate stock research, not option-expiry predictions.
+
+Run focused checks with `npx vitest run src/lib/options`.
+
 ## Senate Stock Purchases
 
 The shared desktop/phone Experts Pro dashboard includes Senate stock purchases

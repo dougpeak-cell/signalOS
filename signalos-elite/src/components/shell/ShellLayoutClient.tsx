@@ -212,12 +212,13 @@ function ShellLayoutContent({
     pathname.startsWith("/stocks/") && pathname.includes("/workspace");
   const isCryptoMode = pathname.startsWith("/crypto");
   const isScreenerRoute = pathname.startsWith("/screener");
+  const isOptionsRoute = pathname === "/options" || pathname.startsWith("/options/");
   const isTodayShellRoute = pathname === "/" || pathname === "/today";
   const shellBottomPadding = isDevMobilePreview
     ? `calc(${mobilePreviewFrame.bottomGap}px + 8rem + env(safe-area-inset-bottom))`
     : undefined;
 
-  const hideShellRightRail = isWorkspaceStockPage || isScreenerRoute || shouldUseCompactShell;
+  const hideShellRightRail = isWorkspaceStockPage || isScreenerRoute || isOptionsRoute || shouldUseCompactShell;
   const shellMarketContextValue = useMemo(
     () => ({
       hasAccountSession,
