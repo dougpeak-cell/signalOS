@@ -39,6 +39,37 @@ The shell Sigi assistant always works with the built-in today-context engine.
 - Today, Markets, Pulse, Watchlist, and Portfolio are the five mobile tabs. Ask Sigi and deeper analysis retain existing access gates; real holdings remain separate from simulated Talents.
 - Validate the Pulse guards with `npm run test:amsa`.
 
+## Senate Stock Purchases
+
+The shared desktop/phone Experts Pro dashboard includes Senate stock purchases
+from FMP's `senate-latest` endpoint, using the existing server-only `FMP_API_KEY`.
+`GET /api/experts/senate` requires Pro access before making provider calls.
+
+Filters include Today, Past 7 days, Past 30 days, Past 90 days, and Past year
+(365 days). Calendar windows include today in America/New_York. Disclosure date
+is the default date basis; users can switch to purchase date. The initial window
+is the past seven days. The API accepts `period=today|week|month|quarter|year`
+and `basis=disclosure|purchase`.
+
+Only explicit `Stock` / `Purchase` records with usable tickers are included.
+Bonds, stock options, non-public stock, other assets, and sales are excluded even
+when FMP supplies a ticker. Cards preserve disclosed dollar ranges without
+inventing exact values; show senator, reported owner (including spouses/joint
+holdings), both dates, and a Senate source link when available.
+
+Each request scans up to ten pages of 100 latest filing rows, removes exact
+duplicate provider records, and shows the newest 50 matching rows. The panel
+discloses scanned/matched counts, oldest disclosure, and scan/display limits.
+This is bounded filing-sample coverage, not guaranteed complete period coverage.
+Missing selected dates are excluded with a warning. A period with no matches is
+an explicit empty state, not evidence that no senator traded. Late disclosures
+are not live trading signals or recommendations. FMP responses cache for 15
+minutes; manual refresh respects that cache. Provider errors never generate
+sample transactions.
+
+Run `npx tsx --test tests/smoke/senatePurchases.test.ts` and
+`npx vitest run src/app/api/experts/senate/route.test.ts`.
+
 ## Sigi Research Alignment
 
 Experts, Vision, and Stock Detail share a responsive research panel, labeled

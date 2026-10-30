@@ -9,6 +9,8 @@ import SigiTopAnalystPick, { type SigiAnalystLeader } from "@/components/experts
 import HedgeFundInvestmentsPanel from "@/components/experts/HedgeFundInvestmentsPanel";
 import { useHedgeFundInvestments } from "@/hooks/useHedgeFundInvestments";
 import ResearchAlignment from "@/components/experts/ResearchAlignment";
+import SenatePurchasesPanel from "@/components/experts/SenatePurchasesPanel";
+import { useSenatePurchases } from "@/hooks/useSenatePurchases";
 
 type ExpertConviction = {
   ticker: string;
@@ -543,6 +545,7 @@ export default function ExpertsPage({
   isMobilePreview?: boolean;
 }) {
   const hedgeFunds = useHedgeFundInvestments();
+  const senate = useSenatePurchases();
   const [fmpRows, setFmpRows] = useState<FmpExpertRow[]>([]);
   const [fmpSectorRows, setFmpSectorRows] = useState<Record<string, FmpExpertRow[]>>({});
   const [isLoadingFmpRows, setIsLoadingFmpRows] = useState(true);
@@ -771,6 +774,12 @@ export default function ExpertsPage({
           rows={liveAnalystTopPicks}
           loading={isLoadingFmpRows}
           fallback={shouldShowFallbackAnalystPicks}
+        />
+
+        <SenatePurchasesPanel
+          feed={senate.feed} loading={senate.loading} error={senate.error}
+          period={senate.period} basis={senate.basis}
+          onPeriodChange={senate.setPeriod} onBasisChange={senate.setBasis} onRetry={senate.retry}
         />
 
         <ResearchAlignment symbol={fmpRows[0]?.symbol ?? null} searchable title="Institutional Desk" />
