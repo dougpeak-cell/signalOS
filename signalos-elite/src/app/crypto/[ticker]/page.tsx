@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import CryptoPageTabs from "@/components/crypto/CryptoPageTabs";
+import CryptoQuoteDetails from "@/components/crypto/CryptoQuoteDetails";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
@@ -1749,6 +1750,8 @@ export default function CryptoDetailPage() {
             </div>
           </div>
         </section>
+
+        <CryptoQuoteDetails ticker={ticker} compact={isMobilePreview} />
 
         <section className={[
           "grid gap-6",

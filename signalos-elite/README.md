@@ -39,6 +39,26 @@ The shell Sigi assistant always works with the built-in today-context engine.
 - Today, Markets, Pulse, Watchlist, and Portfolio are the five mobile tabs. Ask Sigi and deeper analysis retain existing access gates; real holdings remain separate from simulated Talents.
 - Validate the Pulse guards with `npm run test:amsa`.
 
+## Crypto Market Quotes
+
+Selected-coin pages (`/crypto/BTC`, `/crypto/ETH`, and other supported symbols)
+show an FMP USD quote in desktop, phone, and phone-preview layouts. The server
+endpoint `/api/crypto/quote?symbol=BTC` uses the existing server-only `FMP_API_KEY`
+with FMP's stable `quote` endpoint and caches provider responses for 30 seconds.
+
+The quote includes price, absolute/percentage change, volume, daily and 52-week
+ranges, market cap, 50/200-day averages, open, previous close, exchange, name,
+pair symbol, and the original Unix timestamp. The panel refreshes every 30 seconds
+and supports manual retry. Missing fields remain unavailable; unsupported pairs
+do not receive substitute quotes. Provider timestamps more than 10 minutes old
+are labeled delayed; retrieval time is shown separately.
+
+Existing Polygon streaming prices, candles, watchlists, and portfolio feeds are
+unchanged. FMP quote values are a separate provider snapshot, not mixed with the
+streaming chart price. Existing Crypto membership gates remain unchanged.
+
+Run focused quote tests with `npx vitest run src/lib/crypto/fmpQuote.test.ts`.
+
 ## Senate Stock Purchases
 
 The shared desktop/phone Experts Pro dashboard includes Senate stock purchases
