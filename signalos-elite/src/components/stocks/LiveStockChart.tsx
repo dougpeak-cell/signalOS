@@ -1,6 +1,8 @@
 "use client";
 
 import TradeReadinessBar from "@/components/stocks/TradeReadinessBar";
+import UpcomingEarnings from "@/components/stocks/UpcomingEarnings";
+import { useUpcomingEarnings } from "@/hooks/useUpcomingEarnings";
 import MobileSignalSheet from "@/components/shell/MobileSignalSheet";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -1423,6 +1425,7 @@ export default function LiveStockChart({
 
   const activeSelectedSignal = selectedSignalProp ?? contextSelectedSignal ?? null;
   const symbol = String(ticker ?? "").toUpperCase().trim();
+  const upcomingEarnings = useUpcomingEarnings(symbol);
   const usesWorkspaceChartState = workspaceChartState != null;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -4953,6 +4956,9 @@ const gapFillLabel =
         <p className="px-3 py-1 text-[10px] text-slate-400">
           Opens 9:30 AM Eastern · FMP candles · 30-second refresh on 1m / 1D · Tick trades and order-book feed unavailable.
         </p>
+        <div className="px-3 pb-2">
+          <UpcomingEarnings {...upcomingEarnings} />
+        </div>
         {compactMobile ? (
           <div className="grid grid-cols-5 gap-1 border-b border-white/8 p-2">
             {([

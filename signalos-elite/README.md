@@ -61,6 +61,12 @@ Supabase, Stripe and optional AI services remain separate.
   tick-by-tick trade or order-book feed. Other intervals remain selectable.
   Candle-chart panels display "Opens 9:30 AM Eastern" for the regular-session
   opening time; locked chart previews show the same notice.
+- Live charts, locked chart previews and both workspace chart views show the
+  next earnings report date from FMP's `earnings` endpoint. Dates are compared
+  against the New York calendar day; past dates and reports with actual results
+  are excluded. This is the scheduled release date, not the fiscal quarter end,
+  and is subject to change. Missing dates and provider errors show unavailable.
+  Provider data caches for one hour, and open charts recheck hourly.
 - Intraday timestamps are interpreted in New York time, including DST.
   History is requested per calendar day to avoid FMP range truncation and
   empty pre-open responses hiding previous sessions.

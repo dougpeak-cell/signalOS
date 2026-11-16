@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import UpcomingEarnings from "@/components/stocks/UpcomingEarnings";
+import { useUpcomingEarnings } from "@/hooks/useUpcomingEarnings";
 import {
   Activity,
   CandlestickChart,
@@ -13,6 +15,7 @@ import {
 
 export default function LockedLiveChart({ ticker }: { ticker: string }) {
   const searchParams = useSearchParams();
+  const upcomingEarnings = useUpcomingEarnings(ticker);
   const isMobilePreview = searchParams.get("mobilePreview") === "1";
 
   return (
@@ -32,6 +35,9 @@ export default function LockedLiveChart({ ticker }: { ticker: string }) {
           <p className="mt-1 text-xs font-medium text-cyan-200">
             Opens 9:30 AM Eastern
           </p>
+          <div className="mt-2">
+            <UpcomingEarnings {...upcomingEarnings} />
+          </div>
           <p className={isMobilePreview ? "mt-2 max-w-none text-sm leading-6 text-slate-300" : "mt-2 max-w-3xl text-sm leading-6 text-slate-300"}>
             Smart and Pro members can view live candle movement, intraday trend,
             volume behavior, support and resistance zones, and Sigi chart context for{" "}
