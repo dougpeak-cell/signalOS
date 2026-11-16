@@ -29,6 +29,9 @@ export default function LockedLiveChart({ ticker }: { ticker: string }) {
           <h2 className={isMobilePreview ? "text-2xl font-black text-white" : "text-3xl font-black text-white"}>
             Unlock Live Candle Chart
           </h2>
+          <p className="mt-1 text-xs font-medium text-cyan-200">
+            Opens 9:30 AM Eastern
+          </p>
           <p className={isMobilePreview ? "mt-2 max-w-none text-sm leading-6 text-slate-300" : "mt-2 max-w-3xl text-sm leading-6 text-slate-300"}>
             Smart and Pro members can view live candle movement, intraday trend,
             volume behavior, support and resistance zones, and Sigi chart context for{" "}

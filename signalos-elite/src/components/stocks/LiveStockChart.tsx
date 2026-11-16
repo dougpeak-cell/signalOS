@@ -4951,7 +4951,7 @@ const gapFillLabel =
         </div>
 
         <p className="px-3 py-1 text-[10px] text-slate-400">
-          FMP candles · 30-second refresh on 1m / 1D · Tick trades and order-book feed unavailable.
+          Opens 9:30 AM Eastern · FMP candles · 30-second refresh on 1m / 1D · Tick trades and order-book feed unavailable.
         </p>
         {compactMobile ? (
           <div className="grid grid-cols-5 gap-1 border-b border-white/8 p-2">
