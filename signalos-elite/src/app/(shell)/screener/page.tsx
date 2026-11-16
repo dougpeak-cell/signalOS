@@ -22,6 +22,7 @@ import {
 } from "@/lib/screenerSectorUniverse";
 import { convictionToPct, signalToneFromRow } from "@/lib/signalUtils";
 import { normalizeTicker } from "@/lib/tickerAliases";
+import { searchFmpStocks } from "@/lib/market/fmpSearch";
 
 export const revalidate = 0;
 
@@ -350,10 +351,6 @@ async function searchSymbols(rawQuery: string): Promise<SignalRow[]> {
   const mergedRows = new Map<string, SignalRow>();
   const normalizedTickerQuery = query.toUpperCase();
   const canonicalAliasTicker = normalizeTicker(query);
-  const massiveApiKey =
-    process.env.MASSIVE_API_KEY ??
-    process.env.NEXT_PUBLIC_MASSIVE_API_KEY ??
-    "";
 
   if (
     canonicalAliasTicker &&
@@ -369,39 +366,10 @@ async function searchSymbols(rawQuery: string): Promise<SignalRow[]> {
     );
   }
 
-  if (/^[A-Z.\-]{1,5}$/.test(normalizedTickerQuery) && massiveApiKey) {
+  if (process.env.FMP_API_KEY) {
     try {
-      const exactResponse = await fetch(
-        `https://api.massive.com/v3/reference/tickers/${encodeURIComponent(
-          normalizedTickerQuery
-        )}?apiKey=${massiveApiKey}`,
-        {
-          cache: "no-store",
-          headers: {
-            accept: "application/json",
-          },
-        }
-      );
-
-      if (exactResponse.ok) {
-        const exactJson = (await exactResponse.json()) as MassiveTickerDetail;
-        const exactRow = exactJson.results;
-        const exactTicker = String(exactRow?.ticker ?? "").toUpperCase().trim();
-
-        if (exactTicker) {
-          mergedRows.set(
-            exactTicker,
-            buildFallbackSignalRow(
-              exactTicker,
-              typeof exactRow?.name === "string" ? exactRow.name : null,
-              typeof exactRow?.sic_description === "string"
-                ? exactRow.sic_description
-                : typeof exactRow?.sector === "string"
-                  ? exactRow.sector
-                  : null
-            )
-          );
-        }
+      for (const row of await searchFmpStocks(query)) {
+        mergedRows.set(row.ticker, buildFallbackSignalRow(row.ticker, row.company, row.sector ?? null));
       }
     } catch (exactTickerError) {
       console.warn("Exact ticker screener fallback failed:", exactTickerError);
@@ -425,55 +393,6 @@ async function searchSymbols(rawQuery: string): Promise<SignalRow[]> {
         ticker,
         buildFallbackSignalRow(ticker, row.name ?? null, row.sector ?? null)
       );
-    }
-  }
-
-  if (mergedRows.size < 25 && massiveApiKey) {
-    try {
-      const encodedQuery = encodeURIComponent(query);
-      const url = `https://api.massive.com/v3/reference/tickers?search=${encodedQuery}&active=true&limit=25&apiKey=${massiveApiKey}`;
-      const response = await fetch(url, {
-        cache: "no-store",
-        headers: {
-          accept: "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const json = (await response.json()) as {
-          results?: MassiveSymbolSearchRow[];
-        };
-
-        for (const row of json.results ?? []) {
-          const rawTicker =
-            typeof row.ticker === "string"
-              ? row.ticker
-              : typeof row.symbol === "string"
-                ? row.symbol
-                : "";
-
-          const ticker = rawTicker.toUpperCase().trim();
-          if (!ticker || mergedRows.has(ticker)) continue;
-
-          const companyName =
-            typeof row.name === "string"
-              ? row.name
-              : typeof row.company === "string"
-                ? row.company
-                : null;
-
-          const sector =
-            typeof row.sic_description === "string"
-              ? row.sic_description
-              : typeof row.sector === "string"
-                ? row.sector
-                : null;
-
-          mergedRows.set(ticker, buildFallbackSignalRow(ticker, companyName, sector));
-        }
-      }
-    } catch (massiveError) {
-      console.warn("Global screener fallback failed:", massiveError);
     }
   }
 

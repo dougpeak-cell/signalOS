@@ -8,7 +8,7 @@ import CryptoQuoteDetails from "@/components/crypto/CryptoQuoteDetails";
 import { useResponsiveMobilePreviewFrame } from "@/components/shell/useResponsiveMobilePreview";
 import LockedCryptoExperience from "@/components/upgrade/LockedCryptoExperience";
 import { useSigiTier } from "@/hooks/useSigiTier";
-import { useCryptoStream } from "@/hooks/useCryptoStream";
+import { useCryptoStreamState } from "@/hooks/useCryptoStream";
 import { getPremiumAccess } from "@/lib/premiumAccess";
 import {
   addCryptoWatchlistSymbol,
@@ -35,14 +35,7 @@ type SnapshotRow = {
   high: number | null;
   low: number | null;
   open: number | null;
-};
-
-type Trade = {
-  id: string;
-  price: number | null;
-  size: number | null;
-  timestamp: number | null;
-  exchange: number | string | null;
+  updated: number | null;
 };
 
 type CryptoIntervalKey = "1m" | "5m" | "15m" | "1h" | "1d" | "1w";
@@ -826,108 +819,6 @@ function compact(value: number | null | undefined) {
   return value.toFixed(0);
 }
 
-function tradeTime(value: number | null) {
-  if (!value) return "—";
-
-  return formatMarketClockTimeMs(value / 1_000_000, {
-    includeSeconds: true,
-    includeZone: true,
-  });
-}
-
-function orderFlowHeat(feed: Trade[]) {
-  const valid = feed.filter((item) => item.price !== null);
-
-  if (valid.length < 2) {
-    return {
-      label: "Building data",
-      score: 50,
-      tone: "neutral",
-    };
-  }
-
-  let upTicks = 0;
-  let downTicks = 0;
-
-  for (let i = 0; i < valid.length - 1; i++) {
-    const current = valid[i].price ?? 0;
-    const previous = valid[i + 1].price ?? 0;
-
-    if (current > previous) upTicks++;
-    if (current < previous) downTicks++;
-  }
-
-  const total = Math.max(upTicks + downTicks, 1);
-  const score = Math.round((upTicks / total) * 100);
-
-  let label = "Balanced flow";
-  let tone = "neutral";
-
-  if (score >= 70) {
-    label = "Aggressive buying";
-    tone = "bullish";
-  } else if (score >= 56) {
-    label = "Bid pressure";
-    tone = "bullish";
-  } else if (score <= 30) {
-    label = "Aggressive selling";
-    tone = "bearish";
-  } else if (score <= 44) {
-    label = "Ask pressure";
-    tone = "bearish";
-  }
-
-  return { label, score, tone };
-}
-
-function volumeSpike(feed: Trade[]) {
-  const sizes = feed
-    .map((item) => item.size)
-    .filter((size): size is number => typeof size === "number" && size > 0);
-
-  if (sizes.length < 4) {
-    return {
-      label: "Building volume read",
-      spike: false,
-      latest: null,
-      average: null,
-      ratio: null,
-    };
-  }
-
-  const latest = sizes[0];
-  const average =
-    sizes.slice(1).reduce((sum, value) => sum + value, 0) /
-    Math.max(sizes.length - 1, 1);
-
-  const ratio = average > 0 ? latest / average : 0;
-
-  let label = "Normal activity";
-
-  if (ratio >= 3) label = "Major volume spike";
-  else if (ratio >= 2) label = "Unusual activity";
-  else if (ratio >= 1.5) label = "Volume heating up";
-
-  return {
-    label,
-    spike: ratio >= 1.5,
-    latest,
-    average,
-    ratio,
-  };
-}
-
-function spikeDirection(feed: Trade[]) {
-  if (feed.length < 2) return null;
-
-  const latest = feed[0]?.price ?? 0;
-  const prev = feed[1]?.price ?? 0;
-
-  if (latest > prev) return "up";
-  if (latest < prev) return "down";
-  return "flat";
-}
-
 function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?: boolean }) {
   const zoomOptions = useMemo(() => {
     const options = [24, 36, 60, 96, candles.length].filter(Boolean);
@@ -1065,7 +956,7 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
         "flex items-center justify-center rounded-3xl border border-white/10 bg-white/3 text-white/40",
         compact ? "h-64" : "h-80",
       ].join(" ")}>
-        Loading chart...
+        FMP candle data unavailable or still loading.
       </div>
     );
   }
@@ -1081,7 +972,7 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
       ].join(" ")}>
         <div>
           <div className="text-xs uppercase tracking-[0.22em] text-cyan-200/75">
-            Live Candle View
+            FMP Candle Snapshot
           </div>
           <div className="mt-1 text-sm text-white/45">
             Intraday candles update with the live crypto tape.
@@ -1284,6 +1175,9 @@ function SparkChart({ candles, compact = false }: { candles: Candle[]; compact?:
 }
 
 function sigiRead(row: SnapshotRow | null, candles: Candle[]) {
+  if (row?.price == null || row.changePercent == null || !candles.length) {
+    return "Insufficient FMP data for a momentum read.";
+  }
   const change = row?.changePercent ?? 0;
   const latest = candles.at(-1);
   const previous = candles.at(-8);
@@ -1457,84 +1351,71 @@ export default function CryptoDetailPage() {
   const canUseCrypto = getPremiumAccess({ tier: plan, feature: "crypto" });
   const canUseCryptoWorkspace = plan === "pro";
   const identity = CRYPTO_IDENTITY[ticker];
-  const livePrice = useCryptoStream(ticker);
+  const polledQuote = useCryptoStreamState(ticker);
 
-  const [candles, setCandles] = useState<Candle[]>([]);
-  const [snapshot, setSnapshot] = useState<SnapshotRow | null>(null);
   const [interval, setIntervalValue] = useState<CryptoIntervalKey>("5m");
-  const [feed, setFeed] = useState<Trade[]>([]);
+  const [marketData, setMarketData] = useState<{
+    key: string;
+    candles: Candle[];
+    snapshot: SnapshotRow | null;
+    dataError: string | null;
+    checkedAt: number | null;
+  }>({ key: "", candles: [], snapshot: null, dataError: null, checkedAt: null });
   const [actionFeedback, setActionFeedback] = useState<string>("");
 
   const selectedInterval =
     CRYPTO_INTERVAL_OPTIONS.find((option) => option.key === interval) ?? CRYPTO_INTERVAL_OPTIONS[1];
+  const dataKey = `${ticker}:${selectedInterval.key}`;
+  const { candles, snapshot, dataError, checkedAt } = marketData.key === dataKey ? marketData
+    : { candles: [], snapshot: null, dataError: null, checkedAt: null };
 
   useEffect(() => {
     let alive = true;
+    const controller = new AbortController();
 
-    async function load() {
-      const [candleRes, snapshotRes, tradesRes] = await Promise.all([
-        fetch(
-          `/api/crypto/candles?ticker=${ticker}&multiplier=${selectedInterval.multiplier}&timespan=${selectedInterval.timespan}&lookbackDays=${selectedInterval.lookbackDays}`,
-          {
-          cache: "no-store",
-          }
-        ),
-        fetch(`/api/crypto/snapshot?tickers=${ticker}`, {
-          cache: "no-store",
+    async function load(): Promise<void> {
+      const results = await Promise.allSettled([
+        fetch(`/api/crypto/candles?ticker=${encodeURIComponent(ticker)}&multiplier=${selectedInterval.multiplier}&timespan=${selectedInterval.timespan}&lookbackDays=${selectedInterval.lookbackDays}`,
+          { cache: "no-store", signal: controller.signal }).then(async (response) => {
+          const json = await response.json();
+          if (!response.ok || !json.ok) throw new Error(json.error ?? "FMP candles unavailable.");
+          return json;
         }),
-        fetch(`/api/crypto/trades?ticker=${ticker}`, {
-          cache: "no-store",
+        fetch(`/api/crypto/snapshot?tickers=${encodeURIComponent(ticker)}`,
+          { cache: "no-store", signal: controller.signal }).then(async (response) => {
+          const json = await response.json();
+          if (!response.ok || !json.ok) throw new Error(json.error ?? "FMP snapshot unavailable.");
+          return json;
         }),
       ]);
-
-      const candleJson = await candleRes.json();
-      const snapshotJson = await snapshotRes.json();
-      const tradesJson = await tradesRes.json();
-
-      // fallback seed from candles (keeps UI alive instantly)
-      const seededFeed: Trade[] =
-        Array.isArray(candleJson.candles) && candleJson.candles.length > 0
-          ? candleJson.candles.slice(-10).reverse().map((c: Candle, i: number) => ({
-              id: `seed-${i}-${c.time}`,
-              price: c.close,
-              size: c.volume,
-              timestamp: c.time * 1_000_000,
-              exchange: null,
-            }))
-          : [];
-
       if (!alive) return;
-
-      const liveFeed = Array.isArray(tradesJson.feed) ? tradesJson.feed : [];
-
-      setCandles(Array.isArray(candleJson.candles) ? candleJson.candles : []);
-      setSnapshot(Array.isArray(snapshotJson.rows) ? snapshotJson.rows[0] : null);
-
-      // merge live + seeded (live wins)
-      setFeed(liveFeed.length > 0 ? liveFeed : seededFeed);
+      const [candleResult, snapshotResult] = results;
+      setMarketData({
+        key: dataKey,
+        candles: candleResult.status === "fulfilled" && Array.isArray(candleResult.value.candles) ? candleResult.value.candles : [],
+        snapshot: snapshotResult.status === "fulfilled" && Array.isArray(snapshotResult.value.rows) ? snapshotResult.value.rows[0] ?? null : null,
+        dataError: results.some((result) => result.status === "rejected") ? "Some FMP crypto data is unavailable. Access and symbol coverage depend on your FMP plan." : null,
+        checkedAt: Date.now(),
+      });
     }
 
-    load();
+    void load();
 
-    const timer = window.setInterval(load, 30_000);
+    const timer = window.setInterval(() => { void load(); }, 30_000);
 
     return () => {
       alive = false;
+      controller.abort();
       window.clearInterval(timer);
     };
-  }, [selectedInterval, ticker]);
+  }, [dataKey, selectedInterval, ticker]);
 
   const latest = candles.at(-1);
-  const latestFeedPrice = feed.find((entry) => typeof entry.price === "number")?.price ?? null;
-  const displayPrice = livePrice ?? latestFeedPrice ?? snapshot?.price ?? latest?.close ?? null;
-  const displayChangePercent =
-    typeof displayPrice === "number" && typeof snapshot?.open === "number" && snapshot.open !== 0
-      ? ((displayPrice - snapshot.open) / snapshot.open) * 100
-      : snapshot?.changePercent ?? null;
+  const displayPrice = polledQuote.price ?? snapshot?.price ?? latest?.close ?? null;
+  const priceTimestamp = polledQuote.price != null ? polledQuote.timestamp
+    : snapshot?.price != null ? snapshot.updated : latest?.time ?? null;
+  const displayChangePercent = snapshot?.changePercent ?? null;
   const positive = (displayChangePercent ?? 0) >= 0;
-  const flow = orderFlowHeat(feed);
-  const spike = volumeSpike(feed);
-  const direction = spikeDirection(feed);
 
   const showActionFeedback = (message: string) => {
     setActionFeedback(message);
@@ -1551,7 +1432,7 @@ export default function CryptoDetailPage() {
   const addToPortfolio = () => {
     const entryPrice = displayPrice ?? snapshot?.price ?? null;
     if (entryPrice == null || entryPrice <= 0) {
-      showActionFeedback("Live price required");
+      showActionFeedback("FMP price required");
       return;
     }
 
@@ -1625,7 +1506,7 @@ export default function CryptoDetailPage() {
         ].join(" ")}>
           <div>
             <div className="mb-3 inline-flex rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">
-              Crypto Live Chart
+              FMP Crypto Chart
             </div>
 
             <h1 className={[
@@ -1636,8 +1517,9 @@ export default function CryptoDetailPage() {
             </h1>
 
             <p className="mt-3 text-sm text-white/50">
-              Real-time crypto chart, momentum read, range context, and volume activity.
+              FMP quote and candle snapshots, polled every 30 seconds. Not a tick-level stream.
             </p>
+            {dataError && <p role="status" className="mt-2 text-sm text-amber-200">{dataError}</p>}
 
             <CryptoPageTabs
               active="market"
@@ -1702,21 +1584,33 @@ export default function CryptoDetailPage() {
             </div>
             <div className="mt-3 flex items-end gap-3">
               <div className={[
-                "font-semibold transition-all duration-300 animate-pulse",
+                "font-semibold transition-all duration-300",
                 isMobilePreview ? "text-2xl" : "text-3xl",
               ].join(" ")}>
                 {money(displayPrice)}
               </div>
 
-              <div className="animate-pulse text-xs text-white/40">
-                LIVE
+              <div className="text-xs text-white/40">
+                {displayPrice == null ? "Unavailable" : polledQuote.price != null || snapshot?.price != null ? "FMP quote" : "FMP candle close"}
               </div>
             </div>
+            <p className="mt-2 text-xs text-white/45">
+              {priceTimestamp != null
+                ? `As of ${new Date(priceTimestamp).toLocaleString()} · provider time`
+                : "Provider timestamp unavailable; freshness unknown."}
+            </p>
+            {priceTimestamp != null && checkedAt != null && checkedAt - priceTimestamp > 600_000 && (
+              <p className="mt-1 text-xs text-amber-200">Delayed snapshot (over 10 minutes old).</p>
+            )}
+            {priceTimestamp != null && checkedAt != null && priceTimestamp - checkedAt > 300_000 && (
+              <p className="mt-1 text-xs text-amber-200">Provider time is ahead; freshness unverified.</p>
+            )}
+            {polledQuote.error && <p className="mt-1 text-xs text-amber-200">Quote polling unavailable; any displayed fallback is timestamped above.</p>}
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-white/4 p-5">
             <div className="text-xs uppercase tracking-[0.18em] text-white/40">
-              Change
+              FMP Change
             </div>
             <div
               className={[
@@ -1771,7 +1665,7 @@ export default function CryptoDetailPage() {
               "mt-3 font-semibold",
               isMobilePreview ? "text-xl" : "text-2xl",
             ].join(" ")}>
-              {positive ? "Constructive tape" : "Pressure watch"}
+              {displayChangePercent == null ? "FMP read unavailable" : positive ? "Constructive tape" : "Pressure watch"}
             </h2>
 
             <p className="mt-4 text-sm leading-6 text-white/65">
@@ -1796,7 +1690,7 @@ export default function CryptoDetailPage() {
               </div>
 
               <div className="mt-3 space-y-2 text-sm text-white/70">
-                <div>Bias: {positive ? "Bullish" : "Bearish"}</div>
+                <div>Bias: {displayChangePercent == null ? "Unavailable" : positive ? "Bullish" : "Bearish"}</div>
                 <div>
                   Trigger: {positive
                     ? `Break above ${money(snapshot?.high)}`
@@ -1810,184 +1704,14 @@ export default function CryptoDetailPage() {
               </div>
             </div>
 
-            <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-xs uppercase tracking-[0.18em] text-white/40">
-                  Live Trade Feed
-                </div>
-
-                <div className="animate-pulse text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300">
-                  Streaming
-                </div>
+            {["Tick-Level Trade Feed", "Order Flow Heat", "Tick Volume Spike Detection"].map((label) => (
+              <div key={label} className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-white/40">{label}</div>
+                <p className="mt-3 text-sm text-white/55">
+                  Unavailable from FMP. Quote snapshots and candle volume are not tick-level trades.
+                </p>
               </div>
-
-              <div className="mt-3 space-y-2">
-                {feed.slice(0, 8).map((trade, index) => {
-                  const previous = feed[index + 1];
-                  const isUp =
-                    trade.price !== null &&
-                    previous?.price !== null &&
-                    trade.price >= previous.price;
-
-                  return (
-                    <div
-                      key={trade.id}
-                      className="flex items-center justify-between rounded-xl border border-white/10 bg-white/4 px-3 py-2 text-xs"
-                    >
-                      <div>
-                        <div
-                          className={[
-                            "font-semibold",
-                            isUp ? "text-emerald-300" : "text-red-300",
-                          ].join(" ")}
-                        >
-                          {money(trade.price)}
-                        </div>
-                        <div className="mt-0.5 text-white/35">
-                          {tradeTime(trade.timestamp)}
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <div className="font-semibold text-white/70">
-                          {compact(trade.size)}
-                        </div>
-                        <div className="mt-0.5 text-white/35">size</div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {feed.length === 0 ? (
-                  <div className="rounded-xl border border-white/10 bg-white/3 px-3 py-4 text-center text-xs text-white/40">
-                    Waiting for trades...
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-xs uppercase tracking-[0.18em] text-white/40">
-                  Order Flow Heat
-                </div>
-                <div
-                  className={[
-                    "rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]",
-                    flow.tone === "bullish"
-                      ? "bg-emerald-500/15 text-emerald-300"
-                      : flow.tone === "bearish"
-                        ? "bg-red-500/15 text-red-300"
-                        : "bg-white/10 text-white/50",
-                  ].join(" ")}
-                >
-                  {flow.label}
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <div className="mb-2 flex justify-between text-[11px] text-white/40">
-                  <span>Sell pressure</span>
-                  <span>Buy pressure</span>
-                </div>
-
-                <div className="h-3 overflow-hidden rounded-full bg-red-500/20">
-                  <div
-                    className="h-full rounded-full bg-linear-to-r from-cyan-400 to-emerald-300 transition-all duration-500"
-                    style={{ width: `${flow.score}%` }}
-                  />
-                </div>
-
-                <div className="mt-3 flex items-center justify-between text-xs">
-                  <span className="text-red-300">{100 - flow.score}% sell</span>
-                  <span className="font-semibold text-white">{flow.score}% buy</span>
-                </div>
-              </div>
-
-              <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.035] p-3 text-xs leading-5 text-white/55">
-                {flow.tone === "bullish"
-                  ? "Buy-side pressure is leading the short-term tape. Watch for continuation if price holds above nearby support."
-                  : flow.tone === "bearish"
-                    ? "Sell-side pressure is leading the short-term tape. Watch for failed bounces near resistance."
-                    : "Flow is balanced. Wait for stronger pressure before treating the move as directional."}
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-xs uppercase tracking-[0.18em] text-white/40">
-                  Volume Spike Detection
-                </div>
-                <div
-                  className={[
-                    "rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]",
-                    spike.spike
-                      ? "bg-cyan-400/25 text-cyan-100 animate-pulse"
-                      : "bg-white/10 text-white/50",
-                  ].join(" ")}
-                >
-                  {spike.label}
-                </div>
-              </div>
-
-              <div className={[
-                "mt-4 gap-2",
-                isMobilePreview ? "grid grid-cols-1" : "grid grid-cols-3",
-              ].join(" ")}>
-                <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-white/35">
-                    Latest
-                  </div>
-                  <div className="mt-2 text-sm font-semibold text-white">
-                    {compact(spike.latest)}
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-white/35">
-                    Avg
-                  </div>
-                  <div className="mt-2 text-sm font-semibold text-white">
-                    {compact(spike.average)}
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-white/35">
-                    Spike
-                  </div>
-                  <div
-                    className={[
-                      "mt-2 text-sm font-semibold",
-                      spike.spike ? "text-cyan-200" : "text-white",
-                    ].join(" ")}
-                  >
-                    {spike.ratio === null
-                      ? "—"
-                      : spike.ratio >= 2
-                        ? `${spike.ratio.toFixed(1)}x 🚨`
-                        : `${spike.ratio.toFixed(1)}x`}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className={[
-                  "mt-4 rounded-xl border p-3 text-xs leading-5",
-                  spike.spike
-                    ? "border-cyan-400/25 bg-cyan-400/10 text-cyan-100"
-                    : "border-white/10 bg-white/[0.035] text-white/55",
-                ].join(" ")}
-              >
-                {spike.spike
-                  ? direction === "up"
-                    ? "Large buyers are stepping in. Watch for continuation if price holds above the current level."
-                    : direction === "down"
-                      ? "Heavy selling pressure just hit. Watch for breakdown or quick reclaim."
-                      : "Large volume printed, but direction is unclear. Watch next ticks closely."
-                  : "Volume is behaving normally. Wait for larger size before treating the move as high-conviction."}
-              </div>
-            </div>
+            ))}
           </aside>
         </section>
       </div>

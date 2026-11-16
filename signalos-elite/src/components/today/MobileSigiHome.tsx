@@ -718,7 +718,7 @@ export default function MobileSigiHome({
               <>
                 <div className="mt-2 flex flex-wrap gap-1.5 text-[9px] uppercase tracking-[0.14em] text-white/44">
                   <span className="rounded-md border border-cyan-400/20 bg-cyan-400/10 px-2 py-1 text-cyan-200/88">
-                    {defaultSetupSession === "pre" ? "Pre-market live" : "Regular session"}
+                    {defaultSetupSession === "pre" ? "Pre-market rankings unavailable (FMP)" : "Regular session"}
                   </span>
                   <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1">
                     Top setup: {leadSetup?.ticker ?? "Scanning"}

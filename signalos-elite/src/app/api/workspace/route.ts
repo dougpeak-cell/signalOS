@@ -396,7 +396,7 @@ export async function GET(request: NextRequest) {
   stock.changePercent = num(selectedQuote?.changePercent);
   stock.priceAsOf = toIsoTimestamp(selectedQuote?.updatedMs);
   stock.priceProvider = selectedQuote
-    ? `Massive (${text(selectedQuote.source, "stock")})`
+    ? `FMP (${text(selectedQuote.source, "stock")})`
     : null;
   stock.priceStatus = getPriceStatus(selectedQuote?.updatedMs, selectedQuote?.source);
 
@@ -447,7 +447,7 @@ export async function GET(request: NextRequest) {
       changePercent: num(quote?.changePercent),
       priceAsOf: toIsoTimestamp(quote?.updatedMs),
       priceProvider: quote
-        ? `Massive (${text(quote.source, "stock")})`
+        ? `FMP (${text(quote.source, "stock")})`
         : null,
       priceStatus: getPriceStatus(quote?.updatedMs, quote?.source),
       pulse:

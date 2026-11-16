@@ -1,34 +1,26 @@
 import { NextResponse } from "next/server";
+import { cryptoQuoteSymbol } from "@/lib/crypto/fmpQuote";
+import { fetchFmpRows, FmpDataError } from "@/lib/experts/fmpClient";
+import { candleEndpoint, normalizeCryptoCandles } from "../_lib/marketData";
 
 export const dynamic = "force-dynamic";
 
-const API_KEY = process.env.MASSIVE_API_KEY;
-
-function normalizeCryptoTicker(value: string) {
-  const clean = value.trim().toUpperCase().replace("X:", "").replace("USD", "");
-  return `X:${clean}USD`;
-}
-
-export async function GET(req: Request) {
-  if (!API_KEY) {
-    return NextResponse.json(
-      { ok: false, error: "Missing MASSIVE_API_KEY", candles: [] },
-      { status: 500 }
-    );
-  }
-
+export async function GET(req: Request): Promise<NextResponse> {
   const { searchParams } = new URL(req.url);
   const ticker = searchParams.get("ticker") ?? "BTC";
   const multiplier = searchParams.get("multiplier") ?? "5";
   const timespan = searchParams.get("timespan") ?? "minute";
   const requestedLookbackDays = Number(searchParams.get("lookbackDays") ?? "1");
 
-  const polygonTicker = normalizeCryptoTicker(ticker);
+  const symbol = cryptoQuoteSymbol(ticker);
+  if (!symbol) {
+    return NextResponse.json({ ok: false, error: "Enter a valid crypto symbol.", candles: [] }, { status: 400 });
+  }
 
   const to = new Date();
   const lookbackDays =
     Number.isFinite(requestedLookbackDays) && requestedLookbackDays > 0
-      ? Math.min(Math.floor(requestedLookbackDays), 3650)
+      ? Math.max(1, Math.min(Math.floor(requestedLookbackDays), 3650))
       : 1;
   const from = new Date(to.getTime() - lookbackDays * 24 * 60 * 60 * 1000);
 
@@ -36,33 +28,23 @@ export async function GET(req: Request) {
   const toDate = to.toISOString().slice(0, 10);
 
   try {
-    const url = `https://api.polygon.io/v2/aggs/ticker/${polygonTicker}/range/${multiplier}/${timespan}/${fromDate}/${toDate}?adjusted=true&sort=asc&limit=5000&apiKey=${API_KEY}`;
-
-    const res = await fetch(url, { cache: "no-store" });
-    const json = await res.json();
-
-    const candles = Array.isArray(json.results)
-      ? json.results.map((bar: any) => ({
-          time: bar.t,
-          open: bar.o,
-          high: bar.h,
-          low: bar.l,
-          close: bar.c,
-          volume: bar.v,
-        }))
-      : [];
+    const endpoint = candleEndpoint(multiplier, timespan);
+    const rows = await fetchFmpRows(endpoint, { symbol, from: fromDate, to: toDate }, 30);
+    const candles = normalizeCryptoCandles(rows, timespan === "week");
+    if (!candles.length) throw new FmpDataError(`FMP has no crypto candles for ${symbol} in this range.`, 404);
 
     return NextResponse.json({
       ok: true,
-      ticker: polygonTicker,
+      source: "FMP",
+      retrievedAt: new Date().toISOString(),
+      aggregation: timespan === "week" ? "weekly_from_daily" : null,
+      ticker: `X:${symbol}`,
       candles,
     });
   } catch (error) {
-    console.error("Crypto candles error:", error);
-
     return NextResponse.json(
-      { ok: false, error: "Failed to load crypto candles", candles: [] },
-      { status: 500 }
+      { ok: false, source: "FMP", error: error instanceof FmpDataError ? error.message : "FMP crypto candles could not be loaded.", candles: [] },
+      { status: error instanceof FmpDataError ? error.status : 502 }
     );
   }
 }

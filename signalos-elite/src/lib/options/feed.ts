@@ -77,49 +77,10 @@ export function normalizeOption(value: unknown, symbol: string, expiration: stri
   };
 }
 
-async function massivePages(path: string, params: Record<string, string>, pageLimit: number): Promise<{ rows: Row[]; complete: boolean }> {
-  const key = process.env.MASSIVE_API_KEY;
-  if (!key) throw new OptionsDataError("Options data is not configured. A Massive Options subscription is required.", 503);
-  let url: URL | null = new URL(`https://api.polygon.io${path}`);
-  for (const [name, value] of Object.entries(params)) url.searchParams.set(name, value);
-  const rows: Row[] = [];
-  const visited = new Set<string>();
-  const deadline = Date.now() + 45_000;
-  for (let page = 0; url && page < pageLimit; page++) {
-    if (url.protocol !== "https:" || !["api.polygon.io", "api.massive.com"].includes(url.hostname) || url.pathname !== path) {
-      throw new OptionsDataError("Options provider returned an invalid pagination link.");
-    }
-    url.searchParams.delete("apiKey");
-    url.searchParams.delete("apikey");
-    if (visited.has(url.href)) throw new OptionsDataError("Options provider returned repeated pagination.");
-    visited.add(url.href);
-    const remaining = deadline - Date.now();
-    if (remaining <= 0) throw new OptionsDataError("Options pagination exceeded its time budget. Retry shortly.");
-    let response: Response;
-    try {
-      response = await fetch(url, { headers: { Authorization: `Bearer ${key}` }, next: { revalidate: 30 }, signal: AbortSignal.timeout(Math.min(15_000, remaining)) });
-    } catch { throw new OptionsDataError("Options provider could not be reached. Retry shortly."); }
-    if ([401, 403].includes(response.status)) throw new OptionsDataError("Options-chain access is not enabled on the current Massive subscription. Stock research remains available.", 503);
-    if (!response.ok) throw new OptionsDataError(`Options request failed (HTTP ${response.status}). Retry shortly.`);
-    let payload: Row;
-    try { payload = row(await response.json()); }
-    catch { throw new OptionsDataError("Options provider returned an unreadable response."); }
-    if (!Array.isArray(payload.results) || payload.results.some((item) => !item || typeof item !== "object" || Array.isArray(item))) {
-      throw new OptionsDataError("Options provider returned an unexpected response.");
-    }
-    rows.push(...payload.results as Row[]);
-    const next = text(payload.next_url);
-    try { url = next ? new URL(next) : null; }
-    catch { throw new OptionsDataError("Options provider returned an invalid pagination link."); }
-  }
-  return { rows, complete: url == null };
-}
-
 export async function loadOptionsFeed(symbol: string, requestedExpiration: string | null, now = new Date()): Promise<OptionsFeed> {
   if (!/^[A-Z][A-Z0-9.-]{0,9}$/.test(symbol)) throw new OptionsDataError("Enter a valid US stock or ETF ticker.", 400);
   if (requestedExpiration != null && !date(requestedExpiration)) throw new OptionsDataError("Enter a valid expiration date.", 400);
   const today = now.toISOString().slice(0, 10);
-  const through = new Date(now.getTime() + 180 * 86_400_000).toISOString().slice(0, 10);
   const warnings: string[] = [];
   const stockPromise = Promise.allSettled([
     fetchFmpRows("quote", { symbol }, 30),
@@ -127,36 +88,7 @@ export async function loadOptionsFeed(symbol: string, requestedExpiration: strin
     fetchFmpRows("price-target-consensus", { symbol }, 900),
     fetchFmpRows("earnings", { symbol, limit: "12" }, 3600),
   ]);
-  const chainPromise = (async () => {
-    const references = await massivePages("/v3/reference/options/contracts", {
-      underlying_ticker: symbol, expired: "false", "expiration_date.gte": today,
-      "expiration_date.lte": through, sort: "expiration_date", order: "asc", limit: "1000",
-    }, 5);
-    const expirations = [...new Set(references.rows.map((item) => item.expiration_date)
-      .filter((value): value is string => date(value) && value >= today && value <= through))].sort();
-    const expiration = requestedExpiration ?? expirations[0] ?? null;
-    if (requestedExpiration && (!expirations.includes(requestedExpiration) || requestedExpiration < today || requestedExpiration > through)) {
-      throw new OptionsDataError("That expiration is not available in the next 180 days.", 400);
-    }
-    if (!expiration) return { expirations, expiration, contracts: [], chainStatus: "available" as const, chainError: null };
-    try {
-      const snapshots = await massivePages(`/v3/snapshot/options/${symbol}`, { expiration_date: expiration, limit: "250", sort: "strike_price", order: "asc" }, 8);
-      const normalized = snapshots.rows.map((item) => normalizeOption(item, symbol, expiration));
-      const contracts = [...new Map(normalized.filter((item): item is OptionContract => item != null)
-        .map((item) => [item.symbol, item])).values()].sort((a, b) => a.strike - b.strike || a.side.localeCompare(b.side));
-      if (!snapshots.complete || !references.complete) warnings.push("Provider pagination limit reached. This is a partial chain, not market-wide positioning.");
-      if (normalized.some((item) => item == null)) warnings.push("Unverified or mismatched contracts were excluded.");
-      return { expirations, expiration, contracts,
-        chainStatus: snapshots.complete && references.complete && normalized.every((item) => item != null) ? "available" as const : "partial" as const,
-        chainError: null };
-    } catch (error) {
-      return { expirations, expiration, contracts: [], chainStatus: "unavailable" as const,
-        chainError: error instanceof OptionsDataError ? error.message : "Options-chain data could not be verified." };
-    }
-  })();
-  const [stockResults, chainResult] = await Promise.all([stockPromise, chainPromise.then((value) => ({ value, error: null })).catch((error: unknown) => ({
-    value: null, error: error instanceof OptionsDataError ? error.message : "Options-chain data could not be verified.",
-  }))]);
+  const stockResults = await stockPromise;
   const names = ["stock quote", "analyst consensus", "analyst target", "earnings calendar"];
   stockResults.forEach((result, index) => {
     if (result.status === "rejected") warnings.push(`FMP ${names[index]} unavailable.`);
@@ -169,7 +101,8 @@ export async function loadOptionsFeed(symbol: string, requestedExpiration: strin
     .sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
   return {
     symbol, retrievedAt: now.toISOString(), warnings,
-    ...(chainResult.value ?? { expiration: requestedExpiration, expirations: [], contracts: [], chainStatus: "unavailable", chainError: chainResult.error }),
+    expiration: requestedExpiration, expirations: [], contracts: [], chainStatus: "unavailable",
+    chainError: "Options contracts, Greeks and bid/ask feeds are unavailable with the FMP-only subscription. Underlying-stock research remains available.",
     stock: {
       name: text(quote?.name), price: numeric(quote?.price), changePercentage: numeric(quote?.changePercentage, true),
       quoteAt: timestamp(quote?.timestamp, 0.001), earningsDate: text(earnings?.date),

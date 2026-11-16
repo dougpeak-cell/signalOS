@@ -90,6 +90,7 @@ function volume(value: number | null) {
 }
 
 function sigiRead(row: CryptoRow) {
+  if (row.price == null || row.changePercent == null) return "FMP data unavailable";
   const change = row.changePercent ?? 0;
 
   if (change >= 3) return "Strong momentum";
@@ -100,6 +101,7 @@ function sigiRead(row: CryptoRow) {
 }
 
 function microSignal(row: CryptoRow) {
+  if (row.price == null || row.changePercent == null) return { label: "Unavailable", tone: "neutral" };
   const change = row.changePercent ?? 0;
 
   if (change >= 2) return { label: "Momentum", tone: "bullish" };
@@ -137,6 +139,7 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
   const [rows, setRows] = useState<CryptoRow[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
   const [extraTickers, setExtraTickers] = useState<string[]>([]);
   const [customTickers, setCustomTickers] = useState<string[]>([]);
   const [sortMode, setSortMode] = useState<CryptoBoardSortMode>("default");
@@ -198,6 +201,8 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
         });
 
         const json = await res.json();
+        if (!res.ok || !json.ok) throw new Error("FMP crypto quotes unavailable.");
+        if (alive) setDataError(null);
         const nextRows: CryptoRow[] = Array.isArray(json.rows) ? json.rows : [];
         const nextLeaders = [...nextRows]
           .sort((a, b) => (b.changePercent ?? -999) - (a.changePercent ?? -999))
@@ -244,8 +249,11 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
 
         setRows(nextRows);
         setLeaderSparks(nextLeaderSparks);
-      } catch (error) {
-        console.error("Crypto load failed:", error);
+      } catch {
+        if (alive) {
+          setRows([]);
+          setDataError("FMP crypto quotes unavailable. Check symbol coverage and endpoint access.");
+        }
       } finally {
         if (alive) setLoading(false);
       }
@@ -422,7 +430,7 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
 
   const addToCryptoPortfolio = (row: CryptoRow) => {
     if (row.price == null || row.price <= 0) {
-      setFeedback(row.symbol, "Live price required");
+      setFeedback(row.symbol, "FMP price required");
       return;
     }
 
@@ -486,7 +494,7 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
                 {config.title}
               </h1>
 
-              <p className={["max-w-2xl text-sm leading-6 text-white/55", isMobilePreview ? "mt-2" : "mt-3"].join(" ")}>{config.description}</p>
+              <p className={["max-w-2xl text-sm leading-6 text-white/55", isMobilePreview ? "mt-2" : "mt-3"].join(" ")}>{config.description.replace(/^Live /, "FMP snapshot ")}</p>
             </div>
 
             <CryptoPageTabs
@@ -678,8 +686,9 @@ export default function CryptoBoard({ config }: { config: CryptoBoardConfig }) {
         <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-5 shadow-2xl">
           <div className={["mb-5", isMobilePreview ? "flex flex-col gap-3" : "flex items-center justify-between"].join(" ")}>
             <div>
-              <h2 className="text-xl font-semibold">{config.sectionTitle}</h2>
-              <p className="mt-1 text-sm text-white/45">{config.refreshLabel}</p>
+              <h2 className="text-xl font-semibold">{config.sectionTitle.replace(/^Live /, "FMP ")}</h2>
+              <p className="mt-1 text-sm text-white/45">FMP quote snapshots · polls every 30 seconds · provider data may be delayed.</p>
+              {dataError && <p role="status" className="mt-2 text-sm text-amber-200">{dataError}</p>}
             </div>
 
             <div className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/45">

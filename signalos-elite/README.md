@@ -50,6 +50,37 @@ Run the pause regression checks with
 
 The shell Sigi assistant always works with the built-in today-context engine.
 
+## FMP-only Market Data
+
+The app's paid market-data dependency is now the server-only `FMP_API_KEY`.
+Massive/Polygon and Finnhub keys are no longer used by active app feeds.
+Supabase, Stripe and optional AI services remain separate.
+
+- Stock/index quotes, OHLC history, fundamentals, company profiles, search,
+  movers, stock news and crypto news use FMP stable endpoints.
+- Existing `/api/massive/*` and `/api/polygon/*` URLs are compatibility routes
+  backed by FMP, not requests to the cancelled provider.
+- Live charts default to **1D / 1m** (saved workspace interval choices remain
+  respected). One-minute candles refresh every 30 seconds; they are not a
+  tick-by-tick trade or order-book feed. Other intervals remain selectable.
+- Intraday timestamps are interpreted in New York time, including DST.
+  History is requested per calendar day to avoid FMP range truncation and
+  empty pre-open responses hiding previous sessions.
+- Options contracts/Greeks/bid-ask feeds, crypto tick trades, and market-wide
+  pre-market volume/setup rankings explicitly show unavailable. Regular-session
+  movers are never relabeled as pre-market activity.
+- `npm run ingest` always uses FMP, including when an old `PRICES_PROVIDER`
+  setting remains. Stable daily-history arrays are supported.
+
+Provider permissions, exchange agreements and redistribution rights still
+apply; an Ultimate plan does not itself establish permission to redistribute
+real-time data. Provider errors do not enable a fallback to Massive.
+News is a bounded latest-provider sample, not exhaustive historical coverage.
+
+Keep the FMP key out of `NEXT_PUBLIC_*` variables. Remove obsolete public
+provider keys from hosting settings and redeploy to retire old browser bundles.
+Production compilation is checked with `npm run build`.
+
 ## Mobile Pulse
 
 - Phone visitors start with public Pulse search at `/`; `/pulse?symbol=NVDA` opens a specific stock without signup. Desktop landing content stays separate.
@@ -73,9 +104,11 @@ and supports manual retry. Missing fields remain unavailable; unsupported pairs
 do not receive substitute quotes. Provider timestamps more than 10 minutes old
 are labeled delayed; retrieval time is shown separately.
 
-Existing Polygon streaming prices, candles, watchlists, and portfolio feeds are
-unchanged. FMP quote values are a separate provider snapshot, not mixed with the
-streaming chart price. Existing Crypto membership gates remain unchanged.
+Crypto boards/watchlists/portfolios now use FMP snapshots, candles use FMP
+history, and browser prices poll the server quote route. There is no browser
+provider key or Polygon websocket. Unsupported trades and tick-derived analytics
+show unavailable rather than deriving trades from snapshots. Existing Crypto
+membership gates remain unchanged.
 
 Run focused quote tests with `npx vitest run src/lib/crypto/fmpQuote.test.ts`.
 
@@ -84,36 +117,11 @@ Run focused quote tests with `npx vitest run src/lib/crypto/fmpQuote.test.ts`.
 Open `/options?symbol=AAPL` from the desktop Options tab beside Crypto or the
 phone Markets tab. FMP supplies underlying-stock quotes, upcoming reported
 earnings dates, analyst consensus and price targets using `FMP_API_KEY`.
-Contract data uses the server-only `MASSIVE_API_KEY` and requires an options
-subscription with access to contract snapshots. FMP Ultimate alone does not
-enable the options chain. Missing entitlements preserve stock research and show
-an explicit unavailable state, never sample contracts or simulated quotes.
-
-The current 15-minute-delayed subscription enables snapshots with aggregate
-session closes, volume, daily open interest, Greeks and IV. Massive returns
-last-trade and bid/ask fields only on plans that include trades and quotes,
-respectively. Session closes are displayed as separate price references, never
-substituted for missing bid/ask quotes or used as executable payoff premiums.
-
-The chain covers available expirations within 180 days, with calls/puts,
-near-spot/all-loaded strike browsing, bid/ask, volume, open interest, IV and
-provider Greeks. Reference coverage is capped at five 1,000-contract pages and
-each selected-expiry snapshot at eight 250-contract pages. Provider responses
-cache for 30 seconds; manual refresh respects those caches. Partial coverage is
-disclosed and suppresses positioning aggregates.
-
-The strategy analyzer supports long calls/puts and debit spreads on standard
-100-share contracts. Expiration payoffs use ask-to-buy and bid-to-sell, showing
-cost, break-even, maximum loss and maximum profit. Missing, crossed, stale
-(over 20 minutes) or unsupported quotes prevent payoff estimates. No orders are
-placed; estimates exclude fees, taxes and early-assignment effects.
-
-Positioning reports selected-expiry volume and prior-trading-day open interest,
-not signed money flow or institutional trading intent. A fresh same-strike ATM
-call/put IV pair supplies a symmetric reference range using
-`spot * annualized IV * sqrt(calendar days / 365)`; same-day expiries are excluded.
-This is not a directional forecast or guaranteed probability interval. Analyst
-targets remain separate stock research, not option-expiry predictions.
+The FMP-only configuration does not request options contracts from Massive,
+even if an obsolete key remains in the environment. The workspace preserves
+underlying-stock research and shows a clear unavailable state for the chain,
+Greeks, contract quotes, positioning and payoff estimates. It never substitutes
+stock quotes or sample contracts for missing options data.
 
 Run focused checks with `npx vitest run src/lib/options`.
 

@@ -99,7 +99,7 @@ export default function TodayTopSetupsPanel({
   const preMarketRows = hasPreMarketItems ? preMarketItems : [];
   const preMarketMessage = preMarketActive
     ? preMarketSourceRowCount === 0
-      ? "Pre-market is active, but the source feed has not returned rows yet."
+      ? "Market-wide pre-market rankings are unavailable with the FMP-only feed."
       : "Pre-market is active. No qualified setups are passing filters yet."
     : hasPreMarketItems
       ? "Latest pre-market setups are available below."

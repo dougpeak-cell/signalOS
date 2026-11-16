@@ -2,6 +2,8 @@ import { CRYPTO_DIRECTORY } from "@/lib/crypto/catalog";
 import type { NewsCategory, NewsItem, NewsTone } from "@/lib/news";
 import { toSignalNewsItem } from "@/lib/news/freeNewsSignalItems";
 import { detectNewsImpact, scoreNewsItem } from "@/lib/news/scoreNewsHeaderItems";
+import { fetchFmpRows } from "@/lib/experts/fmpClient";
+import { parseFmpDate } from "@/lib/market/fmpData";
 
 type FreeNewsSource = string;
 
@@ -19,6 +21,7 @@ type FreeRssItem = {
   image?: string | null;
   thumbnail?: string | null;
   urlToImage?: string | null;
+  tickers?: string[];
 };
 
 const COMMON_WORDS = new Set([
@@ -440,7 +443,7 @@ function formatAgeLabel(publishedAt: string): string {
 
 function mapFreeRssItemToNewsItem(item: FreeRssItem, knownTickers: string[] = []): NewsItem {
   const text = `${item.title} ${item.summary ?? ""}`;
-  const tickers = extractTickersFromText(text, knownTickers);
+  const tickers = [...new Set([...(item.tickers ?? []), ...extractTickersFromText(text, knownTickers)])];
   const tone = detectNewsTone(`${item.title} ${item.summary ?? ""}`);
   const category = inferCategory(text);
   const image = normalizeNewsImage(item);
@@ -491,7 +494,7 @@ function mapFreeRssItemToCryptoNewsItem(
   preferredSymbols: string[] = CRYPTO_NEWS_DEFAULT_SYMBOLS
 ): NewsItem {
   const text = `${item.title} ${item.summary ?? ""}`;
-  const tickers = extractCryptoTickersFromText(text, preferredSymbols);
+  const tickers = [...new Set([...(item.tickers ?? []), ...extractCryptoTickersFromText(text, preferredSymbols)])];
   const tone = detectNewsTone(text);
   const image = normalizeNewsImage(item);
   const baseImportance = tickers.length > 0 ? 72 : 58;
@@ -618,6 +621,22 @@ function dedupeNewsItems(items: NewsItem[]): NewsItem[] {
   return Array.from(byKey.values());
 }
 
+async function fetchFmpNews(path: string, params: Record<string, string>, limit: number): Promise<FreeRssItem[]> {
+  const rows = await fetchFmpRows(path, { ...params, limit: String(Math.min(250, Math.max(50, limit))) }, 120);
+  return rows.flatMap((row): FreeRssItem[] => {
+    const published = parseFmpDate(row.publishedDate);
+    if (typeof row.title !== "string" || typeof row.url !== "string" || published == null) return [];
+    return [{
+      id: row.url, title: row.title, link: row.url, publishedAt: new Date(published).toISOString(),
+      source: typeof row.publisher === "string" ? row.publisher : "FMP",
+      summary: typeof row.text === "string" ? cleanHtml(row.text) : undefined,
+      imageUrl: typeof row.image === "string" ? row.image : undefined,
+      tickers: typeof row.symbol === "string" ? row.symbol.split(",").map((symbol) =>
+        path.includes("crypto") ? symbol.trim().replace(/USD$/, "") : symbol.trim()) : [],
+    }];
+  });
+}
+
 export async function fetchTopFreeMarketNews(options?: {
   limit?: number;
   lookbackHours?: number;
@@ -625,16 +644,7 @@ export async function fetchTopFreeMarketNews(options?: {
   const limit = options?.limit ?? 18;
   const lookbackHours = options?.lookbackHours ?? 24;
 
-  const feeds = await Promise.all([
-    fetchRss(googleNewsSearchUrl("stock market OR S&P 500 OR Nasdaq when:1d"), "Google News"),
-    fetchRss(
-      googleNewsSearchUrl("earnings OR analyst upgrade OR market movers stocks when:1d"),
-      "Google News"
-    ),
-    fetchRssWithOptions(usNewsMoneySearchUrl(), "Google News", {
-      preferSourceTag: true,
-    }),
-  ]);
+  const feeds = [await fetchFmpNews("news/stock-latest", {}, limit)];
 
   return sortByPublishedDesc(
     feeds
@@ -650,20 +660,7 @@ export async function fetchTrumpMarketNews(options?: {
 }): Promise<NewsItem[]> {
   const limit = options?.limit ?? 30;
   const lookbackHours = options?.lookbackHours ?? 48;
-  const feeds = await Promise.all([
-    fetchRss(
-      googleNewsSearchUrl(
-        '(Trump OR "Donald Trump" OR "Trump administration") (stocks OR market OR economy OR tariffs OR trade OR business) when:2d'
-      ),
-      "Google News"
-    ),
-    fetchRss(
-      googleNewsSearchUrl(
-        '(Trump OR "Donald Trump") (Federal Reserve OR inflation OR jobs OR taxes OR regulation) when:2d'
-      ),
-      "Google News"
-    ),
-  ]);
+  const feeds = [await fetchFmpNews("news/general-latest", {}, 250)];
 
   return sortByPublishedDesc(
     dedupeNewsItems(
@@ -720,26 +717,7 @@ export async function fetchTopFreeCryptoNews(options?: {
   );
   const limit = options?.limit ?? 18;
   const lookbackHours = options?.lookbackHours ?? 48;
-  const symbolQuery = preferredSymbols.slice(0, 6).join(" OR ");
-  const aliasQuery = preferredSymbols
-    .slice(0, 6)
-    .map((symbol) => `"${CRYPTO_DIRECTORY.find((item) => item.symbol === symbol)?.name ?? symbol}"`)
-    .join(" OR ");
-
-  const feeds = await Promise.all([
-    fetchRss(
-      googleNewsSearchUrl("(crypto OR cryptocurrency OR bitcoin OR ethereum OR solana) when:2d"),
-      "Google News"
-    ),
-    fetchRss(
-      googleNewsSearchUrl(`(${symbolQuery} OR ${aliasQuery}) crypto market when:2d`),
-      "Google News"
-    ),
-    fetchRss(
-      googleNewsSearchUrl("(crypto ETF OR stablecoin OR meme coin OR defi OR rwa OR blockchain regulation) when:2d"),
-      "Google News"
-    ),
-  ]);
+  const feeds = [await fetchFmpNews("news/crypto-latest", {}, limit)];
 
   return sortByPublishedDesc(
     dedupeNewsItems(
@@ -761,9 +739,7 @@ export async function fetchFreeNewsForWatchlist(
 
   if (!tickers.length) return [];
 
-  const feeds = await Promise.all(
-    tickers.map((ticker) => fetchRss(yahooFinanceTickerUrl(ticker), "Yahoo Finance"))
-  );
+  const feeds = [await fetchFmpNews("news/stock", { symbols: tickers.join(",") }, limit)];
 
   return sortByPublishedDesc(
     feeds

@@ -1,141 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fmpSymbol, getFmpQuoteMap, FmpDataError } from "@/lib/market/fmpData";
+import { normalizeFmpQuote } from "@/lib/market/fmpQuote";
 import { resolveMarketTickerAlias } from "@/lib/market/indexAliases";
-import { resolveMassiveQuote, type MassiveQuoteResponse } from "@/app/api/massive/quote/route";
 
-type NormalizedQuote = {
-  ticker: string;
-  name?: string;
-  source: MassiveQuoteResponse["source"];
-  price: number | null;
-  change: number | null;
-  changePercent: number | null;
-  volume: number | null;
-  avgVolume: number | null;
-  updatedMs: number | null;
-  isMarketOpen: boolean | null;
-};
-
-function normalizeTicker(value: string): string {
-  return resolveMarketTickerAlias(value);
-}
-
-function toNumber(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function normalizeUpdatedMs(raw: number | null): number | null {
-  if (raw == null) return null;
-  if (raw > 0 && raw < 10_000_000_000) return raw * 1_000;
-  if (raw >= 10_000_000_000_000_000) return Math.floor(raw / 1_000_000);
-  if (raw >= 10_000_000_000_000) return Math.floor(raw / 1_000);
-  return raw;
-}
-
-function normalizeQuote(
-  raw: MassiveQuoteResponse,
-  fallbackTicker: string
-): NormalizedQuote {
-  const ticker = normalizeTicker(raw.ticker || fallbackTicker);
-
-  const price =
-    toNumber(raw.price) ??
-    null;
-
-  const change = toNumber(raw.change);
-
-  const changePercent =
-    toNumber(raw.changePct);
-
-  const volume = toNumber(raw.volume);
-  const avgVolume = toNumber(raw.avgVolume);
-
-  const updatedMs = normalizeUpdatedMs(
-    toNumber(raw.updatedMs)
-  );
-
-  return {
-    ticker,
-    source: raw.source,
-    price: price != null && price > 0 ? price : null,
-    change,
-    changePercent,
-    volume,
-    avgVolume,
-    updatedMs,
-    isMarketOpen: raw.isMarketOpen,
-  };
-}
-
-async function fetchSingleQuote(ticker: string): Promise<NormalizedQuote> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const tickers = [...new Set((req.nextUrl.searchParams.get("tickers") ?? "").split(",").map(resolveMarketTickerAlias).filter(Boolean))].slice(0, 100);
+  if (!tickers.length) return NextResponse.json({ quotes: [], error: "Missing tickers" }, { status: 400 });
   try {
-    const quote = await resolveMassiveQuote(ticker, {
-      includePoints: false,
-      includeFundamentals: false,
-    });
-
-    if (!quote) {
+    const rows = await getFmpQuoteMap(tickers);
+    const quotes = tickers.map((ticker) => {
+      const row = rows.get(fmpSymbol(ticker));
+      const quote = row ? normalizeFmpQuote(ticker, row) : null;
       return {
-        ticker,
-        source: "stock",
-        price: null,
-        change: null,
-        changePercent: null,
-        volume: null,
-        avgVolume: null,
-        updatedMs: null,
-        isMarketOpen: null,
+        ticker, name: typeof row?.name === "string" ? row.name : undefined,
+        source: quote?.source ?? "stock", provider: "fmp",
+        price: quote?.price ?? null, change: quote?.change ?? null,
+        changePercent: quote?.changePct ?? null, previousClose: quote?.prevClose ?? null,
+        volume: quote?.volume ?? null, avgVolume: quote?.avgVolume ?? null,
+        updatedMs: quote?.updatedMs ?? null, isMarketOpen: null,
+        ...(!quote ? { error: "FMP quote unavailable for this symbol." } : {}),
       };
-    }
-
-    return normalizeQuote(quote, ticker);
-  } catch {
-    return {
-      ticker,
-      source: "stock",
-      price: null,
-      change: null,
-      changePercent: null,
-      volume: null,
-      avgVolume: null,
-      updatedMs: null,
-      isMarketOpen: null,
-    };
-  }
-}
-
-export async function GET(req: NextRequest) {
-  try {
-    const tickersParam = req.nextUrl.searchParams.get("tickers") || "";
-
-    const tickers = Array.from(
-      new Set(
-        tickersParam
-          .split(",")
-          .map(normalizeTicker)
-          .filter(Boolean)
-      )
-    );
-
-    if (tickers.length === 0) {
-      return NextResponse.json(
-        { quotes: [], error: "Missing tickers query param" },
-        { status: 400 }
-      );
-    }
-
-    const results = await Promise.all(
-      tickers.map((ticker) => fetchSingleQuote(ticker))
-    );
-
-    return NextResponse.json({ quotes: results });
+    });
+    return NextResponse.json({ quotes });
   } catch (error) {
     return NextResponse.json(
-      {
-        quotes: [],
-        error:
-          error instanceof Error ? error.message : "Unknown quotes batch error",
-      },
-      { status: 500 }
+      { quotes: [], error: error instanceof Error ? error.message : "FMP quotes unavailable." },
+      { status: error instanceof FmpDataError ? error.status : 502 },
     );
   }
 }

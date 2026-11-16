@@ -12,7 +12,7 @@ import {
 import type { HeroStoryStage } from "@/components/today/TodayHeroPanel";
 
 const WATCHLIST = ["NVDA", "MSFT", "AAPL", "AMZN", "META", "TSLA"];
-const FALLBACK_HEADLINE = "Markets steady as traders assess positioning";
+const FALLBACK_HEADLINE = "Market news unavailable";
 const FALLBACK_WHY_IT_MATTERS =
   "This catalyst may affect market sentiment, sector leadership, and near-term price behavior.";
 const TICKER_LOOKBACK_WINDOWS = [24, 72, 168] as const;
@@ -42,7 +42,7 @@ function buildMacroFallbackStory(items: HeaderDisplayNewsItem[], ticker: string)
       lead?.summary ??
       `${ticker} is trading inside a broader macro and market-leadership backdrop rather than a clean company-specific catalyst.`,
     image: lead?.imageUrl ?? null,
-    source: lead?.source ?? "Benzinga",
+    source: lead?.source ?? "FMP",
     timestamp: lead?.publishedAt ?? null,
     ticker,
     whyItMatters:
@@ -62,7 +62,7 @@ function buildTickerStoryPayload(
     headline: best.headline,
     summary: best.summary,
     image: best.imageUrl ?? null,
-    source: best.source || "Benzinga",
+    source: best.source || "FMP",
     timestamp: best.publishedAt,
     ticker,
     whyItMatters: best.whyItMatters || FALLBACK_WHY_IT_MATTERS,
@@ -153,7 +153,7 @@ function buildSectorThemeContextStory(
       lead?.summary ??
       `${ticker} is tracking with broader ${sectorLabel.toLowerCase()} and theme leadership rather than a clean company-specific catalyst.`,
     image: lead?.imageUrl ?? null,
-    source: lead?.source ?? "Benzinga",
+    source: lead?.source ?? "FMP",
     timestamp: lead?.publishedAt ?? null,
     ticker,
     whyItMatters:
@@ -279,14 +279,14 @@ export async function getHeroStoryPayload(ticker?: string | null): Promise<HeroS
     headline: leadStory?.headline ?? FALLBACK_HEADLINE,
     summary:
       leadStory?.summary ??
-      "Markets are digesting macro headlines, leadership rotation, and evolving trader positioning.",
+      "No recent FMP market headlines are available in the returned sample.",
     image: leadStory?.imageUrl ?? null,
-    source: leadStory?.source ?? "Benzinga",
+    source: leadStory?.source ?? "FMP",
     timestamp: leadStory?.rawPublishedAt ?? null,
     ticker: leadStory?.tickers[0] ?? null,
-    whyItMatters: leadStory?.whyItMatters || FALLBACK_WHY_IT_MATTERS,
+    whyItMatters: leadStory ? leadStory.whyItMatters || FALLBACK_WHY_IT_MATTERS : "",
     items: rankedMarket.ranked,
-    stage: "market-live",
+    stage: leadStory ? "market-live" : "market-brief",
     watchlist: rankedWatchlist.ranked,
     leadStory,
     liveStream: rankedMarket.ranked.slice(0, 8),

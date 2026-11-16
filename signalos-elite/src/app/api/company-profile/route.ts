@@ -11,15 +11,16 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "Missing ticker" }, { status: 400 });
   }
 
-  if (!process.env.FINNHUB_API_KEY) {
+  if (!process.env.FMP_API_KEY) {
     return NextResponse.json(
-      { ok: false, error: "Missing FINNHUB_API_KEY" },
-      { status: 500 }
+      { ok: false, error: "Missing FMP_API_KEY" },
+      { status: 503 }
     );
   }
 
   try {
     const profile = await getFinnhubCompanyProfile(ticker);
+    if (!profile) return NextResponse.json({ ok: false, error: "FMP profile unavailable." }, { status: 502 });
 
     return NextResponse.json({
       ok: true,

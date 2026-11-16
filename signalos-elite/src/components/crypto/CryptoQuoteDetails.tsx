@@ -114,7 +114,7 @@ export default function CryptoQuoteDetails({ ticker, compact = false }: {
               </div>
             ))}
           </dl>
-          <p className="mt-5 text-xs leading-5 text-white/40">Source: FMP quote snapshot. {current.retrievedAt ? `Retrieved ${new Date(current.retrievedAt).toLocaleString("en-US", { timeZone: "UTC" })} UTC. ` : ""}Quote time is independent of the streaming chart price.</p>
+          <p className="mt-5 text-xs leading-5 text-white/40">Source: FMP quote snapshot, polled every 30 seconds. {current.retrievedAt ? `Retrieved ${new Date(current.retrievedAt).toLocaleString("en-US", { timeZone: "UTC" })} UTC. ` : ""}Quote and candle snapshots can have different provider timestamps.</p>
         </>
       )}
     </section>

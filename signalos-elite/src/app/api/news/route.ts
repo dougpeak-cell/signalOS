@@ -15,14 +15,13 @@ export async function GET(req: Request) {
 
     return NextResponse.json(
       {
-        headline: "Markets steady as traders assess positioning",
-        summary:
-          "Markets are digesting macro headlines, leadership rotation, and evolving trader positioning.",
+        headline: "Market news unavailable",
+        summary: "FMP news could not be loaded. Please retry.",
         image: null,
-        source: "Benzinga",
+        source: "FMP",
         timestamp: null,
         ticker: null,
-        whyItMatters: "This catalyst may affect market sentiment, sector leadership, and near-term price behavior.",
+        whyItMatters: "",
         items: [],
         stage: "market-brief",
         watchlist: [],
@@ -31,7 +30,7 @@ export async function GET(req: Request) {
         updatedAt: new Date().toISOString(),
         error: error instanceof Error ? error.message : "Unknown news error",
       },
-      { status: 200 }
+      { status: 502 }
     );
   }
 }

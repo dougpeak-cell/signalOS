@@ -3148,6 +3148,12 @@ useEffect(() => {
       try {
         const msg = JSON.parse(event.data);
 
+        if (msg?.type === "error") {
+          setError(String(msg.message ?? "FMP minute candles unavailable."));
+          return;
+        }
+        if (msg?.type === "bar") setError("");
+
         console.log("[stream]", {
           symbol,
           type: msg?.type,
@@ -3345,12 +3351,12 @@ useEffect(() => {
         });
           onPriceUpdate?.(nextBar.close);
       } catch {
-        // ignore malformed events
+        setError("FMP candle update could not be read.");
       }
     };
 
     es.onerror = () => {
-      // browser retries automatically
+      setError("FMP candle connection interrupted; reconnecting.");
     };
 
     return () => {
@@ -4944,6 +4950,9 @@ const gapFillLabel =
           </div>
         </div>
 
+        <p className="px-3 py-1 text-[10px] text-slate-400">
+          FMP candles · 30-second refresh on 1m / 1D · Tick trades and order-book feed unavailable.
+        </p>
         {compactMobile ? (
           <div className="grid grid-cols-5 gap-1 border-b border-white/8 p-2">
             {([

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const POLYGON_API_KEY = process.env.POLYGON_API_KEY;
+import { getFmpBars } from "@/lib/market/fmpData";
 
 type PolygonDailyAgg = {
   t: number;
@@ -71,13 +70,6 @@ function computePerformance(results: PolygonDailyAgg[]): TickerPeriodPerformance
 
 export async function GET(req: NextRequest) {
   try {
-    if (!POLYGON_API_KEY) {
-      return NextResponse.json(
-        { error: "Missing POLYGON_API_KEY in environment." },
-        { status: 500 }
-      );
-    }
-
     const { searchParams } = new URL(req.url);
     const tickersParam = searchParams.get("tickers") ?? "";
 
@@ -99,34 +91,15 @@ export async function GET(req: NextRequest) {
     const rows = await Promise.all(
       tickers.map(async (ticker) => {
         try {
-          const url =
-            `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker)}` +
-            `/range/1/day/${isoDate(from)}/${isoDate(to)}` +
-            `?adjusted=true&sort=asc&limit=5000&apiKey=${POLYGON_API_KEY}`;
-
-          const response = await fetch(url, {
-            method: "GET",
-            cache: "no-store",
-            next: { revalidate: 0 },
-          });
-
-          if (!response.ok) {
-            return {
-              ticker,
-              performance: { day: null, week: null, month: null, ytd: null },
-            };
-          }
-
-          const json = await response.json();
-          const results = Array.isArray(json?.results)
-            ? (json.results as PolygonDailyAgg[])
-            : [];
+          const bars = await getFmpBars(ticker, isoDate(from), isoDate(to));
+          const results = bars.map((bar) => ({ t: bar.timestamp, c: bar.close }));
 
           return {
             ticker,
             performance: computePerformance(results),
           };
-        } catch {
+        } catch (error) {
+          console.error("FMP sector performance unavailable:", error instanceof Error ? error.message : "Unknown provider error");
           return {
             ticker,
             performance: { day: null, week: null, month: null, ytd: null },

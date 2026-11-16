@@ -186,7 +186,9 @@ export default function TodayEmergingSetupsPanel({
           ))
         ) : (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/3 px-4 py-6 text-sm text-white/55">
-            No {sessionView === "pre" ? "pre-market emerging" : "emerging"} setups are available yet.
+            {sessionView === "pre"
+              ? "Market-wide pre-market rankings are unavailable with the FMP-only feed."
+              : "No emerging setups are available yet."}
           </div>
         )}
       </div>

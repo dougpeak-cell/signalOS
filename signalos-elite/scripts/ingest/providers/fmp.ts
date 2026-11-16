@@ -7,8 +7,10 @@ async function getJson(path: string) {
   if (!key) throw new Error("Missing FMP_API_KEY");
   const url = `${BASE}${path}${path.includes("?") ? "&" : "?"}apikey=${key}`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`FMP ${res.status}: ${await res.text()}`);
-  return res.json();
+  if (!res.ok) throw new Error(`FMP request failed (HTTP ${res.status}).`);
+  const data: unknown = await res.json();
+  if (!Array.isArray(data)) throw new Error("FMP returned an unexpected response.");
+  return data;
 }
 
 /**
@@ -34,7 +36,7 @@ export const fmpProvider: MarketDataProvider = {
     const out: ProviderDailyBar[] = [];
     for (const t of tickers) {
       const data = await getJson(`/historical-price-eod/full?symbol=${encodeURIComponent(t)}&from=${from}&to=${to}`);
-      const hist = data?.historical ?? [];
+      const hist = data;
       for (const r of hist) {
         out.push({
           ticker: t,

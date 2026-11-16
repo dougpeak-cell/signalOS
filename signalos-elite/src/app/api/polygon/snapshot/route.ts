@@ -1,102 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { FmpDataError, getFmpQuote, marketNumber } from "@/lib/market/fmpData";
+import { normalizeFmpQuote } from "@/lib/market/fmpQuote";
 
-const POLYGON_API_KEY = process.env.POLYGON_API_KEY;
-
-function toNum(v: unknown): number | null {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const ticker = req.nextUrl.searchParams.get("ticker")?.trim().toUpperCase();
+  if (!ticker) return NextResponse.json({ error: "Ticker is required." }, { status: 400 });
   try {
-    if (!POLYGON_API_KEY) {
-      return NextResponse.json(
-        { error: "Missing POLYGON_API_KEY in .env.local" },
-        { status: 500 }
-      );
-    }
-
-    const { searchParams } = new URL(req.url);
-    const ticker = String(searchParams.get("ticker") ?? "").toUpperCase().trim();
-
-    if (!ticker) {
-      return NextResponse.json({ error: "Ticker is required." }, { status: 400 });
-    }
-
-    const url =
-      `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${encodeURIComponent(
-        ticker
-      )}?apiKey=${POLYGON_API_KEY}`;
-
-    const res = await fetch(url, {
-      method: "GET",
-      cache: "no-store",
-      next: { revalidate: 0 },
-    });
-
-    const raw = await res.text();
-
-    let json: any = null;
-    try {
-      json = raw ? JSON.parse(raw) : null;
-    } catch {
-      console.error("Polygon snapshot non-JSON response:", raw);
-      return NextResponse.json(
-        { error: "Polygon snapshot returned non-JSON response." },
-        { status: 500 }
-      );
-    }
-
-    if (!res.ok) {
-      console.error("Polygon snapshot HTTP error:", res.status, json);
-      return NextResponse.json(
-        { error: json?.error || json?.message || `Polygon snapshot failed (${res.status})` },
-        { status: 500 }
-      );
-    }
-
-    // Be tolerant to either shape:
-    // 1) { ticker: { day, prevDay, min, lastTrade, ... } }
-    // 2) { day, prevDay, min, lastTrade, ... }
-    const payload = json?.ticker ?? json ?? {};
-      const day = payload?.day ?? payload?.prevDay ?? null;
-      const prevDay = payload?.prevDay ?? null;
-    const min = payload?.min ?? null;
-    const lastTrade = payload?.lastTrade ?? null;
-
-    const lastPrice = toNum(lastTrade?.p) ?? toNum(min?.c) ?? toNum(day?.c);
-    const prevClose = toNum(prevDay?.c);
-
-    const change =
-      lastPrice != null && prevClose != null ? lastPrice - prevClose : null;
-
-    const changePct =
-      change != null && prevClose != null && prevClose !== 0
-        ? (change / prevClose) * 100
-        : null;
-
+    const row = await getFmpQuote(ticker);
+    const quote = row ? normalizeFmpQuote(ticker, row) : null;
+    if (!quote) return NextResponse.json({ error: "FMP quote unavailable." }, { status: 404 });
     return NextResponse.json({
-      ticker,
-      lastPrice,
-      change,
-      changePct,
-      updatedMs: toNum(lastTrade?.t),
-      dayRange: {
-        low: toNum(day?.l),
-        high: toNum(day?.h),
-      },
-      open: toNum(day?.o),
-      close: toNum(day?.c),
-      prevClose,
-      volume: toNum(day?.v),
+      ticker, provider: "fmp", lastPrice: quote.price, change: quote.change, changePct: quote.changePct,
+      updatedMs: quote.updatedMs, dayRange: { low: marketNumber(row?.dayLow), high: marketNumber(row?.dayHigh) },
+      open: marketNumber(row?.open), close: null, prevClose: quote.prevClose, volume: quote.volume,
     });
   } catch (error) {
-    console.error("Snapshot route crashed:", error);
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Unknown server error.",
-      },
-      { status: 500 }
+      { error: error instanceof Error ? error.message : "FMP quote unavailable." },
+      { status: error instanceof FmpDataError ? error.status : 502 },
     );
   }
 }

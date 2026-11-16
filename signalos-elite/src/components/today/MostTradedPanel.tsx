@@ -115,7 +115,7 @@ export default function MostTradedPanel({
     [preMarketActive, preMarketMostTraded]
   );
   const preMarketMessage = preMarketActive
-    ? "Pre-market is active. No qualified setups are passing filters yet."
+    ? "Market-wide pre-market volume rankings are unavailable with the FMP-only feed."
     : "Pre-market opens at 4:00 AM ET.";
 
   useEffect(() => {

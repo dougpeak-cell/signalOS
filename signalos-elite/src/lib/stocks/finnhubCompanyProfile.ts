@@ -13,40 +13,31 @@ export type FinnhubCompanyProfile = {
 export async function getFinnhubCompanyProfile(
   ticker: string
 ): Promise<FinnhubCompanyProfile | null> {
-  const apiKey = process.env.FINNHUB_API_KEY;
   const normalizedTicker = ticker.trim().toUpperCase();
 
-  if (!apiKey || !normalizedTicker) {
+  if (!normalizedTicker) {
     return null;
   }
 
   try {
-    const res = await fetch(
-      `https://finnhub.io/api/v1/stock/profile2?symbol=${encodeURIComponent(normalizedTicker)}&token=${apiKey}`,
-      { cache: "no-store" }
-    );
-
-    if (!res.ok) {
-      return null;
-    }
-
-    const data = (await res.json()) as Record<string, unknown>;
+    const data = (await fetchFmpRows("profile", { symbol: normalizedTicker }, 300))[0];
+    if (!data) return null;
 
     return {
-      name: typeof data.name === "string" ? data.name : null,
-      sector: typeof data.finnhubIndustry === "string" ? data.finnhubIndustry : null,
+      name: typeof data.companyName === "string" ? data.companyName : null,
+      sector: typeof data.sector === "string" ? data.sector : null,
       exchange: typeof data.exchange === "string" ? data.exchange : null,
       country: typeof data.country === "string" ? data.country : null,
       currency: typeof data.currency === "string" ? data.currency : null,
-      ipo: typeof data.ipo === "string" ? data.ipo : null,
-      marketCap:
-        typeof data.marketCapitalization === "number" && Number.isFinite(data.marketCapitalization)
-          ? data.marketCapitalization
-          : null,
-      logo: typeof data.logo === "string" ? data.logo : null,
-      weburl: typeof data.weburl === "string" ? data.weburl : null,
+      ipo: typeof data.ipoDate === "string" ? data.ipoDate : null,
+      marketCap: marketNumber(data.marketCap),
+      logo: typeof data.image === "string" ? data.image : null,
+      weburl: typeof data.website === "string" ? data.website : null,
     };
-  } catch {
+  } catch (error) {
+    console.error("FMP company profile unavailable:", error instanceof Error ? error.message : "Unknown provider error");
     return null;
   }
 }
+import { fetchFmpRows } from "@/lib/experts/fmpClient";
+import { marketNumber } from "@/lib/market/fmpData";

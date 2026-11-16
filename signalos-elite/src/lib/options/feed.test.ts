@@ -37,36 +37,22 @@ describe("options data adapter", () => {
     expect(normalizeOption(source, "MSFT", "2026-11-20")).toBeNull();
     expect(normalizeOption(source, "AAPL", "2026-12-18")).toBeNull();
   });
-  it("preserves FMP research when options entitlement is denied", async () => {
-    fmp(); vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("Restricted", { status: 403 })));
+  it("preserves FMP research without contacting the cancelled provider even with an old key", async () => {
+    fmp();
+    const fetcher = vi.fn();
+    vi.stubGlobal("fetch", fetcher);
     const feed = await loadOptionsFeed("AAPL", null, now);
     expect(feed.chainStatus).toBe("unavailable");
-    expect(feed.chainError).toContain("subscription");
+    expect(feed.chainError).toContain("FMP-only");
     expect(feed.contracts).toEqual([]);
     expect(feed.stock).toMatchObject({ price: 100, consensus: "Buy", earningsDate: "2026-11-01" });
     expect(JSON.stringify(feed)).not.toContain("options-test-key");
+    expect(fetcher).not.toHaveBeenCalled();
   });
   it("keeps delayed aggregate closes separate from absent quotes and trades", () => {
     const option = normalizeOption({ ...source, last_quote: undefined, day: { ...source.day, close: 8.44 } }, "AAPL", "2026-11-20");
     expect(option).toMatchObject({ sessionClose: 8.44, bid: null, ask: null, quoteAt: null, last: null, lastAt: null, impliedVolatility: 0.3 });
     expect(normalizeOption({ ...source, day: { volume: 0 } }, "AAPL", "2026-11-20")?.sessionClose).toBeNull();
-  });
-  it("loads and deduplicates selected-expiration contracts", async () => {
-    fmp(); vi.stubGlobal("fetch", vi.fn().mockImplementation(async (input) =>
-      String(input).includes("/reference/") ? Response.json({ results: [{ expiration_date: "2026-11-20" }] })
-        : Response.json({ results: [source, source] })));
-    const feed = await loadOptionsFeed("AAPL", null, now);
-    expect(feed.chainStatus).toBe("available");
-    expect(feed.contracts).toHaveLength(1);
-    expect(feed.expiration).toBe("2026-11-20");
-  });
-  it("rejects unsafe pagination instead of leaking credentials", async () => {
-    fmp(); const fetcher = vi.fn().mockResolvedValue(Response.json({ results: [{ expiration_date: "2026-11-20" }], next_url: "https://example.com/v3/reference/options/contracts" }));
-    vi.stubGlobal("fetch", fetcher);
-    const feed = await loadOptionsFeed("AAPL", null, now);
-    expect(feed.chainStatus).toBe("unavailable");
-    expect(feed.chainError).toContain("invalid pagination");
-    expect(fetcher).toHaveBeenCalledTimes(1);
   });
   it("does not replace missing FMP facts with example data", async () => {
     fmp(); vi.mocked(fetchFmpRows).mockRejectedValue(new Error("unavailable"));

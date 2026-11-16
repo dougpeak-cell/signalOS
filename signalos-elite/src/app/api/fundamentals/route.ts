@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import {
-  getEmptyFinnhubFundamentals,
   getFinnhubFundamentals,
 } from "@/lib/fundamentals/finnhubFundamentals";
 
@@ -17,24 +16,24 @@ export async function GET(req: Request) {
     );
   }
 
-  if (!process.env.FINNHUB_API_KEY) {
+  if (!process.env.FMP_API_KEY) {
     return NextResponse.json(
-      { ok: false, error: "Missing FINNHUB_API_KEY" },
-      { status: 500 }
+      { ok: false, error: "Missing FMP_API_KEY" },
+      { status: 503 }
     );
   }
 
   try {
     const fundamentals = await getFinnhubFundamentals(ticker);
-    const safeFundamentals = fundamentals ?? getEmptyFinnhubFundamentals();
+    if (!fundamentals) return NextResponse.json({ ok: false, error: "FMP fundamentals unavailable." }, { status: 502 });
 
     return NextResponse.json({
       ok: true,
       ticker,
-      ...safeFundamentals,
+      ...fundamentals,
     });
   } catch (error) {
-    console.error("Finnhub fundamentals error:", error);
+    console.error("FMP fundamentals error:", error);
 
     return NextResponse.json(
       { ok: false, error: "Failed to load fundamentals" },

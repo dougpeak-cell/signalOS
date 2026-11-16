@@ -1,9 +1,6 @@
-import { stooqProvider } from "./providers/stooq";
 // scripts/ingest/index.ts
 import { supabaseAdmin } from "./_supabase";
-import { finnhubProvider } from "./providers/finnhub";
 import { fmpProvider } from "./providers/fmp";
-import { massiveProvider } from "./providers/massive";
 import type { MarketDataProvider, ProviderDailyBar } from "./providers/types";
 
 function todayISODate() {
@@ -42,12 +39,11 @@ function envTickers(): string[] {
 }
 
 async function getProvider(): Promise<MarketDataProvider> {
-  const p = (process.env.PRICES_PROVIDER ?? "stooq").toLowerCase();
-  if (p === "stooq") return stooqProvider;
-  if (p === "finnhub") return finnhubProvider;
-  if (p === "fmp") return fmpProvider;
-  if (p === "massive" || p === "polygon") return massiveProvider;
-  return stooqProvider;
+  const p = (process.env.PRICES_PROVIDER ?? "fmp").toLowerCase();
+  if (p !== "fmp") {
+    console.warn(`PRICES_PROVIDER=${p} is retired; ingest now uses FMP.`);
+  }
+  return fmpProvider;
 }
 
 async function ensureUniverseSymbols(tickers: string[]) {

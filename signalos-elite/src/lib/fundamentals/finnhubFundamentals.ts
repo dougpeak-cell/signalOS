@@ -34,55 +34,37 @@ const EMPTY_FINNHUB_FUNDAMENTALS: FinnhubFundamentals = {
   week52Low: null,
 };
 
-function toNumber(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return null;
-}
-
 export async function getFinnhubFundamentals(
   ticker: string
 ): Promise<FinnhubFundamentals | null> {
-  const apiKey = process.env.FINNHUB_API_KEY;
   const normalizedTicker = ticker.trim().toUpperCase();
 
-  if (!apiKey || !normalizedTicker) {
+  if (!normalizedTicker) {
     return null;
   }
 
-  const url = `https://finnhub.io/api/v1/stock/metric?symbol=${encodeURIComponent(normalizedTicker)}&metric=all&token=${apiKey}`;
-
   try {
-    const res = await fetch(url, { cache: "no-store" });
-
-    if (!res.ok) {
-      return null;
-    }
-
-    const json = (await res.json()) as { metric?: Record<string, unknown> };
-    const metric = json.metric ?? {};
+    const [fundamentals, profiles, ratios, metrics] = await Promise.all([
+      getMassiveFundamentals(normalizedTicker),
+      fetchFmpRows("profile", { symbol: normalizedTicker }, 300),
+      fetchFmpRows("ratios-ttm", { symbol: normalizedTicker }, 300),
+      fetchFmpRows("key-metrics-ttm", { symbol: normalizedTicker }, 300),
+    ]);
+    const profile = profiles[0], ratio = ratios[0], metric = metrics[0];
+    const percent = (value: unknown) => { const n = marketNumber(value); return n == null ? null : n * 100; };
+    const range = typeof profile?.range === "string" ? profile.range.split("-").map(Number) : [];
 
     return {
-      pe: toNumber(metric.peBasicExclExtraTTM) ?? toNumber(metric.peNormalizedAnnual),
-      peg: toNumber(metric.pegRatio),
-      marketCap: toNumber(metric.marketCapitalization),
-      revenue: toNumber(metric.revenueTTM),
-      grossMargin: toNumber(metric.grossMarginTTM),
-      operatingMargin: toNumber(metric.operatingMarginTTM),
-      netMargin: toNumber(metric.netProfitMarginTTM),
-      roe: toNumber(metric.roeTTM),
-      roa: toNumber(metric.roaTTM),
-      currentRatio: toNumber(metric.currentRatioAnnual),
-      debtToEquity: toNumber(metric.totalDebtToEquityAnnual),
-      dividendYield: toNumber(metric.dividendYieldIndicatedAnnual),
-      beta: toNumber(metric.beta),
-      week52High: toNumber(metric["52WeekHigh"]),
-      week52Low: toNumber(metric["52WeekLow"]),
+      pe: fundamentals.pe, peg: fundamentals.peg, marketCap: fundamentals.marketCap,
+      revenue: fundamentals.revenue,
+      grossMargin: percent(ratio?.grossProfitMarginTTM), operatingMargin: percent(ratio?.operatingProfitMarginTTM),
+      netMargin: percent(ratio?.netProfitMarginTTM), roe: percent(metric?.returnOnEquityTTM),
+      roa: percent(metric?.returnOnAssetsTTM), currentRatio: marketNumber(ratio?.currentRatioTTM),
+      debtToEquity: marketNumber(ratio?.debtToEquityRatioTTM), dividendYield: fundamentals.dividendYield,
+      beta: marketNumber(profile?.beta), week52High: marketNumber(range[1]), week52Low: marketNumber(range[0]),
     };
-  } catch {
+  } catch (error) {
+    console.error("FMP financial metrics unavailable:", error instanceof Error ? error.message : "Unknown provider error");
     return null;
   }
 }
@@ -90,3 +72,6 @@ export async function getFinnhubFundamentals(
 export function getEmptyFinnhubFundamentals(): FinnhubFundamentals {
   return EMPTY_FINNHUB_FUNDAMENTALS;
 }
+import { fetchFmpRows } from "@/lib/experts/fmpClient";
+import { getMassiveFundamentals } from "@/lib/market/massiveFundamentals";
+import { marketNumber } from "@/lib/market/fmpData";
