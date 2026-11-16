@@ -114,8 +114,10 @@ Run focused quote tests with `npx vitest run src/lib/crypto/fmpQuote.test.ts`.
 
 ## Options Workspace
 
-Open `/options?symbol=AAPL` from the desktop Options tab beside Crypto or the
-phone Markets tab. FMP supplies underlying-stock quotes, upcoming reported
+Options is temporarily hidden from the desktop navigation and Markets tools.
+The workspace and API remain intact for later use; direct
+`/options?symbol=AAPL` links still work with existing access checks.
+FMP supplies underlying-stock quotes, upcoming reported
 earnings dates, analyst consensus and price targets using `FMP_API_KEY`.
 The FMP-only configuration does not request options contracts from Massive,
 even if an obsolete key remains in the environment. The workspace preserves

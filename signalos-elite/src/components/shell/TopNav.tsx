@@ -277,15 +277,6 @@ export default function TopNav({
             </Link>
 
             <Link
-              href={buildNavHref("/options")}
-              onClick={(event) => handlePrimaryNavClick(event, buildNavHref("/options"))}
-              aria-current={isOptionsMode ? "page" : undefined}
-              className={isOptionsMode ? navActive : navDefault}
-            >
-              Options
-            </Link>
-
-            <Link
               href={buildNavHref("/about")}
               onClick={(event) => handlePrimaryNavClick(event, buildNavHref("/about"))}
               className="text-sm text-slate-300 transition hover:text-white"
