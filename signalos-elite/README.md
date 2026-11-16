@@ -67,6 +67,14 @@ Supabase, Stripe and optional AI services remain separate.
   are excluded. This is the scheduled release date, not the fiscal quarter end,
   and is subject to change. Missing dates and provider errors show unavailable.
   Provider data caches for one hour, and open charts recheck hourly.
+- Chart stats include previous trading-day volume, today's cumulative FMP quote
+  volume (refreshed every 60 seconds), and the arithmetic average of the previous
+  10 completed trading days. These totals do not depend on the selected candle
+  interval or visible chart range. Today's partial session is excluded from the
+  average; fewer than 10 valid daily volumes show unavailable rather than a
+  shorter-period average. Prior-session quotes are never shown as today's
+  volume. Quote timestamps are displayed in Eastern time; no extended-hours
+  volume is inferred. Missing/provider-failed data shows unavailable.
 - Intraday timestamps are interpreted in New York time, including DST.
   History is requested per calendar day to avoid FMP range truncation and
   empty pre-open responses hiding previous sessions.

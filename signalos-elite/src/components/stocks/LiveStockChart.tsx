@@ -1,6 +1,8 @@
 "use client";
 
 import TradeReadinessBar from "@/components/stocks/TradeReadinessBar";
+import ChartVolumeStats from "@/components/stocks/ChartVolumeStats";
+import { useChartVolume } from "@/hooks/useChartVolume";
 import UpcomingEarnings from "@/components/stocks/UpcomingEarnings";
 import { useUpcomingEarnings } from "@/hooks/useUpcomingEarnings";
 import MobileSignalSheet from "@/components/shell/MobileSignalSheet";
@@ -1426,6 +1428,7 @@ export default function LiveStockChart({
   const activeSelectedSignal = selectedSignalProp ?? contextSelectedSignal ?? null;
   const symbol = String(ticker ?? "").toUpperCase().trim();
   const upcomingEarnings = useUpcomingEarnings(symbol);
+  const chartVolume = useChartVolume(symbol);
   const usesWorkspaceChartState = workspaceChartState != null;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -5560,9 +5563,10 @@ const gapFillLabel =
           </div>
         </div>
 
-        {!isChartFullscreen && !compactMobile ? (
-          <>
-            <div className="mt-4 hidden gap-3 md:grid md:grid-cols-2">
+        {!isChartFullscreen ? (
+            <div className={`mt-4 grid grid-cols-2 gap-3 ${compactMobile ? "sm:grid-cols-3" : "xl:grid-cols-5"}`}>
+              {!compactMobile ? (
+                <>
               <div className="rounded-2xl border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-xl">
                 <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
                   Interval
@@ -5580,8 +5584,14 @@ const gapFillLabel =
                   {formatCompactNumber(latestDisplayVolume)}
                 </div>
               </div>
+                </>
+              ) : null}
+              <ChartVolumeStats {...chartVolume} />
             </div>
+        ) : null}
 
+        {!isChartFullscreen && !compactMobile ? (
+          <>
             <TradeReadinessBar
               score={displayedSignalScore}
               bias={readiness.bias}
