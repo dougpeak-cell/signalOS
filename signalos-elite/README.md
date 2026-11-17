@@ -203,6 +203,27 @@ if all sources fail the API returns HTTP 503 and explicit unavailable reasons.
   identify new, increased, reduced, unchanged, and closed positions. Missing split
   history, missing consecutive reports, or invalid shares leave changes unavailable.
   Split history caches for 24 hours. Historical changes never modify AMSA scores.
+- **Quarterly hedge-fund activity:** Beneath Institutional disclosures, eight
+  completed calendar quarters show estimated additions, reductions, and net
+  activity for an expanded eight-manager sample: the three snapshot funds plus
+  Bridgewater, Appaloosa, Coatue, Tiger Global, and Viking. Expand each quarter
+  for fund-level net share changes, estimated dollar changes, full reported
+  quarter-end holding values, filing dates, and SEC links. The separate
+  `/api/experts/institutional-activity` endpoint enforces the same Pro access
+  check before provider calls; hidden desktop panels do not fetch it.
+  Estimates multiply split-adjusted consecutive-quarter share changes by the
+  quarter's last available close (within seven days), with FMP's split-adjusted
+  historical prices restored to that quarter's share basis. They are **not**
+  actual cash flows, transaction costs, gross purchases/sales, or changes in
+  holding value caused solely by price moves. Options are excluded. A closed
+  position requires a verified complete current filing, not an empty response.
+  Missing/ambiguous filings, missing baselines, invalid splits, and missing prices
+  are explicit unavailable states. Partial totals show the number of valued
+  managers; missing activity is never silently counted as zero. Recent quarters
+  may be unfiled or missing from FMP. Reports/prices cache six hours, splits one
+  day; requests use bounded concurrency and a loading deadline, marking any
+  unfinished snapshots incomplete. This does not broaden the separate top-20
+  investment rankings' three-fund sample or change AMSA/alignment scores.
 - **AMSA:** Reuse `resolveCurrentStockPulse`, requiring ready/partial engine status,
   a verified completed-session reading, a finite score, and an as-of timestamp no
   older than seven days. This is standalone stock AMSA with no external market or

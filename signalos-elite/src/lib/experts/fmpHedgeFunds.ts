@@ -41,7 +41,7 @@ async function fetchRows(
   }
 }
 
-async function mapLimited<T, R>(items: T[], work: (item: T) => Promise<R>): Promise<R[]> {
+export async function mapLimited<T, R>(items: T[], work: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = new Array(items.length);
   let index = 0;
   let failed = false;

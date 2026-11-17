@@ -4,6 +4,8 @@ import Link from "next/link";
 import { RefreshCw, Search } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
 import type { ResearchAlignmentFeed } from "@/lib/experts/researchAlignment";
+import type { InstitutionalActivityState } from "@/hooks/useInstitutionalActivity";
+import InstitutionalActivityPanel from "@/components/experts/InstitutionalActivityPanel";
 
 function money(value: number | null): string {
   return value == null ? "Unavailable" : new Intl.NumberFormat("en-US", {
@@ -33,9 +35,11 @@ function EvidenceCard({ title, children, warnings }: {
 export default function ResearchAlignmentPanel({
   symbol, feed, loading, error, hasAccess, searchable, input, inputError, onInput, onSubmit, onRetry,
   title = "Sigi Conviction", compact = false,
+  institutionalActivity,
 }: {
   title?: string;
   compact?: boolean;
+  institutionalActivity?: InstitutionalActivityState;
   symbol: string;
   feed: ResearchAlignmentFeed | null;
   loading: boolean;
@@ -58,7 +62,7 @@ export default function ResearchAlignmentPanel({
                 <EvidenceCard title="Institutional disclosures" warnings={institutions?.status === "available" ? institutions.warnings : []}>
                   {institutions?.status === "available" ? (
                     <>
-                      <p className="text-xs text-slate-400">Named fund sample, not all managers. Quarter-end holdings, not real-time trades.</p>
+                      <p className="text-xs text-slate-400">Latest holdings from the snapshot sample, not all managers. Expanded quarterly coverage is listed below. Quarter-end holdings, not real-time trades.</p>
                       {changes.map((change) => (
                         <div key={change.fund} className="border-l-2 border-emerald-300/30 pl-3 text-xs">
                           <p className="font-semibold text-white">{change.fund}: {change.change}</p>
@@ -85,6 +89,7 @@ export default function ResearchAlignmentPanel({
                       <p className="text-xs text-slate-400">13F reports can arrive 45 days after quarter-end, omit shorts and cash, and do not reveal subsequent trades. Changes compare consecutive reports, not trading dates. Older report means more than 135 calendar days old.</p>
                     </>
                   ) : <p className="text-amber-200">{institutions?.error ?? "Institutional evidence unavailable."}</p>}
+                  {institutionalActivity && <InstitutionalActivityPanel {...institutionalActivity} />}
                 </EvidenceCard>
                 <EvidenceCard title="Wall Street analysts" warnings={analysts?.status === "available" ? analysts.warnings : []}>
                   {analysts?.status === "available" ? (
@@ -157,6 +162,11 @@ export default function ResearchAlignmentPanel({
           {loading && <p role="status" className="mt-4 text-sm text-cyan-200">Verifying analyst, institutional, and AMSA evidence...</p>}
           {error && <p role="alert" className="mt-4 text-sm text-amber-200">{error}</p>}
           {!symbol && !loading && <p className="mt-4 text-sm text-slate-400">Choose a stock to compare verified research sources.</p>}
+          {!feed && symbol && institutionalActivity && (
+            <EvidenceCard title="Institutional disclosures">
+              <InstitutionalActivityPanel {...institutionalActivity} />
+            </EvidenceCard>
+          )}
           {feed && !loading && (
             <>
               <div className="mt-4 border-l-2 border-cyan-300/40 pl-4">
