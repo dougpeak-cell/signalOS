@@ -207,7 +207,8 @@ test("recent analyst activity excludes stale, future, unrelated and duplicated r
     }));
     assert.match(html, /Expert Snapshot/);
     assert.match(html, /<details/);
-    assert.match(html, /Report dates:/);
+    assert.doesNotMatch(html, /Report dates:|>Institutions<\/dt>/);
+    assert.match(html, /2026-07-26 to 2026-10-24/);
     assert.match(html, /Estimate and price-target revisions: unavailable/);
   });
 });
@@ -300,18 +301,17 @@ function render(feed: ResearchAlignmentFeed | null, hasAccess = true): string {
   }));
 }
 
-test("responsive cards disclose old reports, missing data, and the absence of a new score", async () => {
+test("responsive cards omit legacy institutional snapshots and retain independent research evidence", async () => {
   await withProvider(null, async () => {
     const feed = await loadResearchAlignment("AMZN", { now, loadPulse: mockPulse });
     const html = render(feed);
-    assert.match(html, /xl:grid-cols-3/);
-    assert.match(html, /Older report/);
-    assert.match(html, /2023-12-31/);
+    assert.match(html, /xl:grid-cols-2/);
+    assert.doesNotMatch(html, /Institutional disclosures|Older report|2023-12-31/);
     assert.match(html, /not a combined score/);
     assert.match(html, /Quarterly fund disclosures are historical context/);
-    assert.match(html, /Reported value/);
-    assert.match(html, /SEC source filing/);
-    assert.doesNotMatch(render(feed, false), /Reported value/);
+    assert.match(html, /Wall Street analysts/);
+    assert.match(html, /Independent Sigi Pulse/);
+    assert.doesNotMatch(render(feed, false), /Wall Street analysts/);
     assert.match(render(null, false), /Explore Pro/);
   });
 });

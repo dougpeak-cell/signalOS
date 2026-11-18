@@ -174,10 +174,11 @@ Run `npx tsx --test tests/smoke/senatePurchases.test.ts` and
 
 Experts, Vision, and Stock Detail share a responsive research panel, labeled
 **Institutional Desk**, **Sigi Conviction**, and **Smart Money**, respectively.
-Phone Vision uses a compact **Expert Snapshot** with expandable source evidence.
+Phone Vision uses a compact **Expert Snapshot** with expandable analyst/Pulse
+evidence and directly visible quarterly hedge-fund activity.
 The Experts and desktop Vision panels accept a ticker; phone Vision follows the
 stock being evaluated, and Stock Detail follows its route ticker. Cards stack on
-phones and use three columns on wide screens. The phone Vision tree does not
+phones; analyst/Pulse evidence uses two columns on wide screens. The phone Vision tree does not
 activate the hidden desktop research fetch.
 
 Research remains a Sigi Pro feature: `/api/experts/research?symbol=AAPL` checks Pro
@@ -193,8 +194,8 @@ if all sources fail the API returns HTTP 503 and explicit unavailable reasons.
   last 90 days; this does not imply a consensus change or complete market coverage.
   Estimate and price-target revision histories are not connected and are explicitly
   unavailable. Missing targets or action history produce notes, not invented data.
-- **Institutions:** The same named fund reports as the existing investment panel
-  (Pershing Square, Third Point, Greenlight). Show quarter-end shares, reported USD
+- **Legacy institutional snapshot API:** The same named fund reports as the existing investment panel
+  (Pershing Square, Third Point, Greenlight). Retains quarter-end shares, reported USD
   value, reporting/filing dates, and SEC links. Reports older than 135 calendar days
   are flagged. These are a sample, not industry-wide coverage; absence is not a
   sell signal. Holdings are not recast as trades, flows, or current holdings.
@@ -203,7 +204,10 @@ if all sources fail the API returns HTTP 503 and explicit unavailable reasons.
   identify new, increased, reduced, unchanged, and closed positions. Missing split
   history, missing consecutive reports, or invalid shares leave changes unavailable.
   Split history caches for 24 hours. Historical changes never modify AMSA scores.
-- **Quarterly hedge-fund activity:** Beneath Institutional disclosures, eight
+  The older Institutional disclosures UI and compact snapshot summary have been
+  removed; the existing API remains compatible.
+- **Quarterly hedge-fund activity:** A standalone section visible on desktop and
+  phone (outside the compact evidence toggle) shows eight
   completed calendar quarters show estimated additions, reductions, and net
   activity for an expanded eight-manager sample: the three snapshot funds plus
   Bridgewater, Appaloosa, Coatue, Tiger Global, and Viking. Expand each quarter

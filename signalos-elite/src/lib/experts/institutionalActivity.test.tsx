@@ -7,6 +7,7 @@ import {
 } from "./institutionalActivity";
 import { loadInstitutionalActivity, readInstitutionalSnapshot } from "./fmpInstitutionalActivity";
 import type { FmpRow } from "./fmpClient";
+import type { ResearchAlignmentFeed } from "./researchAlignment";
 
 const today = "2026-11-16";
 const funds = [{ cik: "0000000001", name: "Fund A" }, { cik: "0000000002", name: "Fund B" }];
@@ -72,6 +73,37 @@ describe("quarterly institutional activity", () => {
     };
     expect(renderToStaticMarkup(<ResearchAlignmentPanel {...props} />)).toContain("last 8 quarters");
     expect(renderToStaticMarkup(<ResearchAlignmentPanel {...props} hasAccess={false} />)).not.toContain("last 8 quarters");
+  });
+
+  it("shows hedge-fund activity outside collapsed phone evidence and removes the legacy disclosure area", () => {
+    const activity = buildInstitutionalActivity({ symbol: "AAPL", today, funds, splits: [], prices, reports: [] });
+    const feed: ResearchAlignmentFeed = {
+      symbol: "AAPL", retrievedAt: `${today}T18:00:00Z`,
+      analysts: { status: "unavailable", error: "Analyst source unavailable" },
+      amsa: { status: "unavailable", error: "Pulse unavailable" },
+      institutions: {
+        status: "available", warnings: ["Legacy report warning"],
+        data: {
+          funds: [{ name: "Legacy snapshot fund", reportDate: "2023-12-31", olderReport: true }],
+          positions: [],
+        },
+      },
+      alignment: { label: "Insufficient evidence", explanation: "Independent research." },
+    };
+    for (const compact of [false, true]) {
+      const html = renderToStaticMarkup(<ResearchAlignmentPanel
+        symbol="AAPL" feed={feed} loading={false} error={null} hasAccess searchable={false}
+        input="AAPL" inputError={null} onInput={() => {}} onSubmit={() => {}} onRetry={() => {}}
+        compact={compact} institutionalActivity={{ activity, loading: false, error: null, retry: () => {} }}
+      />);
+      expect(html).not.toMatch(/Institutional disclosures|Legacy snapshot fund|Legacy report warning/);
+      expect(html.match(/aria-label="Quarterly hedge-fund activity"/g)).toHaveLength(1);
+      if (compact) {
+        const evidenceToggle = html.indexOf('<details class="mt-4">');
+        expect(evidenceToggle).toBeGreaterThan(html.indexOf('aria-label="Quarterly hedge-fund activity"'));
+        expect(html).not.toContain(">Institutions</dt>");
+      }
+    }
   });
 
   it("adjusts share comparisons for splits and restores historical closes to each quarter's basis", () => {

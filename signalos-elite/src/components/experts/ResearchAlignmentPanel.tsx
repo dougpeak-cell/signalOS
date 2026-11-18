@@ -53,44 +53,10 @@ export default function ResearchAlignmentPanel({
   onRetry: () => void;
 }): React.JSX.Element {
   const analysts = feed?.analysts;
-  const institutions = feed?.institutions;
   const amsa = feed?.amsa;
-  const changes = institutions?.status === "available" ? institutions.data.changes ?? [] : [];
   const activity = analysts?.status === "available" ? analysts.data.ratingActivity : null;
   const evidence = (
-              <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-3">
-                <EvidenceCard title="Institutional disclosures" warnings={institutions?.status === "available" ? institutions.warnings : []}>
-                  {institutions?.status === "available" ? (
-                    <>
-                      <p className="text-xs text-slate-400">Latest holdings from the snapshot sample, not all managers. Expanded quarterly coverage is listed below. Quarter-end holdings, not real-time trades.</p>
-                      {changes.map((change) => (
-                        <div key={change.fund} className="border-l-2 border-emerald-300/30 pl-3 text-xs">
-                          <p className="font-semibold text-white">{change.fund}: {change.change}</p>
-                          <p>{change.previousReportDate ?? "Prior quarter unavailable"} to {change.reportDate}</p>
-                          <p>{change.previousShares?.toLocaleString("en-US") ?? "Unknown"} to {change.shares.toLocaleString("en-US")} reported shares</p>
-                          {change.splitFactor != null && change.splitFactor !== 1 && <p>Comparison adjusted for a {change.splitFactor}x share split.</p>}
-                        </div>
-                      ))}
-                      {institutions.data.funds.map((fund) => (
-                        <p key={fund.name} className="text-xs">
-                          {fund.name}: {fund.reportDate}
-                          {fund.olderReport && <span className="ml-1 font-semibold text-amber-200">(Older report)</span>}
-                        </p>
-                      ))}
-                      {institutions.data.positions.length ? institutions.data.positions.map((position) => (
-                        <div key={position.fund} className="border-l border-white/15 pl-3 text-xs">
-                          <p className="font-semibold text-white">{position.fund}</p>
-                          <p>{position.shares.toLocaleString("en-US")} reported shares<br />
-                            Reported value: {money(position.reportedValue)} (quarter-end USD)<br />
-                            As of {position.reportDate}; filed {position.filingDate ?? "date unavailable"}</p>
-                          {position.filingUrl && <a href={position.filingUrl} target="_blank" rel="noreferrer" className="font-semibold text-cyan-200 hover:underline">SEC source filing</a>}
-                        </div>
-                      )) : <p>No long-share position was returned for this stock in the named sample&apos;s available reports. This is not a sell signal.</p>}
-                      <p className="text-xs text-slate-400">13F reports can arrive 45 days after quarter-end, omit shorts and cash, and do not reveal subsequent trades. Changes compare consecutive reports, not trading dates. Older report means more than 135 calendar days old.</p>
-                    </>
-                  ) : <p className="text-amber-200">{institutions?.error ?? "Institutional evidence unavailable."}</p>}
-                  {institutionalActivity && <InstitutionalActivityPanel {...institutionalActivity} />}
-                </EvidenceCard>
+              <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-2">
                 <EvidenceCard title="Wall Street analysts" warnings={analysts?.status === "available" ? analysts.warnings : []}>
                   {analysts?.status === "available" ? (
                     <>
@@ -162,10 +128,10 @@ export default function ResearchAlignmentPanel({
           {loading && <p role="status" className="mt-4 text-sm text-cyan-200">Verifying analyst, institutional, and AMSA evidence...</p>}
           {error && <p role="alert" className="mt-4 text-sm text-amber-200">{error}</p>}
           {!symbol && !loading && <p className="mt-4 text-sm text-slate-400">Choose a stock to compare verified research sources.</p>}
-          {!feed && symbol && institutionalActivity && (
-            <EvidenceCard title="Institutional disclosures">
+          {symbol && institutionalActivity && (
+            <div className="mt-4">
               <InstitutionalActivityPanel {...institutionalActivity} />
-            </EvidenceCard>
+            </div>
           )}
           {feed && !loading && (
             <>
@@ -177,7 +143,6 @@ export default function ResearchAlignmentPanel({
               {compact ? (
                 <>
                   <dl className="mt-4 space-y-3 text-xs">
-                    <div><dt className="text-slate-400">Institutions</dt><dd>{changes.length ? `${changes.filter((change) => ["New position", "Increased"].includes(change.change)).length} adding / ${changes.filter((change) => ["Reduced", "Closed position"].includes(change.change)).length} reducing / ${changes.filter((change) => change.change === "Unchanged").length} unchanged / ${changes.filter((change) => change.change === "Unavailable").length} unverified comparisons` : "Quarterly changes unavailable"}{changes.length > 0 && <span className="block text-slate-400">Report dates: {[...new Set(changes.map((change) => change.reportDate))].join(", ")}</span>}</dd></div>
                     <div><dt className="text-slate-400">Analysts</dt><dd>{analysts?.status === "available" ? `${analysts.data.consensus} (undated consensus)` : "Unavailable"}{activity ? `; ${activity.upgrades} upgrades / ${activity.downgrades} downgrades, ${activity.from} to ${activity.through}` : ""}</dd></div>
                     <div><dt className="text-slate-400">Sigi Pulse</dt><dd>{amsa?.status === "available" ? `${amsa.data.score} - ${amsa.data.state}; session ${amsa.data.sessionDate}` : "Unavailable"}</dd></div>
                   </dl>
