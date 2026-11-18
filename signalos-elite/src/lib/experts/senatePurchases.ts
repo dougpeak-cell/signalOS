@@ -61,8 +61,8 @@ function filingUrl(value: unknown): string | null {
 
 export function normalizeSenatePurchase(row: FmpRow): SenatePurchase | null {
   const symbol = text(row.symbol)?.toUpperCase();
-  // A ticker can refer to bonds or options too: require an explicit stock classification.
-  if (text(row.assetType)?.toLowerCase() !== "stock" ||
+  // A ticker can refer to bonds or options too: require a stock or ETF classification.
+  if (!["stock", "etf"].includes(text(row.assetType)?.toLowerCase() ?? "") ||
       text(row.type)?.toLowerCase() !== "purchase" ||
       !symbol || !/^[A-Z][A-Z0-9.-]{0,14}$/.test(symbol)) return null;
   return {

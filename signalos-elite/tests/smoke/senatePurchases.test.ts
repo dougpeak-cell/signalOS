@@ -25,15 +25,40 @@ test("calendar windows are inclusive and use New York date, not UTC date", () =>
   assert.equal(senateWindow("today", new Date("2026-10-30T02:00:00Z")).endDate, "2026-10-29");
 });
 
-test("only explicit public-stock purchases qualify even when bonds/options have tickers", () => {
+test("only explicit stock and ETF purchases qualify even when other assets have tickers", () => {
   assert.ok(normalizeSenatePurchase(purchase));
-  for (const assetType of ["Corporate Bond", "Stock Option", "Non-Public Stock", "Other", ""]) {
+  for (const assetType of ["Corporate Bond", "Municipal Security", "Stock Option", "Non-Public Stock", "Mutual Fund", "Other", ""]) {
     assert.equal(normalizeSenatePurchase({ ...purchase, assetType }), null);
   }
-  for (const type of ["Sale", "Sale (Partial)", "Exchange"]) {
-    assert.equal(normalizeSenatePurchase({ ...purchase, type }), null);
+  for (const assetType of ["Stock", "ETF"]) {
+    for (const type of ["Sale", "Sale (Partial)", "Sale (Full)", "Exchange"]) {
+      assert.equal(normalizeSenatePurchase({ ...purchase, assetType, type }), null);
+    }
   }
   assert.equal(normalizeSenatePurchase({ ...purchase, symbol: "../BAD" }), null);
+});
+
+test("includes equity and bond ETFs with the same date, duplicate and amount-range rules as stocks", () => {
+  const etf = { ...purchase, symbol: "HYBB", assetType: " ETF ", assetDescription: "iShares BB Rated Corporate Bond ETF" };
+  const feed = selectSenatePurchases([
+    purchase, etf, etf,
+    { ...etf, symbol: "SPY", assetDescription: "Equity ETF" },
+    { ...etf, symbol: "MBB", assetType: "Stock", assetDescription: "iShares MBS ETF" },
+    { ...etf, symbol: "OLD", disclosureDate: "2026-10-23" },
+    { ...etf, symbol: "" },
+  ], "week", "disclosure", true, now);
+  assert.deepEqual(feed.rows.map((row) => row.symbol), ["AAA", "HYBB", "SPY", "MBB"]);
+  assert.equal(feed.matchedRows, 4);
+  assert.equal(feed.rows[1].amountRange, "$1,001 - $15,000");
+  assert.equal(selectSenatePurchases([etf], "week", "purchase", true, now).matchedRows, 0);
+  const html = renderToStaticMarkup(createElement(SenatePurchasesPanel, {
+    feed, loading: false, error: null, period: "week", basis: "disclosure",
+    onPeriodChange: () => {}, onBasisChange: () => {}, onRetry: () => {},
+  }));
+  assert.match(html, /Senate stock and ETF purchases/);
+  assert.match(html, /Bond ETFs are included; individual bonds/);
+  assert.match(html, /Stock \/ ETF purchase/);
+  assert.match(html, /HYBB/);
 });
 
 test("preserves amount ranges, owner, dates and safe Senate links without inventing exact dollars", () => {
@@ -117,6 +142,6 @@ test("responsive panel renders every time/date control and clearly labels empty 
   for (const label of ["Today", "Past 7 days", "Past 30 days", "Past 90 days", "Past year", "Disclosure date", "Purchase date"]) {
     assert.ok(html.includes(label));
   }
-  assert.match(html, /No matching stock purchases were found in the scanned sample/);
+  assert.match(html, /No matching stock or ETF purchases were found in the scanned sample/);
   assert.match(html, /not exact investments/);
 });

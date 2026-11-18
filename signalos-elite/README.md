@@ -139,9 +139,9 @@ stock quotes or sample contracts for missing options data.
 
 Run focused checks with `npx vitest run src/lib/options`.
 
-## Senate Stock Purchases
+## Senate Stock and ETF Purchases
 
-The shared desktop/phone Experts Pro dashboard includes Senate stock purchases
+The shared desktop/phone Experts Pro dashboard includes Senate stock and ETF purchases
 from FMP's `senate-latest` endpoint, using the existing server-only `FMP_API_KEY`.
 `GET /api/experts/senate` requires Pro access before making provider calls.
 
@@ -151,11 +151,13 @@ is the default date basis; users can switch to purchase date. The initial window
 is the past seven days. The API accepts `period=today|week|month|quarter|year`
 and `basis=disclosure|purchase`.
 
-Only explicit `Stock` / `Purchase` records with usable tickers are included.
-Bonds, stock options, non-public stock, other assets, and sales are excluded even
+Only explicit `Stock` or `ETF` records with type `Purchase` and usable tickers are included.
+Equity and bond ETFs are eligible, including ETFs FMP classifies as `Stock`.
+Individual bonds, stock options, non-public stock, mutual funds, other assets, and sales are excluded even
 when FMP supplies a ticker. Cards preserve disclosed dollar ranges without
 inventing exact values; show senator, reported owner (including spouses/joint
-holdings), both dates, and a Senate source link when available.
+holdings), both dates, and a Senate source link when available. The shared UI
+labels the scope as stocks and ETFs; asset classifications are supplied by FMP.
 
 Each request scans up to ten pages of 100 latest filing rows, removes exact
 duplicate provider records, and shows the newest 50 matching rows. The panel

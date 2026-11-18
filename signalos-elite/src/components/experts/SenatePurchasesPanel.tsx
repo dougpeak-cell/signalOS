@@ -13,17 +13,18 @@ export default function SenatePurchasesPanel({
   onRetry: () => void;
 }): React.JSX.Element {
   return (
-    <section aria-label="Senate stock purchases" aria-busy={loading} className="min-w-0 rounded-3xl border border-cyan-400/20 bg-slate-950/80 p-4 text-white sm:p-6">
+    <section aria-label="Senate stock and ETF purchases" aria-busy={loading} className="min-w-0 rounded-3xl border border-cyan-400/20 bg-slate-950/80 p-4 text-white sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300">FMP Senate disclosures</p>
-          <h2 className="mt-2 text-xl font-semibold">Senate stock purchases</h2>
+          <h2 className="mt-2 text-xl font-semibold">Senate stock and ETF purchases</h2>
         </div>
         <button type="button" onClick={onRetry} disabled={loading} className="rounded-lg border border-white/15 px-3 py-2 text-xs hover:bg-white/5 disabled:opacity-50">Refresh purchases</button>
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-400">
-        Public-stock purchases reported by senators, including spouse, joint, and dependent ownership as disclosed.
-        Amounts are reported dollar ranges, not exact investments. Bonds, options, private stock, and sales are excluded.
+        Public-stock and ETF purchases reported by senators, including spouse, joint, and dependent ownership as disclosed.
+        Bond ETFs are included; individual bonds, options, private stock, and sales are excluded.
+        Amounts are reported dollar ranges, not exact investments. Asset classifications come from FMP.
       </p>
       <div role="group" aria-label="Senate purchase period" className="mt-4 flex flex-wrap gap-2">
         {SENATE_PERIODS.map((item) => (
@@ -57,7 +58,7 @@ export default function SenatePurchasesPanel({
           {feed.warnings.map((warning) => <p key={warning} className="mt-2 text-xs leading-5 text-amber-200">{warning}</p>)}
           {!feed.rows.length ? (
             <p className="mt-4 rounded-xl border border-white/10 p-4 text-sm text-slate-300">
-              No matching stock purchases were found in the scanned sample for this {basis}-date window. Try a wider period or the other date filter.
+              No matching stock or ETF purchases were found in the scanned sample for this {basis}-date window. Try a wider period or the other date filter.
             </p>
           ) : (
             <div className="mt-4 grid min-w-0 gap-3 xl:grid-cols-2">
@@ -70,7 +71,7 @@ export default function SenatePurchasesPanel({
                   <p className="mt-3 text-sm text-white">{row.senator}{row.state ? ` (${row.state})` : ""}</p>
                   <dl className="mt-2 grid grid-cols-1 gap-2 text-xs leading-5 text-slate-400 sm:grid-cols-2">
                     <div><dt>Reported owner</dt><dd className="text-slate-200">{row.owner}</dd></div>
-                    <div><dt>Transaction</dt><dd className="text-slate-200">Stock purchase</dd></div>
+                    <div><dt>Transaction</dt><dd className="text-slate-200">Stock / ETF purchase</dd></div>
                     <div><dt>Purchased</dt><dd className="text-slate-200">{row.purchaseDate ?? "Not disclosed"}</dd></div>
                     <div><dt>Disclosed</dt><dd className="text-slate-200">{row.disclosureDate ?? "Not disclosed"}</dd></div>
                   </dl>
