@@ -61,6 +61,25 @@ The existing configured remote instance did not have these tables during review;
 it was inspected read-only and deliberately left unchanged. Until a development
 database is configured, saving/processing watches reports a setup error.
 
+For a hosted development database, use a project in a **Free organization**.
+Supabase's Free plan is $0/month, includes a 500 MB database, allows up to two
+active free projects across eligible organizations, and may pause after one
+inactive week. Check available slots before creating a project. A project in a
+paid organization is not a free alternative; do not enable paid branching or
+upgrade the organization for this test. See the current
+[pricing](https://supabase.com/pricing) and
+[billing rules](https://supabase.com/docs/guides/platform/billing-on-supabase).
+Existing FMP subscription limits still apply.
+
+Keep development credentials in the ignored `.env.pullback-dev.local`, never
+in Git or chat, and verify its Supabase URL differs from `.env.local` before
+any writes. This custom file is **not automatically loaded** by Next.js or
+`npm run pullback:monitor`; that monitor command loads `.env.local`. Do not
+start monitoring until both processes explicitly use the same isolated
+development configuration. A fresh Supabase project also needs the app's
+profile/settings schema and an authenticated development Pro account; the
+Pullback Watch migration alone does not provision those prerequisites.
+
 Opening watched stocks checks their current evidence. **Notify me** opts into
 background monitoring; pausing stops new events, not saved event history.
 With the same `CRON_SECRET` configured for the local server and monitor, run
