@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AccountMenu from "@/components/navigation/AccountMenu";
 import DiscordInviteButton from "@/components/community/DiscordInviteButton";
+import PullbackAlertButton from "@/components/pullback/PullbackAlertButton";
 import { MobileHealthyWealthButton } from "@/components/today/HealthyWealthButton";
 import { features } from "@/lib/features";
 import {
@@ -389,7 +390,7 @@ export default function TopNav({
               onClick={toggleMobilePreview}
               className={[
                 forceMobilePreview
-                  ? "inline-flex min-h-9 items-center rounded-full border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] transition"
+                  ? "hidden min-h-9 items-center rounded-full border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] transition sm:inline-flex"
                   : "hidden min-h-9 items-center rounded-full border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] transition 2xl:inline-flex",
                 isMobilePreviewEnabled
                   ? "border-cyan-400/30 bg-cyan-400/12 text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.14)]"
@@ -434,6 +435,7 @@ export default function TopNav({
               </div>
             </div>
           ) : null}
+          <PullbackAlertButton />
         </div>
       </div>
     </header>

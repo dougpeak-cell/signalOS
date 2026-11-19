@@ -10,6 +10,7 @@ import { distinctVerifiedStockReadings, PULSE_ALERT_PREFERENCE_EVENT, PULSE_ALER
 import { detectPulseChanges } from "@/lib/amsa/evolution/changeDetection";
 import MobileSigiSheet from "@/components/shell/MobileSigiSheet";
 import { openMobileSigiSheet } from "@/components/shell/mobileSigiSheetEvents";
+import PullbackAlertButton from "@/components/pullback/PullbackAlertButton";
 
 type PulseReading = CurrentStockPulse & { pulse: AMSAStockPulse };
 type InstallPrompt = Event & {
@@ -195,11 +196,14 @@ export default function MobilePulseExperience({ initialSymbol = "" }: { initialS
       <header className="mx-auto flex max-w-xl items-center justify-between gap-3 px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
         <Link href="/pulse" className="flex min-h-11 items-center gap-2.5" aria-label="SigiOS Pulse home">
           <span className="flex size-9 items-center justify-center rounded-lg border border-teal-300/20 bg-teal-300/10 text-teal-200"><Activity className="size-5" /></span>
-          <span><span className="block text-lg font-bold">SigiOS</span><span className="block text-[10px] text-white/50">Intelligence beyond price</span></span>
+          <span><span className="block text-lg font-bold">SigiOS</span><span className="hidden text-[10px] text-white/50 min-[380px]:block">Intelligence beyond price</span></span>
         </Link>
+        <div className="flex items-center gap-2">
         <button type="button" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-controls="pulse-menu" aria-label={menuOpen ? "Close menu" : "Open menu"} title="More from SigiOS" className="flex size-11 items-center justify-center rounded-lg border border-white/15 text-white/70">
           {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
+        <PullbackAlertButton />
+        </div>
       </header>
       {menuOpen && <nav id="pulse-menu" aria-label="More from SigiOS" className="mx-auto grid max-w-xl grid-cols-2 gap-px border-y border-white/10 bg-white/10">
         {SECONDARY_LINKS.map(([label, href]) => <Link key={href} href={href} className="flex min-h-12 items-center justify-between bg-[#081315] px-5 text-sm">{label}<ArrowRight className="size-4 text-teal-200" /></Link>)}

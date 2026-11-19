@@ -87,3 +87,79 @@ test("Today places the compact card between Market Thesis and Sigi and integrate
   await expect(emerging.getByRole("region", { name: "Pullback Watch", exact: true })).toHaveCount(1);
   await expect(emerging.getByRole("region", { name: "Pullback Watch", exact: true })).toBeVisible();
 });
+
+test("red phone header button opens the matching saved follow-up, including at narrow widths", async ({ page }) => {
+  const saved = event();
+  await page.route("**/api/pullback-watch**", (route) => {
+    const params = new URL(route.request().url()).searchParams;
+    return route.fulfill({ json: params.has("event") ? { event: saved } : params.has("symbol") ?
+      { item: item(params.get("symbol")!) } : { watches: [], events: [event("analyst"), saved] } });
+  });
+  await page.route("**/api/experts/institutional-activity**", (route) => route.fulfill({
+    json: { ok: true, activity: { symbol: "TEST", through: "2026-11-19", funds: [], quarters: [], warnings: [] } },
+  }));
+  await page.goto("/watchlist/pullback?previewPlan=pro");
+  await acknowledgeLegal(page);
+  const alert = page.getByRole("banner").getByRole("link", { name: /^Alerts: 2 saved\. Open TEST Price & Volume update/ });
+  await expect(alert).toBeVisible();
+  await expect(alert).toHaveClass(/bg-red-700/);
+  const box = await alert.boundingBox();
+  expect(box && box.x > 390 / 2 && box.x + box.width >= 366 && box.y < 120 && box.height >= 44).toBe(true);
+  await page.setViewportSize({ width: 320, height: 800 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await alert.click();
+  await expect(page).toHaveURL(new RegExp(`event=${saved.id}`));
+  await expect(page.getByRole("region", { name: "Pullback alert evidence" }).getByText("TEST · Price & Volume", { exact: true })).toBeVisible();
+  await page.goto("/pulse?previewPlan=pro");
+  await expect(page.getByRole("banner").getByRole("link", { name: /^Alerts: 2 saved/ })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test.describe("desktop alert action", () => {
+test.use({ viewport: { width: 1440, height: 1000 }, isMobile: false, hasTouch: false });
+test("desktop headers keep the alert action across app, news, workspace and Pulse screens", async ({ page }) => {
+  await page.route("**/api/pullback-watch**", (route) => {
+    const symbol = new URL(route.request().url()).searchParams.get("symbol");
+    return route.fulfill({ json: symbol ? { item: item(symbol) } : { watches: [], events: [event()] } });
+  });
+  await page.goto("/watchlist/pullback?previewPlan=pro");
+  await acknowledgeLegal(page);
+  for (const path of ["/watchlist/pullback", "/news", "/workspace", "/pulse"]) {
+    await page.goto(`${path}?previewPlan=pro`);
+    const alert = page.getByRole("banner").getByRole("link", { name: /^Alerts: 1 saved/ });
+    await expect(alert).toBeVisible();
+    await expect(alert).toHaveAttribute("href", new RegExp(`event=${event().id}`));
+    const box = await alert.boundingBox();
+    const header = await page.getByRole("banner").boundingBox();
+    expect(box && header && box.x + box.width >= header.x + header.width - 30).toBe(true);
+  }
+  await page.goto("/watchlist/pullback?previewPlan=pro");
+  for (const width of [1280, 1536, 1920]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const alert = page.getByRole("banner").getByRole("link", { name: /^Alerts: 1 saved/ });
+    await expect(alert).toBeVisible();
+    const box = await alert.boundingBox();
+    expect(box && box.x + box.width <= width).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
+});
+});
+
+test("empty or failed inboxes do not invent alert updates or counts", async ({ page }) => {
+  let failed = false;
+  await page.route("**/api/pullback-watch**", (route) => route.fulfill({
+    status: failed ? 503 : 200,
+    json: failed ? { error: "Saved alert inbox unavailable." } :
+      new URL(route.request().url()).searchParams.has("symbol") ? { item: item() } : { watches: [], events: [] },
+  }));
+  await page.goto("/watchlist/pullback?previewPlan=pro");
+  await acknowledgeLegal(page);
+  const header = page.getByRole("banner");
+  const empty = header.getByRole("link", { name: "Alerts: no saved updates. Open Pullback Watch.", exact: true });
+  await expect(empty).toHaveAttribute("href", "/watchlist/pullback");
+  failed = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  const unavailable = header.getByRole("link", { name: /^Alerts unavailable:/ });
+  await expect(unavailable).toHaveAttribute("href", "/watchlist/pullback");
+  await expect(unavailable).toContainText("!");
+});

@@ -39,6 +39,14 @@ Create `.env.local` from that file and fill in only the values you need for your
   Desktop Today: inside Emerging Setups. The existing five-button navigation is
   unchanged. Watchlist includes pending counts, trusted-firm selection, and
   **Notify me**. Fresh Price & Volume events (within 24 hours) open that tab first.
+- A red **Alerts** action sits at the top right of the shared phone/desktop
+  header, including News and Workspace, and the standalone Pulse header. It
+  opens the newest saved Pullback Watch update directly in Vision (the follow-up
+  wins when both stages share a timestamp). Its badge counts saved events, not
+  unread or newly qualifying stocks. With no saved events it opens Pullback Watch;
+  an unavailable inbox shows `!` and an explanatory accessible label, never a
+  fabricated count. It checks the existing inbox every 30 seconds while visible
+  and on return to the app; it does not run extra market-data evaluations.
 - Access follows the existing **Pro research** rules in Experts. Mutations also
   require an authenticated account and same-origin request.
 
@@ -159,7 +167,7 @@ and network fixtures live only under tests. Install its browser with
 `npx playwright install webkit` if needed. Run `npm run build` for production
 compilation. No deployment command is part of this workflow.
 
-Local validation completed: **21 focused/shared regression checks, 3 mobile
+Local validation completed: **22 focused/shared regression checks, 6 phone/desktop
 WebKit flows, feature ESLint, and the production build passed**. A separate
 repository-wide `tsc --noEmit --incremental false` still reports pre-existing
 test typing errors in

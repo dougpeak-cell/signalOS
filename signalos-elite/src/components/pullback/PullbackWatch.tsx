@@ -5,13 +5,7 @@ import { useEffect, useState, type ReactElement } from "react";
 import { usePullbackWatch } from "@/hooks/usePullbackWatch";
 import { TRUSTED_FIRMS, type Firm, type Stage } from "@/lib/pullback/engine";
 import type { PullbackEvent, PullbackItem, PullbackWatch as Watch } from "@/lib/pullback/types";
-
-export function evidenceHref(symbol: string, stage: Stage, event?: PullbackEvent): string {
-  const params = new URLSearchParams({ symbol, pullbackWatch: "1", stage });
-  if (event) params.set("event", event.id);
-  if (process.env.NODE_ENV !== "production") params.set("previewPlan", "pro");
-  return `/vision?${params}`;
-}
+import { evidenceHref } from "@/lib/pullback/client";
 
 function NotifyControl({ symbol, watch, save }: {
   symbol: string; watch?: Watch;
