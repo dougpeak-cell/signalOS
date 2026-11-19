@@ -14,6 +14,7 @@ import { FeaturedPulseRanking } from "@/components/vision/featured-pulse-ranking
 import MobileVision from "@/components/vision/mobile/MobileVision";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import ResearchAlignment from "@/components/experts/ResearchAlignment";
+import PullbackEvidence from "@/components/pullback/PullbackEvidence";
 import type { AMSAFutureMap } from "@/lib/amsa";
 import { formatMarketTimestamp } from "@/lib/market/formatMarketTimestamp";
 import {
@@ -1327,6 +1328,7 @@ export default function VisionPage() {
 
   return (
     <main className="min-h-screen bg-black pb-28 text-white lg:pb-12">
+      <PullbackEvidence />
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(14,165,233,0.12),transparent_34%),radial-gradient(circle_at_85%_18%,rgba(45,212,191,0.075),transparent_31%)]" />
 
       <MobileVision

@@ -26,6 +26,151 @@ The repo-level environment contract lives in `.env.local.example`.
 
 Create `.env.local` from that file and fill in only the values you need for your local workflow. This keeps Supabase, Sigi provider, Stripe billing, market data, and ingest settings in one place.
 
+## Pullback Watch (local review; not deployed)
+
+- Review: `http://127.0.0.1:3100/watchlist/pullback?previewPlan=pro`
+  after `npm run dev -- --hostname 127.0.0.1 --port 3100`.
+  The existing development-only plan preview does not create an authenticated
+  account or grant permission to save notifications.
+- Real-data, read-only evidence:
+  `http://127.0.0.1:3100/vision?symbol=AAPL&pullbackWatch=1&previewPlan=pro`.
+  No example stocks, ratings, or alerts are injected into the app.
+- Phone Today: immediately below Market Thesis and above Ask Sigi.
+  Desktop Today: inside Emerging Setups. The existing five-button navigation is
+  unchanged. Watchlist includes pending counts, trusted-firm selection, and
+  **Notify me**. Fresh Price & Volume events (within 24 hours) open that tab first.
+- Access follows the existing **Pro research** rules in Experts. Mutations also
+  require an authenticated account and same-origin request.
+
+### Local persistence and monitoring
+
+Point the app at a **local/development Supabase instance**, then apply
+[`20261119220000_add_pullback_watch.sql`](supabase/migrations/20261119220000_add_pullback_watch.sql)
+there. The migration adds RLS-protected watches and an immutable in-app event inbox.
+Use that instance's normal Supabase URL, anon key and service-role key. Sign in
+with a local Pro account. No remote migration or production write is required.
+The existing configured remote instance did not have these tables during review;
+it was inspected read-only and deliberately left unchanged. Until a development
+database is configured, saving/processing watches reports a setup error.
+
+Opening watched stocks checks their current evidence. **Notify me** opts into
+background monitoring; pausing stops new events, not saved event history.
+With the same `CRON_SECRET` configured for the local server and monitor, run
+`npm run pullback:monitor` in another terminal. It calls
+`/api/cron/pullback-watch` at minute boundaries and refuses non-loopback origins.
+No production scheduler was added. A future scheduler must invoke that protected
+endpoint every minute; size its worker capacity and FMP quota for the watch
+universe. A time-budget failure is explicit, not successful delivery.
+
+The database serializes evaluations per watch and enforces a unique key on
+**user + symbol + pullback ID + stage**. Refreshes/retries cannot insert another
+event. The event stores the original evidence; opening it in Vision does not
+silently replace it with newer research.
+
+### Evidence rules and configuration
+
+The existing technical definition is reused: a close within 1% of the trailing
+20-session low, excluding the existing breakout case. An episode lasts until a
+completed-session close recovers its pre-pullback high. Its ID is retained in the
+watch snapshot, including across splits.
+
+Only exact, recognized original firm identities count. FMP's `gradingCompany`
+is used; an explicit original-research-firm field takes precedence over a
+distributor. Syndicated copies cannot add votes. Ambiguous composite identities
+and conflicting same-day actions are excluded. The latest known action must
+reaffirm the same favorable rating, be within the freshness window, and be
+demonstrably after onset. Date-only publications on the onset day are excluded.
+Two-firm observation time is saved; a later fresh quote can qualify the follow-up
+on the **same day**, without inventing a publication time.
+
+Price & Volume requires the configured number of completed stabilization
+sessions, lows within the support tolerance, intraday support still holding, and
+price advancing above both the last close and today's open. Cumulative minute
+volume is compared with the same completed session minute in the previous
+10 trading sessions, not with average full-day volume. Missing minutes, missing
+baselines, stale/future quotes, invalid split history, and stale daily history
+suppress qualification. Extended-hours bars are excluded. Early-close sessions
+cannot supply a baseline after their close. Price and volume are adjusted to
+today's share basis using verified FMP splits; raw intraday data is explicitly
+requested with `nonadjusted=true`.
+
+Optional server environment settings (defaults):
+
+| Variable | Default |
+| --- | --- |
+| `PULLBACK_STABILIZATION_SESSIONS` | `2` |
+| `PULLBACK_VOLUME_MULTIPLE` | `1.5` |
+| `PULLBACK_SUPPORT_TOLERANCE` | `0.01` |
+| `PULLBACK_ADVANCE_FRACTION` | `0.001` |
+| `PULLBACK_RATING_MAX_DAYS` | `14` |
+| `PULLBACK_QUOTE_MAX_SECONDS` | `120` |
+| `PULLBACK_VOLUME_SESSIONS` | `10` |
+
+### Verified provider coverage and gaps
+
+Live access was checked on 2026-11-19 using the existing FMP account:
+
+- AAPL grades, split-adjusted daily OHLC, one-minute raw OHLCV, and split history
+  returned successfully. The full evaluation correctly returned **no active
+  pullback**, not an illustrative alert.
+- AAPL's newest returned Argus record was **2026-11-03**; CFRA's was
+  **2024-10-21**. Neither is a fresh reaffirmation under the default 14-day rule.
+  Schwab and Morningstar were absent from the returned records. Recent coverage
+  badges use a 135-day window, not all-time appearances. These checks do not prove
+  firm-wide coverage for other stocks.
+- FMP Grades supplies the original rating, previous rating, action, grading firm,
+  and publication **date**, but no publication time, report URL, target changes,
+  or general syndication-lineage metadata in the verified response. These fields
+  are not fabricated, and consensus targets are not attached to individual
+  research reports. Unattributable distribution records must remain excluded;
+  verified additional coverage requires an existing-provider entitlement or
+  attributable original research, not scraping Schwab.
+- The existing institutional dates endpoint was accessible. A sampled Pershing
+  Square Q3 2026 extraction returned no rows. Missing filings/baselines are never
+  interpreted as new purchases. The existing split-aware institutional service
+  is reused in Vision: newly reported positions first, increases second, with
+  reporting period and filing date. Filings do **not** establish purchase dates.
+- Senate disclosures were accessible. The optional note reuses the existing
+  seven-day disclosure sample and shows purchase and disclosure dates separately;
+  it is not complete coverage or a qualification requirement.
+- Feed availability/latency and complete minute history remain prerequisites.
+  Notifications occur on the first processing pass after qualifying evidence is
+  available; this is not a tick-feed or guaranteed zero-latency service.
+
+### What phone delivery still needs
+
+The app had no push subscription or service-worker delivery implementation.
+This feature implements persistent **in-app** delivery only. Phone push still
+requires: a registered service worker with push/notification-click handlers,
+per-device consent and subscription UI, authenticated subscription registration
+and removal endpoints, RLS-protected device subscriptions, VAPID keys/HTTPS
+configuration, and a retryable delivery worker/outbox tied to the existing unique
+event ID (including expired-subscription cleanup). iOS web push also requires an
+installed Home Screen PWA on a supported iOS version. None was claimed deployed.
+
+### Validation
+
+`npm run test:pullback` covers research identity, freshness, ordering,
+split/reverse-split handling, same-minute volume, stale/missing evidence,
+subscription/write guards, and the actual PostgreSQL migration, RLS and retry
+deduplication using local PGlite. `npm run test:pullback:mobile` uses WebKit with
+an iPhone viewport against the running local dev server; all illustrative data
+and network fixtures live only under tests. Install its browser with
+`npx playwright install webkit` if needed. Run `npm run build` for production
+compilation. No deployment command is part of this workflow.
+
+Local validation completed: **21 focused/shared regression checks, 3 mobile
+WebKit flows, feature ESLint, and the production build passed**. A separate
+repository-wide `tsc --noEmit --incremental false` still reports pre-existing
+test typing errors in
+[`overview/route.test.ts`](src/app/api/vision/overview/route.test.ts),
+[`analystNewsSummary.test.ts`](src/lib/news/analystNewsSummary.test.ts), and
+[`expertsFeedBuckets.test.ts`](tests/smoke/expertsFeedBuckets.test.ts); these were
+left unchanged. Persistence was verified against the real migration in local
+PGlite, not by modifying the configured remote Supabase database. Mobile
+interactions use test-only fixtures; live FMP checks are reported separately
+above and do not claim a qualifying real alert.
+
 ## Membership Signup Availability
 
 New paid memberships and trials are open. The `MEMBERSHIP_SIGNUPS_PAUSED` flag in
