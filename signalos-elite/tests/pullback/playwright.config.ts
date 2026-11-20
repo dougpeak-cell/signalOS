@@ -7,5 +7,5 @@ export default defineConfig({
   expect: { timeout: 30_000 },
   workers: 1,
   outputDir: "..\\..\\test-results\\pullback",
-  use: { ...devices["iPhone 13"], baseURL: "http://localhost:3100", trace: "retain-on-failure" },
+  use: { ...devices["iPhone 13"], baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3100", trace: "retain-on-failure" },
 });

@@ -195,7 +195,10 @@ split/reverse-split handling, same-minute volume, stale/missing evidence,
 subscription/write guards, and the actual PostgreSQL migration, RLS and retry
 deduplication using local PGlite. `npm run test:pullback:mobile` uses WebKit with
 an iPhone viewport against the running local dev server; all illustrative data
-and network fixtures live only under tests. Install its browser with
+and network fixtures live only under tests. The default origin is
+`http://localhost:3100`. For the isolated development server in PowerShell, run
+`$env:PLAYWRIGHT_BASE_URL='http://localhost:3101'; npm run test:pullback:mobile`.
+Install its browser with
 `npx playwright install webkit` if needed. Run `npm run build` for production
 compilation. No deployment command is part of this workflow.
 
@@ -210,6 +213,17 @@ left unchanged. Persistence was verified against the real migration in local
 PGlite, not by modifying the configured remote Supabase database. Mobile
 interactions use test-only fixtures; live FMP checks are reported separately
 above and do not claim a qualifying real alert.
+
+Live development verification on November 20, 2026 at 10:07 a.m. Eastern:
+two authenticated job passes successfully evaluated MSFT and NVDA against the
+separate development database. Both had active pullbacks but **0 of 2**
+qualifying firms, so neither stage emitted an alert. MSFT had recent Argus
+coverage, not a qualifying reaffirmation; NVDA had no verified recent preferred
+firm coverage. No saved events or duplicate event keys were created. Review
+account notification preferences were temporarily enabled for the check and
+restored afterward. The 16 Pullback regression tests and six WebKit flows passed.
+This verifies live queue processing and correct suppression, not a live
+two-firm alert or live Price & Volume qualification.
 
 ## Membership Signup Availability
 
