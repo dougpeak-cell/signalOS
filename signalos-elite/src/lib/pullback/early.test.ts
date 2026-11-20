@@ -59,9 +59,26 @@ describe("opt-in-only early evidence", () => {
     ] })).toEqual([]);
   });
 
-  it("does not mistake sells, option transactions, increases or missing filing evidence for a new purchase", () => {
+  it("accepts a single filed 13F increase once without other evidence or a valuation", () => {
+    const report = structuredClone(institutional);
+    const fund = { ...report.quarters[0].funds[0], change: "Increased" as const };
+    report.quarters[0].funds = [fund, fund];
+    const only13F = { ...input, ratings: [], insiders: [], senate: [], institutional: report };
+    const signals = selectEarlySignals(only13F);
+    expect(signals).toHaveLength(1);
+    expect(signals[0]).toMatchObject({ kind: "hedge-fund", publishedAt: fund.filingDate,
+      filingUrl: fund.filingUrl, details: expect.stringContaining("100 shares") });
+    expect(selectEarlySignals({ ...only13F, since: "2026-11-20T14:00:00Z" })).toEqual([]);
+    expect(selectEarlySignals({ ...only13F, symbol: "OTHER" })).toEqual([]);
+  });
+
+  it("does not mistake sells, option transactions, valuation gains or missing evidence for a purchase", () => {
     const incomplete = structuredClone(institutional);
-    incomplete.quarters[0].funds[0].change = "Increased";
+    const [fund] = incomplete.quarters[0].funds;
+    incomplete.quarters[0].funds = [
+      { ...fund, change: "Increased", sharesDelta: null }, { ...fund, change: "Increased", filingUrl: null },
+      { ...fund, change: "Unchanged", sharesDelta: 0 }, { ...fund, change: "Increased", sharesDelta: 0 },
+    ];
     expect(selectEarlySignals({
       ...input, ratings: [], institutional: incomplete,
       insiders: [{ ...insider, transactionType: "S-Sale" }, { ...insider, securityName: "Stock Option" }, { ...insider, filingDate: null }],

@@ -43,13 +43,21 @@ export function selectEarlySignals({
         rating.targetFrom != null && rating.targetTo != null ? `$${rating.targetFrom} to $${rating.targetTo}` : "change unavailable"}.`,
     }, [symbol, rating.firm, rating.publishedAt]));
   }
-  for (const quarter of institutional?.quarters ?? []) {
+  for (const quarter of institutional?.symbol === symbol ? institutional.quarters : []) {
     for (const fund of quarter.funds) {
-      if (fund.change !== "New position" || !fund.filingDate || !fund.filingUrl) continue;
+      if (!fund.filingDate || !fund.filingUrl) continue;
+      let title: string, explanation: string;
+      if (fund.change === "New position") {
+        title = "Newly reported hedge fund position";
+        explanation = "Absent in the verified prior-quarter filing. This is not a verified first-ever purchase or purchase date.";
+      } else if (fund.change === "Increased" && fund.sharesDelta != null && Number.isFinite(fund.sharesDelta) && fund.sharesDelta > 0) {
+        title = "SEC 13F: hedge fund increased its position";
+        explanation = `Reported holdings rose by ${fund.sharesDelta.toLocaleString("en-US", { maximumSignificantDigits: 15 })} shares versus the split-adjusted prior quarter. This is a net holdings change, not a dated purchase.`;
+      } else continue;
       candidates.push(signal({
-        kind: "hedge-fund", title: "Newly reported hedge fund position", source: "FMP / SEC 13F",
+        kind: "hedge-fund", title, source: "FMP / SEC 13F",
         publishedAt: fund.filingDate, dateOnly: true, filingUrl: fund.filingUrl,
-        details: `${fund.fund}: reporting period ended ${quarter.reportDate}, filed ${fund.filingDate}. Absent in the verified prior-quarter filing. This is not a verified first-ever purchase or purchase date.`,
+        details: `${fund.fund}: reporting period ended ${quarter.reportDate}, filed ${fund.filingDate}. ${explanation}`,
       }, [symbol, fund.cik, quarter.reportDate, fund.filingUrl]));
     }
   }

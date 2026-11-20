@@ -12,7 +12,7 @@ export async function loadEarlyEvidence(
   const warnings = [
     "A single $50,000 purchase cannot be verified by the current FMP quote/minute-bar feeds. No individual-trade alert is inferred. A trade-print feed with reliable purchase-side evidence is still required; no paid feed has been added.",
     "Date-only reports or filings on the opt-in day are excluded because publication after opt-in cannot be proved.",
-    "Disclosure coverage is sampled and delayed: Senate/insider requests cache for 15 minutes; institutional filings cache for 6 hours. New-position checks cover sampled funds in the latest completed quarter, not first-ever purchases.",
+    "Disclosure coverage is sampled and delayed: Senate/insider requests cache for 15 minutes; institutional filings cache for 6 hours. SEC 13F checks compare new and increased positions for sampled funds in the latest completed quarter, not individual purchases.",
   ];
   async function source<T>(name: string, load: Promise<T>): Promise<T | null> {
     try { return await load; }

@@ -71,8 +71,10 @@ The **Early Signal** tab and Vision evidence support any opted-in stock, even
 without a pullback. Any one of these independently creates a yellow event:
 
 - An upgrade from an opted-in trusted research firm (not a reaffirmation).
-- A newly reported hedge fund position verified against the consecutive prior
-  quarter. This is not a first-ever purchase or a verified purchase date.
+- An SEC 13F filing showing a tracked hedge fund opened a position or increased
+  its split-adjusted share count versus the consecutive prior quarter. A higher
+  market value alone does not count. The filing date controls eligibility; the
+  holdings comparison does not establish a purchase date or price.
 - A disclosed senator purchase, with transaction date, disclosure date, amount
   range and original filing.
 - A disclosed insider purchase, with transaction/filing dates and original filing.
@@ -93,7 +95,7 @@ no paid subscription has been added and pricing is not yet established.
 Coverage remains sampled/delayed: Senate examines up to 1,000 latest rows and
 returns up to 50 purchases from the past seven disclosure days; insiders examine
 300 latest filings and return up to 20 purchases per watched symbol. Their source
-responses cache for 15 minutes. New-position checks reuse the sampled hedge funds,
+responses cache for 15 minutes. New- and increased-position checks reuse the sampled hedge funds,
 compare the latest completed quarter with its baseline, and cache filing responses
 for six hours. Missing or inaccessible sources produce visible warnings and never
 qualify on their own. Red qualification still requires the existing fresh,

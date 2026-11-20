@@ -153,7 +153,7 @@ export default function PullbackWatch({ full = false, media, defaultOpen = false
               <ul className="list-inside list-disc">{item.early?.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
             </div>)}
           </details>}
-          {full && <p className="mt-3 text-xs leading-5 text-white/60">Early signals: a trusted-firm upgrade, newly reported hedge fund position, or disclosed senator/insider purchase. These do not require a pullback. A single $50,000 purchase cannot currently be verified; minute volume is not a substitute. Sources are sampled and disclosures can be delayed.</p>}
+          {full && <p className="mt-3 text-xs leading-5 text-white/60">Any one qualifies as an Early Signal: a trusted-firm upgrade, a tracked hedge fund reporting a new or increased position in an SEC 13F filing, or a disclosed senator or insider purchase. No pullback is required. A 13F shows quarter-end holdings, not a trade date. A single $50,000 trade cannot be verified from minute volume. Disclosure coverage is sampled and can be delayed.</p>}
           {full && <p className="mt-3 text-xs leading-5 text-white/60">In-app alerts appear here and open their saved evidence in Vision. Phone push is not yet available. Monitoring must run every minute for timely intraday alerts.</p>}
         </>}
       </div>
