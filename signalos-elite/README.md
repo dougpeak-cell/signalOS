@@ -39,11 +39,13 @@ Create `.env.local` from that file and fill in only the values you need for your
   Desktop Today: inside Emerging Setups. The existing five-button navigation is
   unchanged. Watchlist includes pending counts, trusted-firm selection, and
   **Notify me**. Fresh Price & Volume events (within 24 hours) open that tab first.
-- A red **Alerts** action sits at the top right of the shared phone/desktop
+- An **Alerts** action sits at the top right of the shared phone/desktop
   header, including News and Workspace, and the standalone Pulse header. It
   opens the newest saved Pullback Watch update directly in Vision (the follow-up
   wins when both stages share a timestamp). Its badge counts saved events, not
-  unread or newly qualifying stocks. With no saved events it opens Pullback Watch;
+  unread or newly qualifying stocks. It turns red only when the inbox confirms
+  saved events; loading, empty, and unavailable inboxes stay neutral.
+  With no saved events it opens Pullback Watch;
   an unavailable inbox shows `!` and an explanatory accessible label, never a
   fabricated count. It checks the existing inbox every 30 seconds while visible
   and on return to the app; it does not run extra market-data evaluations.

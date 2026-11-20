@@ -17,7 +17,9 @@ export default function PullbackAlertButton(): React.JSX.Element {
     href={latest ? evidenceHref(latest.symbol, latest.stage, latest) : "/watchlist/pullback"}
     aria-label={label}
     title={label}
-    className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-red-300/50 bg-red-700 px-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-200"
+    className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold shadow-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 ${latest ?
+      "border-red-300/50 bg-red-700 text-white hover:bg-red-600 focus-visible:outline-red-200" :
+      "border-white/20 bg-slate-900 text-slate-200 hover:bg-slate-800 focus-visible:outline-slate-200"}`}
   >
     <Bell aria-hidden="true" className="size-4" />
     <span>Alerts</span>

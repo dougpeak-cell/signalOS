@@ -147,19 +147,32 @@ test("desktop headers keep the alert action across app, news, workspace and Puls
 
 test("empty or failed inboxes do not invent alert updates or counts", async ({ page }) => {
   let failed = false;
-  await page.route("**/api/pullback-watch**", (route) => route.fulfill({
+  let releaseInbox!: () => void;
+  const inboxReady = new Promise<void>((resolve) => { releaseInbox = resolve; });
+  await page.route("**/api/pullback-watch**", async (route) => {
+    await inboxReady;
+    await route.fulfill({
     status: failed ? 503 : 200,
     json: failed ? { error: "Saved alert inbox unavailable." } :
       new URL(route.request().url()).searchParams.has("symbol") ? { item: item() } : { watches: [], events: [] },
-  }));
+    });
+  });
   await page.goto("/watchlist/pullback?previewPlan=pro");
   await acknowledgeLegal(page);
   const header = page.getByRole("banner");
+  const checking = header.getByRole("link", { name: "Alerts: checking saved updates.", exact: true });
+  await expect(checking).toHaveClass(/bg-slate-900/);
+  await expect(checking).not.toHaveClass(/bg-red-/);
+  releaseInbox();
   const empty = header.getByRole("link", { name: "Alerts: no saved updates. Open Pullback Watch.", exact: true });
   await expect(empty).toHaveAttribute("href", "/watchlist/pullback");
+  await expect(empty).toHaveClass(/bg-slate-900/);
+  await expect(empty).not.toHaveClass(/bg-red-/);
   failed = true;
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   const unavailable = header.getByRole("link", { name: /^Alerts unavailable:/ });
   await expect(unavailable).toHaveAttribute("href", "/watchlist/pullback");
   await expect(unavailable).toContainText("!");
+  await expect(unavailable).toHaveClass(/bg-slate-900/);
+  await expect(unavailable).not.toHaveClass(/bg-red-/);
 });
