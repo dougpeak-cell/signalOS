@@ -6,6 +6,7 @@ import { loadPullbackItem } from "@/lib/pullback/provider";
 import { processPullbackWatch, savePullbackWatch } from "@/lib/pullback/store";
 import type { PullbackEvent, PullbackWatch } from "@/lib/pullback/types";
 import { FmpDataError } from "@/lib/experts/fmpClient";
+import { matchingSnapshot, isRecentSnapshot } from "@/lib/pullback/watchEvidence";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -40,12 +41,20 @@ export async function GET(request: Request): Promise<NextResponse> {
     if (!user && !symbol) return NextResponse.json({ error: "Sign in to save watches and receive in-app alerts." }, { status: 401 });
     if (authError && user) throw new Error("Pullback Watch could not verify your session.");
     if (symbol && !user) return NextResponse.json({ item: await loadPullbackItem(symbol, TRUSTED_FIRMS) });
-    const { data: watches, error: watchError } = await db.from("pullback_watches")
-      .select("symbol,trusted_firms,notify,notify_since,snapshot").eq("user_id", user!.id).order("symbol");
+    const query = db.from("pullback_watches")
+      .select("symbol,trusted_firms,notify,notify_since,snapshot").eq("user_id", user!.id);
+    const { data: watches, error: watchError } = await (symbol ? query.eq("symbol", symbol) : query.order("symbol"));
     if (watchError) throw new Error("Pullback Watch needs its database migration applied locally before saved watches are available.");
     const typed = (watches ?? []) as PullbackWatch[];
     if (symbol) {
       let watch = typed.find((item) => item.symbol === symbol);
+      const snapshot = watch && matchingSnapshot(watch);
+      if (snapshot) {
+        const recent = isRecentSnapshot(snapshot, Date.now());
+        if (recent || params.get("preferSnapshot") === "1") {
+          return NextResponse.json({ item: snapshot, refreshNeeded: !recent });
+        }
+      }
       if (!watch) {
         await savePullbackWatch(user!.id, symbol, [...TRUSTED_FIRMS], false, true);
         watch = { symbol, trusted_firms: [...TRUSTED_FIRMS], notify: false, notify_since: null, snapshot: null };

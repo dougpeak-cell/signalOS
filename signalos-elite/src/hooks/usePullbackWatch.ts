@@ -6,6 +6,7 @@ import { useSigiTier } from "@/hooks/useSigiTier";
 import { TRUSTED_FIRMS, type Firm } from "@/lib/pullback/engine";
 import type { PullbackFeed, PullbackItem } from "@/lib/pullback/types";
 import { pullbackPreviewHeaders } from "@/lib/pullback/client";
+import { refreshWatchEvidence } from "@/lib/pullback/watchEvidence";
 
 export function usePullbackWatch(compact: boolean, enabled = true) {
   const { tier } = useSigiTier();
@@ -39,15 +40,16 @@ export function usePullbackWatch(compact: boolean, enabled = true) {
         setCheckedAt(Date.now());
         const symbols = [...new Set([...current.watches.map((watch) => watch.symbol), ...tickerKey.split(",").filter(Boolean)])];
         const selected = compact ? symbols.slice(0, 3) : symbols;
-        const rows: PullbackItem[] = [];
-        for (const symbol of selected) {
+        await refreshWatchEvidence(selected, current.watches, controller.signal, async (symbol) => {
           const itemResponse = await fetch(`/api/pullback-watch?symbol=${encodeURIComponent(symbol)}`, { cache: "no-store", signal: controller.signal, headers });
           const body: { item?: PullbackItem; error?: string } = await itemResponse.json();
-          if (!itemResponse.ok || !body.item || body.item.symbol !== symbol) problems.push(`${symbol}: ${body.error ?? "Matching stock evidence unavailable."}`);
-          else rows.push(body.item);
-        }
+          if (!itemResponse.ok || !body.item || body.item.symbol !== symbol) throw new Error(body.error ?? "Matching stock evidence unavailable.");
+          return body.item;
+        }, setItems, (symbol, cause) => {
+          problems.push(`${symbol}: ${cause instanceof Error ? cause.message : "Evidence check failed."}`);
+          setError(problems.join(" "));
+        });
         if (!controller.signal.aborted) {
-          setItems(rows);
           setError(problems.length ? problems.join(" ") : null);
         }
       } catch (cause) {

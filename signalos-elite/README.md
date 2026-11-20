@@ -145,7 +145,12 @@ authenticated development Pro account; the Pullback Watch migration alone
 does not provision those prerequisites. The review project's minimal
 profile/settings bootstrap is for Pullback Watch, not a full app database clone.
 
-Opening watched stocks checks their current evidence. **Notify me** opts into
+Opening Sigi Alerts shows saved evidence with its evaluation time as soon as the
+inbox loads. Stocks without evidence or with evidence at least 30 seconds old
+refresh two at a time; each result appears without waiting for the rest of the
+watchlist. A failed refresh is reported rather than re-dating the last result.
+Opening a stock shows its last matching evaluation first and refreshes it if stale.
+Saved alert links still open the evidence recorded for that event. **Notify me** opts into
 background monitoring; pausing stops new events, not saved event history.
 With the same `CRON_SECRET` configured for the local server and monitor, run
 `npm run pullback:monitor` in another terminal. It calls

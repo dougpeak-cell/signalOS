@@ -64,12 +64,22 @@ function Evidence(): ReactElement | null {
       try {
         const query = new URLSearchParams({ symbol });
         if (eventId) query.set("event", eventId);
-        const response = await fetch(`/api/pullback-watch?${query}`, { cache: "no-store", signal: controller.signal, headers: pullbackPreviewHeaders() });
-        const body: { item?: PullbackItem; event?: PullbackEvent; error?: string } = await response.json();
-        if (!response.ok || (!body.item && !body.event)) throw new Error(body.error ?? "Matching evidence could not be loaded.");
-        if (!controller.signal.aborted) setState({ key, item: body.event?.evidence ?? body.item!, event: body.event ?? null, error: null });
+        else query.set("preferSnapshot", "1");
+        async function read(): Promise<boolean> {
+          const response = await fetch(`/api/pullback-watch?${query}`, { cache: "no-store", signal: controller.signal, headers: pullbackPreviewHeaders() });
+          const body: { item?: PullbackItem; event?: PullbackEvent; refreshNeeded?: boolean; error?: string } = await response.json();
+          const item = body.event?.evidence ?? body.item;
+          if (!response.ok || !item || item.symbol !== symbol) throw new Error(body.error ?? "Matching evidence could not be loaded.");
+          if (!controller.signal.aborted) setState({ key, item, event: body.event ?? null, error: null });
+          return body.refreshNeeded === true;
+        }
+        if (await read() && !eventId && !controller.signal.aborted) {
+          query.delete("preferSnapshot");
+          await read();
+        }
       } catch (error) {
-        if (!controller.signal.aborted) setState({ key, item: null, event: null, error: error instanceof Error ? error.message : "Evidence is unavailable." });
+        if (!controller.signal.aborted) setState((last) => ({ key, item: last.key === key ? last.item : null, event: null,
+          error: error instanceof Error ? error.message : "Evidence is unavailable." }));
       }
     }
     void load();
@@ -90,7 +100,7 @@ function Evidence(): ReactElement | null {
     {item && <>
       <p className="mt-2 text-sm leading-6 text-white/80">{current?.event ?
         `Saved event recorded ${formatMarketTimestamp(current.event.created_at)}. This is the evidence for that specific alert, not a live quote.` :
-        "Current watch evidence, not a saved alert. No notification is implied."}</p>
+        `Watch evidence as of ${formatMarketTimestamp(item.evaluation.evaluatedAt)} ET, not a saved alert. No notification is implied.`}</p>
       {selectedStage === "early" && <div className="mt-3 space-y-3 rounded-xl border border-yellow-300/40 p-3">
         <p className="text-sm text-yellow-100">Early evidence only; full analyst and Price &amp; Volume criteria are not implied.</p>
         {item.early?.signals.map((signal) => <div key={signal.id} className="text-sm leading-6">

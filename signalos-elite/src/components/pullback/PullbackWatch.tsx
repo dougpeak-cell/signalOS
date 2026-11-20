@@ -7,6 +7,7 @@ import { usePullbackWatch } from "@/hooks/usePullbackWatch";
 import { TRUSTED_FIRMS, type Firm, type Stage } from "@/lib/pullback/engine";
 import type { PullbackEvent, PullbackItem, PullbackWatch as Watch } from "@/lib/pullback/types";
 import { evidenceHref, pullbackStageLabel } from "@/lib/pullback/client";
+import { formatMarketTimestamp } from "@/lib/market/formatMarketTimestamp";
 
 function NotifyControl({ symbol, watch, save }: {
   symbol: string; watch?: Watch;
@@ -68,6 +69,7 @@ function StockRow({ item, event, stage, children }: {
         {event ? "View alert" : "View evidence"} &rarr;
       </span>
     </Link>
+    <p className="text-xs text-white/60">Evidence as of {formatMarketTimestamp(evaluation.evaluatedAt)} ET</p>
     {children}
   </div>;
 }
