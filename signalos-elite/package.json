@@ -12,6 +12,9 @@
     "test:pullback": "vitest run src/lib/pullback src/app/api/pullback-watch/route.test.ts",
     "test:pullback:mobile": "playwright test --config tests/pullback/playwright.config.ts",
     "pullback:monitor": "tsx --env-file .env.local scripts/pullbackWatch.ts",
+    "pullback:dev": "tsx scripts/pullbackDev.ts app",
+    "pullback:dev:check": "tsx scripts/pullbackDev.ts check",
+    "pullback:dev:monitor": "tsx scripts/pullbackDev.ts monitor",
     "ingest": "tsx --env-file .env.local scripts/ingest/index.ts",
     "signals": "tsx --env-file .env.local scripts/signals/buildConviction.ts"
   },

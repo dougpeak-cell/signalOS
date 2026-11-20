@@ -72,13 +72,26 @@ upgrade the organization for this test. See the current
 Existing FMP subscription limits still apply.
 
 Keep development credentials in the ignored `.env.pullback-dev.local`, never
-in Git or chat, and verify its Supabase URL differs from `.env.local` before
-any writes. This custom file is **not automatically loaded** by Next.js or
-`npm run pullback:monitor`; that monitor command loads `.env.local`. Do not
-start monitoring until both processes explicitly use the same isolated
-development configuration. A fresh Supabase project also needs the app's
-profile/settings schema and an authenticated development Pro account; the
-Pullback Watch migration alone does not provision those prerequisites.
+in Git or chat. Configure its Supabase URL, anon key, service-role key, a private
+random `CRON_SECRET`, and `PULLBACK_LOCAL_ORIGIN=http://localhost:3101`.
+Run `npm run pullback:dev:check`, then `npm run pullback:dev` and, in another
+terminal, `npm run pullback:dev:monitor`. These commands load existing provider
+configuration from `.env.local` but override it with the private development
+file. They refuse missing development credentials, the existing database URL,
+and any monitor origin other than `http://localhost:3101`. Use `localhost`
+consistently: Next.js normalizes loopback request URLs to that hostname, and
+mixing it with `127.0.0.1` breaks auth cookies and same-origin writes. Set the
+development project's auth Site URL to `http://localhost:3101` and allow
+`http://localhost:3101/auth/callback**` as an auth redirect. Stop other Next.js
+development servers in this working directory first; they share build files.
+Review at `http://localhost:3101/watchlist/pullback`.
+
+The custom file is not automatically loaded by plain `npm run dev` or
+`npm run pullback:monitor`; use the development commands above for this setup.
+A fresh Supabase project also needs the app's profile/settings schema and an
+authenticated development Pro account; the Pullback Watch migration alone
+does not provision those prerequisites. The review project's minimal
+profile/settings bootstrap is for Pullback Watch, not a full app database clone.
 
 Opening watched stocks checks their current evidence. **Notify me** opts into
 background monitoring; pausing stops new events, not saved event history.
