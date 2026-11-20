@@ -7,7 +7,7 @@ import { useInstitutionalActivity } from "@/hooks/useInstitutionalActivity";
 import { useSenatePurchases } from "@/hooks/useSenatePurchases";
 import type { PullbackEvent, PullbackItem } from "@/lib/pullback/types";
 import { formatMarketTimestamp } from "@/lib/market/formatMarketTimestamp";
-import { pullbackPreviewHeaders } from "@/lib/pullback/client";
+import { pullbackPreviewHeaders, pullbackStageLabel } from "@/lib/pullback/client";
 
 function SenateNote({ symbol }: { symbol: string }): ReactElement {
   const { feed, loading, error, retry } = useSenatePurchases();
@@ -51,7 +51,7 @@ function Evidence(): ReactElement | null {
   const enabled = params.get("pullbackWatch") === "1";
   const symbol = params.get("symbol")?.toUpperCase() ?? "";
   const eventId = params.get("event");
-  const stage = params.get("stage") === "price-volume" ? "price-volume" : "analyst";
+  const stage = params.get("stage") === "early" ? "early" : params.get("stage") === "price-volume" ? "price-volume" : "analyst";
   const [state, setState] = useState<{ key: string; item: PullbackItem | null; event: PullbackEvent | null; error: string | null }>({
     key: "", item: null, event: null, error: null,
   });
@@ -82,8 +82,8 @@ function Evidence(): ReactElement | null {
   const price = item?.evaluation.priceVolume;
   return <section aria-label="Pullback alert evidence" className="relative z-10 mx-auto mb-4 max-w-3xl rounded-2xl border border-violet-300/30 bg-slate-950 p-4 text-white">
     <h1 className="text-xl font-semibold">Why did Sigi alert me?</h1>
-    <h2 className={`mt-2 font-semibold ${selectedStage === "analyst" ? "text-violet-200" : "text-teal-200"}`}>
-      {symbol} · {selectedStage === "analyst" ? "Analyst Support" : "Price & Volume"}
+    <h2 className={`mt-2 font-semibold ${selectedStage === "early" ? "text-yellow-200" : selectedStage === "analyst" ? "text-violet-200" : "text-teal-200"}`}>
+      {symbol} · {pullbackStageLabel(selectedStage)}
     </h2>
     {!current && <p role="status" className="mt-3 text-sm">Loading matching evidence...</p>}
     {current?.error && <p role="alert" className="mt-3 text-sm text-amber-100">{current.error} <button type="button" className="min-h-11 underline" onClick={() => setAttempt((value) => value + 1)}>Retry</button></p>}
@@ -91,6 +91,16 @@ function Evidence(): ReactElement | null {
       <p className="mt-2 text-sm leading-6 text-white/80">{current?.event ?
         `Saved event recorded ${formatMarketTimestamp(current.event.created_at)}. This is the evidence for that specific alert, not a live quote.` :
         "Current watch evidence, not a saved alert. No notification is implied."}</p>
+      {selectedStage === "early" && <div className="mt-3 space-y-3 rounded-xl border border-yellow-300/40 p-3">
+        <p className="text-sm text-yellow-100">Early evidence only; full analyst and Price &amp; Volume criteria are not implied.</p>
+        {item.early?.signals.map((signal) => <div key={signal.id} className="text-sm leading-6">
+          <h3 className="font-semibold">{signal.title}</h3>
+          <p>{signal.details}</p>
+          <p>Published/filed {signal.publishedAt}{signal.dateOnly ? " (date only)" : ""} · {signal.source}</p>
+          {signal.filingUrl && <a className="underline" href={signal.filingUrl} target="_blank" rel="noreferrer">Original filing</a>}
+        </div>)}
+        {item.early?.warnings.map((warning) => <p key={warning} className="text-xs leading-5 text-yellow-100">{warning}</p>)}
+      </div>}
       <p className="mt-2 text-xs text-white/70">Pullback began: {item.evaluation.episode?.startedAt.slice(0, 10) ?? "No active pullback"} · {Math.min(2, item.evaluation.firms.length)} of 2 firms</p>
       {item.evaluation.supportObservedAt && <p className="mt-1 text-xs text-white/70">Two-firm support first verified: {formatMarketTimestamp(item.evaluation.supportObservedAt)}</p>}
       {selectedStage === "price-volume" && price && <div className="mt-3 rounded-xl border border-teal-300/30 p-3 text-sm leading-6">
@@ -107,7 +117,7 @@ function Evidence(): ReactElement | null {
       </li>)}</ul>
       {item.evaluation.reasons.map((reason) => <p key={reason} className="mt-2 text-sm text-white/80">{reason}</p>)}
       {item.warnings.map((warning) => <p key={warning} className="mt-2 text-xs leading-5 text-amber-100">{warning}</p>)}
-      <Disclosures symbol={symbol} />
+      {selectedStage !== "early" && <Disclosures symbol={symbol} />}
     </>}
     <Link href="/watchlist/pullback" className="mt-3 inline-flex min-h-11 items-center text-sm text-violet-200 underline">Manage watches and notifications</Link>
   </section>;

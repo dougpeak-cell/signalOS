@@ -3,7 +3,7 @@ import type { MarketBar } from "@/lib/market/fmpData";
 
 export const TRUSTED_FIRMS = ["Schwab", "Morningstar", "CFRA", "Argus"] as const;
 export type Firm = typeof TRUSTED_FIRMS[number];
-export type Stage = "analyst" | "price-volume";
+export type Stage = "early" | "analyst" | "price-volume";
 export type PullbackConfig = {
   stabilizationSessions: number;
   volumeMultiple: number;

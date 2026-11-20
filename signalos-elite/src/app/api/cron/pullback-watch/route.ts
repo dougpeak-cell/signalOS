@@ -21,7 +21,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     const db = createSupabaseAdminClient();
     const outcomes: Array<{ symbol: string; ok: boolean }> = [];
     for (let offset = 0; ; offset += 50) {
-      const { data, error } = await db.from("pullback_watches").select("user_id,symbol,trusted_firms,notify,snapshot")
+      const { data, error } = await db.from("pullback_watches").select("user_id,symbol,trusted_firms,notify,notify_since,snapshot")
         .eq("notify", true).order("user_id").order("symbol").range(offset, offset + 49);
       if (error) throw new Error("Watch queue could not be read.");
       const watches = (data ?? []) as Array<PullbackWatch & { user_id: string }>;

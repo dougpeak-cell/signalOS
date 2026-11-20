@@ -7,6 +7,7 @@ import {
 } from "@/lib/pullback/engine";
 import type { PullbackItem } from "@/lib/pullback/types";
 import { mapLimited } from "@/lib/experts/fmpHedgeFunds";
+import { loadEarlyEvidence } from "@/lib/pullback/earlyProvider";
 
 export function pullbackConfig(): PullbackConfig {
   const config = { ...DEFAULT_CONFIG };
@@ -79,25 +80,21 @@ async function intradayForDate(symbol: string, date: string, splits: Split[], to
   return bars.sort((a, b) => a.timestamp - b.timestamp);
 }
 
-export async function loadPullbackItem(
-  symbol: string, trusted: readonly Firm[], previous?: Evaluation | null, now = new Date(),
+async function loadMarketItem(
+  symbol: string, trusted: readonly Firm[], previous: Evaluation | null | undefined, now: Date, grades: Promise<Rating[]>,
 ): Promise<PullbackItem> {
   const config = pullbackConfig();
   const today = sessionParts(now.getTime()).date;
   const from = new Date(now.getTime() - 400 * 86_400_000).toISOString().slice(0, 10);
-  const [history, splitRows, grades] = await Promise.all([
+  const [history, splitRows, ratings] = await Promise.all([
     getFmpBars(symbol, from, today), fetchFmpRows("splits", { symbol }, 3600),
-    fetchFmpRows("grades", { symbol }, 0),
+    grades,
   ]);
   const splits = readSplits(splitRows, symbol);
   const daily = history.filter((bar) => sessionParts(bar.timestamp).date < today);
   if (daily.length < 20 || now.getTime() - daily.at(-1)!.timestamp > 4 * 86_400_000) {
     throw new FmpDataError("Recent split-adjusted daily history is missing; Pullback Watch is suppressed.");
   }
-  const ratings = grades.flatMap((row) => {
-    const rating = normalizeRating(row, symbol);
-    return rating ? [rating] : [];
-  });
   const recentCoverage = new Date(now.getTime() - 135 * 86_400_000).toISOString().slice(0, 10);
   const coverage = [...new Set(ratings.filter((rating) => rating.publishedAt >= recentCoverage && rating.publishedAt <= today).map((rating) => rating.firm))];
   const warnings = [
@@ -124,4 +121,38 @@ export async function loadPullbackItem(
     }
   }
   return { symbol, trustedFirms: trusted, evaluation, warnings, coverage };
+}
+
+export async function loadPullbackItem(
+  symbol: string, trusted: readonly Firm[], previous?: Evaluation | null, now = new Date(), notifySince?: string | null,
+  onMarketEvidence?: (item: PullbackItem) => Promise<void>,
+): Promise<PullbackItem> {
+  const ratings = fetchFmpRows("grades", { symbol }, 0).then((rows) => rows.flatMap((row) => {
+    const rating = normalizeRating(row, symbol);
+    return rating ? [rating] : [];
+  }));
+  const market = loadMarketItem(symbol, trusted, previous, now, ratings).catch((error: unknown): PullbackItem => {
+    if (!notifySince || !(error instanceof FmpDataError)) throw error;
+    console.warn(`Pullback Watch ${symbol}: final-stage evidence unavailable; early sources are evaluated independently.`);
+    return {
+      symbol, trustedFirms: trusted, coverage: [], warnings: [error.message],
+      evaluation: {
+        episode: previous?.episode ?? null, firms: [], analystAt: null, supportObservedAt: null,
+        priceVolume: null, reasons: ["Final-stage qualification is suppressed because required market/research evidence is unavailable."],
+        evaluatedAt: now.toISOString(),
+      },
+    };
+  });
+  const [item, early] = await Promise.all([
+    market.then(async (item) => {
+      if (notifySince && onMarketEvidence) {
+        await onMarketEvidence({
+          ...item, early: { since: notifySince, signals: [], warnings: ["Early disclosure checks are still in progress."] },
+        });
+      }
+      return item;
+    }),
+    notifySince ? loadEarlyEvidence(symbol, trusted, notifySince, now, ratings) : undefined,
+  ]);
+  return early ? { ...item, early } : item;
 }

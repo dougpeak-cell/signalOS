@@ -64,13 +64,13 @@ export function readInstitutionalSnapshot(
 
 export async function loadInstitutionalActivity(
   ticker: string,
-  options: { now?: Date; funds?: readonly InstitutionalFund[] } = {}
+  options: { now?: Date; funds?: readonly InstitutionalFund[]; latestQuarterOnly?: boolean } = {}
 ): Promise<InstitutionalActivity> {
   const symbol = ticker.trim().toUpperCase();
   const now = options.now ?? new Date();
   const today = now.toLocaleDateString("en-CA", { timeZone: MARKET_TZ });
   const funds = options.funds ?? INSTITUTIONAL_ACTIVITY_FUNDS;
-  const quarters = institutionalQuarters(today);
+  const quarters = institutionalQuarters(today).slice(0, options.latestQuarterOnly ? 1 : undefined);
   const dates = [...new Set(quarters.flatMap((quarter) => [quarter.reportDate, quarter.previousReportDate]))];
   const warnings: string[] = [];
   const deadline = Date.now() + 85_000;

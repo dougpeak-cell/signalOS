@@ -72,6 +72,7 @@ export function usePullbackWatch(compact: boolean, enabled = true) {
     });
     const payload: { error?: string } = await response.json();
     if (!response.ok) throw new Error(payload.error ?? "Notification preferences were not saved.");
+    window.dispatchEvent(new Event("pullback-watch-preferences"));
     retry();
   }, [retry]);
   return { tier, feed, items, error, loading, checkedAt, retry, save };

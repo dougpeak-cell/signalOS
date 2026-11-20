@@ -41,27 +41,67 @@ Create `.env.local` from that file and fill in only the values you need for your
   **Notify me**. Fresh Price & Volume events (within 24 hours) open that tab first.
 - An **Alerts** action sits at the top right of the shared phone/desktop
   header, including News and Workspace, and the standalone Pulse header. It
-  opens the newest saved Pullback Watch update directly in Vision (the follow-up
-  wins when both stages share a timestamp). Its badge counts saved events, not
-  unread or newly qualifying stocks. It turns red only when the inbox confirms
-  saved events; loading, empty, and unavailable inboxes stay neutral.
-  With no saved events it opens Pullback Watch;
+  opens matching saved evidence directly in Vision. It stays outlined in SigiOS
+  teal/green while loading, unavailable, or without an active saved signal.
+  Only stocks with **Notify me** enabled count: yellow means an Early Signal or
+  Analyst Support event; red requires a saved **Price & Volume** event (all
+  existing final criteria). A red confirmation takes priority over newer yellow
+  events. Its badge counts saved events from the current opt-in period, not unread
+  stocks. Paused and older opt-in events remain in **Saved in-app alerts** without
+  coloring the button. With no active events it opens Pullback Watch;
   an unavailable inbox shows `!` and an explanatory accessible label, never a
   fabricated count. It checks the existing inbox every 30 seconds while visible
   and on return to the app; it does not run extra market-data evaluations.
 - Access follows the existing **Pro research** rules in Experts. Mutations also
   require an authenticated account and same-origin request.
 
+### Yellow early signals
+
+The **Early Signal** tab and Vision evidence support any opted-in stock, even
+without a pullback. Any one of these independently creates a yellow event:
+
+- An upgrade from an opted-in trusted research firm (not a reaffirmation).
+- A newly reported hedge fund position verified against the consecutive prior
+  quarter. This is not a first-ever purchase or a verified purchase date.
+- A disclosed senator purchase, with transaction date, disclosure date, amount
+  range and original filing.
+- A disclosed insider purchase, with transaction/filing dates and original filing.
+
+Only publications/filings dated after **Notify me** was enabled count. Date-only
+records on that same New York calendar day are excluded; their ordering cannot be
+proved. Re-saving firms preserves the start time. Pausing and re-enabling starts
+a new period and invalidates evaluations still running for the old period.
+Existing enabled watches begin their early-evidence period when the new migration
+is applied. Saved events remain immutable and retry-safe per source record.
+
+**Single $50,000 purchase: unavailable.** Existing FMP quotes and minute bars do
+not identify a single exchange purchase or its buyer/aggressor side. Neither
+cumulative shares, minute dollar volume nor a quarterly position value is used
+as a substitute. This trigger needs a separately verified transaction-level feed;
+no paid subscription has been added and pricing is not yet established.
+
+Coverage remains sampled/delayed: Senate examines up to 1,000 latest rows and
+returns up to 50 purchases from the past seven disclosure days; insiders examine
+300 latest filings and return up to 20 purchases per watched symbol. Their source
+responses cache for 15 minutes. New-position checks reuse the sampled hedge funds,
+compare the latest completed quarter with its baseline, and cache filing responses
+for six hours. Missing or inaccessible sources produce visible warnings and never
+qualify on their own. Red qualification still requires the existing fresh,
+split-adjusted analyst and same-time-of-day Price & Volume evidence.
+
 ### Local persistence and monitoring
 
 Point the app at a **local/development Supabase instance**, then apply
 [`20261119220000_add_pullback_watch.sql`](supabase/migrations/20261119220000_add_pullback_watch.sql)
-there. The migration adds RLS-protected watches and an immutable in-app event inbox.
+followed by
+[`20261120203000_add_pullback_early_alerts.sql`](supabase/migrations/20261120203000_add_pullback_early_alerts.sql).
+Apply the second migration before deploying the early-alert code to an existing
+Pullback Watch installation. They add RLS-protected watches, notification start
+times, and an immutable in-app event inbox.
 Use that instance's normal Supabase URL, anon key and service-role key. Sign in
 with a local Pro account. No remote migration or production write is required.
-The existing configured remote instance did not have these tables during review;
-it was inspected read-only and deliberately left unchanged. Until a development
-database is configured, saving/processing watches reports a setup error.
+Until a development database has the migrations, saving/processing watches
+reports a setup error.
 
 For a hosted development database, use a project in a **Free organization**.
 Supabase's Free plan is $0/month, includes a 500 MB database, allows up to two
@@ -208,7 +248,7 @@ Install its browser with
 `npx playwright install webkit` if needed. Run `npm run build` for production
 compilation. No deployment command is part of this workflow.
 
-Local validation completed: **22 focused/shared regression checks, 6 phone/desktop
+Local validation completed: **35 focused/shared regression checks, 7 phone/desktop
 WebKit flows, feature ESLint, and the production build passed**. A separate
 repository-wide `tsc --noEmit --incremental false` still reports pre-existing
 test typing errors in
@@ -230,6 +270,14 @@ account notification preferences were temporarily enabled for the check and
 restored afterward. The 16 Pullback regression tests and six WebKit flows passed.
 This verifies live queue processing and correct suppression, not a live
 two-firm alert or live Price & Volume qualification.
+
+Early-source read-only verification on November 20, 2026: MSFT's FMP grade
+actions included `upgrade`, `maintain` and `downgrade`. Senate and insider sources
+responded but retain the sampling limits above. Six sampled fund-quarter snapshots
+could not be verified; Pershing Square's latest returned filing quarter was
+2026-03-31 and Greenlight's was 2023-12-31. These gaps did not create an alert.
+No new early signal was inferred for an opt-in starting at the time of the check.
+The early-alert migration was applied to the separate development database.
 
 ## Membership Signup Availability
 

@@ -5,7 +5,7 @@ import { useEffect, useState, type ReactElement } from "react";
 import { usePullbackWatch } from "@/hooks/usePullbackWatch";
 import { TRUSTED_FIRMS, type Firm, type Stage } from "@/lib/pullback/engine";
 import type { PullbackEvent, PullbackItem, PullbackWatch as Watch } from "@/lib/pullback/types";
-import { evidenceHref } from "@/lib/pullback/client";
+import { evidenceHref, pullbackStageLabel } from "@/lib/pullback/client";
 
 function NotifyControl({ symbol, watch, save }: {
   symbol: string; watch?: Watch;
@@ -45,6 +45,7 @@ function NotifyControl({ symbol, watch, save }: {
         finally { setSaving(false); }
       }}>Save firms</button>}
       {message && <p role="status" className="mt-2 text-white/80">{message}</p>}
+      {watch?.notify_since && watch.notify && <p className="mt-2 text-white/60">Early evidence must be published after opt-in: {watch.notify_since}. Date-only evidence starts the following New York day.</p>}
     </div>
   );
 }
@@ -59,9 +60,10 @@ function StockRow({ item, event, stage, children }: {
         <p className="font-semibold text-white">{item.symbol}</p>
         <p className="mt-1 text-xs text-white/75">{stage === "price-volume" && evaluation.priceVolume ?
           `${evaluation.priceVolume.volumeMultiple.toFixed(2)}x volume · held $${evaluation.priceVolume.level.toFixed(2)}` :
+          stage === "early" ? event?.evidence.early?.signals[0]?.title ?? item.early?.signals[0]?.title ?? "No new early signal" :
           `${Math.min(2, evaluation.firms.length)} of 2 firms`}</p>
       </div>
-      <span className={stage === "analyst" ? "text-xs text-violet-200" : "text-xs text-teal-200"}>
+      <span className={stage === "early" ? "text-xs text-yellow-200" : stage === "analyst" ? "text-xs text-violet-200" : "text-xs text-teal-200"}>
         {event ? "View alert" : "View evidence"} &rarr;
       </span>
     </Link>
@@ -81,15 +83,18 @@ export default function PullbackWatch({ full = false, media }: { full?: boolean;
   const { tier, feed, items, error, loading, checkedAt, retry, save } = usePullbackWatch(!full, visible);
   const [choice, setChoice] = useState<Stage | null>(null);
   const newestPrice = feed.events.find((event) => event.stage === "price-volume");
+  const newestEarly = feed.events.find((event) => event.stage === "early");
   const stage = choice ?? (newestPrice && checkedAt - Date.parse(newestPrice.created_at) >= 0 &&
-    checkedAt - Date.parse(newestPrice.created_at) < 86_400_000 ? "price-volume" : "analyst");
+    checkedAt - Date.parse(newestPrice.created_at) < 86_400_000 ? "price-volume" :
+    newestEarly && checkedAt - Date.parse(newestEarly.created_at) < 86_400_000 ? "early" : "analyst");
   const events = feed.events.filter((event) => event.stage === stage &&
     checkedAt - Date.parse(event.created_at) < 86_400_000 &&
-    (!items.find((item) => item.symbol === event.symbol) ||
+    (stage === "early" || !items.find((item) => item.symbol === event.symbol) ||
       items.find((item) => item.symbol === event.symbol)?.evaluation.episode?.id === event.pullback_id));
   const eventSymbols = [...new Set(events.map((event) => event.symbol))];
   const rows = [...eventSymbols.map((symbol) => items.find((item) => item.symbol === symbol) ?? events.find((event) => event.symbol === symbol)!.evidence),
-    ...items.filter((item) => !eventSymbols.includes(item.symbol) && (stage === "analyst" || item.evaluation.priceVolume))];
+    ...items.filter((item) => !eventSymbols.includes(item.symbol) &&
+      (stage === "analyst" || (stage === "early" ? item.early?.signals.length : item.evaluation.priceVolume)))];
   const shown = full ? rows : rows.slice(0, 3);
   return (
     <section aria-label="Pullback Watch" className={`rounded-2xl border border-violet-300/25 bg-slate-950 p-4 ${media === "mobile" ? "md:hidden" : media === "desktop" ? "hidden md:block" : ""}`}>
@@ -97,15 +102,16 @@ export default function PullbackWatch({ full = false, media }: { full?: boolean;
         <h2 className="text-base font-semibold text-white">Pullback Watch</h2>
         {!full && <Link href="/watchlist/pullback" className="inline-flex min-h-11 items-center text-sm text-violet-200">View all &rarr;</Link>}
       </div>
-      <p className="mb-3 text-xs leading-5 text-white/70">Trusted research first. Price and same-time volume next.</p>
+      <p className="mb-3 text-xs leading-5 text-white/70">Green outline: no active alert. Yellow: early evidence. Red: full analyst and Price &amp; Volume confirmation. Colors require Notify me.</p>
       <div role="tablist" aria-label="Pullback alert stage" className="mb-3 flex gap-2">
-        {(["analyst", "price-volume"] as const).map((value) => <button key={value} type="button" role="tab"
+        {(["early", "analyst", "price-volume"] as const).map((value) => <button key={value} type="button" role="tab"
           id={`pullback-${media ?? "all"}-${value}`} aria-controls={`pullback-panel-${media ?? "all"}`} aria-selected={stage === value}
           onClick={() => setChoice(value)}
-          className={`min-h-11 flex-1 rounded-lg border px-2 text-xs font-semibold ${value === "analyst" ?
+          className={`min-h-11 flex-1 rounded-lg border px-2 text-xs font-semibold ${value === "early" ?
+            stage === value ? "border-yellow-300/70 bg-yellow-400/20 text-yellow-100" : "border-white/20 text-yellow-200" : value === "analyst" ?
             stage === value ? "border-violet-300/70 bg-violet-400/20 text-violet-100" : "border-white/20 text-violet-200" :
             stage === value ? "border-teal-300/70 bg-teal-400/20 text-teal-100" : "border-white/20 text-teal-200"}`}>
-          {value === "analyst" ? "Analyst Support" : "Price & Volume"}
+          {pullbackStageLabel(value)}
         </button>)}
       </div>
       <div role="tabpanel" id={`pullback-panel-${media ?? "all"}`} aria-labelledby={`pullback-${media ?? "all"}-${stage}`}>
@@ -116,16 +122,25 @@ export default function PullbackWatch({ full = false, media }: { full?: boolean;
             {full && <NotifyControl key={`${item.symbol}:${feed.watches.find((watch) => watch.symbol === item.symbol)?.trusted_firms.join(",")}`}
               symbol={item.symbol} watch={feed.watches.find((watch) => watch.symbol === item.symbol)} save={save} />}
           </StockRow>)}
-          {!shown.length && !loading && <p className="text-sm leading-6 text-white/70">{stage === "analyst" ?
+          {!shown.length && !loading && <p className="text-sm leading-6 text-white/70">{stage === "early" ?
+            "No new verified early signals after opt-in. Enable Notify me for a stock in Analyst Support to begin." : stage === "analyst" ?
             "Add stocks to your Watchlist to check trusted-firm support. No qualifying evidence is assumed." :
             "No verified Price & Volume events. Two firms must qualify first."}</p>}
           {full && feed.events.length > 0 && <details className="mt-4 border-t border-white/10 pt-2">
             <summary className="min-h-11 cursor-pointer py-3 text-sm text-white/80">Saved in-app alerts</summary>
             <ul>{feed.events.map((event) => <li key={event.id}><Link href={evidenceHref(event.symbol, event.stage, event)}
               className="flex min-h-11 items-center gap-2 text-sm text-violet-200">
-              {event.symbol} · {event.stage === "analyst" ? "Analyst Support" : "Price & Volume"} · {event.created_at.slice(0, 10)}
+              {event.symbol} · {pullbackStageLabel(event.stage)} · {event.created_at.slice(0, 10)}
             </Link></li>)}</ul>
           </details>}
+          {full && items.some((item) => item.early?.warnings.length) && <details className="mt-3 text-xs leading-5 text-amber-100">
+            <summary className="min-h-11 cursor-pointer py-3">Early source coverage</summary>
+            {items.filter((item) => item.early).map((item) => <div key={item.symbol} className="mb-3">
+              <p className="font-semibold">{item.symbol}</p>
+              <ul className="list-inside list-disc">{item.early?.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+            </div>)}
+          </details>}
+          {full && <p className="mt-3 text-xs leading-5 text-white/60">Early signals: a trusted-firm upgrade, newly reported hedge fund position, or disclosed senator/insider purchase. These do not require a pullback. A single $50,000 purchase cannot currently be verified; minute volume is not a substitute. Sources are sampled and disclosures can be delayed.</p>}
           {full && <p className="mt-3 text-xs leading-5 text-white/60">In-app alerts appear here and open their saved evidence in Vision. Phone push is not yet available. Monitoring must run every minute for timely intraday alerts.</p>}
         </>}
       </div>

@@ -41,14 +41,14 @@ export async function GET(request: Request): Promise<NextResponse> {
     if (authError && user) throw new Error("Pullback Watch could not verify your session.");
     if (symbol && !user) return NextResponse.json({ item: await loadPullbackItem(symbol, TRUSTED_FIRMS) });
     const { data: watches, error: watchError } = await db.from("pullback_watches")
-      .select("symbol,trusted_firms,notify,snapshot").eq("user_id", user!.id).order("symbol");
+      .select("symbol,trusted_firms,notify,notify_since,snapshot").eq("user_id", user!.id).order("symbol");
     if (watchError) throw new Error("Pullback Watch needs its database migration applied locally before saved watches are available.");
     const typed = (watches ?? []) as PullbackWatch[];
     if (symbol) {
       let watch = typed.find((item) => item.symbol === symbol);
       if (!watch) {
         await savePullbackWatch(user!.id, symbol, [...TRUSTED_FIRMS], false, true);
-        watch = { symbol, trusted_firms: [...TRUSTED_FIRMS], notify: false, snapshot: null };
+        watch = { symbol, trusted_firms: [...TRUSTED_FIRMS], notify: false, notify_since: null, snapshot: null };
       }
       return NextResponse.json({ item: await processPullbackWatch(user!.id, watch) });
     }

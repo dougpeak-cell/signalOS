@@ -1,6 +1,6 @@
 import { DEFAULT_CONFIG, evaluatePullback, TRUSTED_FIRMS, type Episode, type Evaluation, type Rating } from "../../src/lib/pullback/engine";
 import { parseFmpDate, type MarketBar } from "../../src/lib/market/fmpData";
-import type { PullbackEvent, PullbackItem } from "../../src/lib/pullback/types";
+import type { PullbackEvent, PullbackItem, PullbackWatch } from "../../src/lib/pullback/types";
 
 export const now = new Date("2026-11-19T16:20:00Z");
 export const episode: Episode = {
@@ -36,5 +36,27 @@ export function event(stage: "analyst" | "price-volume" = "price-volume"): Pullb
   return {
     id: stage === "analyst" ? "00000000-0000-4000-8000-000000000001" : "00000000-0000-4000-8000-000000000002",
     symbol: "TEST", stage, pullback_id: episode.id, evidence: item(), created_at: now.toISOString(),
+  };
+}
+export function watch(symbol = "TEST"): PullbackWatch {
+  return {
+    symbol, trusted_firms: [...TRUSTED_FIRMS], notify: true, notify_since: "2026-11-18T16:00:00Z", snapshot: item(symbol),
+  };
+}
+export function earlyEvent(): PullbackEvent {
+  const evidence = item();
+  evidence.evaluation.episode = null;
+  evidence.evaluation.firms = [];
+  evidence.evaluation.analystAt = null;
+  evidence.evaluation.priceVolume = null;
+  evidence.early = {
+    since: watch().notify_since!, warnings: [], signals: [{
+      id: "a".repeat(64), kind: "analyst-upgrade", title: "Analyst upgrade", source: "FMP Stock Grades / CFRA",
+      publishedAt: "2026-11-19", dateOnly: true, filingUrl: null, details: "CFRA: Hold to Buy.",
+    }],
+  };
+  return {
+    id: "00000000-0000-4000-8000-000000000003", symbol: "TEST", stage: "early",
+    pullback_id: `early:${"a".repeat(64)}`, evidence, created_at: now.toISOString(),
   };
 }

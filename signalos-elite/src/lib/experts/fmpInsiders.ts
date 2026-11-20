@@ -249,7 +249,9 @@ async function loadCompanyProfiles(symbols: string[], warnings: string[]) {
   return profiles;
 }
 
-export async function loadFmpInsiderTradesFeed(requestedSector?: string | null): Promise<InsiderTradesFeed> {
+export async function loadFmpInsiderTradesFeed(
+  requestedSector?: string | null, options: { symbol?: string } = {},
+): Promise<InsiderTradesFeed> {
   const latestRows: FmpInsiderTradeRow[] = [];
   for (let page = 0; page < PURCHASE_PAGES; page++) {
     const rows = await fetchRows<FmpInsiderTradeRow>("insider-trading/latest", {
@@ -275,9 +277,10 @@ export async function loadFmpInsiderTradesFeed(requestedSector?: string | null):
       seen.add(key);
       return true;
     })
-    .sort(compareRecentTrades);
+    .sort(compareRecentTrades)
+    .filter((row) => !options.symbol || row.symbol === options.symbol);
 
-  const warnings: string[] = [];
+  const warnings: string[] = options.symbol ? ["Insider coverage is a sample of the latest 300 filings; at most 20 matching purchases are returned."] : [];
   const companyProfiles = await loadCompanyProfiles(
     recentPurchaseRows.map((row) => row.symbol ?? ""),
     warnings

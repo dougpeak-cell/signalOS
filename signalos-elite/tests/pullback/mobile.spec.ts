@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { event, item, now } from "./fixtures";
+import { earlyEvent, event, item, now, watch as savedWatch } from "./fixtures";
 
 async function acknowledgeLegal(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { name: "Before you continue", exact: true })).toBeVisible();
@@ -93,7 +93,7 @@ test("red phone header button opens the matching saved follow-up, including at n
   await page.route("**/api/pullback-watch**", (route) => {
     const params = new URL(route.request().url()).searchParams;
     return route.fulfill({ json: params.has("event") ? { event: saved } : params.has("symbol") ?
-      { item: item(params.get("symbol")!) } : { watches: [], events: [event("analyst"), saved] } });
+      { item: item(params.get("symbol")!) } : { watches: [savedWatch()], events: [event("analyst"), saved] } });
   });
   await page.route("**/api/experts/institutional-activity**", (route) => route.fulfill({
     json: { ok: true, activity: { symbol: "TEST", through: "2026-11-19", funds: [], quarters: [], warnings: [] } },
@@ -120,7 +120,7 @@ test.use({ viewport: { width: 1440, height: 1000 }, isMobile: false, hasTouch: f
 test("desktop headers keep the alert action across app, news, workspace and Pulse screens", async ({ page }) => {
   await page.route("**/api/pullback-watch**", (route) => {
     const symbol = new URL(route.request().url()).searchParams.get("symbol");
-    return route.fulfill({ json: symbol ? { item: item(symbol) } : { watches: [], events: [event()] } });
+    return route.fulfill({ json: symbol ? { item: item(symbol) } : { watches: [savedWatch()], events: [event()] } });
   });
   await page.goto("/watchlist/pullback?previewPlan=pro");
   await acknowledgeLegal(page);
@@ -161,18 +161,57 @@ test("empty or failed inboxes do not invent alert updates or counts", async ({ p
   await acknowledgeLegal(page);
   const header = page.getByRole("banner");
   const checking = header.getByRole("link", { name: "Alerts: checking saved updates.", exact: true });
-  await expect(checking).toHaveClass(/bg-slate-900/);
+  await expect(checking).toHaveClass(/border-teal-400\/70/);
+  await expect(checking).toHaveClass(/bg-transparent/);
   await expect(checking).not.toHaveClass(/bg-red-/);
   releaseInbox();
-  const empty = header.getByRole("link", { name: "Alerts: no saved updates. Open Pullback Watch.", exact: true });
+  const empty = header.getByRole("link", { name: "Alerts: no active updates. Open Pullback Watch.", exact: true });
   await expect(empty).toHaveAttribute("href", "/watchlist/pullback");
-  await expect(empty).toHaveClass(/bg-slate-900/);
+  await expect(empty).toHaveClass(/bg-transparent/);
   await expect(empty).not.toHaveClass(/bg-red-/);
   failed = true;
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   const unavailable = header.getByRole("link", { name: /^Alerts unavailable:/ });
   await expect(unavailable).toHaveAttribute("href", "/watchlist/pullback");
   await expect(unavailable).toContainText("!");
-  await expect(unavailable).toHaveClass(/bg-slate-900/);
+  await expect(unavailable).toHaveClass(/bg-transparent/);
   await expect(unavailable).not.toHaveClass(/bg-red-/);
+});
+
+test("yellow early evidence opens the exact event, red requires full confirmation, and pausing returns to green outline", async ({ page }) => {
+  const early = earlyEvent();
+  let confirmed = false;
+  let notify = true;
+  await page.clock.setFixedTime(now);
+  await page.route("**/api/pullback-watch**", (route) => {
+    const request = route.request();
+    const params = new URL(request.url()).searchParams;
+    if (request.method() === "POST") {
+      notify = request.postDataJSON().notify;
+      return route.fulfill({ json: { ok: true } });
+    }
+    return route.fulfill({ json: params.has("event") ? { event: params.get("event") === early.id ? early : event() } :
+      params.has("symbol") ? { item: confirmed ? item() : early.evidence } :
+      { watches: [{ ...savedWatch(), notify }], events: confirmed ? [early, event()] : [early] } });
+  });
+  await page.goto("/watchlist/pullback?previewPlan=pro");
+  await acknowledgeLegal(page);
+  const header = page.getByRole("banner");
+  const yellow = header.getByRole("link", { name: /^Alerts: 1 saved\. Open TEST Early Signal/ });
+  await expect(yellow).toHaveClass(/bg-yellow-400/);
+  await expect(yellow).not.toHaveClass(/bg-red-/);
+  await yellow.click();
+  const evidence = page.getByRole("region", { name: "Pullback alert evidence" });
+  await expect(evidence.getByText("TEST · Early Signal", { exact: true })).toBeVisible();
+  await expect(evidence.getByText("CFRA: Hold to Buy.", { exact: true })).toBeVisible();
+  confirmed = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(header.getByRole("link", { name: /^Alerts: 2 saved\. Open TEST Price & Volume/ })).toHaveClass(/bg-red-700/);
+  await page.goto("/watchlist/pullback?previewPlan=pro");
+  await page.getByRole("region", { name: "Pullback Watch", exact: true }).getByRole("button", { name: "Pause notifications", exact: true }).first().click();
+  const neutral = header.getByRole("link", { name: "Alerts: no active updates. Open Pullback Watch.", exact: true });
+  await expect(neutral).toHaveClass(/bg-transparent/);
+  await expect(neutral).toHaveClass(/border-teal-400\/70/);
+  await expect(page.getByText("Saved in-app alerts", { exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Mobile navigation", exact: true }).getByRole("link")).toHaveCount(5);
 });
