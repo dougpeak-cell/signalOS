@@ -10,7 +10,6 @@ import TickerActionButton from "@/components/sigi/TickerActionButton";
 import TickerLogo from "@/components/stocks/TickerLogo";
 import SignalOSScoreV2 from "@/components/stocks/SignalOSScoreV2";
 import AddStockModal from "@/components/watchlist/AddStockModal";
-import WatchlistPulseMovers from "@/components/amsa/WatchlistPulseMovers";
 import PullbackWatch from "@/components/pullback/PullbackWatch";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { useSyncedWatchlist } from "@/hooks/useSyncedWatchlist";
@@ -701,6 +700,7 @@ function WatchlistRowItem({
   portfolioAddHref,
   portfolioHref,
   openChartHref,
+  pulseHref,
   stockHref,
   onRemove,
 }: {
@@ -713,6 +713,7 @@ function WatchlistRowItem({
   portfolioAddHref: string;
   portfolioHref: string;
   openChartHref: string;
+  pulseHref: string;
   stockHref: string;
   onRemove: (ticker: string) => void;
 }) {
@@ -857,6 +858,14 @@ function WatchlistRowItem({
                 X
               </button>
             </div>
+
+            <Link
+              href={pulseHref}
+              aria-label={`Check Pulse for ${row.ticker}`}
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-teal-400/25 bg-teal-400/10 px-3 text-sm font-medium text-teal-200 transition hover:border-teal-300/40 hover:bg-teal-400/16 hover:text-teal-100"
+            >
+              Check Pulse
+            </Link>
 
             <Link
               href={openChartHref}
@@ -1600,7 +1609,6 @@ export default function WatchlistPage() {
                 </div>
                 </section>
               )}
-              {isQuick ? <WatchlistPulseMovers symbols={scoredRows.map((row) => row.ticker)} /> : null}
               {isDetail ? (
               <div className="mt-5 grid gap-3 md:grid-cols-3">
                 <div className="rounded-2xl border border-cyan-400/14 bg-cyan-400/5 px-4 py-3">
@@ -1678,6 +1686,7 @@ export default function WatchlistPage() {
                             portfolioAddHref={buildPreviewHref(`/portfolio?focus=${symbol}`)}
                             portfolioHref={buildPreviewHref(`/portfolio?focus=${symbol}`)}
                             openChartHref={buildPreviewHref(`/stocks/${symbol}`)}
+                            pulseHref={buildPreviewHref(`/pulse?symbol=${encodeURIComponent(symbol)}`)}
                             stockHref={buildPreviewHref(`/stocks/${symbol}`)}
                             sparklineData={history}
                             sparklineLoading={historyLoading}

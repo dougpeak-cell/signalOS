@@ -349,6 +349,7 @@ Production compilation is checked with `npm run build`.
 ## Mobile Pulse
 
 - Phone visitors start with public Pulse search at `/`; `/pulse?symbol=NVDA` opens a specific stock without signup. Desktop landing content stays separate.
+- Watchlist condensed view does not display a Watchlist Pulse summary. In Detail View, each stock has a **Check Pulse** action that opens `/pulse?symbol=...` for that stock; existing Detail View subscription access is unchanged.
 - Current Pulse uses completed-session AMSA data. Heartbeat, movement, and DNA comparisons require source-distinct verified daily snapshots. Missing history never produces example scores or a synthetic waveform.
 - Save and install actions appear after a successful reading. The web manifest starts installed apps at `/pulse` and provides 192px and 512px PNG icons. Installation depends on browser support; this is not an offline mode.
 - Pulse Change Alerts are opt-in, on-device in-app alerts while SigiOS is visible, not background push notifications. Watched stocks are checked every five minutes for verified changes of at least five points, with a 24-hour per-stock cooldown and no alert on the initial baseline.

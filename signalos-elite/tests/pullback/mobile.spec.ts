@@ -215,3 +215,33 @@ test("yellow early evidence opens the exact event, red requires full confirmatio
   await expect(page.getByText("Saved in-app alerts", { exact: true })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Mobile navigation", exact: true }).getByRole("link")).toHaveCount(5);
 });
+
+for (const device of [
+  { name: "phone", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
+  { name: "desktop", viewport: { width: 1440, height: 1000 }, isMobile: false, hasTouch: false },
+]) {
+  test.describe(`Watchlist Pulse navigation on ${device.name}`, () => {
+    test.use({ viewport: device.viewport, isMobile: device.isMobile, hasTouch: device.hasTouch });
+    test("removes the condensed summary and opens the matching stock from Detail View", async ({ page }) => {
+      await page.addInitScript(() => {
+        localStorage.setItem("signalos:watchlist", JSON.stringify(["MSFT", "NVDA"]));
+        localStorage.setItem("signalos.watchlist.v1", JSON.stringify([{ ticker: "MSFT" }, { ticker: "NVDA" }]));
+        localStorage.setItem("signalos.watchlist.seeded.v1", "1");
+      });
+      await page.goto("/watchlist?mode=quick&previewPlan=smart");
+      await acknowledgeLegal(page);
+      await expect(page.getByText("Condensed Watchlist", { exact: true })).toBeVisible();
+      await expect(page.getByRole("region", { name: "Watchlist Pulse changes", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: /^Check Pulse for / })).toHaveCount(0);
+      await page.goto("/watchlist?mode=detail&previewPlan=smart");
+      for (const ticker of ["MSFT", "NVDA"]) {
+        const action = page.getByRole("link", { name: `Check Pulse for ${ticker}`, exact: true });
+        await expect(action).toBeVisible();
+        await expect(action).toHaveAttribute("href", `/pulse?symbol=${ticker}`);
+      }
+      await expect(page.getByRole("region", { name: "Watchlist Pulse changes", exact: true })).toHaveCount(0);
+      await page.getByRole("link", { name: "Check Pulse for MSFT", exact: true }).click();
+      await expect(page).toHaveURL(/\/pulse\?symbol=MSFT$/);
+    });
+  });
+}
