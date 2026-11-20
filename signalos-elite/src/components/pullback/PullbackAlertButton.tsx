@@ -12,7 +12,7 @@ export default function PullbackAlertButton(): React.JSX.Element {
   const stage = latest ? pullbackStageLabel(latest.stage) : "";
   const label = error ? `Alerts unavailable: ${error}` : latest ?
     `Alerts: ${events.length} saved. Open ${latest.symbol} ${stage} update. ${confirmed ? "Red: all criteria met." : "Yellow: early evidence; full criteria not yet met."}` :
-    loading ? "Alerts: checking saved updates." : "Alerts: no active updates. Open Pullback Watch.";
+    loading ? "Alerts: checking saved updates." : "Alerts: no active updates. Open Sigi Alerts.";
 
   return <Link
     href={latest ? evidenceHref(latest.symbol, latest.stage, latest) : "/watchlist/pullback"}

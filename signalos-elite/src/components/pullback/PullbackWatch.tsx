@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { useEffect, useState, type ReactElement } from "react";
 import { usePullbackWatch } from "@/hooks/usePullbackWatch";
 import { TRUSTED_FIRMS, type Firm, type Stage } from "@/lib/pullback/engine";
@@ -71,7 +72,9 @@ function StockRow({ item, event, stage, children }: {
   </div>;
 }
 
-export default function PullbackWatch({ full = false, media }: { full?: boolean; media?: "mobile" | "desktop" }): ReactElement {
+export default function PullbackWatch({ full = false, media, defaultOpen = false }: {
+  full?: boolean; media?: "mobile" | "desktop"; defaultOpen?: boolean;
+}): ReactElement {
   const [visible, setVisible] = useState(!media);
   useEffect(() => {
     if (!media) return;
@@ -97,11 +100,19 @@ export default function PullbackWatch({ full = false, media }: { full?: boolean;
       (stage === "analyst" || (stage === "early" ? item.early?.signals.length : item.evaluation.priceVolume)))];
   const shown = full ? rows : rows.slice(0, 3);
   return (
-    <section aria-label="Pullback Watch" className={`rounded-2xl border border-violet-300/25 bg-slate-950 p-4 ${media === "mobile" ? "md:hidden" : media === "desktop" ? "hidden md:block" : ""}`}>
+    <section aria-label="Sigi Alerts" className={`rounded-2xl border border-violet-300/25 bg-slate-950 p-4 ${media === "mobile" ? "md:hidden" : media === "desktop" ? "hidden md:block" : ""}`}>
+      <details className="group" open={defaultOpen}>
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-200 [&::-webkit-details-marker]:hidden">
+          <h2 className="text-base font-semibold">Sigi Alerts</h2>
+          <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-violet-200 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="pt-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-white">Pullback Watch</h2>
+        <h3 className="text-base font-semibold text-white">Sigi Alerts (Pullback Watch)</h3>
         {!full && <Link href="/watchlist/pullback" className="inline-flex min-h-11 items-center text-sm text-violet-200">View all &rarr;</Link>}
       </div>
+      <p className="mt-2 text-xs leading-5 text-white/70">Track early evidence, trusted-firm Analyst Support, and Price &amp; Volume confirmation for your watched stocks. Select an alert to see why Sigi alerted you and review its saved evidence.</p>
+      <p className="mt-2 text-xs leading-5 text-white/70">The Alerts signal at the top of the screen uses these colors:</p>
       <p className="mb-3 text-xs leading-5 text-white/70">Green outline: no active alert. Yellow: early evidence. Red: full analyst and Price &amp; Volume confirmation. Colors require Notify me.</p>
       <div role="tablist" aria-label="Pullback alert stage" className="mb-3 flex gap-2">
         {(["early", "analyst", "price-volume"] as const).map((value) => <button key={value} type="button" role="tab"
@@ -144,6 +155,8 @@ export default function PullbackWatch({ full = false, media }: { full?: boolean;
           {full && <p className="mt-3 text-xs leading-5 text-white/60">In-app alerts appear here and open their saved evidence in Vision. Phone push is not yet available. Monitoring must run every minute for timely intraday alerts.</p>}
         </>}
       </div>
+        </div>
+      </details>
     </section>
   );
 }

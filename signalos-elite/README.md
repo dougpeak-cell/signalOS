@@ -26,7 +26,17 @@ The repo-level environment contract lives in `.env.local.example`.
 
 Create `.env.local` from that file and fill in only the values you need for your local workflow. This keeps Supabase, Sigi provider, Stripe billing, market data, and ingest settings in one place.
 
-## Pullback Watch
+## Sigi Alerts (Pullback Watch)
+
+The **Sigi Alerts** disclosure tab starts collapsed on Watchlist and Today
+(including desktop Emerging Setups). Select it to expand the existing alerts,
+evidence, and notification controls in place. The explanation identifies it as
+**Sigi Alerts (Pullback Watch)** and describes the top-of-screen signal:
+**Green outline: no active alert. Yellow: early evidence. Red: full analyst and
+Price & Volume confirmation. Colors require Notify me.**
+The full `/watchlist/pullback` page opens expanded, including when reached from
+the neutral header action. Alert processing, subscription rules, saved evidence,
+and existing URLs are unchanged.
 
 - Review: `http://127.0.0.1:3100/watchlist/pullback?previewPlan=pro`
   after `npm run dev -- --hostname 127.0.0.1 --port 3100`.
@@ -48,7 +58,7 @@ Create `.env.local` from that file and fill in only the values you need for your
   existing final criteria). A red confirmation takes priority over newer yellow
   events. Its badge counts saved events from the current opt-in period, not unread
   stocks. Paused and older opt-in events remain in **Saved in-app alerts** without
-  coloring the button. With no active events it opens Pullback Watch;
+  coloring the button. With no active events it opens Sigi Alerts;
   an unavailable inbox shows `!` and an explanatory accessible label, never a
   fabricated count. It checks the existing inbox every 30 seconds while visible
   and on return to the app; it does not run extra market-data evaluations.

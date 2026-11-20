@@ -31,7 +31,8 @@ test("mobile watch -> fresh follow-up -> exact Vision evidence, notification con
   }));
   await page.goto("/watchlist/pullback?previewPlan=pro");
   await acknowledgeLegal(page);
-  const watch = page.getByRole("region", { name: "Pullback Watch", exact: true });
+  const watch = page.getByRole("region", { name: "Sigi Alerts", exact: true });
+  await expect(watch.getByRole("heading", { name: "Sigi Alerts (Pullback Watch)", exact: true })).toBeVisible();
   await expect(watch.getByRole("tab", { name: "Price & Volume", exact: true })).toHaveAttribute("aria-selected", "true");
   await expect(watch.getByRole("link", { name: "TEST 2.00x volume", exact: false })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Mobile navigation", exact: true }).getByRole("link")).toHaveCount(5);
@@ -73,19 +74,27 @@ test("Today places the compact card between Market Thesis and Sigi and integrate
   await page.goto("/today?previewPlan=pro");
   await acknowledgeLegal(page);
   const home = page.locator("#sigi-command-panel");
-  const card = home.getByRole("region", { name: "Pullback Watch", exact: true });
+  const card = home.getByRole("region", { name: "Sigi Alerts", exact: true });
   await expect(card).toBeVisible();
+  await expect(card.getByRole("tablist")).toBeHidden();
   const thesisBox = await home.getByText("Market thesis", { exact: true }).boundingBox();
   const cardBox = await card.boundingBox();
   const sigiBox = await home.locator("summary").filter({ hasText: "Ask Sigi" }).boundingBox();
   expect(thesisBox && cardBox && thesisBox.y < cardBox.y).toBe(true);
   expect(sigiBox && cardBox && cardBox.y + cardBox.height <= sigiBox.y).toBe(true);
-  expect(await card.getByRole("tabpanel").getByRole("link").count()).toBeLessThanOrEqual(3);
+  await card.locator("summary").first().click();
+  await expect(card.getByRole("tablist")).toBeVisible();
+  const stockCount = await card.getByRole("tabpanel").getByRole("link").count();
+  expect(stockCount).toBeGreaterThan(0);
+  expect(stockCount).toBeLessThanOrEqual(3);
   await expect(page.getByRole("navigation", { name: "Mobile navigation", exact: true }).getByRole("link")).toHaveCount(5);
   await page.setViewportSize({ width: 1440, height: 1000 });
   const emerging = page.locator("section").filter({ has: page.getByRole("heading", { name: "Emerging Setups", exact: true }) });
-  await expect(emerging.getByRole("region", { name: "Pullback Watch", exact: true })).toHaveCount(1);
-  await expect(emerging.getByRole("region", { name: "Pullback Watch", exact: true })).toBeVisible();
+  const desktopCard = emerging.getByRole("region", { name: "Sigi Alerts", exact: true });
+  await expect(desktopCard).toHaveCount(1);
+  await expect(desktopCard).toBeVisible();
+  await desktopCard.locator("summary").first().click();
+  await expect(desktopCard.getByRole("heading", { name: "Sigi Alerts (Pullback Watch)", exact: true })).toBeVisible();
 });
 
 test("red phone header button opens the matching saved follow-up, including at narrow widths", async ({ page }) => {
@@ -165,7 +174,7 @@ test("empty or failed inboxes do not invent alert updates or counts", async ({ p
   await expect(checking).toHaveClass(/bg-transparent/);
   await expect(checking).not.toHaveClass(/bg-red-/);
   releaseInbox();
-  const empty = header.getByRole("link", { name: "Alerts: no active updates. Open Pullback Watch.", exact: true });
+  const empty = header.getByRole("link", { name: "Alerts: no active updates. Open Sigi Alerts.", exact: true });
   await expect(empty).toHaveAttribute("href", "/watchlist/pullback");
   await expect(empty).toHaveClass(/bg-transparent/);
   await expect(empty).not.toHaveClass(/bg-red-/);
@@ -208,8 +217,8 @@ test("yellow early evidence opens the exact event, red requires full confirmatio
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(header.getByRole("link", { name: /^Alerts: 2 saved\. Open TEST Price & Volume/ })).toHaveClass(/bg-red-700/);
   await page.goto("/watchlist/pullback?previewPlan=pro");
-  await page.getByRole("region", { name: "Pullback Watch", exact: true }).getByRole("button", { name: "Pause notifications", exact: true }).first().click();
-  const neutral = header.getByRole("link", { name: "Alerts: no active updates. Open Pullback Watch.", exact: true });
+  await page.getByRole("region", { name: "Sigi Alerts", exact: true }).getByRole("button", { name: "Pause notifications", exact: true }).first().click();
+  const neutral = header.getByRole("link", { name: "Alerts: no active updates. Open Sigi Alerts.", exact: true });
   await expect(neutral).toHaveClass(/bg-transparent/);
   await expect(neutral).toHaveClass(/border-teal-400\/70/);
   await expect(page.getByText("Saved in-app alerts", { exact: true })).toBeVisible();
@@ -220,8 +229,35 @@ for (const device of [
   { name: "phone", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
   { name: "desktop", viewport: { width: 1440, height: 1000 }, isMobile: false, hasTouch: false },
 ]) {
-  test.describe(`Watchlist Pulse navigation on ${device.name}`, () => {
+  test.describe(`Watchlist actions on ${device.name}`, () => {
     test.use({ viewport: device.viewport, isMobile: device.isMobile, hasTouch: device.hasTouch });
+    test("Sigi Alerts expands in place with the header color explanation and existing controls", async ({ page }) => {
+      await page.route("**/api/pullback-watch**", (route) => {
+        const symbol = new URL(route.request().url()).searchParams.get("symbol");
+        return route.fulfill({ json: symbol ? { item: item(symbol) } : { watches: [savedWatch()], events: [] } });
+      });
+      await page.goto("/watchlist?mode=quick&previewPlan=pro");
+      await acknowledgeLegal(page);
+      const alerts = page.getByRole("region", { name: "Sigi Alerts", exact: true });
+      const toggle = alerts.locator("summary").first();
+      const explanation = alerts.getByRole("heading", { name: "Sigi Alerts (Pullback Watch)", exact: true });
+      await expect(toggle).toBeVisible();
+      await expect(explanation).toBeHidden();
+      if (device.isMobile) await toggle.tap();
+      else {
+        await toggle.focus();
+        await page.keyboard.press("Enter");
+      }
+      await expect(explanation).toBeVisible();
+      await expect(alerts.getByText("The Alerts signal at the top of the screen uses these colors:", { exact: true })).toBeVisible();
+      await expect(alerts.getByText("Green outline: no active alert. Yellow: early evidence. Red: full analyst and Price & Volume confirmation. Colors require Notify me.", { exact: true })).toBeVisible();
+      await expect(alerts.getByRole("tablist", { name: "Pullback alert stage" })).toBeVisible();
+      await expect(alerts.getByRole("button", { name: "Pause notifications", exact: true }).first()).toBeVisible();
+      await toggle.click();
+      await expect(explanation).toBeHidden();
+      await expect(alerts.getByRole("tablist")).toBeHidden();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
     test("removes the condensed summary and opens the matching stock from Detail View", async ({ page }) => {
       await page.addInitScript(() => {
         localStorage.setItem("signalos:watchlist", JSON.stringify(["MSFT", "NVDA"]));
