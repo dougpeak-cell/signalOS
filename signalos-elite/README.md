@@ -26,7 +26,7 @@ The repo-level environment contract lives in `.env.local.example`.
 
 Create `.env.local` from that file and fill in only the values you need for your local workflow. This keeps Supabase, Sigi provider, Stripe billing, market data, and ingest settings in one place.
 
-## Pullback Watch (local review; not deployed)
+## Pullback Watch
 
 - Review: `http://127.0.0.1:3100/watchlist/pullback?previewPlan=pro`
   after `npm run dev -- --hostname 127.0.0.1 --port 3100`.
@@ -98,9 +98,13 @@ background monitoring; pausing stops new events, not saved event history.
 With the same `CRON_SECRET` configured for the local server and monitor, run
 `npm run pullback:monitor` in another terminal. It calls
 `/api/cron/pullback-watch` at minute boundaries and refuses non-loopback origins.
-No production scheduler was added. A future scheduler must invoke that protected
-endpoint every minute; size its worker capacity and FMP quota for the watch
-universe. A time-budget failure is explicit, not successful delivery.
+Vercel's production scheduler invokes that protected endpoint every minute on
+weekdays from 13:00 through 20:59 UTC, covering both New York daylight-saving
+offsets. The endpoint skips times outside 09:30-16:00 New York time; fresh quotes
+also gate holiday alerts. Vercel must have the production `CRON_SECRET` configured.
+Minute scheduling requires Vercel Pro or Enterprise; invocations consume the
+existing plan's function allowance and FMP quota. Size worker capacity for the
+watch universe. A time-budget failure is explicit, not successful delivery.
 
 The database serializes evaluations per watch and enforces a unique key on
 **user + symbol + pullback ID + stage**. Refreshes/retries cannot insert another
