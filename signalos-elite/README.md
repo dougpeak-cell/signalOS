@@ -26,44 +26,49 @@ The repo-level environment contract lives in `.env.local.example`.
 
 Create `.env.local` from that file and fill in only the values you need for your local workflow. This keeps Supabase, Sigi provider, Stripe billing, market data, and ingest settings in one place.
 
-## Sigi Alerts (Pullback Watch)
+## Sigi Alerts
 
-The **Sigi Alerts** disclosure tab starts collapsed on Watchlist and Today
-(including desktop Emerging Setups). Select it to expand the existing alerts,
-evidence, and notification controls in place. The explanation identifies it as
-**Sigi Alerts (Pullback Watch)** and describes the top-of-screen signal:
-**Green outline: no active alert. Yellow: early evidence. Red: full analyst and
-Price & Volume confirmation. Colors require Notify me.**
-The full `/watchlist/pullback` page opens expanded, including when reached from
-the neutral header action. Alert processing, subscription rules, saved evidence,
-and existing URLs are unchanged.
+The header **Alerts** action opens `/alerts`, grouping stocks from the same
+watchlist used by the screener:
 
-- Review: `http://127.0.0.1:3100/watchlist/pullback?previewPlan=pro`
-  after `npm run dev -- --hostname 127.0.0.1 --port 3100`.
-  The existing development-only plan preview does not create an authenticated
-  account or grant permission to save notifications.
-- Real-data, read-only evidence:
-  `http://127.0.0.1:3100/vision?symbol=AAPL&pullbackWatch=1&previewPlan=pro`.
-  No example stocks, ratings, or alerts are injected into the app.
-- Phone Today: immediately below Market Thesis and above Ask Sigi.
-  Desktop Today: inside Emerging Setups. The existing five-button navigation is
-  unchanged. Watchlist includes pending counts, trusted-firm selection, and
-  **Notify me**. Fresh Price & Volume events (within 24 hours) open that tab first.
-- An **Alerts** action sits at the top right of the shared phone/desktop
-  header, including News and Workspace, and the standalone Pulse header. It
-  opens matching saved evidence directly in Vision. It stays outlined in SigiOS
-  teal/green while loading, unavailable, or without an active saved signal.
-  Only stocks with **Notify me** enabled count: yellow means an Early Signal or
-  Analyst Support event; red requires a saved **Price & Volume** event (all
-  existing final criteria). A red confirmation takes priority over newer yellow
-  events. Its badge counts saved events from the current opt-in period, not unread
-  stocks. Paused and older opt-in events remain in **Saved in-app alerts** without
-  coloring the button. With no active events it opens Sigi Alerts;
-  an unavailable inbox shows `!` and an explanatory accessible label, never a
-  fabricated count. It checks the existing inbox every 30 seconds while visible
-  and on return to the app; it does not run extra market-data evaluations.
-- Access follows the existing **Pro research** rules in Experts. Mutations also
-  require an authenticated account and same-origin request.
+- **Yellow:** screener score from 55 through 69.
+- **Solid green:** screener score of 70 or higher.
+- **Red:** daily price change of at least +7% or -7%, overriding score color.
+
+The header uses red > green > yellow priority and counts unique qualifying
+stocks, not events. With no qualifying stocks it remains outlined.
+The existing Pro access rule is retained; **Notify me** is no longer required.
+Watchlist and Today disclosures use the same groups. The old pullback alert
+interface has been removed; `/watchlist/pullback` redirects to `/alerts`.
+The retired pullback alert cron has also been removed from the deployment
+schedule. Saved research evidence and its APIs are retained.
+
+Screener scores and alerts share the main feed's existing opportunity formula.
+Its stock-order adjustment is fixed per ticker, so sector, search, sorting,
+and pagination cannot change the same stock's score. The main-feed ticker
+positions are retained; other stocks use their first sector-universe position
+(or position zero for search-only symbols).
+
+One shared quote request cycle refreshes watched stocks every 30 seconds while
+visible and on focus/visibility return. Watchlist edits refresh the monitored
+symbols. Batches respect the quote endpoint's 100-symbol limit.
+Missing quotes or daily changes never create scores or alerts and are reported
+explicitly. Alerts are current in-app states, not stored notifications or phone
+push. Daily change is relative to the previous close; outside market hours the
+latest available session is used.
+
+Review: `http://localhost:3100/alerts?previewPlan=pro` after
+`npm run dev -- --hostname localhost --port 3100`.
+Focused checks: `npx vitest run src/lib/watchlist/alerts.test.ts src/components/watchlist/StockAlerts.test.tsx`.
+
+## Legacy Pullback research service
+
+The following describes the retained research evidence APIs, database records,
+and monitoring infrastructure, not the replacement Sigi Alerts interface.
+Existing saved evidence remains accessible through Vision. Its legacy event
+stages and opt-in settings do not color the header or populate `/alerts`.
+The monitoring instructions below are for manually running the legacy research
+service only; it is no longer scheduled by this deployment.
 
 ### Yellow early signals
 
@@ -147,23 +152,16 @@ authenticated development Pro account; the Pullback Watch migration alone
 does not provision those prerequisites. The review project's minimal
 profile/settings bootstrap is for Pullback Watch, not a full app database clone.
 
-Opening Sigi Alerts shows saved evidence with its evaluation time as soon as the
-inbox loads. Stocks without evidence or with evidence at least 30 seconds old
-refresh two at a time; each result appears without waiting for the rest of the
-watchlist. A failed refresh is reported rather than re-dating the last result.
-Opening a stock shows its last matching evaluation first and refreshes it if stale.
-Saved alert links still open the evidence recorded for that event. **Notify me** opts into
-background monitoring; pausing stops new events, not saved event history.
+Legacy saved evidence links still open the evidence recorded for that event in
+Vision. Existing legacy opt-ins are retained for manual research monitoring,
+not the new score and daily-move alerts.
 With the same `CRON_SECRET` configured for the local server and monitor, run
 `npm run pullback:monitor` in another terminal. It calls
 `/api/cron/pullback-watch` at minute boundaries and refuses non-loopback origins.
-Vercel's production scheduler invokes that protected endpoint every minute on
-weekdays from 13:00 through 20:59 UTC, covering both New York daylight-saving
-offsets. The endpoint skips times outside 09:30-16:00 New York time; fresh quotes
-also gate holiday alerts. Vercel must have the production `CRON_SECRET` configured.
-Minute scheduling requires Vercel Pro or Enterprise; invocations consume the
-existing plan's function allowance and FMP quota. Size worker capacity for the
-watch universe. A time-budget failure is explicit, not successful delivery.
+The deployment no longer schedules that legacy endpoint. When manually invoked,
+it skips times outside 09:30-16:00 New York time; fresh quotes also gate holiday
+alerts. Manual monitoring consumes FMP quota. Size worker capacity for the watch
+universe. A time-budget failure is explicit, not successful delivery.
 
 The database serializes evaluations per watch and enforces a unique key on
 **user + symbol + pullback ID + stage**. Refreshes/retries cannot insert another

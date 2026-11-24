@@ -23,6 +23,7 @@ import {
 import { convictionToPct, signalToneFromRow } from "@/lib/signalUtils";
 import { normalizeTicker } from "@/lib/tickerAliases";
 import { searchFmpStocks } from "@/lib/market/fmpSearch";
+import { calculateScreenerScore } from "@/lib/screenerScore";
 
 export const revalidate = 0;
 
@@ -132,36 +133,9 @@ function toFiniteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function calculateFallbackSignalosScore(
-  changePercent: number | null | undefined,
-  index = 0
-) {
-  const change = toFiniteNumber(changePercent) ?? 0;
-
-  let score = 50;
-
-  score += Math.max(-20, Math.min(20, change * 6));
-  score += Math.max(0, 8 - index);
-  score += (index % 3) * 2;
-
-  return Math.round(Math.max(10, Math.min(95, score)));
-}
-
 function isFallbackOnlyRow(row: SignalRow) {
   return (
     row.sector == null &&
-    row.thesis == null &&
-    row.entry_low == null &&
-    row.entry_high == null &&
-    row.stop_loss == null &&
-    row.target_price == null &&
-    row.tier == null &&
-    row.as_of_date == null
-  );
-}
-
-function shouldUseFallbackSignalosScore(row: SignalRow) {
-  return (
     row.thesis == null &&
     row.entry_low == null &&
     row.entry_high == null &&
@@ -860,13 +834,10 @@ export default async function ScreenerPage({
     const displayStop =
       executionModel.stop ?? targetModel.stop ?? row.stop_loss ?? null;
 
-    const computedScore =
-      shouldUseFallbackSignalosScore(row) && normalizedConviction == null
-        ? calculateFallbackSignalosScore(
-            enrichedRow?.changePercent ?? row.changePercent,
-            index
-          )
-        : scoreModel.masterScore ?? normalizedConviction ?? rawConviction;
+    const computedScore = calculateScreenerScore(
+      row.ticker,
+      enrichedRow?.changePercent ?? row.changePercent,
+    );
 
     const bias = signalToneFromRow(row, displayPrice, displayTarget);
     const signal = signalLabelFromBias(bias);

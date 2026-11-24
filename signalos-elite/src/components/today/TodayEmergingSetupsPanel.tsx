@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import { SectionHeader } from "@/components/today/SectionHeader";
 import type { RankedSetupItem } from "@/lib/today/setupDiscovery";
-import PullbackWatch from "@/components/pullback/PullbackWatch";
+import StockAlerts from "@/components/watchlist/StockAlerts";
 
 type SetupSession = "regular" | "pre";
 
@@ -193,7 +193,7 @@ export default function TodayEmergingSetupsPanel({
           </div>
         )}
       </div>
-      <div className="mt-4"><PullbackWatch media="desktop" /></div>
+      <div className="mt-4"><StockAlerts media="desktop" /></div>
     </section>
   );
 }

@@ -12,6 +12,7 @@ import { GlobalTickerProvider } from "@/components/sigi/GlobalTickerContext";
 import { SelectedTickerProvider } from "@/components/sigi/SelectedTickerContext";
 import { SignalProvider } from "@/context/SignalContext";
 import MembershipPauseNotice from "@/components/shared/MembershipPauseNotice";
+import { StockAlertsProvider } from "@/context/StockAlertsContext";
 
 export const metadata: Metadata = {
   title: "SigiOS Elite",
@@ -49,7 +50,7 @@ export default function RootLayout({
                   <MarketContextSyncBridge />
                   <AppQuoteBootstrap />
                   <AuthSplashReset />
-                  {children}
+                  <StockAlertsProvider>{children}</StockAlertsProvider>
                   <PulseChangeAlerts />
                   <Suspense fallback={null}>
                     <MobileBottomNav />

@@ -13,7 +13,7 @@ import SigiOnboarding from "@/components/sigi/SigiOnboarding";
 import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
 import TodayStockPulseQuickAccess from "@/components/today/TodayStockPulseQuickAccess";
-import PullbackWatch from "@/components/pullback/PullbackWatch";
+import StockAlerts from "@/components/watchlist/StockAlerts";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import type { SigiTodayContext } from "@/hooks/useSigi";
 import {
@@ -657,7 +657,7 @@ export default function MobileSigiHome({
 
       <MobileMarketThesisHero intelligence={mobileIntelligence} />
 
-      <PullbackWatch media="mobile" />
+      <StockAlerts media="mobile" />
 
       {news.length > 0 && <section aria-label="Important catalysts" className="border-y border-white/10 py-4">
         <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-semibold text-white">Key catalysts</h2><Link href={buildPreviewHref("/news")} className="inline-flex min-h-11 items-center gap-1 text-xs text-cyan-200">News<ChevronRight className="size-4" /></Link></div>

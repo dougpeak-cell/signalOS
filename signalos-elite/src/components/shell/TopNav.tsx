@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AccountMenu from "@/components/navigation/AccountMenu";
 import DiscordInviteButton from "@/components/community/DiscordInviteButton";
-import PullbackAlertButton from "@/components/pullback/PullbackAlertButton";
+import StockAlertButton from "@/components/watchlist/StockAlertButton";
 import { MobileHealthyWealthButton } from "@/components/today/HealthyWealthButton";
 import { features } from "@/lib/features";
 import {
@@ -435,7 +435,7 @@ export default function TopNav({
               </div>
             </div>
           ) : null}
-          <PullbackAlertButton />
+          <StockAlertButton />
         </div>
       </div>
     </header>

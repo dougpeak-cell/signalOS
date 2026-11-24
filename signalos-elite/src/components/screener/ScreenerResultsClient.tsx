@@ -22,6 +22,9 @@ import {
   SECTOR_STOCKS,
 } from "@/lib/screenerSectorUniverse";
 import { normalizeTicker } from "@/lib/tickerAliases";
+import { ALL_MARKET_UNIVERSE, calculateScreenerScore } from "@/lib/screenerScore";
+import { stockAlertColor } from "@/lib/watchlist/alerts";
+import { useStockAlerts } from "@/context/StockAlertsContext";
 
 type ScreenerStock = {
   id: string;
@@ -34,7 +37,7 @@ type ScreenerStock = {
   masterScore?: number;
   masterLabel?: string;
   masterTone?: string;
-  score: number;
+  score: number | null;
   price: number | null;
   target: number | null;
   upside?: number | null;
@@ -74,13 +77,6 @@ type ScreenerRowLike = {
 type Props = {
   stocks: ScreenerStock[];
 };
-
-const ALL_MARKET_UNIVERSE = [
-  "NVDA", "MSFT", "AAPL", "AMZN", "GOOGL",
-  "META", "TSLA", "AVGO", "AMD", "ARM",
-  "LLY", "JPM", "XOM", "GE", "CAT",
-  "COST", "WMT", "NFLX", "ORCL", "CRM",
-] as const;
 
 const availableLogoTickers = new Set(["AAPL", "AMD", "AMZN", "META", "MSFT", "NVDA", "TSLA"]);
 const missingScreenerLogoTickers = new Set<string>();
@@ -292,32 +288,6 @@ function getOpportunityTier(score: number) {
   return "Watch";
 }
 
-function parsePercent(value: any): number {
-  if (value === null || value === undefined) return 0;
-
-  if (typeof value === "string") {
-    return Number(value.replace("%", "").trim()) || 0;
-  }
-
-  return Number(value) || 0;
-}
-
-function calculateOpportunityScore(quote: any, index = 0) {
-  const change = parsePercent(
-    quote?.changePercent ??
-      quote?.changePct ??
-      quote?.changesPercentage
-  );
-
-  let score = 50;
-
-  score += Math.max(-20, Math.min(20, change * 6));
-  score += Math.max(0, 8 - index);
-  score += (index % 3) * 2;
-
-  return Math.round(Math.max(10, Math.min(95, score)));
-}
-
 function getTierClass(tier: string) {
   if (tier === "Elite") return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
   if (tier === "Strong") return "border-cyan-400/30 bg-cyan-400/10 text-cyan-200";
@@ -325,10 +295,12 @@ function getTierClass(tier: string) {
   return "border-white/8 bg-white/3.5 text-white/55";
 }
 
-function getScoreColor(score: number) {
-  if (score >= 70) return "bg-green-400";
-  if (score >= 55) return "bg-yellow-400";
-  return "bg-red-400";
+function getScoreColor(score: number | null, changePercent: number | null) {
+  const color = stockAlertColor(score, changePercent);
+  if (color === "red") return "bg-red-400";
+  if (color === "green") return "bg-green-400";
+  if (color === "yellow") return "bg-yellow-400";
+  return "bg-slate-400";
 }
 
 function getTickerSector(ticker: string) {
@@ -371,6 +343,7 @@ function summarizeTickers(tickers: string[]) {
 export default function ScreenerResultsClient({ stocks }: Props) {
   const selectedTicker = useOptionalSelectedTicker();
   const { addTicker, hasTicker } = useSyncedWatchlist();
+  const { quotes: alertQuotes } = useStockAlerts();
   const [hasMounted, setHasMounted] = useState(false);
   const [visibleCount, setVisibleCount] = useState(10);
   const [quickViewTickers, setQuickViewTickers] = useState<Record<string, boolean>>({});
@@ -544,7 +517,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
       filteredRows.map((row) => [row.ticker.toUpperCase(), row])
     );
 
-    return tickers.map((ticker, index) => {
+    return tickers.map((ticker) => {
       const existingRow = filteredRowMap.get(ticker);
 
       if (existingRow) {
@@ -559,8 +532,8 @@ export default function ScreenerResultsClient({ stocks }: Props) {
         fallbackQuote?.prevClose != null &&
         fallbackQuote.prevClose !== 0
           ? ((fallbackQuote.price - fallbackQuote.prevClose) / fallbackQuote.prevClose) * 100
-          : 0;
-      const signalosScore = calculateOpportunityScore(quote, index);
+          : null;
+      const signalosScore = calculateScreenerScore(ticker, quote?.changePercent ?? fallbackChangePercent);
 
       return {
         id: `sector-fallback-${sectorKey}-${ticker}`,
@@ -571,7 +544,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
         theme: sectorKey,
         conviction: signalosScore,
         score: signalosScore,
-        masterScore: signalosScore,
+        masterScore: signalosScore ?? undefined,
         signalosScore,
         thesis: `${sectorKey} leader available for SigiOS review.`,
         price: quote?.price ?? fallbackPrice,
@@ -588,7 +561,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
   }, [filteredRows, quoteMap, sectorUniverseKey, shouldUseSectorUniverse]);
 
   const allMarketRows = useMemo<ScreenerStock[]>(() => {
-    return ALL_MARKET_UNIVERSE.map((ticker, index) => {
+    return ALL_MARKET_UNIVERSE.map((ticker) => {
       const quote = quoteMap?.[ticker];
       const fallbackQuote = getQuoteByTicker(ticker);
       const fallbackPrice = fallbackQuote?.price ?? null;
@@ -597,8 +570,8 @@ export default function ScreenerResultsClient({ stocks }: Props) {
         fallbackQuote?.prevClose != null &&
         fallbackQuote.prevClose !== 0
           ? ((fallbackQuote.price - fallbackQuote.prevClose) / fallbackQuote.prevClose) * 100
-          : 0;
-      const signalosScore = calculateOpportunityScore(quote, index);
+          : null;
+      const signalosScore = calculateScreenerScore(ticker, quote?.changePercent ?? fallbackChangePercent);
 
       return {
         id: `all-market-${ticker}`,
@@ -608,7 +581,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
         sector: getTickerSector(ticker),
         theme: getTickerSector(ticker),
         conviction: signalosScore,
-        masterScore: signalosScore,
+        masterScore: signalosScore ?? undefined,
         masterLabel: undefined,
         masterTone: undefined,
         score: signalosScore,
@@ -632,7 +605,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
     });
   }, [quoteMap]);
 
-  const feedRows = useMemo(() => {
+  const sourceFeedRows = useMemo(() => {
     const isAllSector = !sectorFilter || sectorFilter === "All";
     const hasActiveSearch = search.trim().length > 0;
 
@@ -662,6 +635,18 @@ export default function ScreenerResultsClient({ stocks }: Props) {
     filteredRows,
   ]);
 
+  const feedRows = useMemo(() => sourceFeedRows.map((row) => {
+    const quote = alertQuotes.find((item) => item.ticker === row.ticker.toUpperCase()) ??
+      quoteMap[row.ticker.toUpperCase()];
+    const price = quote ? quote.price : row.price;
+    const changePercent = quote ? quote.changePercent : row.changePercent;
+    const score = calculateScreenerScore(row.ticker, hasUsablePrice(price) ? changePercent : null);
+    return {
+      ...row, price, changePercent, score, signalosScore: score,
+      masterScore: score ?? undefined,
+    };
+  }), [sourceFeedRows, alertQuotes, quoteMap]);
+
   const visibleFeedRows = useMemo(
     () => feedRows.slice(0, visibleCount),
     [feedRows, visibleCount]
@@ -679,31 +664,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
   );
   const quoteTickersKey = quoteTickers.join(",");
 
-  const displayRows = useMemo(
-    () =>
-      visibleFeedRows.map((row) => {
-        const quote = quoteMap[row.ticker.toUpperCase()];
-        const livePrice =
-          quote?.price ??
-          quote?.last ??
-          null;
-        const liveChangePercent =
-          quote?.changePercent ??
-          quote?.changePct ??
-          quote?.changesPercentage ??
-          null;
-
-        return {
-          ...row,
-          price: hasUsablePrice(livePrice) ? livePrice : row.price,
-          changePercent:
-            typeof liveChangePercent === "number" && Number.isFinite(liveChangePercent)
-              ? liveChangePercent
-              : row.changePercent,
-        };
-      }),
-    [quoteMap, visibleFeedRows]
-  );
+  const displayRows = visibleFeedRows;
   const renderedFeedRows = displayRows;
   const canShowMore = feedRows.length > visibleCount;
 
@@ -712,9 +673,8 @@ export default function ScreenerResultsClient({ stocks }: Props) {
       ? filteredRows.length
       : feedRows.length;
   const matchedRowCount = resultCount;
-  const scoreValues = feedRows.map((row) =>
-    Math.max(0, Math.min(100, row.masterScore ?? row.score ?? row.conviction ?? 0))
-  );
+  const scoreValues = feedRows.map((row) => row.signalosScore)
+    .filter((score): score is number => score != null);
   const topOpportunityScore = scoreValues[0] ?? 0;
   const averageOpportunityScore =
     scoreValues.length > 0
@@ -747,22 +707,12 @@ export default function ScreenerResultsClient({ stocks }: Props) {
         : intelligenceState === "empty"
           ? "No matching signals"
           : "Scanning live signals";
-  const avgScore =
-    renderedFeedRows.length > 0
-      ? Math.round(
-          renderedFeedRows.reduce(
-            (sum, row) =>
-              sum + Math.max(0, Math.min(100, row.signalosScore ?? row.masterScore ?? row.score ?? row.conviction ?? 0)),
-            0
-          ) / renderedFeedRows.length
-        )
-      : 0;
-  const topScore = Math.max(
-    ...renderedFeedRows.map((row) =>
-      Math.max(0, Math.min(100, row.signalosScore ?? row.masterScore ?? row.score ?? row.conviction ?? 0))
-    ),
-    0
-  );
+  const visibleScores = renderedFeedRows.map((row) => row.signalosScore)
+    .filter((score): score is number => score != null);
+  const avgScore = visibleScores.length
+    ? Math.round(visibleScores.reduce((sum, score) => sum + score, 0) / visibleScores.length)
+    : 0;
+  const topScore = Math.max(...visibleScores, 0);
 
   useEffect(() => {
     setVisibleCount(10);
@@ -956,25 +906,16 @@ export default function ScreenerResultsClient({ stocks }: Props) {
           <div className="overflow-x-hidden md:signalos-thin-scrollbar md:overflow-x-auto">
             {displayRows.map((stock) => {
             const ticker = stock.ticker.toUpperCase();
-            const quote = quoteMap[ticker];
 
-            const livePrice =
-              typeof quote?.price === "number"
-                ? quote.price
-                : stock.price;
-
-            const liveChangePercent =
-              typeof quote?.changePercent === "number"
-                ? quote.changePercent
-                : stock.changePercent;
+            const livePrice = stock.price;
+            const liveChangePercent = stock.changePercent;
             const stablePrice = hasUsablePrice(livePrice) ? livePrice : null;
             const stableChangePercent =
               hasUsablePrice(stablePrice) && hasUsablePercent(liveChangePercent)
                 ? liveChangePercent
                 : null;
-            const score = Number(stock.signalosScore);
-            const safeScore = Number.isNaN(score) ? 50 : score;
-            const tier = getOpportunityTier(safeScore);
+            const safeScore = stock.signalosScore ?? null;
+            const tier = safeScore == null ? "Unavailable" : getOpportunityTier(safeScore);
             const changeClass =
               (stableChangePercent ?? 0) >= 0 ? "text-emerald-300" : "text-red-300";
             const dayChangeAmount = getDailyDollarChange(stablePrice, stableChangePercent);
@@ -1035,11 +976,11 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                   </div>
 
                   <div>
-                    <div className="font-black text-yellow-300">{safeScore.toFixed(0)}/100</div>
+                    <div className="font-black text-white">{safeScore?.toFixed(0) ?? "—"}/100</div>
                     <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
                       <div
-                        className={`h-full rounded-full ${getScoreColor(safeScore)}`}
-                        style={{ width: `${safeScore}%` }}
+                        className={`h-full rounded-full ${getScoreColor(safeScore, stableChangePercent)}`}
+                        style={{ width: `${safeScore ?? 0}%` }}
                       />
                     </div>
                   </div>
@@ -1111,11 +1052,11 @@ export default function ScreenerResultsClient({ stocks }: Props) {
                   </div>
 
                   <div>
-                    <div className="font-black text-yellow-300">{safeScore.toFixed(0)}/100</div>
+                    <div className="font-black text-white">{safeScore?.toFixed(0) ?? "—"}/100</div>
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
                       <div
-                        className={`h-full rounded-full ${getScoreColor(safeScore)}`}
-                        style={{ width: `${safeScore}%` }}
+                        className={`h-full rounded-full ${getScoreColor(safeScore, stableChangePercent)}`}
+                        style={{ width: `${safeScore ?? 0}%` }}
                       />
                     </div>
                   </div>
@@ -1148,7 +1089,7 @@ export default function ScreenerResultsClient({ stocks }: Props) {
 
                   {quickViewOpen ? (
                     <div className={isMobilePreviewEnabled ? "rounded-xl border border-white/8 bg-black/20 px-3 py-2 text-[11px] leading-5 text-white/55" : "rounded-xl border border-white/8 bg-black/20 px-3 py-2 text-[11px] leading-5 text-white/55 md:hidden"}>
-                      Sector: {stock.sector ?? "Market"} · Score {safeScore.toFixed(0)}/100
+                      Sector: {stock.sector ?? "Market"} · Score {safeScore?.toFixed(0) ?? "—"}/100
                     </div>
                   ) : null}
                 </div>

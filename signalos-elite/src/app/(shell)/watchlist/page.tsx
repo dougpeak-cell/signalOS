@@ -10,7 +10,7 @@ import TickerActionButton from "@/components/sigi/TickerActionButton";
 import TickerLogo from "@/components/stocks/TickerLogo";
 import SignalOSScoreV2 from "@/components/stocks/SignalOSScoreV2";
 import AddStockModal from "@/components/watchlist/AddStockModal";
-import PullbackWatch from "@/components/pullback/PullbackWatch";
+import StockAlerts from "@/components/watchlist/StockAlerts";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import { useSyncedWatchlist } from "@/hooks/useSyncedWatchlist";
 import { buildMasterScoreRow } from "@/lib/analysis/buildMasterScoreRow";
@@ -1434,7 +1434,7 @@ export default function WatchlistPage() {
       />
       <div className="w-full pb-10 pt-4">
         <div className="min-w-0 space-y-6">
-          <PullbackWatch full />
+          <StockAlerts full />
           <div className="overflow-hidden rounded-[28px] border border-cyan-400/14 bg-linear-to-b from-cyan-500/5 via-black to-black shadow-[0_0_0_1px_rgba(34,211,238,0.04)]">
             <div className="border-b border-white/6 px-4 py-4 md:px-5">
               <div className="flex flex-wrap items-center gap-3">

@@ -129,7 +129,7 @@ function Evidence(): ReactElement | null {
       {item.warnings.map((warning) => <p key={warning} className="mt-2 text-xs leading-5 text-amber-100">{warning}</p>)}
       {selectedStage !== "early" && <Disclosures symbol={symbol} />}
     </>}
-    <Link href="/watchlist/pullback" className="mt-3 inline-flex min-h-11 items-center text-sm text-violet-200 underline">Manage watches and notifications</Link>
+    <Link href="/alerts" className="mt-3 inline-flex min-h-11 items-center text-sm text-violet-200 underline">View score and daily-move alerts</Link>
   </section>;
 }
 
