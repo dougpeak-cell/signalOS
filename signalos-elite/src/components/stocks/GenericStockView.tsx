@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { SelectedSignalProvider } from "@/components/chart/SelectedSignalContext";
 import LiveFutureMap from "@/components/amsa/LiveFutureMap";
-import SigiPulseCard from "@/components/amsa/SigiPulseCard";
 import ResearchAlignment from "@/components/experts/ResearchAlignment";
 import FundamentalIntelligenceCard from "@/components/stocks/FundamentalIntelligenceCard";
 import StockFundamentalsGrid from "@/components/stocks/StockFundamentalsGrid";
@@ -643,7 +642,7 @@ export default async function GenericStockView({
           </section>
         ) : null}
 
-        <StockDetailLivePanels
+        <StockDetailLivePanels key={liveTicker}
           row={row}
           companyProfile={companyProfile}
           technicals={technicals}
@@ -652,30 +651,16 @@ export default async function GenericStockView({
           fundamentalCompositeScore={fundamentalScore.composite}
           hasLiveData={hasLiveData}
           fallbackMessage={isUnavailableTicker ? fallbackThesis : null}
-        />
-
-        <section className="px-4 sm:px-6 xl:px-0">
-          <SigiPulseCard symbol={liveTicker} />
-        </section>
-
-        <section className="px-4 sm:px-6 xl:px-0">
-          <ResearchAlignment symbol={liveTicker} title="Smart Money" />
-        </section>
-
-        <section className="px-4 sm:px-6 xl:px-0">
-          <LiveFutureMap
-            symbol={liveTicker}
-            initialHorizon="swing"
-          />
-        </section>
-
+          futureMap={<LiveFutureMap symbol={liveTicker} initialHorizon="swing" />}
+          research={<>
         <section className={["grid gap-8", isMobilePreview ? "" : "xl:grid-cols-[1.25fr_0.9fr]"].join(" ")}>
           <div className="space-y-8">
             <div className={isMobilePreview ? "rounded-3xl border border-emerald-400/20 bg-emerald-400/4.5 p-5 shadow-[0_0_40px_rgba(16,185,129,0.08)]" : "rounded-3xl border border-emerald-400/20 bg-emerald-400/4.5 p-6 shadow-[0_0_40px_rgba(16,185,129,0.08)]"}>
               <div className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">
                 Sigi Investment Thesis
               </div>
-              <p className={isMobilePreview ? "text-base leading-8 text-white/80" : "text-lg leading-8 text-white/80"}>{investmentThesis}</p>
+              <p className="text-base leading-7 text-white/80">{investmentThesisText}</p>
+              {riskItems[0] && <p className="mt-3 text-sm leading-6 text-amber-200">Counterpoint: {riskItems[0]}</p>}
             </div>
 
             <ListBlock
@@ -698,7 +683,7 @@ export default async function GenericStockView({
                   Core Fundamentals
                 </div>
                 <p className="mt-1 text-sm text-white/45">
-                  Key valuation, liquidity, and operating metrics traders check first.
+                  Company metrics, not intraday signals. A common reporting period is not supplied.
                 </p>
               </div>
 
@@ -776,7 +761,7 @@ export default async function GenericStockView({
 
           <div className="space-y-8">
             <div className={isMobilePreview ? "rounded-3xl border border-white/10 bg-white/[0.035] p-5" : "rounded-3xl border border-white/10 bg-white/[0.035] p-6"}>
-              <h2 className={isMobilePreview ? "text-2xl font-semibold text-white" : "text-xl font-semibold text-white"}>Signal summary</h2>
+              <h2 className="text-xl font-semibold text-white">Company profile</h2>
 
               <div className="mt-5 space-y-3">
                 <SummaryRow label="Ticker" value={row.ticker} compact={isMobilePreview} />
@@ -795,23 +780,6 @@ export default async function GenericStockView({
                   Back to search
                 </Link>
 
-                <div className="glow-card rounded-2xl p-4">
-                  <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">
-                    SigiOS
-                  </div>
-
-                  <div className="mt-3 text-sm text-white/70">
-                    {row.tier
-                      ? `${row.tier.charAt(0).toUpperCase() + row.tier.slice(1)}-tier`
-                      : "Unrated"}{" "}
-                    {row.sector ? row.sector.toLowerCase() : "company"} leader with
-                    strong AI infrastructure demand.
-                  </div>
-
-                  <div className="mt-4 text-xs text-white/40">
-                    Latest conviction: {pct(row.conviction)}
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -831,6 +799,9 @@ export default async function GenericStockView({
             />
           </div>
         </section>
+        <ResearchAlignment symbol={liveTicker} title="Smart Money" />
+        </>}
+        />
         </div>
       </div>
     </SelectedSignalProvider>

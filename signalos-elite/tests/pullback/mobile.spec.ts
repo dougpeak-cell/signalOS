@@ -201,6 +201,28 @@ test("rotating a phone hides chart navigation and restores it in portrait", asyn
   await expect(nav).toBeVisible();
 });
 
+test("phone Live Chart keeps the selected candles while inspecting the plan and research", async ({ page }) => {
+  await mockStockAlerts(page);
+  await page.goto("/stocks/MSFT/live?previewPlan=pro");
+  await acknowledgeLegal(page);
+  const chart = page.locator("#live-day-chart");
+  const interval = chart.getByRole("button", {name:"15m", exact:true});
+  await interval.click();
+  await expect(interval).toHaveAttribute("aria-pressed", "true");
+  const canvas = chart.locator("canvas").first();
+  await expect(canvas).toBeAttached();
+  const original = await canvas.elementHandle();
+  for (const name of ["Trade Plan", "Research", "Overview"]) {
+    await page.getByRole("tab", {name, exact:true}).click();
+    await expect(page.getByRole("tabpanel", {name, exact:true})).toBeVisible();
+    if (name === "Research") await expect(page.getByText("Sigi Investment Thesis", {exact:true})).toBeVisible();
+    await expect(interval).toHaveAttribute("aria-pressed", "true");
+    expect(await canvas.evaluate((el, previous) => el === previous, original)).toBe(true);
+  }
+  await chart.getByRole("button", {name:"Chart settings", exact:true}).click();
+  await expect(page.getByText("MSFT Chart Controls", {exact:true})).toBeVisible();
+});
+
 test("phone Today opens the leading watchlist move and explains its direction", async ({ page }) => {
   await mockStockAlerts(page);
   await page.goto("/today?previewPlan=pro");

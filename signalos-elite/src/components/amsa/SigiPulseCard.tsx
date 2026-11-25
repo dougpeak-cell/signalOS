@@ -4,11 +4,13 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import type { AMSAStockPulse } from "@/lib/amsa";
 import { VisionPulseHero } from "@/components/vision/VisionPulseHero";
-import { formatVerifiedPulseTimestamp } from "@/lib/market/formatMarketTimestamp";
+import { formatMarketTimestamp, formatVerifiedPulseTimestamp } from "@/lib/market/formatMarketTimestamp";
 
 type SigiPulseCardProps = {
   symbol: string;
   aside?: ReactNode;
+  compactRead?: boolean;
+  readinessText?: string;
 };
 
 type PulseApiResponse = {
@@ -41,6 +43,7 @@ function toPulseDirection(
 export default function SigiPulseCard({
   symbol,
   aside,
+  compactRead = false, readinessText,
 }: SigiPulseCardProps) {
   const [pulse, setPulse] = useState<AMSAStockPulse | null>(null);
   const [pulseAsOf, setPulseAsOf] = useState<string | null>(null);
@@ -129,6 +132,21 @@ export default function SigiPulseCard({
 
   const formattedPulseUpdatedAt =
     formatVerifiedPulseTimestamp(pulseUpdatedAt);
+
+  if (compactRead) {
+    const stamp = formatMarketTimestamp(pulseUpdatedAt);
+    const previousDay = pulseUpdatedAt && new Date(pulseUpdatedAt).toLocaleDateString("en-US", {timeZone:"America/New_York"}) !== new Date().toLocaleDateString("en-US", {timeZone:"America/New_York"});
+    const verified = pulse.status === "ready" && pulse.score != null && stamp;
+    return <section aria-label="Sigi Read" className="border-t border-white/10 bg-slate-950 px-4 py-3">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-200">Sigi Read</h2>
+      <p className="mt-1 text-sm leading-6 text-white">{verified ? `${previousDay ? "Earlier reading: " : ""}${pulse.reasons[0] ?? pulse.state}` : "Not enough verified information for a complete reading."}</p>
+      <p className="mt-1 text-xs text-slate-400">{stamp ? `Pulse as of ${stamp} ET` : "Pulse time unavailable"}{pulse.warnings[0] ? ` · ${pulse.warnings[0]}` : ""}</p>
+      <details><summary className="inline-flex min-h-11 cursor-pointer items-center text-sm text-cyan-200">Why this read? ▾</summary>
+        <p className="text-sm text-slate-300">{readinessText ?? "Chart readiness unavailable."}</p>
+        <ul className="space-y-1 py-2 text-sm text-slate-300">{[...pulse.reasons.slice(verified ? 1 : 0, 4), ...pulse.warnings.slice(1)].map((s,i) => <li key={i}>{s}</li>)}</ul>
+      </details>
+    </section>;
+  }
 
   return (
     <section className="space-y-5">

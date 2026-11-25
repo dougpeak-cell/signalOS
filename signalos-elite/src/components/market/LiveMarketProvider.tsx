@@ -42,6 +42,7 @@ export type LiveQuote = {
   volume: number | null;
   avgVolume: number | null;
   updatedAt: number;
+  quoteTimeMs?: number | null;
   isMarketOpen: boolean | null;
 };
 
@@ -257,7 +258,7 @@ async function fetchLiveQuotesBatch(
         typeof item.avgVolume === "number" && Number.isFinite(item.avgVolume) && item.avgVolume > 0
           ? item.avgVolume
           : null,
-      updatedMs: normalizeUpdatedAt(item.updatedMs, now),
+      updatedMs: item.updatedMs && item.updatedMs > 0 ? normalizeUpdatedAt(item.updatedMs, now) : null,
       isMarketOpen: item.isMarketOpen ?? null,
     }));
   } catch {
@@ -400,6 +401,7 @@ export function LiveMarketProvider({
             volume: item.volume ?? existing?.volume ?? null,
             avgVolume: item.avgVolume ?? existing?.avgVolume ?? null,
             updatedAt: item.updatedMs ?? now,
+            quoteTimeMs: item.price != null ? item.updatedMs : null,
             isMarketOpen: item.isMarketOpen,
           };
 

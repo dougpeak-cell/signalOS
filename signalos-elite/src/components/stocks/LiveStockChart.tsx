@@ -2,6 +2,7 @@
 
 import TradeReadinessBar from "@/components/stocks/TradeReadinessBar";
 import ChartVolumeStats from "@/components/stocks/ChartVolumeStats";
+import SigiPulseCard from "@/components/amsa/SigiPulseCard";
 import { useChartVolume } from "@/hooks/useChartVolume";
 import UpcomingEarnings from "@/components/stocks/UpcomingEarnings";
 import { useUpcomingEarnings } from "@/hooks/useUpcomingEarnings";
@@ -420,6 +421,7 @@ type Props = {
   showSignalRail?: boolean;
   hideStatsAndLegend?: boolean;
   compactMobile?: boolean;
+  chartBrief?: boolean;
   floatingMode?: boolean;
   fromWatchlist?: boolean;
   onSignalRailData?: (data: {
@@ -1406,6 +1408,7 @@ export default function LiveStockChart({
   showSignalRail = true,
   hideStatsAndLegend = false,
   compactMobile = false,
+  chartBrief = false,
   floatingMode = false,
   fromWatchlist = false,
   onSignalRailData,
@@ -4978,6 +4981,7 @@ const gapFillLabel =
               <button
                 key={option.label}
                 type="button"
+                aria-pressed={chartInterval === option.interval}
                 onClick={() => handleCompactToolbarIntervalSelect(
                   option.interval,
                   option.range,
@@ -4991,6 +4995,7 @@ const gapFillLabel =
                 {option.label}
               </button>
             ))}
+            {chartBrief && <button type="button" onClick={() => setIsMobileControlSheetOpen(true)} className="col-span-full min-h-11 text-right text-xs text-cyan-200">Chart settings</button>}
           </div>
         ) : null}
 
@@ -5563,7 +5568,8 @@ const gapFillLabel =
           </div>
         </div>
 
-        {!isChartFullscreen ? (
+        {!isChartFullscreen && chartBrief && <SigiPulseCard symbol={symbol} compactRead readinessText={bestSetup || visibleSignalRail.length ? `Chart readiness (${chartInterval}): ${readiness.bias} bias, ${readiness.structure} structure and ${readiness.risk} risk.` : "No active chart setup to confirm this reading."} />}
+        {!isChartFullscreen && !chartBrief ? (
             <div className={`mt-4 grid grid-cols-2 gap-3 ${compactMobile ? "sm:grid-cols-3" : "xl:grid-cols-5"}`}>
               {!compactMobile ? (
                 <>

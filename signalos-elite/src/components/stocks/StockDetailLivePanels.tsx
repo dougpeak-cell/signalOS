@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import PageHeaderBlock from "@/components/shell/PageHeaderBlock";
 import LiveStockChart from "@/components/stocks/LiveStockChart";
+import SigiPulseCard from "@/components/amsa/SigiPulseCard";
 import LockedLiveChart from "@/components/upgrade/LockedLiveChart";
 import TickerLogo from "@/components/stocks/TickerLogo";
 import TechnicalIntelligenceCard from "@/components/stocks/TechnicalIntelligenceCard";
@@ -22,6 +23,8 @@ import type { ComputedTechnicals } from "@/lib/market/technicals";
 import { normalizeTicker } from "@/lib/tickerAliases";
 import { addStoredWatchlistTicker } from "@/lib/watchlistStore";
 
+const phoneChartMedia = "(max-width: 767px), (orientation: landscape) and (pointer: coarse) and (max-height: 600px)";
+
 type StockDetailLiveRow = {
   ticker: string;
   company_name: string | null;
@@ -36,6 +39,8 @@ type StockDetailLiveRow = {
 };
 
 type StockDetailLivePanelsProps = {
+  futureMap: React.ReactNode;
+  research: React.ReactNode;
   row: StockDetailLiveRow;
   companyProfile?: {
     name: string | null;
@@ -183,6 +188,7 @@ function scoreTechnicalModel({
 }
 
 export default function StockDetailLivePanels({
+  futureMap, research,
   row,
   companyProfile,
   technicals,
@@ -193,13 +199,15 @@ export default function StockDetailLivePanels({
   fallbackMessage,
 }: StockDetailLivePanelsProps) {
   const searchParams = useSearchParams();
+  const tabs = ["Overview", "Trade Plan", "Research"] as const;
+  const [tab, setTab] = useState<typeof tabs[number]>("Overview");
   const { tier, previewActive } = useSigiTier();
   const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
     if (typeof window === "undefined") {
       return false;
     }
 
-    return window.matchMedia("(max-width: 767px)").matches;
+    return window.matchMedia(phoneChartMedia).matches;
   });
   const liveMarket = useOptionalLiveMarket();
   const marketData = useOptionalMarketData();
@@ -250,7 +258,7 @@ export default function StockDetailLivePanels({
   const workspaceUpgradeHref = buildPreviewHref("/auth/upgrade?plan=pro&feature=trading-workspace");
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const mediaQuery = window.matchMedia(phoneChartMedia);
     const sync = () => setIsMobilePhoneView(mediaQuery.matches);
 
     sync();
@@ -463,7 +471,7 @@ export default function StockDetailLivePanels({
 
   return (
     <>
-      <section className="glow-panel overflow-hidden rounded-4xl p-0 shadow-[0_0_40px_rgba(16,185,129,0.18)]">
+      {!isCompactMobileSurface && <section className="glow-panel overflow-hidden rounded-4xl p-0 shadow-[0_0_40px_rgba(16,185,129,0.18)]">
         <div className="px-4 py-4 md:px-8 md:py-6">
           <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#07111f] p-5 md:p-8">
             <div
@@ -650,9 +658,16 @@ export default function StockDetailLivePanels({
             />
           ))}
         </div>
-      </section>
+      </section>}
 
-      <section id="live-day-chart" className="glow-card rounded-[28px] p-4 scroll-mt-28 md:p-5">
+      <section id="live-day-chart" className={isCompactMobileSurface ? "scroll-mt-16 space-y-2 px-1" : "glow-card rounded-[28px] p-4 scroll-mt-28 md:p-5"}>
+        {isCompactMobileSurface ? <header className="flex items-center justify-between gap-2 px-2">
+          <div><h1 className="text-xl font-bold text-white">{liveTicker}</h1>
+            <p className="text-xs text-slate-400">{quote?.isMarketOpen == null ? "Session unavailable" : quote.isMarketOpen ? "Market open" : "Market closed"} · {quote?.quoteTimeMs ? new Date(quote.quoteTimeMs).toLocaleString("en-US", {timeZone:"America/New_York", month:"short", day:"numeric", hour:"numeric", minute:"2-digit", timeZoneName:"short"}) : "Quote time unavailable"}</p>
+          </div>
+          <div className="text-right"><strong className="text-lg tabular-nums">{money(quote?.price ?? analysisPrice)}</strong>
+          <p className={`text-sm ${percentTone(quote ? quote.changePct : initialChangePct)}`}>{formatUpside(quote ? quote.changePct : initialChangePct)}</p></div>
+        </header> : <>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/75">
@@ -744,13 +759,16 @@ export default function StockDetailLivePanels({
           </div>
         </details>
 
-        <div className="mt-5 overflow-hidden rounded-3xl border border-cyan-400/15 bg-[radial-gradient(circle_at_top,rgba(0,160,255,0.08),transparent_28%),linear-gradient(180deg,rgba(5,10,20,0.96),rgba(0,0,0,0.98))] shadow-[0_0_45px_rgba(0,145,255,0.08)]">
+        </>}
+        <div className="overflow-hidden rounded-xl border border-white/10 bg-black">
           {canUseLiveChart ? (
             <div className={isCompactMobileSurface ? "min-h-[68svh] w-full p-0.5" : "min-h-220 w-full p-0.5 md:p-3"}>
               <div className="h-full overflow-hidden rounded-[20px] border border-cyan-400/12 bg-black/70 shadow-[inset_0_0_25px_rgba(0,140,255,0.08)]">
                 <div className={isCompactMobileSurface ? "min-h-[68svh] w-full" : "min-h-220 w-full"}>
                   <LiveStockChart
                     ticker={liveTicker}
+                    compactMobile={isCompactMobileSurface}
+                    chartBrief={isCompactMobileSurface}
                     expanded
                     showSignalRail={false}
                     hideStatsAndLegend={isCompactMobileSurface}
@@ -768,6 +786,18 @@ export default function StockDetailLivePanels({
         </div>
       </section>
 
+      {(!isCompactMobileSurface || !canUseLiveChart) && <SigiPulseCard symbol={liveTicker} compactRead={isCompactMobileSurface} />}
+      <div role="tablist" aria-label="Stock analysis" className="grid grid-cols-3 rounded-xl border border-white/10 bg-slate-950 p-1">
+        {tabs.map((name, index) => <button key={name} id={`analysis-tab-${index}`} role="tab" aria-selected={tab === name} aria-controls="stock-analysis-panel" tabIndex={tab === name ? 0 : -1}
+          onKeyDown={(e) => {
+            const next = e.key === "ArrowRight" ? (index + 1) % 3 : e.key === "ArrowLeft" ? (index + 2) % 3 : e.key === "Home" ? 0 : e.key === "End" ? 2 : null;
+            if (next != null) { e.preventDefault(); setTab(tabs[next]); document.getElementById(`analysis-tab-${next}`)?.focus({preventScroll:true}); }
+          }}
+          className={`min-h-11 rounded-lg text-sm font-semibold ${name === tab ? "bg-cyan-300/15 text-cyan-100" : "text-slate-400"}`}
+          onClick={() => setTab(name)}>{name}</button>)}
+      </div>
+      <div id="stock-analysis-panel" role="tabpanel" aria-labelledby={`analysis-tab-${tabs.indexOf(tab)}`} className="space-y-4">
+      {tab === "Research" && <>{research}
       <section className="glow-card rounded-[28px] p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -818,7 +848,14 @@ export default function StockDetailLivePanels({
           </div>
         </div>
       </section>
-
+      </>}
+      {tab === "Overview" && <>
+      <div className="flex flex-wrap items-center gap-x-5 px-2 text-sm text-cyan-200">
+        <Link className="inline-flex min-h-11 items-center" href={canUseTradingWorkspace ? workspaceHref : workspaceUpgradeHref}>{canUseTradingWorkspace ? "Open Trading Workspace" : "Explore Pro Workspace"} →</Link>
+        <button className="min-h-11" disabled={isTracked} onClick={() => addStoredWatchlistTicker(liveTicker)}>{isTracked ? "On watchlist" : "+ Watchlist"}</button>
+        <Link className="inline-flex min-h-11 items-center" href={`/portfolio?focus=${liveTicker}`}>Portfolio</Link>
+      </div>
+      <details><summary className="flex min-h-11 cursor-pointer items-center text-sm text-cyan-200">Technical evidence ▾</summary>
       <TechnicalIntelligenceCard
         price={technicalAnchorPrice}
         sma20={technicals.sma20}
@@ -829,7 +866,9 @@ export default function StockDetailLivePanels({
         resistance20={technicals.resistance20}
         structure={technicals.structure}
       />
-
+      </details></>}
+      {tab === "Trade Plan" && <>{futureMap}
+      <details><summary className="flex min-h-11 cursor-pointer items-center text-sm text-cyan-200">Entry, target and risk levels ▾</summary>
       <SigiEliteTradePlanCard
         ticker={liveTicker}
         price={analysisPrice}
@@ -841,6 +880,8 @@ export default function StockDetailLivePanels({
         stop={stop}
         target={target}
       />
+      </details></>}
+      </div>
     </>
   );
 }

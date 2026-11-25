@@ -50,6 +50,11 @@ stocks, not events. With no qualifying stocks it remains outlined.
 On phones the alert bell and count sit beside Profile in one header row.
 On chart and trading workspace pages, turning a phone sideways hides the
 bottom navigation so it does not cover candles. Turning upright restores it.
+
+Stock detail and Live Chart keep one candle chart mounted above Overview,
+Trade Plan, and Research. On phones, timeframe buttons stay visible and other
+controls open from Chart settings. The Sigi Read identifies its Pulse timestamp;
+the quote header uses the provider's quote time, not the last refresh.
 The existing Pro access rule is retained; **Notify me** is no longer required.
 Mobile Today leads with a watchlist brief: the highest-priority Pro alert or,
 without Pro, the largest watched move with an available quote. Watchlist Quick
