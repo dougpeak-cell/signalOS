@@ -47,7 +47,14 @@ export default async function ExpertsPage({
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(0,0,0,0.55)_100%)]" />
       </div>
 
-      <section className="relative z-10">
+      <section className={isMobilePreview ? "space-y-4" : "space-y-4 md:hidden"}>
+        <p className="text-xs font-semibold uppercase tracking-widest text-cyan-200">Pro research</p>
+        <h1 className="text-2xl font-bold">Expert desk</h1>
+        <p className="text-sm leading-6 text-slate-300">Follow analyst upgrades and downgrades, see who issued each call, and compare it with insider trades, fund holdings, and Senate disclosures.</p>
+        <Link href="/auth/upgrade?plan=pro" className="inline-flex min-h-11 items-center rounded-lg bg-cyan-300 px-4 text-sm font-semibold text-slate-950">Explore Pro access</Link>
+        <FinancialDisclaimer />
+      </section>
+      <section className={isMobilePreview ? "hidden" : "relative z-10 hidden md:block"}>
         <div className={isMobilePreview ? "mx-auto max-w-xl space-y-6" : "mx-auto max-w-7xl space-y-8"}>
         <section className={isMobilePreview ? "rounded-3xl border border-cyan-400/20 bg-cyan-950/20 p-4 shadow-[0_0_40px_rgba(34,211,238,0.08)]" : "rounded-3xl border border-cyan-400/20 bg-cyan-950/20 p-6 shadow-[0_0_40px_rgba(34,211,238,0.08)] md:p-8"}>
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
@@ -130,7 +137,7 @@ export default async function ExpertsPage({
               compact={isMobilePreview}
               icon={<Briefcase />}
               title="Sigi Portfolio Read"
-              text="Track holdings, monitor conviction, and manage idea buckets inside the same intelligence system."
+              text="Track holdings and organize stocks you want to research."
             />
           </div>
         </section>

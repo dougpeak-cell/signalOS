@@ -36,6 +36,14 @@ interests, then **Save**. Saved names and interests are reused on later opens;
 **Update sectors** and **Reset SIGI profile** remain available. Explicit
 auto-submitted Sigi reads retain their response-first flow.
 
+## Mobile Expert Desk
+
+On phones, the Pro Expert desk lists the latest dated analyst call per stock
+within the feed's 14-day window. Sector and rating-action filters narrow that
+list; expanding a call reveals the consensus target and stock research link.
+Insider trades, fund holdings, Senate disclosures, and cross-source comparisons
+are available from the research source selector rather than stacked below it.
+
 ## Sigi Alerts
 
 The header **Alerts** action opens `/alerts`, grouping stocks from the same

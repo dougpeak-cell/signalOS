@@ -163,6 +163,28 @@ for (const device of [
   });
 }
 
+test("phone expert desk deduplicates published calls and keeps research filters between sources", async ({ page }) => {
+  await mockStockAlerts(page);
+  const call = { symbol:"MSFT", sector:"Technology", publishedDate:"2026-11-22", ratingTransition:"upgrade", currentGrade:"Buy", previousGrade:"Hold", recencyBucket:"week", firm:"Test desk", score:70 };
+  await page.route("**/api/experts/fmp", route => route.fulfill({json:{ok:true, rows:[call],
+    sectorRows:{Technology:[{...call, publishedDate:"2026-11-19", firm:"Older desk"}], Energy:[{...call, symbol:"XOM", sector:"Energy", ratingTransition:"downgrade"}]}}}));
+  await page.goto("/experts?previewPlan=pro");
+  await acknowledgeLegal(page);
+  const calls = page.getByRole("region", {name:"Analyst ratings"});
+  await expect(calls.getByRole("listitem")).toHaveCount(2);
+  await expect(calls.getByText("Older desk", {exact:false})).toHaveCount(0);
+  await calls.getByLabel("Sector").selectOption("Technology");
+  await expect(calls.getByRole("listitem")).toHaveCount(1);
+  await calls.getByText("Targets and research").click();
+  await expect(calls.getByRole("link", {name:/MSFT analyst history/})).toBeVisible();
+  await page.getByLabel("Research source").selectOption("Senate");
+  await expect(calls).toHaveCount(0);
+  await page.getByLabel("Research source").selectOption("Analysts");
+  await expect(calls.getByLabel("Sector")).toHaveValue("Technology");
+  await calls.getByLabel("Rating action").selectOption("downgrade");
+  await expect(calls.getByRole("status")).toHaveText("No recent calls match these filters.");
+});
+
 test("phone alert fits on the profile row without consuming a second header row", async ({ page }) => {
   await mockStockAlerts(page);
   for (const path of ["/today", "/watchlist"]) {

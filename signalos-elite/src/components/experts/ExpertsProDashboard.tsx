@@ -9,6 +9,7 @@ import SigiTopAnalystPick, { type SigiAnalystLeader } from "@/components/experts
 import HedgeFundInvestmentsPanel from "@/components/experts/HedgeFundInvestmentsPanel";
 import { useHedgeFundInvestments } from "@/hooks/useHedgeFundInvestments";
 import ResearchAlignment from "@/components/experts/ResearchAlignment";
+import MobileExpertDesk from "@/components/experts/MobileExpertDesk";
 import SenatePurchasesPanel from "@/components/experts/SenatePurchasesPanel";
 import { useSenatePurchases } from "@/hooks/useSenatePurchases";
 
@@ -552,13 +553,7 @@ export default function ExpertsPage({
   const [fmpLoadError, setFmpLoadError] = useState<string | null>(null);
   const [selectedExpertSector, setSelectedExpertSector] = useState("Technology");
   const [currentAnalystLeader, setCurrentAnalystLeader] = useState<SigiAnalystLeader | null>(null);
-  const [isMobilePhoneView, setIsMobilePhoneView] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    return window.matchMedia("(max-width: 767px)").matches;
-  });
+  const [isMobilePhoneView, setIsMobilePhoneView] = useState<boolean | null>(null);
 
   const expertSectorTabs = Object.keys(fmpSectorRows);
   const modelRows = useMemo(
@@ -581,7 +576,7 @@ export default function ExpertsPage({
   }, [expertSectorTabs, fmpSectorRows, selectedExpertSector]);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const mediaQuery = window.matchMedia("(max-width: 767px), (orientation: landscape) and (pointer: coarse) and (max-height: 600px)");
     const sync = () => setIsMobilePhoneView(mediaQuery.matches);
 
     sync();
@@ -711,6 +706,15 @@ export default function ExpertsPage({
         getPublishedDateValue(left.publishedDate)
     )
     .slice(0, 4);
+
+  if (!isMobilePreview && isMobilePhoneView === null) return <p role="status" className="p-4 text-slate-400">Opening expert desk…</p>;
+  if (shouldHideModelCommand) return <MobileExpertDesk rows={fmpRows} sectorRows={fmpSectorRows} loading={isLoadingFmpRows} error={fmpLoadError}
+    panels={{
+      Insiders: <InsiderTradesPanel />,
+      Funds: <HedgeFundInvestmentsPanel feed={hedgeFunds.feed} loading={hedgeFunds.loading} error={hedgeFunds.error} period={hedgeFunds.period} onPeriodChange={hedgeFunds.setPeriod} onRetry={hedgeFunds.retry} />,
+      Senate: <SenatePurchasesPanel feed={senate.feed} loading={senate.loading} error={senate.error} period={senate.period} basis={senate.basis} onPeriodChange={senate.setPeriod} onBasisChange={senate.setBasis} onRetry={senate.retry} />,
+      "Cross-check": <ResearchAlignment symbol={fmpRows[0]?.symbol ?? null} searchable title="Compare sources" />,
+    }} />;
 
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#020617] text-white">
