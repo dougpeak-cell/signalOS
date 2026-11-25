@@ -26,6 +26,16 @@ The repo-level environment contract lives in `.env.local.example`.
 
 Create `.env.local` from that file and fill in only the values you need for your local workflow. This keeps Supabase, Sigi provider, Stripe billing, market data, and ingest settings in one place.
 
+## Mobile Ask Sigi setup
+
+Opening **Sigi Command** starts at the greeting, not the ticker field, so the
+phone keyboard does not hide the welcome screen. New users (including saved
+profiles without a name) see a labeled **Your name** input directly below the
+greeting. Enter a name and press **Continue** or Return to select sector
+interests, then **Save**. Saved names and interests are reused on later opens;
+**Update sectors** and **Reset SIGI profile** remain available. Explicit
+auto-submitted Sigi reads retain their response-first flow.
+
 ## Sigi Alerts
 
 The header **Alerts** action opens `/alerts`, grouping stocks from the same
@@ -48,6 +58,8 @@ Its stock-order adjustment is fixed per ticker, so sector, search, sorting,
 and pagination cannot change the same stock's score. The main-feed ticker
 positions are retained; other stocks use their first sector-universe position
 (or position zero for search-only symbols).
+The **Best Stocks Right Now** heading no longer includes the misleading
+signal-match count/ticker badge. Live stock results and filter controls remain.
 
 One shared quote request cycle refreshes watched stocks every 30 seconds while
 visible and on focus/visibility return. Watchlist edits refresh the monitored

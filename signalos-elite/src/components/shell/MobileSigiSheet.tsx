@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import UpgradeSigiSmartCard from "@/components/upgrade/UpgradeSigiSmartCard";
 import { useStoredWatchlistTickers } from "@/hooks/useStoredWatchlistTickers";
 import { useSigiTier } from "@/hooks/useSigiTier";
@@ -180,7 +180,7 @@ export default function MobileSigiSheet({
   const { watchlistTickers: localWatchlistTickers } = useStoredWatchlistTickers();
   const { tier } = useSigiTier();
   const { sendMessage, loading } = useSigi();
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const greetingRef = useRef<HTMLHeadingElement | null>(null);
   const [open, setOpen] = useState(false);
   const [mobileSigiInput, setMobileSigiInput] = useState("");
   const [mobileSigiAnswer, setMobileSigiAnswer] = useState<MobileSigiAnswer | null>(null);
@@ -231,7 +231,12 @@ export default function MobileSigiSheet({
       }),
     [sheetContext, sigiCandidates]
   );
-  const shouldShowProfileSetup = Boolean(sigiProfile) && showProfileSetup;
+  const hasProfileName = Boolean(sigiProfile?.name?.trim());
+  const shouldShowProfileSetup = !hasProfileName || showProfileSetup;
+  const closeSheet = useCallback(() => {
+    setOpen(false);
+    setShowReadFirst(false);
+  }, []);
 
   function buildPreviewHref(href: string) {
     if (searchParams.get("mobilePreview") !== "1") {
@@ -713,17 +718,14 @@ export default function MobileSigiSheet({
   return (
     <MobileSignalSheet
       open={open}
-      onClose={() => {
-        setOpen(false);
-        setShowReadFirst(false);
-      }}
+      onClose={closeSheet}
       title={showReadFirst ? "Sigi Read" : "Sigi Command"}
       subtitle={showReadFirst
         ? mobileSigiQuestion
           ? `Question: ${mobileSigiQuestion}`
           : "Preparing your Sigi read."
         : "Analyze a ticker, ask a market question, or jump straight into a live chart."}
-      initialFocusRef={inputRef}
+      initialFocusRef={showReadFirst ? undefined : greetingRef}
       forceVisible={forceDesktopPreview}
     >
       {!hasSigiSmart ? (
@@ -753,11 +755,11 @@ export default function MobileSigiSheet({
                   SIGI watchlist: {sigiWatchlistSource}
                 </div>
               ) : null}
-              <div className="mt-1 text-[1.85rem] leading-[0.95] font-black text-white sm:text-2xl sm:leading-none">
-                {sigiProfile?.name?.trim()
-                  ? `Hi ${sigiProfile.name.trim()}, what do you want to know today?`
+              <h3 ref={greetingRef} tabIndex={-1} className="mt-1 text-[1.85rem] leading-[0.95] font-black text-white outline-none sm:text-2xl sm:leading-none">
+                {hasProfileName
+                  ? `Hi, I'm Sigi. ${sigiProfile?.name.trim()}, what do you want to know today?`
                   : "Hi, I'm Sigi. What's your name?"}
-              </div>
+              </h3>
               <div className="mt-1.5 text-sm text-white/68">
                 {routeTicker
                   ? `Current focus: ${routeTicker}. Ask for a read, setup, or navigation.`
@@ -791,7 +793,7 @@ export default function MobileSigiSheet({
           </div>
         ) : null}
 
-        {sigiProfile && !showReadFirst ? (
+        {hasProfileName && !showReadFirst ? (
           <div className="-mt-1 flex items-center justify-end gap-3">
             <button
               type="button"
@@ -822,7 +824,7 @@ export default function MobileSigiSheet({
           <div className="mt-4">
             <SigiOnboarding
               initialProfile={sigiProfile}
-              mode={sigiProfile ? "interests" : "setup"}
+              mode={hasProfileName ? "interests" : "setup"}
               onComplete={(profile) => {
                 setSigiProfile(profile);
                 setShowProfileSetup(false);
@@ -882,7 +884,6 @@ export default function MobileSigiSheet({
         {!showReadFirst ? (
         <div className="absolute inset-x-0 bottom-0 flex gap-2 bg-linear-to-t from-slate-950/98 via-slate-950/92 to-transparent pt-5">
           <input
-            ref={inputRef}
             value={mobileSigiInput}
             onChange={(event) => setMobileSigiInput(event.target.value)}
             onKeyDown={(event) => {

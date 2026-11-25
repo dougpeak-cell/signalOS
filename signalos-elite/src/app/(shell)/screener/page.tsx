@@ -1058,7 +1058,7 @@ export default async function ScreenerPage({
 
       {isPro ? (
       <section className="mt-6 rounded-3xl border border-cyan-400/16 bg-[linear-gradient(180deg,rgba(7,12,24,0.92),rgba(4,8,18,0.98))] p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.04),0_24px_60px_rgba(0,0,0,0.28)]">
-        <div className="mb-5 flex items-center justify-between gap-4">
+        <div className="mb-5">
           <div>
             <div className="text-xs font-black uppercase tracking-[0.22em] text-cyan-300">
               Top Opportunities Feed
@@ -1069,14 +1069,6 @@ export default async function ScreenerPage({
             <p className="mt-1 text-sm text-white/58">
               Ranked by SigiOS score, upside, momentum, and live market context.
             </p>
-          </div>
-
-          <div className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.12)]">
-            {isResultsFallback
-              ? "Showing top available ideas"
-              : filteredRows.length === 1
-                ? `1 signal match: ${filteredMatchSummary}`
-                : `${filteredRows.length} signal matches${filteredMatchSummary ? `: ${filteredMatchSummary}` : ""}`}
           </div>
         </div>
 

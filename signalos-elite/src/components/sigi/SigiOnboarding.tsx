@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import {
   getSigiProfile,
@@ -19,6 +19,7 @@ export default function SigiOnboarding({
   mode?: "setup" | "interests";
 }) {
   const [completedProfile, setCompletedProfile] = useState<SigiProfile | null>(null);
+  const nameInputId = useId();
   const [name, setName] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
   const isInterestEditor = mode === "interests";
@@ -36,7 +37,7 @@ export default function SigiOnboarding({
       setInterests(saved.interests ?? []);
     }
 
-    if (saved && !initialProfile && !isInterestEditor) {
+    if (saved?.name?.trim() && !initialProfile && !isInterestEditor) {
       setCompletedProfile(saved);
       return;
     }
@@ -110,7 +111,10 @@ export default function SigiOnboarding({
       </div>
 
       {!isInterestEditor && setupStep === "name" ? (
-        <>
+        <form onSubmit={(event) => {
+          event.preventDefault();
+          continueToInterests();
+        }}>
           <h2 className="mt-2 text-[1.7rem] leading-[0.98] font-black text-white sm:text-[1.9rem] sm:leading-none">
             What&apos;s your name?
           </h2>
@@ -118,22 +122,25 @@ export default function SigiOnboarding({
             I&apos;ll use it to make your answers feel personal.
           </p>
 
+          <label htmlFor={nameInputId} className="mt-3 block text-sm font-semibold text-white/80">Your name</label>
           <input
+            id={nameInputId}
+            name="name"
+            autoComplete="given-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="Enter your name..."
-            className="mt-3 h-11 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-300/40"
+            className="mt-2 h-11 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-base text-white outline-none placeholder:text-white/30 focus:border-cyan-300/40 sm:text-sm"
           />
 
           <button
-            type="button"
-            onClick={continueToInterests}
+            type="submit"
             disabled={!name.trim()}
-            className="mt-3 rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-cyan-100"
+            className="mt-3 min-h-11 rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-cyan-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Continue
           </button>
-        </>
+        </form>
       ) : null}
 
       {isInterestEditor || setupStep === "interests" ? (

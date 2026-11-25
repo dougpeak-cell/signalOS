@@ -98,6 +98,14 @@ for (const device of [
       await expect(alertButton(page)).toHaveClass(/bg-transparent/);
       await expect(alertButton(page)).toContainText("!");
     });
+
+    test("removes the stale signal-match badge without removing screener results", async ({ page }) => {
+      await mockStockAlerts(page);
+      await page.goto("/screener?previewPlan=pro");
+      await expect(page.getByRole("heading", { name: "Best Stocks Right Now", exact: true })).toBeVisible();
+      await expect(page.getByText(/^\d+ signal match(?:es)?(?::.*)?$/i)).toHaveCount(0);
+      await expect(page.getByText("70/100", { exact: true }).filter({ visible: true }).first()).toBeVisible();
+    });
   });
 
   test.describe(`Watchlist actions on ${device.name}`, () => {
@@ -164,4 +172,97 @@ test("saved legacy research evidence remains accessible directly in Vision", asy
   await expect(evidence.getByRole("heading", { name: "Why did Sigi alert me?" })).toBeVisible();
   await expect(evidence.getByText("TEST · Price & Volume", { exact: true })).toBeVisible();
   await expect(evidence.getByText("Quote:", { exact: false })).toContainText("11:20");
+});
+
+test.describe("Mobile Sigi welcome", () => {
+  async function openCommand(page: Page): Promise<void> {
+    await expect(alertButton(page)).toHaveAttribute("aria-label", /Alerts: 3 stocks/);
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("signalos:mobile-sigi-open")));
+    await expect(page.getByRole("dialog").getByRole("heading", { name: "Sigi Command", exact: true })).toBeVisible();
+  }
+
+  test("shows a name input, accepts Return, and saves selected sector interests", async ({ page }) => {
+    await mockStockAlerts(page);
+    await page.goto("/alerts?previewPlan=pro");
+    await openCommand(page);
+    const dialog = page.getByRole("dialog");
+    const greeting = dialog.getByRole("heading", { name: "Hi, I'm Sigi. What's your name?", exact: true });
+    await expect(greeting).toBeFocused();
+    const name = dialog.getByRole("textbox", { name: "Your name", exact: true });
+    await expect(name).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Continue", exact: true })).toBeDisabled();
+    await name.fill(" ");
+    await expect(dialog.getByRole("button", { name: "Continue", exact: true })).toBeDisabled();
+    await name.fill("");
+    await name.pressSequentially("Sample", { delay: 80 });
+    await expect(name).toHaveValue("Sample");
+    await expect(name).toBeFocused();
+    await name.press("Enter");
+    await expect(dialog.getByRole("heading", { name: "Hi Sample, help me know your interests.", exact: true })).toBeVisible();
+    await dialog.getByRole("button", { name: "Technology", exact: true }).click();
+    await dialog.getByRole("button", { name: "AI", exact: true }).click();
+    await dialog.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(dialog.getByRole("button", { name: "Update sectors", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("sigiProfile")!))).toEqual({
+      name: "Sample", interests: ["Technology", "AI"],
+    });
+  });
+
+  test("allows a saved profile without a name to finish setup without losing interests", async ({ page }) => {
+    await mockStockAlerts(page);
+    await page.addInitScript(() => localStorage.setItem("sigiProfile", JSON.stringify({ name: "", interests: ["AI"] })));
+    await page.goto("/alerts?previewPlan=pro");
+    await openCommand(page);
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("textbox", { name: "Your name", exact: true }).fill("Sample");
+    await dialog.getByRole("button", { name: "Continue", exact: true }).click();
+    await dialog.getByRole("button", { name: "Save", exact: true }).click();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("sigiProfile")!))).toEqual({
+      name: "Sample", interests: ["AI"],
+    });
+  });
+
+  test("reopens at the greeting instead of the ticker keyboard and keeps sector editing available", async ({ page }) => {
+    await mockStockAlerts(page);
+    await page.addInitScript(() => localStorage.setItem("sigiProfile", JSON.stringify({ name: "Sample", interests: ["AI"] })));
+    await page.goto("/alerts?previewPlan=pro");
+    await openCommand(page);
+    const dialog = page.getByRole("dialog");
+    const greeting = dialog.getByRole("heading", { name: "Hi, I'm Sigi. Sample, what do you want to know today?", exact: true });
+    await expect(greeting).toBeFocused();
+    const ticker = dialog.getByPlaceholder("Stock/Ticker?", { exact: true });
+    await ticker.fill("NVDA");
+    await expect(ticker).toBeFocused();
+    await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    await openCommand(page);
+    await expect(greeting).toBeFocused();
+    const position = await greeting.evaluate((element) => {
+      const scroller = element.closest(".overflow-y-auto");
+      return { top: element.getBoundingClientRect().top, scrollTop: scroller?.scrollTop };
+    });
+    expect(position.scrollTop).toBe(0);
+    expect(position.top).toBeLessThan(844 / 2);
+    await expect(ticker).not.toBeFocused();
+    await dialog.getByRole("button", { name: "Update sectors", exact: true }).click();
+    await expect(dialog.getByRole("heading", { name: "Update sectors for Sample.", exact: true })).toBeVisible();
+    await dialog.getByRole("button", { name: "Reset SIGI profile", exact: true }).click();
+    await expect(dialog.getByRole("textbox", { name: "Your name", exact: true })).toBeVisible();
+  });
+
+  test("keeps explicit auto-submitted reads response-first and restores the greeting on a normal open", async ({ page }) => {
+    await mockStockAlerts(page);
+    await page.addInitScript(() => localStorage.setItem("sigiProfile", JSON.stringify({ name: "Sample", interests: ["AI"] })));
+    await page.goto("/alerts?previewPlan=pro");
+    await expect(alertButton(page)).toHaveAttribute("aria-label", /Alerts: 3 stocks/);
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("signalos:mobile-sigi-open", {
+      detail: { prompt: "What matters right now?", autoSubmit: true },
+    })));
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.locator("h2").first()).toHaveText("Sigi Read");
+    await expect(dialog.getByRole("heading", { name: /^Hi, I'm Sigi/ })).toHaveCount(0);
+    await expect(dialog.getByPlaceholder("Stock/Ticker?", { exact: true })).toHaveCount(0);
+    await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    await openCommand(page);
+    await expect(dialog.getByRole("heading", { name: "Hi, I'm Sigi. Sample, what do you want to know today?", exact: true })).toBeFocused();
+  });
 });
