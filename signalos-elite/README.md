@@ -48,7 +48,12 @@ watchlist used by the screener:
 The header uses red > green > yellow priority and counts unique qualifying
 stocks, not events. With no qualifying stocks it remains outlined.
 The existing Pro access rule is retained; **Notify me** is no longer required.
-Watchlist and Today disclosures use the same groups. The old pullback alert
+Mobile Today leads with a watchlist brief: the highest-priority Pro alert or,
+without Pro, the largest watched move with an available quote. Watchlist Quick
+View puts stocks before alerts and keeps removal under Edit, with Undo.
+Expand “Why this alert?” for the score band or daily move and the provider's
+quote time when available. In the red large-move group, signed gains are green
+and losses are red; group color describes magnitude, not direction. The old pullback alert
 interface has been removed; `/watchlist/pullback` redirects to `/alerts`.
 The retired pullback alert cron has also been removed from the deployment
 schedule. Saved research evidence and its APIs are retained.

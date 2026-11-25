@@ -13,7 +13,7 @@ import SigiOnboarding from "@/components/sigi/SigiOnboarding";
 import SigiSignalIcon from "@/components/sigi/SigiSignalIcon";
 import { useTodayHeroContext } from "@/components/today/TodayHeroContext";
 import TodayStockPulseQuickAccess from "@/components/today/TodayStockPulseQuickAccess";
-import StockAlerts from "@/components/watchlist/StockAlerts";
+import { useStockAlerts } from "@/context/StockAlertsContext";
 import { useSigiTier } from "@/hooks/useSigiTier";
 import type { SigiTodayContext } from "@/hooks/useSigi";
 import {
@@ -109,7 +109,7 @@ function uniqueTickers(values: Array<string | null | undefined>) {
 }
 
 function buildLastUpdatedLabel(value: number | null) {
-  if (!value) return "just now";
+  if (!value) return "unavailable";
   return formatMarketClockTimeMs(value, { includeZone: true });
 }
 
@@ -143,6 +143,7 @@ export default function MobileSigiHome({
   const effectiveHasSigiSmart = hasSigiSmart || tier === "smart" || tier === "pro" || isSmartPreview;
   const { effectiveTicker, heroStory, stockContext } = useTodayHeroContext();
   const router = useRouter();
+  const alerts = useStockAlerts();
   const searchParams = useSearchParams();
   const {
     hasAccountSession,
@@ -369,17 +370,15 @@ export default function MobileSigiHome({
     () =>
       MOBILE_PULSE_TICKERS.map((ticker) => {
         const quote = quoteMap[ticker];
-        const sparkline = historyMap[ticker] ?? [];
 
         return {
           ticker,
           label: formatPulseTicker(ticker),
           price: quote?.price ?? null,
           changePercent: quote?.changePct ?? null,
-          sparklinePath: buildSparklinePath(sparkline),
         };
       }),
-    [historyMap, quoteMap]
+    [quoteMap]
   );
 
   useEffect(() => {
@@ -619,54 +618,46 @@ export default function MobileSigiHome({
     }
   }
 
+  const topGroup = alerts.groups.red.length ? "red" : alerts.groups.green.length ? "green" : "yellow";
+  const topAlert = alerts.groups[topGroup][0];
+  const movers = effectiveWatchlistTickers.map((ticker) => ({ ticker, change: quoteMap[ticker]?.changePct }))
+    .filter((row): row is { ticker: string; change: number } => typeof row.change === "number" && Number.isFinite(row.change))
+    .sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+  const lead = alerts.enabled ? (topAlert ? { ticker: topAlert.ticker, change: topAlert.changePercent } : null) : movers[0];
   return (
     <section id="sigi-command-panel" className={forceVisible ? "space-y-3" : "space-y-3 md:hidden"}>
-      <div className="relative overflow-hidden rounded-lg border border-cyan-300/20 bg-[#050b18] px-4 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.28)]">
-        <div className="pointer-events-none absolute inset-0 opacity-50 [background-image:linear-gradient(rgba(34,211,238,0.055)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.055)_1px,transparent_1px)] [background-size:20px_20px]" />
-        <div className="relative flex items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-200">
-              <Radar className="size-3.5" /> Your Sigi Briefing
-            </div>
-            <p className="mt-1 text-xs text-white/52">{defaultSetupSession === "pre" ? "Before the opening bell" : "Market thesis, catalysts, and your daily focus"}</p>
-          </div>
-          <span className="shrink-0 font-mono text-[10px] text-cyan-200/76">{lastUpdatedLabel}</span>
+      <section aria-label="Watchlist briefing" className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2 text-xs font-semibold text-cyan-200"><Radar className="size-4" /> Watchlist brief</span>
+          <Link href={buildPreviewHref("/watchlist?quickView=1")} className="inline-flex min-h-11 items-center text-xs text-cyan-200">Watchlist →</Link>
         </div>
-      </div>
+        <h2 className="text-xl font-bold text-white">Since the previous close</h2>
+        {lead ? <Link href={alerts.enabled ? `${buildPreviewHref("/alerts")}#${topGroup}` : buildPreviewHref(`/pulse?symbol=${encodeURIComponent(lead.ticker)}`)} className="mt-3 flex min-h-14 items-center justify-between gap-3 border-t border-white/10 py-2">
+          <span><strong className="block text-lg text-white">{lead.ticker}</strong><span className="text-xs text-slate-300">{topAlert ? topGroup === "red" ? "Large daily move · View alert" : `Score ${topAlert.score}/100 · View alert` : "Largest move with an available quote"}</span></span>
+          <strong className={`text-xl tabular-nums ${changeClass(lead.change)}`}>{formatChange(lead.change)}</strong>
+        </Link> : <p className="mt-2 text-sm text-slate-300">{alerts.loading ? "Checking watchlist quotes…" : !(alerts.enabled ? alerts.watchlistCount : effectiveWatchlistTickers.length) ? "Add a stock to start your briefing." : alerts.enabled && !alerts.error ? "No watchlist stock meets an alert threshold." : "Watchlist moves are unavailable."}</p>}
+        {alerts.error && <p className="mt-2 text-xs text-amber-200">{alerts.error}</p>}
+      </section>
 
-      <TodayStockPulseQuickAccess />
-
-      <div className="grid grid-cols-3 gap-2">
+      <div aria-label="Market snapshot" className="grid grid-cols-3 divide-x divide-white/10 rounded-xl border border-white/10 bg-white/[0.025]">
         {quickPulseCards.map((item) => (
-          <div key={item.ticker} className="min-w-0 rounded-lg border border-white/10 bg-white/[0.035] p-2.5">
+          <div key={item.ticker} className="min-w-0 p-2">
             <div className="flex items-center justify-between gap-1">
               <span className="font-mono text-[10px] font-bold text-white/68">{item.label}</span>
               <span className={`text-[10px] font-bold ${changeClass(item.changePercent)}`}>{formatChange(item.changePercent)}</span>
             </div>
             <div className="mt-1.5 text-base font-bold tracking-normal text-white">{formatPulsePrice(item.price)}</div>
-            <div className="mt-2 h-5 text-cyan-300/85">
-              {item.sparklinePath ? (
-                <svg viewBox="0 0 100 100" className="h-full w-full" preserveAspectRatio="none" aria-hidden="true">
-                  <path d={item.sparklinePath} fill="none" stroke="currentColor" strokeWidth="7" vectorEffect="non-scaling-stroke" />
-                </svg>
-              ) : <div className="h-full border-b border-dashed border-white/15" />}
-            </div>
           </div>
         ))}
       </div>
 
+      <p className="text-xs text-slate-400">Market feed checked: {lastUpdatedLabel}</p>
+      <TodayStockPulseQuickAccess />
       <MobileMarketThesisHero intelligence={mobileIntelligence} />
-
-      <StockAlerts media="mobile" />
 
       {news.length > 0 && <section aria-label="Important catalysts" className="border-y border-white/10 py-4">
         <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-semibold text-white">Key catalysts</h2><Link href={buildPreviewHref("/news")} className="inline-flex min-h-11 items-center gap-1 text-xs text-cyan-200">News<ChevronRight className="size-4" /></Link></div>
         <div className="divide-y divide-white/10">{news.slice(0, 3).map((item, index) => <Link key={`${index}:${item.headline}`} href={buildPreviewHref("/news")} className="block py-3"><p className="text-sm leading-5 text-white/80">{item.headline}</p><p className="mt-1 text-[10px] text-white/40">{item.source}</p></Link>)}</div>
-      </section>}
-
-      {effectiveWatchlistTickers.length > 0 && <section aria-label="Your watched companies" className="border-b border-white/10 pb-4">
-        <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-semibold text-white">On your radar</h2><Link href={buildPreviewHref("/watchlist?quickView=1")} className="inline-flex min-h-11 items-center gap-1 text-xs text-cyan-200">Watchlist<ChevronRight className="size-4" /></Link></div>
-        <div className="divide-y divide-white/10">{effectiveWatchlistTickers.slice(0, 3).map((symbol) => <Link key={symbol} href={buildPreviewHref(`/pulse?symbol=${encodeURIComponent(symbol)}`)} className="flex min-h-12 items-center justify-between gap-3 py-2"><span className="font-mono text-sm font-semibold text-white">{symbol}</span><span className="flex items-center gap-3"><span className={`text-xs ${changeClass(quoteMap[symbol]?.changePct)}`}>{formatChange(quoteMap[symbol]?.changePct)}</span><ChevronRight className="size-4 text-cyan-200" /></span></Link>)}</div>
       </section>}
 
       <details className="border-y border-white/10">

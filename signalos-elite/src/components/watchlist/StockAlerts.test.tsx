@@ -5,7 +5,7 @@ import StockAlertButton from "./StockAlertButton";
 import StockAlerts from "./StockAlerts";
 
 const state = vi.hoisted(() => ({
-  groups: { red: [], green: [], yellow: [] } as AlertGroups,
+  groups: { red: [], green: [], yellow: [] } as AlertGroups, quotes: [],
   loading: false, error: null as string | null, updatedAt: null,
   enabled: true, watchlistCount: 3,
 }));
@@ -33,7 +33,7 @@ describe("grouped Sigi Alerts interface", () => {
   });
 
   it("renders distinct color groups with scores and signed daily moves, not the retired controls", () => {
-    state.groups.red = [{ ticker: "AMD", score: 34, changePercent: -7 }];
+    state.groups.red = [{ ticker: "AMD", score: 34, changePercent: -7 }, { ticker: "AAPL", score: 80, changePercent: 7 }];
     state.groups.green = [{ ticker: "NVDA", score: 70, changePercent: 2 }];
     state.groups.yellow = [{ ticker: "MSFT", score: 55, changePercent: 0 }];
     const markup = renderToStaticMarkup(<StockAlerts full defaultOpen />);
@@ -42,6 +42,10 @@ describe("grouped Sigi Alerts interface", () => {
     expect(markup).toContain('id="yellow"');
     expect(markup).toContain('href="/screener?q=AMD"');
     expect(markup).toContain("-7.00% today");
+    expect(markup).toMatch(/text-emerald-300">\+7\.00% today/);
+    expect(markup).toMatch(/text-red-300">-7\.00% today/);
+    expect(markup).toContain("AAPL is up 7.00% from the previous close");
+    expect(markup).toContain("Quote time unavailable");
     expect(markup).toContain("70/100 points");
     expect(markup).not.toContain("Pullback Watch");
     expect(markup).not.toContain("Trusted research firms");

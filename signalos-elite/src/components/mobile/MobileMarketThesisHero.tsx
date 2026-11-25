@@ -29,9 +29,9 @@ export default function MobileMarketThesisHero({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">
-              <Radio className="size-3.5" /> Market thesis
+              <Radio className="size-3.5" /> {intelligence.ticker ? "Company brief" : "Market brief"}
             </div>
-            <h1 className="mt-1.5 line-clamp-2 text-lg font-bold leading-6 text-white">{intelligence.heroTitle}</h1>
+            <h1 className="mt-1.5 text-lg font-bold leading-6 text-white">{intelligence.heroTitle}</h1>
           </div>
           {intelligence.ticker ? <span className="shrink-0 border border-cyan-300/30 bg-cyan-300/10 px-2 py-1 font-mono text-xs font-bold text-cyan-100">{intelligence.ticker}</span> : null}
         </div>

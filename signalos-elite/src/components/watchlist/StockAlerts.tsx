@@ -14,7 +14,7 @@ const sections: { color: AlertColor; title: string; rule: string; className: str
 export default function StockAlerts({ full = false, media, defaultOpen = false }: {
   full?: boolean; media?: "mobile" | "desktop"; defaultOpen?: boolean;
 }): React.JSX.Element {
-  const { groups, loading, error, updatedAt, enabled, watchlistCount } = useStockAlerts();
+  const { groups, quotes, loading, error, updatedAt, enabled, watchlistCount } = useStockAlerts();
   return <section aria-label="Sigi Alerts" className={`rounded-2xl border border-white/15 bg-slate-950 p-4 ${media === "mobile" ? "md:hidden" : media === "desktop" ? "hidden md:block" : ""}`}>
     <details className="group" open={defaultOpen}>
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-white [&::-webkit-details-marker]:hidden">
@@ -30,14 +30,24 @@ export default function StockAlerts({ full = false, media, defaultOpen = false }
           {!loading && !watchlistCount && <p className="text-sm text-white/70">Add stocks to your <Link href="/screener" className="text-cyan-200 underline">watchlist on the screener</Link> to monitor alerts.</p>}
           {sections.map(({ color, title, rule, className }) => <section key={color} id={full ? color : undefined} aria-label={title} className={`rounded-xl border p-3 ${className}`}>
             <h3 className="font-semibold">{title} <span className="text-xs">({groups[color].length})</span></h3>
-            <p className="mt-1 text-xs">{rule}</p>
+            <p className="mt-1 text-xs">{color === "red" ? <><strong className="text-emerald-300">+7%</strong> or higher, or <strong className="text-red-300">−7%</strong> or lower. Red flags the size of the move, not its direction.</> : rule}</p>
             <ul className="mt-2 divide-y divide-white/10">
-              {(full ? groups[color] : groups[color].slice(0, 3)).map((stock) => <li key={stock.ticker}>
-                <Link href={`/screener?q=${encodeURIComponent(stock.ticker)}`} className="flex min-h-12 flex-wrap items-center justify-between gap-3 py-2">
-                  <span className="font-bold">{stock.ticker}</span>
-                  <span className="text-sm tabular-nums">{stock.score}/100 points · {stock.changePercent >= 0 ? "+" : ""}{stock.changePercent.toFixed(2)}% today</span>
-                </Link>
-              </li>)}
+              {(full ? groups[color] : groups[color].slice(0, 3)).map((stock) => {
+                const quote = quotes.find((item) => item.ticker === stock.ticker);
+                return <li key={stock.ticker} className="py-2">
+                  <details>
+                    <summary aria-label={`Why this alert for ${stock.ticker}?`} className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+                      <span><strong className="block text-base text-white">{stock.ticker}</strong><span className="text-xs text-slate-300">{stock.score}/100 points</span></span>
+                      <span className="text-right"><strong className={`block tabular-nums ${stock.changePercent > 0 ? "text-emerald-300" : stock.changePercent < 0 ? "text-red-300" : "text-slate-300"}`}>{stock.changePercent > 0 ? "+" : ""}{stock.changePercent.toFixed(2)}% today</strong><span className="text-xs text-slate-300">Why this alert? ▾</span></span>
+                    </summary>
+                    <div className="mt-2 rounded-lg bg-slate-950/80 p-3 text-sm leading-5 text-slate-200">
+                      <p>{color === "red" ? `${stock.ticker} is ${stock.changePercent > 0 ? "up" : "down"} ${Math.abs(stock.changePercent).toFixed(2)}% from the previous close. A move of at least 7% takes priority over its score.` : `The current screener score is ${stock.score}/100, in the ${color === "green" ? "70+" : "55–69"} band. The daily move is under 7%.`}</p>
+                      <p className="mt-2 text-xs text-slate-400">Quote: {quote?.price != null ? `$${quote.price.toFixed(2)}` : "Unavailable"} · {quote?.updatedMs ? `${new Date(quote.updatedMs).toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} ET` : "Quote time unavailable"}</p>
+                      <Link href={`/screener?q=${encodeURIComponent(stock.ticker)}`} className="inline-flex min-h-11 items-center text-cyan-200 underline">View {stock.ticker} in screener →</Link>
+                    </div>
+                  </details>
+                </li>;
+              })}
             </ul>
             {!loading && !groups[color].length && <p className="mt-2 text-xs text-white/65">{error ? "No verified matches in available quotes." : "No watchlist stocks in this group."}</p>}
             {!full && groups[color].length > 3 && <Link href={`/alerts#${color}`} className="inline-flex min-h-11 items-center text-xs underline">View all {groups[color].length} stocks</Link>}

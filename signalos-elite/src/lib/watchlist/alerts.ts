@@ -11,6 +11,7 @@ export type AlertQuote = {
   ticker: string;
   price: number | null;
   changePercent: number | null;
+  updatedMs?: number | null;
 };
 
 export function stockAlertColor(score: number | null, changePercent: number | null): AlertColor | null {

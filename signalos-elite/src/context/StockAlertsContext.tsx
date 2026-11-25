@@ -33,6 +33,7 @@ function parseQuotes(payload: unknown): AlertQuote[] {
     }
     return {
       ticker: value.ticker.toUpperCase(),
+      updatedMs: "updatedMs" in value && typeof value.updatedMs === "number" && Number.isFinite(value.updatedMs) && value.updatedMs > 0 ? value.updatedMs : null,
       price: "price" in value && typeof value.price === "number" && Number.isFinite(value.price) ? value.price : null,
       changePercent: "changePercent" in value && typeof value.changePercent === "number" && Number.isFinite(value.changePercent)
         ? value.changePercent : null,

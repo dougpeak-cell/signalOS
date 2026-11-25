@@ -140,7 +140,14 @@ for (const device of [
       });
       await page.goto("/watchlist?mode=quick&previewPlan=smart");
       await acknowledgeLegal(page);
-      await expect(page.getByText("Condensed Watchlist", { exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Watchlist", exact: true }).first()).toBeVisible();
+      const remove = page.getByRole("button", { name: "Delete MSFT from watchlist" });
+      await expect(remove).toHaveCount(0);
+      await page.getByRole("button", { name: "Edit", exact: true }).click();
+      await remove.click();
+      await expect(remove).toHaveCount(0);
+      await page.getByRole("button", { name: "Undo", exact: true }).click();
+      await expect(remove).toBeVisible();
       await expect(page.getByRole("region", { name: "Watchlist Pulse changes", exact: true })).toHaveCount(0);
       await expect(page.getByRole("link", { name: /^Check Pulse for / })).toHaveCount(0);
       await page.goto("/watchlist?mode=detail&previewPlan=smart");
@@ -155,6 +162,17 @@ for (const device of [
     });
   });
 }
+
+test("phone Today opens the leading watchlist move and explains its direction", async ({ page }) => {
+  await mockStockAlerts(page);
+  await page.goto("/today?previewPlan=pro");
+  await acknowledgeLegal(page);
+  const brief = page.getByRole("region", { name: "Watchlist briefing" });
+  await brief.getByRole("link", { name: /AAPL.*Large daily move/ }).click();
+  await expect(page).toHaveURL(/\/alerts#red$/);
+  await page.getByLabel("Why this alert for AAPL?").click();
+  await expect(page.getByText(/AAPL is down 7.00% from the previous close/)).toBeVisible();
+});
 
 test("saved legacy research evidence remains accessible directly in Vision", async ({ page }) => {
   const saved = event();

@@ -28,6 +28,7 @@ import {
 import { removeFromWatchlist } from "@/lib/storage/watchlist";
 import { calculateWatchlistScore } from "@/lib/watchlist/calculateWatchlistScore";
 import {
+  addToWatchlist,
   readHiddenWatchlistTickers,
   readWatchlistEntries,
   type WatchlistStoredEntry,
@@ -944,13 +945,12 @@ function QuickWatchlistRowItem({
 }: {
   row: WatchlistRow;
   stockHref: string;
-  onRemove: (ticker: string) => void;
+  onRemove?: (ticker: string) => void;
 }) {
   const router = useRouter();
-  const dayChangeAmount = getDailyDollarChange(row.price, row.changePct);
 
   return (
-    <div className="group flex items-center gap-2 rounded-2xl border border-white/8 bg-white/3 p-1.5 transition hover:border-cyan-400/20 hover:bg-cyan-400/5">
+    <div className="group flex items-center gap-2 border-b border-white/10 px-1 last:border-0 hover:bg-white/5">
       <Link
         href={stockHref}
         onClick={(event) => {
@@ -959,24 +959,20 @@ function QuickWatchlistRowItem({
           event.preventDefault();
           router.push(`/vision?symbol=${encodeURIComponent(row.ticker)}`);
         }}
-        className="flex min-w-0 flex-1 items-center justify-between gap-3 px-1.5 py-1"
+        className="flex min-h-16 min-w-0 flex-1 items-center justify-between gap-3 px-1.5 py-2"
       >
         <div className="min-w-0 flex flex-1 items-center gap-2.5">
           <TickerLogo ticker={row.ticker} size={30} />
 
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div>
               <div className="text-base font-semibold tracking-tight text-white">{row.ticker}</div>
-              <span className="truncate text-[11px] text-white/42">{row.name}</span>
+              <span className="block truncate text-xs text-slate-400">{row.name}</span>
             </div>
           </div>
         </div>
 
         <div className="flex shrink-0 items-end justify-end gap-3 text-right">
-          <div className={`text-xs font-semibold ${dayChangeAmount == null ? "text-white/35" : changeClasses(dayChangeAmount)}`}>
-            {hasUsablePrice(row.price) ? formatSignedMoney(dayChangeAmount) : "—"}
-          </div>
-
           <div>
             <div className="text-base font-semibold text-white">
               {hasUsablePrice(row.price) ? formatPrice(row.price) : "Awaiting quote"}
@@ -988,15 +984,15 @@ function QuickWatchlistRowItem({
         </div>
       </Link>
 
-      <button
+      {onRemove && <button
         type="button"
         onClick={() => onRemove(row.ticker)}
         aria-label={`Delete ${row.ticker} from watchlist`}
         title={`Delete ${row.ticker} from watchlist`}
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/8 text-rose-300 transition hover:border-rose-400/40 hover:bg-rose-500/15 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300"
+        className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl text-rose-300 hover:bg-rose-500/15 focus-visible:outline-2 focus-visible:outline-rose-300"
       >
         <Trash2 className="h-4 w-4" />
-      </button>
+      </button>}
     </div>
   );
 }
@@ -1017,6 +1013,8 @@ export default function WatchlistPage() {
   const { tickers: syncedWatchlistTickers } = useSyncedWatchlist();
   const [watchlistRows, setWatchlistRows] = useState<WatchlistRow[]>([]);
   const [addStockOpen, setAddStockOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [removed, setRemoved] = useState<WatchlistStoredEntry | null>(null);
   const [hydratedQuoteMap, setHydratedQuoteMap] = useState<Record<string, HydratedWatchlistQuote>>(
     {}
   );
@@ -1082,6 +1080,7 @@ export default function WatchlistPage() {
   }
 
   function handleRemoveFromWatchlist(ticker: string) {
+    setRemoved(readWatchlistEntries().find((entry) => entry.ticker === ticker) ?? { ticker });
     removeFromWatchlist(ticker);
     setWatchlistRows((prev) =>
       prev.filter(
@@ -1434,8 +1433,14 @@ export default function WatchlistPage() {
       />
       <div className="w-full pb-10 pt-4">
         <div className="min-w-0 space-y-6">
-          <StockAlerts full />
           <div className="overflow-hidden rounded-[28px] border border-cyan-400/14 bg-linear-to-b from-cyan-500/5 via-black to-black shadow-[0_0_0_1px_rgba(34,211,238,0.04)]">
+            {isQuick ? <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
+              <div><h1 className="text-xl font-bold">Watchlist</h1><p className="text-xs text-slate-400">{hasLoadedWatchlist ? `${scoredRows.length} saved` : "Loading…"} · Daily change</p></div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setAddStockOpen(true)} className="inline-flex min-h-11 items-center gap-1 rounded-lg bg-cyan-300 px-3 text-sm font-semibold text-slate-950"><Plus className="size-4" /> Add stock</button>
+                <button type="button" aria-pressed={editing} onClick={() => setEditing(!editing)} className="min-h-11 rounded-lg px-2 text-sm text-cyan-200">{editing ? "Done" : "Edit"}</button>
+              </div>
+            </div> : (
             <div className="border-b border-white/6 px-4 py-4 md:px-5">
               <div className="flex flex-wrap items-center gap-3">
                 <button
@@ -1500,53 +1505,10 @@ export default function WatchlistPage() {
                 </div>
               </div>
             </div>
+            )}
 
             <div className="px-4 py-4 md:px-5 md:py-5">
-              {isQuick ? (
-                <section className="mb-5 rounded-3xl border border-cyan-400/15 bg-[linear-gradient(180deg,rgba(7,17,31,0.96),rgba(3,9,18,0.98))] p-4 shadow-[0_0_35px_rgba(34,211,238,0.08)] md:p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <div className="text-[11px] font-black uppercase tracking-[0.22em] text-cyan-300">
-                        Quick View
-                      </div>
-                      <h1 className="mt-2 text-2xl font-black tracking-tight text-white md:text-3xl">
-                        Condensed Watchlist
-                      </h1>
-                      <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
-                        Your saved companies, prices, and verified Pulse changes.
-                      </p>
-
-                      {!canUseDetail ? (
-                        <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4">
-                          <p className="text-sm font-bold text-cyan-100">
-                            Smart unlocks Detail View.
-                          </p>
-                          <p className="mt-1 text-sm text-slate-300">
-                            Upgrade to Smart or Pro to see full conviction scoring, position notes,
-                            setup quality, risk alerts, and Sigi analysis for each stock.
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
-
-                    {canUseDetail ? (
-                      <Link
-                        href={buildWatchlistModeHref("detail")}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-cyan-300/40 bg-cyan-400/14 px-4 text-sm font-medium text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.24)] transition hover:border-cyan-200/55 hover:bg-cyan-400/20 hover:text-white"
-                      >
-                        Return Detail
-                      </Link>
-                    ) : (
-                      <Link
-                        href={buildPreviewHref("/auth/upgrade?plan=smart&feature=watchlist-detail")}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-400/18"
-                      >
-                        Unlock Detail
-                      </Link>
-                    )}
-                  </div>
-                </section>
-              ) : (
+              {!isQuick && (
                 <section className="relative mb-5 overflow-hidden rounded-3xl border border-cyan-400/15 p-4 shadow-[0_0_45px_rgba(34,211,238,0.08)] md:p-6">
                 <div
                   className="absolute inset-0 bg-cover bg-center opacity-60"
@@ -1640,7 +1602,7 @@ export default function WatchlistPage() {
               </div>
               ) : null}
 
-              <div className={`mt-5 rounded-3xl border border-white/6 bg-white/2 ${isQuick ? "p-2 md:p-3" : "p-3 md:p-4"}`}>
+              <div className={isQuick ? "" : "mt-5 rounded-3xl border border-white/6 bg-white/2 p-3 md:p-4"}>
                 <div className="flex flex-col gap-3">
                   {isDetail ? (
                   <div className="hidden xl:grid xl:grid-cols-[220px_120px_140px_1fr_140px] xl:items-center xl:gap-4 xl:px-4">
@@ -1672,7 +1634,7 @@ export default function WatchlistPage() {
                         isQuick ? (
                           <QuickWatchlistRowItem
                             key={symbol}
-                            onRemove={handleRemoveFromWatchlist}
+                            onRemove={editing ? handleRemoveFromWatchlist : undefined}
                             stockHref={buildPreviewHref(`/stocks/${symbol}`)}
                             row={{
                               ...item,
@@ -1703,8 +1665,19 @@ export default function WatchlistPage() {
                     })
                   )}
                 </div>
+                {removed && <div role="status" className="flex items-center justify-between gap-3 pt-2 text-sm text-slate-300">
+                  {removed.ticker} removed.
+                  <button type="button" className="min-h-11 px-3 text-cyan-200" onClick={() => {
+                    addToWatchlist(removed.ticker, removed);
+                    setRemoved(null);
+                  }}>Undo</button>
+                </div>}
+                {isQuick && <Link href={canUseDetail ? buildWatchlistModeHref("detail") : buildPreviewHref("/auth/upgrade?plan=smart&feature=watchlist-detail")} className="mt-2 inline-flex min-h-11 items-center text-sm text-cyan-200">
+                  {canUseDetail ? "Open Detail View" : "Explore Smart Detail View"} →
+                </Link>}
               </div>
             </div>
+            <StockAlerts full />
           </div>
         </div>
       </div>
