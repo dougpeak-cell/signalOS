@@ -163,6 +163,44 @@ for (const device of [
   });
 }
 
+test("phone alert fits on the profile row without consuming a second header row", async ({ page }) => {
+  await mockStockAlerts(page);
+  for (const path of ["/today", "/watchlist"]) {
+    await page.goto(`${path}?previewPlan=pro`);
+    const alert = alertButton(page);
+    await expect(alert).toHaveClass(/bg-red-700/);
+    for (const width of [320, 390]) {
+      await page.setViewportSize({ width, height: 844 });
+      const profile = page.locator('header button[aria-haspopup="menu"]:visible').first();
+      const [a, p, h] = await Promise.all([alert.boundingBox(), profile.boundingBox(), alert.locator("xpath=ancestor::header").boundingBox()]);
+      expect(a && p && h).toBeTruthy();
+      expect(Math.abs(a!.y + a!.height / 2 - p!.y - p!.height / 2)).toBeLessThan(2);
+      expect(a!.x + a!.width).toBeLessThanOrEqual(p!.x);
+      expect(p!.x + p!.width).toBeLessThanOrEqual(width);
+      expect(h!.height).toBeLessThanOrEqual(58);
+    }
+  }
+});
+
+test("rotating a phone hides chart navigation and restores it in portrait", async ({ page }) => {
+  await mockStockAlerts(page);
+  const portrait = { width: 390, height: 844 };
+  const landscape = { width: 844, height: 390 };
+  const nav = page.getByRole("navigation", { name: "Mobile navigation", exact: true });
+  for (const path of ["/vision?symbol=MSFT", "/stocks/MSFT/live", "/stocks/MSFT/workspace"]) {
+    await page.goto(path);
+    await expect(page).toHaveURL(new RegExp(path.split("?")[0] + "(?:\\?|$)"));
+    await expect(nav).toBeVisible();
+    await page.setViewportSize(landscape);
+    await expect(nav).toBeHidden();
+    await page.setViewportSize(portrait);
+    await expect(nav).toBeVisible();
+  }
+  await page.setViewportSize(landscape);
+  await page.goto("/watchlist");
+  await expect(nav).toBeVisible();
+});
+
 test("phone Today opens the leading watchlist move and explains its direction", async ({ page }) => {
   await mockStockAlerts(page);
   await page.goto("/today?previewPlan=pro");

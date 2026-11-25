@@ -18,9 +18,9 @@ export default function StockAlertButton(): React.JSX.Element {
     : color === "yellow" ? "border-yellow-300/70 bg-yellow-400 text-slate-950 hover:bg-yellow-300"
     : "border-teal-400/70 bg-transparent text-teal-200 hover:bg-teal-400/10";
   return <Link href="/alerts" aria-label={label} title={label}
-    className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold shadow-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${style}`}>
+    className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-lg border px-1.5 text-xs font-semibold shadow-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:gap-1.5 sm:px-2.5 ${style}`}>
     <Bell aria-hidden="true" className="size-4" />
-    <span>Alerts</span>
+    <span className="hidden sm:inline">Alerts</span>
     {count > 0 && <span aria-hidden="true" className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-950">{count}</span>}
     {error && <span aria-hidden="true">!</span>}
   </Link>;

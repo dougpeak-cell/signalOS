@@ -47,6 +47,9 @@ watchlist used by the screener:
 
 The header uses red > green > yellow priority and counts unique qualifying
 stocks, not events. With no qualifying stocks it remains outlined.
+On phones the alert bell and count sit beside Profile in one header row.
+On chart and trading workspace pages, turning a phone sideways hides the
+bottom navigation so it does not cover candles. Turning upright restores it.
 The existing Pro access rule is retained; **Notify me** is no longer required.
 Mobile Today leads with a watchlist brief: the highest-priority Pro alert or,
 without Pro, the largest watched move with an available quote. Watchlist Quick

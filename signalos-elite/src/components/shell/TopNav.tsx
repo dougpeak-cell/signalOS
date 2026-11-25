@@ -33,23 +33,6 @@ const navItems = features.visionEnabled
   ? [baseNavItems[0], { href: "/vision", label: "Vision" }, ...baseNavItems.slice(1)]
   : baseNavItems;
 
-function getMobileAuthCtaLabel(pathname: string): string {
-  if (pathname === "/today" || pathname.startsWith("/today/")) {
-    return "Account";
-  }
-
-  if (
-    pathname === "/experts" ||
-    pathname.startsWith("/experts/") ||
-    pathname === "/settings/sigi" ||
-    pathname.startsWith("/settings/sigi/")
-  ) {
-    return "Sign In";
-  }
-
-  return "Account";
-}
-
 export default function TopNav({
   forceMobilePreview = false,
   hasAccountSession = false,
@@ -75,7 +58,6 @@ export default function TopNav({
   const showMobileHealthyWealth = !forceMobilePreview && pathname === "/today";
   const showDevToggle = process.env.NODE_ENV !== "production" && !isCryptoMode;
   const isMobilePreviewEnabled = searchParams.get("mobilePreview") === "1";
-  const mobileAuthCtaLabel = getMobileAuthCtaLabel(pathname);
   const activeLabel =
     navItems.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
       ?.label ?? (isCryptoMode ? "Crypto" : isOptionsMode ? "Options" : "Today");
@@ -287,7 +269,7 @@ export default function TopNav({
           </nav>
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap">
+        <div className="flex items-center justify-end gap-1 sm:gap-2">
           {!hasClientSession && !forceMobilePreview ? (
             <>
               <Link
@@ -401,41 +383,17 @@ export default function TopNav({
             </button>
           ) : null}
 
-          <AccountMenu hasAccountSession={hasAccountSession} />
-
           <div className={forceMobilePreview ? "hidden min-h-9 items-center rounded-full border border-white/10 bg-white/4 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70 xs:inline-flex" : "hidden sm:hidden"}>
             {activeLabel}
           </div>
 
-          {!forceMobilePreview ? (
+          {showMobileHealthyWealth ? (
             <div className="sm:hidden">
-              <div className="flex items-center gap-1.5">
-                {!hasClientSession ? (
-                  <>
-                    <Link
-                      href={buildAuthHref()}
-                      className="inline-flex min-h-9 items-center rounded-full border border-emerald-300/22 bg-emerald-400/10 px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.1)] transition hover:border-emerald-300/36 hover:bg-emerald-400/16"
-                    >
-                      {mobileAuthCtaLabel}
-                    </Link>
-                    <DiscordInviteButton
-                      label="Discord"
-                      className="inline-flex min-h-9 items-center rounded-full border border-cyan-400/25 bg-cyan-400/10 px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.1)] transition hover:border-cyan-300/36 hover:bg-cyan-400/16"
-                    />
-                  </>
-                ) : null}
-
-                {showMobileHealthyWealth ? <MobileHealthyWealthButton /> : null}
-
-                {!showMobileHealthyWealth ? (
-                  <div className="hidden min-h-9 items-center rounded-full border border-white/10 bg-white/4 px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70 min-[340px]:inline-flex">
-                    {activeLabel}
-                  </div>
-                ) : null}
-              </div>
+              <MobileHealthyWealthButton />
             </div>
           ) : null}
           <StockAlertButton />
+          <AccountMenu hasAccountSession={hasAccountSession} />
         </div>
       </div>
     </header>

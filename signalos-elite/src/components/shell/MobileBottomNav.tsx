@@ -59,6 +59,8 @@ export default function MobileBottomNav({
   forceVisible?: boolean;
 }) {
   const pathname = usePathname();
+  const chartPage = pathname === "/vision" || pathname === "/workspace" ||
+    /^\/stocks\/[^/]+(?:\/(?:chart|day|live|workspace))?\/?$/.test(pathname);
   const searchParams = useSearchParams();
   const isMobilePreviewEnabled = searchParams.get("mobilePreview") === "1";
   const mobilePreviewFrame = useResponsiveMobilePreviewFrame(forceVisible || isMobilePreviewEnabled);
@@ -91,7 +93,7 @@ export default function MobileBottomNav({
     : { bottom: "calc(0.5rem + env(safe-area-inset-bottom))" };
 
   return (
-    <nav aria-label="Mobile navigation" className={navShellClass} style={navShellStyle}>
+    <nav aria-label="Mobile navigation" className={`${navShellClass} ${chartPage ? "chart-page-bottom-nav" : ""}`} style={navShellStyle}>
       <div
         className={[
           "mx-auto grid max-w-xl gap-1 rounded-lg border border-white/10 bg-[#050d10]/95 p-1.5 shadow-xl backdrop-blur-xl",

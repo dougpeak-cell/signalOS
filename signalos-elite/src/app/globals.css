@@ -1,4 +1,10 @@
 /* Disable inner scrolling and hide scrollbars for .no-inner-scroll */
+@media (orientation: landscape) and (pointer: coarse) and (max-height: 600px) {
+  .chart-page-bottom-nav {
+    display: none;
+  }
+}
+
 .no-inner-scroll,
 .no-inner-scroll * {
   overflow-y: visible !important;
